@@ -8,7 +8,7 @@
 
 - **Telnet** over TCP/IPv4 and IPv6 (default port **2323**)
 - **Packet radio** via TNC2C (KISS/AX.25 over USB or RS-232; any host baud)
-- **Guest auto-login**, registration, staff levels (Sysop → Guest)
+- **Guest auto-login**, registration
 - **Multi-channel chat**, MOTD/banner/news from `text/`
 - **INI user database** — up to **50 users per file**, sharded as `users/users.ini`, `users2.ini`, …
 - **Bundled crypto** — SHA-256 passwords, AES-256-GCM, XChaCha20-Poly1305, X25519 sealed boxes (optional OpenSSL/libsodium at build time)
