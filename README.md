@@ -1,6 +1,6 @@
 # HyBBX
 
-**HyBBX** is a plugin-based BBS/mailbox service for classic terminal access, amateur packet radio, and future link types. The core is plain C99, configured with INI files, and optimized for slow links (40 columns, 2400 baud pacing).
+**HyBBX** is a plugin-based BBS/mailbox inspired service for classic terminal access, amateur packet radio, and future link types. The core is plain C99, configured with INI files, and optimized for slow links (40 columns, 2400 baud pacing).
 
 **Version:** 0.1.0 (early development) — [full manual](docs/MANUAL.md)
 
