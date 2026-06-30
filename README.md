@@ -175,6 +175,3 @@ hyBBX/
 - v0.1.0: core sessions, telnet, flat-file + INI users, chat, staff commands, 2400 baud traffic layer
 - Next: packet radio → internal TCP circuit, SSH plugin, SQLite storage, WebSocket behind reverse-proxy
 
-## License
-
-TBD — add a `LICENSE` file before a public release if you intend to open-source under a specific terms.
