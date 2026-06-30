@@ -1,0 +1,9 @@
+Message of the Day
+------------------
+Welcome to HyBBX.
+
+You are connected as a guest. Type / or /help for HyBBX commands.
+Use /verb or / verb. /command is an alias for /.
+Comments (; #) and other lines are ignored.
+
+Have a nice session!

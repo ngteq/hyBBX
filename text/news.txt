@@ -1,0 +1,8 @@
+HyBBX News
+==========
+
+* HyBBX development started — flat-file storage, guest auto-login.
+* Packet radio via TNC2C (KISS/AX.25) in progress.
+* Telnet transport coming online.
+
+Type /news anytime to read this file again.

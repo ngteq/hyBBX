@@ -1,0 +1,258 @@
+#include "hybbx/chat.h"
+#include "hybbx/service.h"
+#include "hybbx/session.h"
+#include "hybbx/config.h"
+#include "hybbx/util.h"
+#include "hybbx/limits.h"
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+static int str_ieq(const char *a, const char *b)
+{
+    if (a == NULL || b == NULL) {
+        return 0;
+    }
+
+    while (*a != '\0' && *b != '\0') {
+        char ca = (char)(*a >= 'A' && *a <= 'Z' ? *a + 32 : *a);
+        char cb = (char)(*b >= 'A' && *b <= 'Z' ? *b + 32 : *b);
+
+        if (ca != cb) {
+            return 0;
+        }
+        a++;
+        b++;
+    }
+
+    return *a == '\0' && *b == '\0';
+}
+
+static int channel_name_char_ok(char ch)
+{
+    return (ch >= 'a' && ch <= 'z') ||
+           (ch >= 'A' && ch <= 'Z') ||
+           (ch >= '0' && ch <= '9') ||
+           ch == ' ' || ch == '-' || ch == '_';
+}
+
+static int channel_name_valid(const char *name)
+{
+    size_t len;
+    size_t i;
+
+    if (name == NULL) {
+        return 0;
+    }
+
+    len = strlen(name);
+    if (len < 2 || len >= HYBBX_CHAT_CHANNEL_NAME_MAX) {
+        return 0;
+    }
+
+    for (i = 0; i < len; i++) {
+        if (!channel_name_char_ok(name[i])) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+void hybbx_chat_config_defaults(hybbx_chat_config_t *chat)
+{
+    unsigned i;
+
+    if (chat == NULL) {
+        return;
+    }
+
+    chat->channel_count = HYBBX_DEFAULT_CHAT_CHANNELS;
+    chat->message_max = HYBBX_CHAT_MESSAGE_MAX;
+
+    for (i = 0; i < HYBBX_CHAT_CHANNEL_MAX; i++) {
+        snprintf(chat->names[i], sizeof(chat->names[i]), "Channel%u", i + 1);
+    }
+}
+
+void hybbx_chat_config_apply(hybbx_chat_config_t *chat,
+                             const hybbx_config_t *config)
+{
+    unsigned count;
+    unsigned i;
+    char key[16];
+    const char *value;
+
+    if (chat == NULL || config == NULL) {
+        return;
+    }
+
+    hybbx_chat_config_defaults(chat);
+
+    count = hybbx_config_get_uint(config, "chat", "channels",
+                                  HYBBX_DEFAULT_CHAT_CHANNELS, 1u,
+                                  HYBBX_CHAT_CHANNEL_MAX);
+    chat->channel_count = count;
+
+    chat->message_max = hybbx_config_get_uint(config, "chat", "message_max",
+                                              HYBBX_CHAT_MESSAGE_MAX, 1u,
+                                              HYBBX_LINE_MAX - 1u);
+
+    for (i = 1; i <= chat->channel_count; i++) {
+        snprintf(key, sizeof(key), "channel%u", i);
+        value = hybbx_config_get(config, "chat", key, NULL);
+        if (value != NULL && value[0] != '\0' && channel_name_valid(value)) {
+            hybbx_strlcpy(chat->names[i - 1], value,
+                          sizeof(chat->names[i - 1]));
+        }
+    }
+
+    printf("[chat] channels=%u message_max=%u\n",
+           chat->channel_count, chat->message_max);
+}
+
+const char *hybbx_chat_channel_name(const hybbx_chat_config_t *chat,
+                                    unsigned channel_index)
+{
+    if (chat == NULL || channel_index == 0 ||
+        channel_index > chat->channel_count) {
+        return NULL;
+    }
+
+    return chat->names[channel_index - 1];
+}
+
+hybbx_result_t hybbx_chat_resolve_channel(const hybbx_chat_config_t *chat,
+                                          const char *spec,
+                                          unsigned *out_index)
+{
+    char *end;
+    unsigned long parsed;
+    unsigned i;
+
+    if (chat == NULL || spec == NULL || out_index == NULL || spec[0] == '\0') {
+        return HYBBX_ERR_INVALID;
+    }
+
+    parsed = strtoul(spec, &end, 10);
+    if (end != spec && *end == '\0' && parsed >= 1 &&
+        parsed <= chat->channel_count) {
+        *out_index = (unsigned)parsed;
+        return HYBBX_OK;
+    }
+
+    for (i = 1; i <= chat->channel_count; i++) {
+        if (str_ieq(chat->names[i - 1], spec)) {
+            *out_index = i;
+            return HYBBX_OK;
+        }
+    }
+
+    return HYBBX_ERR_NOT_FOUND;
+}
+
+void hybbx_chat_list_channels(hybbx_session_t *session,
+                              const hybbx_chat_config_t *chat)
+{
+    unsigned i;
+    char line[HYBBX_CHAT_CHANNEL_NAME_MAX + 32];
+    unsigned current;
+
+    if (session == NULL || chat == NULL) {
+        return;
+    }
+
+    current = hybbx_session_chat_channel(session);
+
+    hybbx_session_write_line(session, "Channels:");
+    for (i = 1; i <= chat->channel_count; i++) {
+        snprintf(line, sizeof(line), "  %u  %s", i, chat->names[i - 1]);
+        hybbx_session_write_line(session, line);
+    }
+
+    if (current > 0) {
+        snprintf(line, sizeof(line), "Current: %u %s",
+                 current, hybbx_chat_channel_name(chat, current));
+        hybbx_session_write_line(session, line);
+    } else {
+        hybbx_session_write_line(session, "Use /chat <n> or <name>.");
+    }
+}
+
+typedef struct chat_broadcast_ctx {
+    hybbx_session_t *from;
+    const char *message;
+    const char *from_user;
+    unsigned channel;
+} chat_broadcast_ctx_t;
+
+static void chat_broadcast_visitor(hybbx_session_t *session, void *userdata)
+{
+    chat_broadcast_ctx_t *ctx = (chat_broadcast_ctx_t *)userdata;
+    char line[HYBBX_USER_NAME_MAX + HYBBX_LINE_MAX + 16];
+
+    if (session == NULL || ctx == NULL || ctx->message == NULL) {
+        return;
+    }
+
+    if (hybbx_session_area(session) != HYBBX_AREA_CHAT) {
+        return;
+    }
+
+    if (hybbx_session_chat_channel(session) != ctx->channel) {
+        return;
+    }
+
+    if (session == ctx->from) {
+        snprintf(line, sizeof(line), "ME: %s", ctx->message);
+    } else {
+        snprintf(line, sizeof(line), "%s: %s", ctx->from_user, ctx->message);
+    }
+
+    hybbx_session_write_line(session, line);
+}
+
+hybbx_result_t hybbx_chat_post(hybbx_service_t *service,
+                               hybbx_session_t *from,
+                               const char *message)
+{
+    chat_broadcast_ctx_t ctx;
+    const hybbx_chat_config_t *chat;
+    unsigned channel;
+
+    if (service == NULL || from == NULL || message == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (message[0] == '\0') {
+        return HYBBX_OK;
+    }
+
+    chat = hybbx_service_get_chat(service);
+    if (chat == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (strlen(message) > chat->message_max) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (hybbx_session_area(from) != HYBBX_AREA_CHAT) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    channel = hybbx_session_chat_channel(from);
+    if (channel == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    ctx.from = from;
+    ctx.message = message;
+    ctx.from_user = hybbx_session_username(from);
+    ctx.channel = channel;
+
+    hybbx_service_visit_sessions(service, chat_broadcast_visitor, &ctx);
+    return HYBBX_OK;
+}

@@ -1,0 +1,113 @@
+; HyBBX configuration (installed: etc/hybbx.ini under install prefix).
+; Paths below are relative to the install prefix when started via hybbx-start.
+
+[service]
+name = hyBBX
+; max_online = 35        ; maximum simultaneous sessions (guests included)
+; nodes = 35               ; alias for max_online
+; prompt =              ; default: empty (no visible prompt before input)
+; prompt = hybbx>
+
+[storage]
+backend = flatfile
+path = ./data
+
+[auth]
+auto_login = yes
+guest_prefix = Guest
+; guest_timeout_minutes = 30   ; auto-disconnect guests after this many minutes
+
+; System-wide cryptography (bundled sources are defaults; no external libs required).
+; Optional OpenSSL/libsodium backends: cmake -DHYBBX_CRYPTO_OPENSSL=ON / -DHYBBX_CRYPTO_LIBSODIUM=ON
+[crypto]
+password_hash = tinysha256    ; tinysha256 | openssl
+aes_gcm = tinyaes             ; tinyaes | openssl
+chacha = monocypher           ; monocypher | libsodium
+x25519 = monocypher           ; monocypher | libsodium
+random = system               ; system | openssl
+
+; 2400 baud traffic profile (40 columns, paced 8N1 output, plain ASCII).
+[traffic]
+baud = 2400
+line_width = 40
+pace_output = yes
+ansi = no
+
+[texts]
+path = ./text
+
+[chat]
+; channels = 10
+message_max = 72
+; channel1 = General
+; channel2 = BBS
+; channel3 = Tech
+; channel4 = Channel4
+; channel5 = Channel5
+; channel6 = Channel6
+; channel7 = Channel7
+; channel8 = Channel8
+; channel9 = Channel9
+; channel10 = Channel10
+
+[transport.telnet]
+enabled = yes
+bind = 0.0.0.0
+bind6 = ::
+port = 2323
+; ipv4 = yes
+; ipv6 = yes
+
+; Planned later (not implemented):
+; [transport.ssh]
+; enabled = no
+;
+; WebSocket: forward-proxy only — place Apache/nginx/httpd in front as reverse-proxy.
+; HyBBX accepts proxied upgrades locally; TLS and public HTTP stay on the web server.
+; [transport.websocket]
+; enabled = no
+; bind = 127.0.0.1
+; port = 8080
+; upstream = reverse-proxy   ; informational; real TLS/HTTP termination on Apache/nginx
+
+[transport.packet_radio]
+enabled = no
+
+; Primary TNC: Landolt TNC2C (https://www.landolt.de/info/afuinfo/tnc2c.htm)
+; RS232/V.24 host link, KISS + host-mode firmware, AX.25 over the air.
+tnc = tnc2c
+protocol = kiss
+
+; Host serial: any baud rate (TNC2C documents 300..38400 on 10 MHz version)
+device_type = usb
+device = /dev/ttyUSB0
+baud = 2400
+
+; Radio/modem side (TCM 3105 default = 1200; optional 9600/19200 modems)
+modem = tcm3105
+radio_baud = 1200
+clock_mhz = 4.9
+
+; KISS parameters (applied after "kiss on" host command when needed)
+kiss_port = 0
+kiss_on_startup = yes
+txdelay = 50
+persist = 128
+slot = 10
+txtail = 0
+fullduplex = no
+
+; Classic RS232/COM port example (1200 baud radio):
+; device_type = serial
+; device = /dev/ttyS0
+; baud = 9600
+; radio_baud = 1200
+
+; TNC2C-H with switchable 9600 baud modem:
+; modem = 9600
+; radio_baud = 9600
+; clock_mhz = 9.8
+
+; 10 MHz TNC2C with up to 38400 baud host link:
+; clock_mhz = 10
+; baud = 38400

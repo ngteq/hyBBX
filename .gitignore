@@ -1,0 +1,17 @@
+# Build artifacts
+build/
+build-*/
+out/
+data/
+local/data/
+cmake-build-*/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+compile_commands.json
+
+# OS
+.DS_Store
+Thumbs.db

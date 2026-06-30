@@ -1,0 +1,395 @@
+#include "hybbx/config.h"
+#include "hybbx/limits.h"
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define HYBBX_CONFIG_INITIAL_CAP 32
+
+static int hybbx_strcasecmp(const char *a, const char *b)
+{
+    if (a == NULL || b == NULL) {
+        return (a != NULL) - (b != NULL);
+    }
+
+    while (*a != '\0' && *b != '\0') {
+        unsigned char ca = (unsigned char)tolower((unsigned char)*a);
+        unsigned char cb = (unsigned char)tolower((unsigned char)*b);
+
+        if (ca != cb) {
+            return (int)ca - (int)cb;
+        }
+        a++;
+        b++;
+    }
+
+    return (int)(unsigned char)*a - (int)(unsigned char)*b;
+}
+
+static char *hybbx_strdup(const char *s)
+{
+    size_t len;
+    char *copy;
+
+    if (s == NULL) {
+        return NULL;
+    }
+
+    len = strlen(s) + 1;
+    copy = malloc(len);
+    if (copy != NULL) {
+        memcpy(copy, s, len);
+    }
+    return copy;
+}
+
+static char *trim_inplace(char *s)
+{
+    char *end;
+
+    if (s == NULL) {
+        return NULL;
+    }
+
+    while (*s != '\0' && isspace((unsigned char)*s)) {
+        s++;
+    }
+
+    if (*s == '\0') {
+        return s;
+    }
+
+    end = s + strlen(s) - 1;
+    while (end > s && isspace((unsigned char)*end)) {
+        *end = '\0';
+        end--;
+    }
+
+    return s;
+}
+
+static int is_comment_line(const char *line)
+{
+    const char *p = line;
+
+    while (*p != '\0' && isspace((unsigned char)*p)) {
+        p++;
+    }
+
+    return *p == ';' || *p == '#';
+}
+
+static hybbx_result_t append_entry(hybbx_config_t *config,
+                                 const char *section,
+                                 const char *key,
+                                 const char *value)
+{
+    hybbx_config_entry_t *entry;
+    hybbx_config_entry_t *grown;
+
+    if (section == NULL || key == NULL || value == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (strlen(section) >= HYBBX_CONFIG_SECTION_MAX ||
+        strlen(key) >= HYBBX_CONFIG_KEY_MAX ||
+        strlen(value) >= HYBBX_CONFIG_VALUE_MAX) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (config->count == 0) {
+        config->entries = malloc(HYBBX_CONFIG_INITIAL_CAP * sizeof(*config->entries));
+        if (config->entries == NULL) {
+            return HYBBX_ERR_NOMEM;
+        }
+    } else if ((config->count % HYBBX_CONFIG_INITIAL_CAP) == 0) {
+        grown = realloc(config->entries,
+                        (config->count + HYBBX_CONFIG_INITIAL_CAP) *
+                            sizeof(*config->entries));
+        if (grown == NULL) {
+            return HYBBX_ERR_NOMEM;
+        }
+        config->entries = grown;
+    }
+
+    entry = &config->entries[config->count];
+    entry->section = hybbx_strdup(section);
+    entry->key = hybbx_strdup(key);
+    entry->value = hybbx_strdup(value);
+
+    if (entry->section == NULL || entry->key == NULL || entry->value == NULL) {
+        free(entry->section);
+        free(entry->key);
+        free(entry->value);
+        return HYBBX_ERR_NOMEM;
+    }
+
+    config->count++;
+    return HYBBX_OK;
+}
+
+hybbx_result_t hybbx_config_load(hybbx_config_t *config, const char *path)
+{
+    FILE *fp;
+    char line[HYBBX_CONFIG_LINE_MAX];
+    char current_section[HYBBX_CONFIG_SECTION_MAX] = "";
+    char *eq;
+    char *key;
+    char *value;
+
+    if (config == NULL || path == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    memset(config, 0, sizeof(*config));
+
+    fp = fopen(path, "r");
+    if (fp == NULL) {
+        return HYBBX_ERR_IO;
+    }
+
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        char *content;
+        size_t len;
+
+        len = strlen(line);
+        if (len > 0 && line[len - 1] != '\n' &&
+            len >= sizeof(line) - 1) {
+            fclose(fp);
+            hybbx_config_free(config);
+            return HYBBX_ERR_INVALID;
+        }
+
+        content = trim_inplace(line);
+
+        if (content[0] == '\0' || is_comment_line(content)) {
+            continue;
+        }
+
+        if (content[0] == '[') {
+            char *closing = strchr(content, ']');
+
+            if (closing == NULL) {
+                fclose(fp);
+                hybbx_config_free(config);
+                return HYBBX_ERR_INVALID;
+            }
+
+            *closing = '\0';
+            strncpy(current_section, content + 1, sizeof(current_section) - 1);
+            current_section[sizeof(current_section) - 1] = '\0';
+            trim_inplace(current_section);
+            continue;
+        }
+
+        if (current_section[0] == '\0') {
+            fclose(fp);
+            hybbx_config_free(config);
+            return HYBBX_ERR_INVALID;
+        }
+
+        eq = strchr(content, '=');
+        if (eq == NULL) {
+            fclose(fp);
+            hybbx_config_free(config);
+            return HYBBX_ERR_INVALID;
+        }
+
+        *eq = '\0';
+        key = trim_inplace(content);
+        value = trim_inplace(eq + 1);
+
+        len = strlen(value);
+        if (len >= 2 &&
+            ((value[0] == '"' && value[len - 1] == '"') ||
+             (value[0] == '\'' && value[len - 1] == '\''))) {
+            value[len - 1] = '\0';
+            value++;
+        }
+
+        if (append_entry(config, current_section, key, value) != HYBBX_OK) {
+            fclose(fp);
+            hybbx_config_free(config);
+            return HYBBX_ERR_NOMEM;
+        }
+    }
+
+    fclose(fp);
+    return HYBBX_OK;
+}
+
+void hybbx_config_free(hybbx_config_t *config)
+{
+    size_t i;
+
+    if (config == NULL) {
+        return;
+    }
+
+    for (i = 0; i < config->count; i++) {
+        free(config->entries[i].section);
+        free(config->entries[i].key);
+        free(config->entries[i].value);
+    }
+
+    free(config->entries);
+    config->entries = NULL;
+    config->count = 0;
+}
+
+const char *hybbx_config_get(const hybbx_config_t *config,
+                             const char *section,
+                             const char *key,
+                             const char *default_value)
+{
+    size_t i;
+
+    if (config == NULL || section == NULL || key == NULL) {
+        return default_value;
+    }
+
+    for (i = 0; i < config->count; i++) {
+        if (strcmp(config->entries[i].section, section) == 0 &&
+            strcmp(config->entries[i].key, key) == 0) {
+            return config->entries[i].value;
+        }
+    }
+
+    return default_value;
+}
+
+int hybbx_config_get_bool(const hybbx_config_t *config,
+                          const char *section,
+                          const char *key,
+                          int default_value)
+{
+    const char *value = hybbx_config_get(config, section, key, NULL);
+
+    if (value == NULL) {
+        return default_value;
+    }
+
+    if (hybbx_strcasecmp(value, "yes") == 0 || hybbx_strcasecmp(value, "true") == 0 ||
+        strcmp(value, "1") == 0) {
+        return 1;
+    }
+
+    if (hybbx_strcasecmp(value, "no") == 0 || hybbx_strcasecmp(value, "false") == 0 ||
+        strcmp(value, "0") == 0) {
+        return 0;
+    }
+
+    return default_value;
+}
+
+unsigned hybbx_config_get_uint(const hybbx_config_t *config,
+                               const char *section,
+                               const char *key,
+                               unsigned default_value,
+                               unsigned min_value,
+                               unsigned max_value)
+{
+    const char *value;
+    char *end;
+    unsigned long parsed;
+
+    value = hybbx_config_get(config, section, key, NULL);
+    if (value == NULL || value[0] == '\0') {
+        return default_value;
+    }
+
+    parsed = strtoul(value, &end, 10);
+    if (end == value || *end != '\0') {
+        return default_value;
+    }
+
+    if (parsed < min_value) {
+        return min_value;
+    }
+    if (parsed > max_value) {
+        return max_value;
+    }
+
+    return (unsigned)parsed;
+}
+
+char *hybbx_config_format_section(const hybbx_config_t *config,
+                                  const char *section)
+{
+    size_t i;
+    size_t cap = 64;
+    size_t len = 0;
+    char *out;
+    int first = 1;
+
+    if (config == NULL || section == NULL) {
+        return NULL;
+    }
+
+    out = malloc(cap);
+    if (out == NULL) {
+        return NULL;
+    }
+    out[0] = '\0';
+
+    for (i = 0; i < config->count; i++) {
+        const hybbx_config_entry_t *entry = &config->entries[i];
+        size_t need;
+
+        if (strcmp(entry->section, section) != 0) {
+            continue;
+        }
+
+        if (strcmp(entry->key, "enabled") == 0) {
+            continue;
+        }
+
+        need = strlen(entry->key) + strlen(entry->value) + 2;
+        if (!first) {
+            need++;
+        }
+
+        if (len + need + 1 > cap) {
+            char *grown;
+
+            while (len + need + 1 > cap) {
+                cap *= 2;
+            }
+            grown = realloc(out, cap);
+            if (grown == NULL) {
+                free(out);
+                return NULL;
+            }
+            out = grown;
+        }
+
+        if (!first) {
+            out[len++] = ';';
+            out[len] = '\0';
+        }
+
+        len += (size_t)snprintf(out + len, cap - len, "%s=%s",
+                                entry->key, entry->value);
+        first = 0;
+    }
+
+    return out;
+}
+
+void hybbx_config_foreach(const hybbx_config_t *config,
+                          hybbx_config_iter_fn fn, void *ctx)
+{
+    size_t i;
+
+    if (config == NULL || fn == NULL) {
+        return;
+    }
+
+    for (i = 0; i < config->count; i++) {
+        const hybbx_config_entry_t *entry = &config->entries[i];
+
+        fn(entry->section, entry->key, entry->value, ctx);
+    }
+}

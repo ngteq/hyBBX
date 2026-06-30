@@ -1,0 +1,11 @@
+HyBBX @version@
+You are online at @service@
+================================================================================
+  HH  HH  YY  YY  BBBBB   BBBBB   XX    XX
+  HH  HH   YY YY   BB  B   BB  B    XX  XX
+  HHHHHH    YYY    BBBBB   BBBBB      XX
+  HH  HH    YY     BB  B   BB  B    XX  XX
+  HH  HH    YY     BBBBB   BBBBB   XX    XX
+================================================================================
+        BBS/Mailbox Service for Telnet & Packet Radio
+================================================================================
