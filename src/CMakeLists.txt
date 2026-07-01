@@ -97,6 +97,10 @@ if(HYBBX_BUILD_DAEMON)
         RENAME hybbx.ini
     )
 
+    install(FILES ${CMAKE_SOURCE_DIR}/share/hybbx-secondary.ini.example
+        DESTINATION ${HYBBX_INSTALL_ETCDIR}
+    )
+
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/text/
         DESTINATION ${HYBBX_INSTALL_TEXTDIR}
         FILES_MATCHING PATTERN "*.txt"

@@ -1,0 +1,74 @@
+; HyBBX secondary (edge) — RF/TNC bridge to a main instance over TCP/IP
+; Copy/adapt for a shack or remote site with packet radio hardware.
+;
+;   cp share/hybbx-secondary.ini.example ~/.hybbx-secondary.ini
+;   hybbx -c ~/.hybbx-secondary.ini
+;
+; Main (datacenter) template: share/hybbx.ini.example
+;   [circuit] bind = 0.0.0.0  +  link_password  +  firewall TCP 7323
+;
+; HyBBX does not integrate VPNs — use plain TCP/IP. Admins may add VPN or
+; TLS wrappers externally; the HBX protocol stays on TCP port 7323.
+
+[service]
+name = hyBBX-edge
+
+[storage]
+backend = flatfile
+path = ~/.hybbx-edge
+
+[auth]
+auto_login = no
+
+[traffic]
+baud = 2400
+line_width = 80
+pace_output = yes
+ansi = no
+input_echo = yes
+
+[mail]
+enabled = no
+
+[networks]
+ax25 = yes
+circuit = no
+
+[transport.telnet]
+; Local maintenance only — not a public BBS endpoint
+bind = 127.0.0.1
+bind6 = ::1
+port = 2323
+ipv4 = yes
+ipv6 = yes
+
+[transport.packet_radio]
+; TCP/IP bridge to the main instance (HBX v1 on [circuit])
+circuit_host = 92.60.36.150
+circuit_port = 7323
+link_id = shack-1
+link_password = changeme
+link_role = link
+
+; --- TNC2C (primary test device) ---
+tnc = tnc2c
+protocol = kiss
+device_type = usb
+device = /dev/ttyU0
+baud = 2400
+modem = tcm3105
+radio_baud = 1200
+clock_mhz = 4.9
+kiss_on_startup = yes
+txdelay = 50
+persist = 128
+slot = 10
+txtail = 0
+radio_band = amateur
+radio_duplex = half
+g3ruh_fsk = no
+
+; AX.25 (set before on-air use)
+; mycall = DL1ABC-0
+; dest = DL9XYZ-0
+; via = RELAY-7

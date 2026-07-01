@@ -43,7 +43,9 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Protocol `terminal` | Done | BBS byte stream for host-mode / UI traffic |
 | G3RUH flag on uplink | Done | `HYBBX_CIRCUIT_FLAG_G3RUH_FSK` when 9600 FSK active |
 | Reserved protos | Planned | `0x20` APRS, `0x21` NETROM, … |
-| Packet radio link client | Done | Connects to hub via `circuit_host` / `circuit_port` |
+| Packet radio link client | Done | Secondary connects via `circuit_host` / `circuit_port` |
+| Main/secondary TCP bridge | Done | HBX over TCP; main template + `hybbx-secondary.ini.example` |
+| Multi-link hub (N secondaries) | Planned | Several concurrent circuit links on one main |
 
 ---
 
@@ -208,8 +210,10 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| Mail-Area | Done | Mailbox on **centralized daemon** only (not chat) |
-| Link/repeater edge daemons | Planned | Gateway, digipeater, repeater, and link relay modes |
+| Mail-Area | Done | Mailbox on **main** only (not chat) |
+| Main/secondary bridge | Done | HBX/TCP `LINK_AUTH`; templates in `share/` |
+| Multi-link hub | Planned | Several secondaries → one main concurrently |
+| Link/repeater edge modes | Partial | Secondary INI + `link_role` metadata; role routing planned |
 | SSH transport | Planned | Same session core as telnet |
 | WebSocket transport | Planned | Reverse-proxy only |
 | SQL storage | Planned | SQLite, MySQL/MariaDB on core |

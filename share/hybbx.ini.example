@@ -13,8 +13,12 @@
 ;   [mail]               personal mailbox (centralized daemon)
 ;   [networks]           connection switches (ax25, websocket, circuit)
 ;   [transport.telnet]   TCP telnet adapter (port 2323) — static enabled
-;   [circuit]            HBX TCP hub — edge link/repeater daemons connect here
-;   [transport.packet_radio]  RF link adapter (KISS/AX.25 → circuit)
+;   [circuit]            HBX TCP hub — secondaries connect here (main instance)
+;   [transport.packet_radio]  RF link adapter (secondary → main over TCP/IP)
+;
+; Templates:
+;   share/hybbx.ini.example           — main / datacenter instance
+;   share/hybbx-secondary.ini.example — shack node with TNC (no local mail hub)
 ;
 ; Booleans: yes/no (aliases true/false, on/off, 1/0). Storage path supports ~ for $HOME.
 
@@ -75,8 +79,8 @@ enabled = yes
 ; max_messages = 50
 ; subject_max = 72
 ; body_max = 2048
-; recycle_days = 10       ; auto-purge deleted mail after this many days
-; path = mail            ; subdirectory under [storage] path (default: mail)
+; recycle_days = 10
+; path = mail
 
 ; Connection switches. Telnet and SSH are static-enabled core IP transports
 ; (always on when built). Optional adapters are toggled here.
@@ -104,7 +108,10 @@ ipv6 = yes
 ; port = 8080
 ; upstream = reverse-proxy   ; informational; real TLS/HTTP termination on Apache/nginx
 
-; Internal TCP/IPv4+IPv6 circuit hub (HBX framing). Link adapters attach here.
+; Internal TCP/IPv4+IPv6 circuit hub (HBX framing). Secondaries attach over TCP/IP.
+; Main/datacenter: set bind to 0.0.0.0 / :: and open firewall TCP port (default 7323).
+; Local dev: keep 127.0.0.1 / ::1. HyBBX does not integrate VPN — use plain TCP or
+; an external VPN/tunnel if desired.
 ; Master switch: [networks] circuit = yes|no
 [circuit]
 enabled = yes

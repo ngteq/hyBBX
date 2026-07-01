@@ -14,7 +14,7 @@ hyBBX/
     packet_radio/         Link/repeater edge: AX.25 + TNC stack; HBX client to circuit
   third_party/            Bundled crypto (tinysha256, Monocypher, tiny-AES-c)
   text/                   banner.txt, motd.txt, news.txt (BBS texts)
-  share/                  hybbx.ini.example (shipped config sample)
+  share/                  hybbx.ini.example (main), hybbx-secondary.ini.example (edge)
   local/                  Local dev config and data (not required for install)
   scripts/                hybbx.sh, dev-setup.sh
   cmake/                  CMake modules, platform toolchains (AmigaOS 3.9+)

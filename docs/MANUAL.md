@@ -1,6 +1,6 @@
 # HyBBX manual
 
-INI, transports, commands. Config template: `share/hybbx.ini.example`. Arch: [ROADMAP.md](ROADMAP.md).
+INI, transports, commands. Config: `share/hybbx.ini.example` (main), `share/hybbx-secondary.ini.example` (secondary). Arch: [ROADMAP.md](ROADMAP.md).
 
 - [FEATURES.md](FEATURES.md) · [QUICKSTART.md](QUICKSTART.md) · [INDEX.md](INDEX.md)
 
@@ -98,6 +98,74 @@ to `hybbx_session` — the application never parses KISS or AX.25 directly.
 ```
 
 Telnet remains native TCP to the session (no HBX wrapper on the wire).
+
+### Main and secondary deployment (TCP/IP bridge)
+
+HyBBX uses a **main** instance (datacenter or primary BBS) and **secondary** nodes (shack, remote site) with TNC/modem hardware. Secondaries connect to the main **circuit hub** over plain **TCP/IP** — no VPN inside HyBBX. Admins may add VPN, SSH tunnels, or firewalls externally.
+
+| Role | Template | Typical host |
+|------|----------|--------------|
+| **Main** | `share/hybbx.ini.example` | Datacenter server, no TNC |
+| **Secondary** | `share/hybbx-secondary.ini.example` | Shack box with TNC2C/modem |
+
+```
+  Secondary                         Main
+  RF ←→ TNC ←→ packet_radio  ──TCP:7323──►  [circuit] hub → session
+                                              telnet :2323 → users
+                                              mail, storage, chat
+```
+
+**Main (datacenter)** — expose the circuit hub to secondaries:
+
+```ini
+[networks]
+ax25 = no
+circuit = yes
+
+[circuit]
+enabled = yes
+bind = 0.0.0.0
+bind6 = ::
+port = 7323
+link_auth = yes
+link_password = <shared-secret>
+```
+
+Open **TCP 7323** on the firewall (and **2323** for telnet users). Restart HyBBX; boot log should show `circuit hub 0.0.0.0:7323`, not loopback only.
+
+**Secondary (shack with TNC)** — bridge RF to main:
+
+```ini
+[networks]
+ax25 = yes
+circuit = no
+
+[mail]
+enabled = no
+
+[transport.packet_radio]
+circuit_host = <main-public-ip-or-dns>
+circuit_port = 7323
+link_id = shack-1
+link_password = <same-as-main>
+link_role = link
+device = /dev/ttyU0
+tnc = tnc2c
+protocol = kiss
+```
+
+Run: `hybbx -c /path/to/hybbx-secondary.ini` (or copy to `hybbx.ini`).
+
+**Connection flow:**
+
+1. Secondary `packet_radio` opens TCP to `circuit_host:7323`
+2. `LINK_AUTH` with `link_password`, `link_id`, `link_role`
+3. Main validates → link registry → opens one circuit session
+4. RF frames uplink as HBX `ax25`; BBS output downlink as HBX `terminal`
+
+**Today:** one active circuit link per main (one secondary RF path → one session). Multiple simultaneous secondaries: [ROADMAP.md — Multi-link](ROADMAP.md#multi-link-several-secondaries--one-main--planned).
+
+**VPN:** not built into HyBBX. Point `circuit_host` at the main's reachable IP, or at a VPN endpoint you configure outside HyBBX.
 
 ### Telnet
 
@@ -514,7 +582,7 @@ CC=clang cmake -B build-clang -DCMAKE_BUILD_TYPE=Release
 cmake -B build -DHYBBX_CRYPTO_OPENSSL=ON
 ```
 
-Install layout under prefix: `bin/hybbx`, `bin/hybbx-start`, `etc/hybbx.ini`, `text/`, `data/`, `lib/`.
+Install layout under prefix: `bin/hybbx`, `bin/hybbx-start`, `etc/hybbx.ini`, `etc/hybbx-secondary.ini.example`, `text/`, `data/`, `lib/`.
 
 **Run installed:** `hybbx-start` (set `HYBBX_CONFIG`, `HYBBX_ROOT` to override).
 
