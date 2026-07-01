@@ -1,13 +1,31 @@
 cmake_minimum_required(VERSION 3.16)
 
-# Primary toolchain: GCC when CC / CMAKE_C_COMPILER are not set.
+# Default C compiler when CC / CMAKE_C_COMPILER are not set:
+#   *BSD  → LLVM Clang (native toolchain on BSD)
+#   other → GCC
 if(NOT DEFINED ENV{CC} AND NOT CMAKE_C_COMPILER)
-    find_program(HYBBX_PREFERRED_GCC NAMES gcc)
-    if(HYBBX_PREFERRED_GCC)
-        set(CMAKE_C_COMPILER "${HYBBX_PREFERRED_GCC}"
-            CACHE FILEPATH "HyBBX primary C compiler (GCC)" FORCE)
+    if(CMAKE_HOST_SYSTEM_NAME MATCHES "^(FreeBSD|OpenBSD|NetBSD|DragonFly)$")
+        find_program(HYBBX_PREFERRED_CLANG NAMES clang)
+        if(HYBBX_PREFERRED_CLANG)
+            set(CMAKE_C_COMPILER "${HYBBX_PREFERRED_CLANG}"
+                CACHE FILEPATH "HyBBX C compiler (Clang on BSD)" FORCE)
+        else()
+            find_program(HYBBX_PREFERRED_GCC NAMES gcc)
+            if(HYBBX_PREFERRED_GCC)
+                set(CMAKE_C_COMPILER "${HYBBX_PREFERRED_GCC}"
+                    CACHE FILEPATH "HyBBX C compiler (GCC fallback on BSD)" FORCE)
+            endif()
+            unset(HYBBX_PREFERRED_GCC)
+        endif()
+        unset(HYBBX_PREFERRED_CLANG)
+    else()
+        find_program(HYBBX_PREFERRED_GCC NAMES gcc)
+        if(HYBBX_PREFERRED_GCC)
+            set(CMAKE_C_COMPILER "${HYBBX_PREFERRED_GCC}"
+                CACHE FILEPATH "HyBBX primary C compiler (GCC)" FORCE)
+        endif()
+        unset(HYBBX_PREFERRED_GCC)
     endif()
-    unset(HYBBX_PREFERRED_GCC)
 endif()
 
 project(HyBBX
