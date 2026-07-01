@@ -55,7 +55,7 @@ void hybbx_circuit_config_defaults(hybbx_circuit_config_t *cfg)
     snprintf(cfg->bind6, sizeof(cfg->bind6), "::1");
     cfg->port = HYBBX_CIRCUIT_DEFAULT_PORT;
     cfg->ipv4 = 1;
-    cfg->ipv6 = 0;
+    cfg->ipv6 = 1;
     cfg->link_stale_days = HYBBX_LINK_STALE_DAYS;
     cfg->link_auth = 1;
 }

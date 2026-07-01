@@ -87,10 +87,10 @@ circuit = yes
 [transport.telnet]
 ; Static-enabled (always started when built). Port/bind only:
 bind = 0.0.0.0
+bind6 = ::
 port = 2323
 ipv4 = yes
-ipv6 = no
-; bind6 = ::              ; used only when ipv6 = yes
+ipv6 = yes
 
 ; Planned later (not implemented):
 ; [transport.ssh]
@@ -108,10 +108,10 @@ ipv6 = no
 [circuit]
 enabled = yes
 bind = 127.0.0.1
+bind6 = ::1
 port = 7323
 ipv4 = yes
-ipv6 = no
-; bind6 = ::1             ; used only when ipv6 = yes
+ipv6 = yes
 ; Link/repeater edge daemons: password auth only — no TCP ping/pong health checks.
 link_auth = yes
 link_password = changeme

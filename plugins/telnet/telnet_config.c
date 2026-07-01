@@ -75,7 +75,7 @@ void hybbx_telnet_config_defaults(hybbx_telnet_config_t *config)
                   sizeof(config->bind_v6));
     config->port = HYBBX_TELNET_DEFAULT_PORT;
     config->ipv4 = 1;
-    config->ipv6 = 0;
+    config->ipv6 = 1;
 }
 
 hybbx_result_t hybbx_telnet_config_parse(const char *config,
@@ -118,7 +118,7 @@ hybbx_result_t hybbx_telnet_config_parse(const char *config,
 
     value = find_kv(config, "ipv6", scratch, sizeof(scratch));
     if (value != NULL) {
-        out->ipv6 = hybbx_parse_bool(value, 0);
+        out->ipv6 = hybbx_parse_bool(value, 1);
     }
 
     return HYBBX_OK;

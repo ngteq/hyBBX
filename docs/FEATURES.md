@@ -36,7 +36,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Feature | Status | Description |
 |---------|--------|-------------|
 | TCP-only core semantics | Done | Application never parses KISS/AX.25 on-air formats directly |
-| Circuit hub | Done | `[circuit]` TCP listen on IPv4 loopback (default port 7323); optional IPv6 |
+| Circuit hub | Done | `[circuit]` TCP hub IPv4+IPv6 (default port 7323) |
 | HBX v1 framing | Done | Magic `HBX\x01`, proto, flags, length, payload |
 | Protocol `ax25` | Done | Raw AX.25 frame (incl. FCS) RF ↔ core |
 | Protocol `ax25_ui` | Done | UI payload with optional path metadata |
@@ -51,13 +51,13 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| Telnet (TCP) | Done | IPv4 default port 2323; optional IPv6; **static-enabled** (always on when built) |
+| Telnet (TCP) | Done | IPv4 + IPv6 dual-stack, port 2323; **static-enabled** |
 | **hybbx-telnet** client | Done | Pure CLI telnet client — parameters/env only (`build/src/clients/hybbx-telnet`) |
 | **hybbx-terminal** client | Done | Pure CLI AX.25 / HBX circuit terminal (`build/src/clients/hybbx-terminal`) |
 | Link password auth | Done | HBX `LINK_AUTH` on circuit attach — **no** ping/pong health checks |
 | Stale link removal | Done | Links with no password auth for `link_stale_days` (default 10) auto-removed |
 | Auto-generated link codes | Done | Issued on successful link/repeater edge auth to centralized daemon |
-| Telnet dual-stack bind | Done | `ipv4`/`ipv6` toggles; `bind` / `bind6`; IPv6 off by default |
+| Telnet dual-stack bind | Done | `ipv4`/`ipv6` toggles; `bind` / `bind6`; `IPV6_V6ONLY` |
 | Packet radio | Done | AX.25 link adapter; `[networks] ax25 = yes` + `[transport.packet_radio]` |
 | SSH | Planned | Same session core as telnet |
 | WebSocket | Planned | Local endpoint behind reverse-proxy only |

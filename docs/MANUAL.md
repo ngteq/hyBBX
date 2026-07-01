@@ -82,10 +82,10 @@ Reserved protocol IDs (`0x20` APRS, `0x21` NETROM, …) are allocated for future
 [circuit]
 enabled = yes
 bind = 127.0.0.1
+bind6 = ::1
 port = 7323
 ipv4 = yes
-ipv6 = no
-; bind6 = ::1             ; only when ipv6 = yes
+ipv6 = yes
 ```
 
 Packet radio connects as a **link client** (`circuit_host` / `circuit_port` in
@@ -105,13 +105,13 @@ Telnet remains native TCP to the session (no HBX wrapper on the wire).
 [transport.telnet]
 enabled = yes
 bind = 0.0.0.0
+bind6 = ::
 port = 2323
 ipv4 = yes
-ipv6 = no
-; bind6 = ::              ; only when ipv6 = yes
+ipv6 = yes
 ```
 
-Listens on IPv4 by default. Set `ipv6 = yes` (and `bind6`) for an additional IPv6 socket on the same port (`IPV6_V6ONLY` when both are enabled).
+Listens on IPv4 and IPv6 (`IPV6_V6ONLY` so both can share the same port). Set `ipv6 = no` to disable the v6 socket.
 
 ### hybbx-telnet (HyBBX client)
 
