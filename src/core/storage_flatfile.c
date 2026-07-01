@@ -1009,6 +1009,24 @@ hybbx_result_t hybbx_storage_flatfile_count_level(hybbx_storage_t *storage,
     return HYBBX_OK;
 }
 
+hybbx_result_t hybbx_storage_flatfile_foreach_user(hybbx_storage_t *storage,
+                                                   hybbx_storage_user_fn fn,
+                                                   void *ctx)
+{
+    struct flatfile_state *state;
+
+    if (storage == NULL || fn == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    state = storage->backend_data;
+    if (state == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    return foreach_user(state, fn, ctx);
+}
+
 hybbx_result_t hybbx_storage_flatfile_register_user(hybbx_storage_t *storage,
                                                     const hybbx_user_registration_t *reg,
                                                     hybbx_user_record_t *out)

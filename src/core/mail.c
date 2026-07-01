@@ -1052,6 +1052,87 @@ hybbx_result_t hybbx_mail_recycle_empty(hybbx_service_t *service,
     return HYBBX_OK;
 }
 
+#define HYBBX_MAIL_SYSTEM_FROM "system"
+
+typedef struct mail_notify_staff_ctx {
+    hybbx_service_t *service;
+    const hybbx_user_record_t *registered;
+    char subject[HYBBX_MAIL_SUBJECT_MAX];
+    char body[HYBBX_MAIL_BODY_MAX];
+} mail_notify_staff_ctx_t;
+
+static hybbx_result_t mail_notify_staff_cb(const hybbx_user_record_t *user,
+                                           void *ctx)
+{
+    mail_notify_staff_ctx_t *nctx = (mail_notify_staff_ctx_t *)ctx;
+
+    if (user == NULL || nctx == NULL || nctx->registered == NULL) {
+        return HYBBX_OK;
+    }
+
+    if (!user->active || !hybbx_user_level_is_sysop_or_admin(user->level)) {
+        return HYBBX_OK;
+    }
+
+    (void)hybbx_mail_deliver(nctx->service, HYBBX_MAIL_SYSTEM_FROM,
+                             user->username, nctx->subject, nctx->body);
+    return HYBBX_OK;
+}
+
+hybbx_result_t hybbx_mail_notify_staff_registration(hybbx_service_t *service,
+                                                    const hybbx_user_record_t *registered)
+{
+    const hybbx_mail_config_t *mail;
+    hybbx_storage_t *storage;
+    mail_notify_staff_ctx_t ctx;
+    int n;
+
+    if (service == NULL || registered == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    mail = hybbx_service_get_mail(service);
+    if (mail == NULL || !mail->enabled) {
+        return HYBBX_OK;
+    }
+
+    storage = hybbx_service_get_storage(service);
+    if (storage == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    n = snprintf(ctx.subject, sizeof(ctx.subject),
+                 "Registration pending: %s", registered->username);
+    if (n < 0 || (size_t)n >= sizeof(ctx.subject)) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    n = snprintf(ctx.body, sizeof(ctx.body),
+                 "Guest self-registration pending approval.\n\n"
+                 "Username: %s\n"
+                 "Name: %s\n"
+                 "Country: %s\n"
+                 "Location: %s\n"
+                 "Email: %s\n\n"
+                 "Review the profile. If correct, activate with:\n"
+                 "  /activate %s\n",
+                 registered->username,
+                 registered->full_name,
+                 registered->country,
+                 registered->location,
+                 registered->email,
+                 registered->username);
+    if (n < 0 || (size_t)n >= sizeof(ctx.body)) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    ctx.service = service;
+    ctx.registered = registered;
+
+    (void)hybbx_storage_foreach_user(storage, mail_notify_staff_cb, &ctx);
+    return HYBBX_OK;
+}
+
 hybbx_result_t hybbx_mail_deliver(hybbx_service_t *service,
                                   const char *from_user,
                                   const char *to_user,

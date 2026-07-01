@@ -2,6 +2,7 @@
 #define HYBBX_MAIL_H
 
 #include "hybbx/config.h"
+#include "hybbx/storage.h"
 #include "hybbx/types.h"
 
 #include <time.h>
@@ -101,6 +102,14 @@ hybbx_result_t hybbx_mail_deliver(struct hybbx_service *service,
                                   const char *to_user,
                                   const char *subject,
                                   const char *body);
+
+/**
+ * Mail active Sysop and Admin accounts when a guest self-registers.
+ * No-op when mail is disabled. Individual delivery failures are ignored.
+ */
+hybbx_result_t hybbx_mail_notify_staff_registration(
+    struct hybbx_service *service,
+    const hybbx_user_record_t *registered);
 
 #ifdef __cplusplus
 }

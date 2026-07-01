@@ -104,6 +104,17 @@ hybbx_result_t hybbx_storage_count_level(hybbx_storage_t *storage,
                                          hybbx_user_level_t level,
                                          size_t *count);
 
+/**
+ * Iterate all user records. @p fn returns HYBBX_OK to continue; any other
+ * result stops iteration and is returned from this function.
+ */
+typedef hybbx_result_t (*hybbx_storage_user_fn)(const hybbx_user_record_t *user,
+                                                void *ctx);
+
+hybbx_result_t hybbx_storage_foreach_user(hybbx_storage_t *storage,
+                                          hybbx_storage_user_fn fn,
+                                          void *ctx);
+
 hybbx_result_t hybbx_storage_session_begin(hybbx_storage_t *storage,
                                            const hybbx_user_record_t *user,
                                            const char *transport,

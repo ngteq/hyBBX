@@ -378,6 +378,8 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
             "  /register <user> <name> <country> <location> <email>");
         cmd_help_topic_detail(session,
             "  guests only — pending until Sysop or Admin /activate");
+        cmd_help_topic_detail(session,
+            "  Sysop and Admin receive mail to review the registration");
         return HYBBX_OK;
     }
 
@@ -928,8 +930,15 @@ static hybbx_result_t cmd_register_user(hybbx_service_t *service,
         hybbx_session_write_line(session,
             "Account is inactive. Use /activate before the user can log in.");
     } else {
+        const hybbx_mail_config_t *mail_cfg = hybbx_service_get_mail(service);
+
+        (void)hybbx_mail_notify_staff_registration(service, &user);
         hybbx_session_write_line(session,
             "A Sysop or Admin must activate your account before you can log in.");
+        if (mail_cfg != NULL && mail_cfg->enabled) {
+            hybbx_session_write_line(session,
+                "Sysop and Admin were notified by mail.");
+        }
     }
     return HYBBX_OK;
 }

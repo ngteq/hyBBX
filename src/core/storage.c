@@ -169,6 +169,22 @@ hybbx_result_t hybbx_storage_count_level(hybbx_storage_t *storage,
     }
 }
 
+hybbx_result_t hybbx_storage_foreach_user(hybbx_storage_t *storage,
+                                          hybbx_storage_user_fn fn,
+                                          void *ctx)
+{
+    if (storage == NULL || fn == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    switch (storage->backend) {
+    case HYBBX_STORAGE_FLATFILE:
+        return hybbx_storage_flatfile_foreach_user(storage, fn, ctx);
+    default:
+        return HYBBX_ERR_UNSUPPORTED;
+    }
+}
+
 hybbx_result_t hybbx_storage_session_begin(hybbx_storage_t *storage,
                                            const hybbx_user_record_t *user,
                                            const char *transport,
