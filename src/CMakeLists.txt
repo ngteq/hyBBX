@@ -2,6 +2,8 @@ add_library(hybbx_core STATIC
     core/registry.c
     core/service.c
     core/config.c
+    core/circuit.c
+    core/circuit_tcp.c
     core/command.c
     core/command_parse.c
     core/auth.c

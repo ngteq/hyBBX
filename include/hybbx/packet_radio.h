@@ -26,16 +26,17 @@ typedef enum hybbx_packet_radio_device_type {
     HYBBX_PACKET_RADIO_DEVICE_SERIAL = 2
 } hybbx_packet_radio_device_type_t;
 
-typedef struct hybbx_packet_radio_config hybbx_packet_radio_config_t;
+struct hybbx_packet_radio_config;
 
 /**
  * Parse a semicolon-separated key=value transport config string.
  * Missing keys receive HyBBX defaults (TNC2C, USB, KISS @ 2400 baud).
+ * Full config type: include hybbx/tnc.h.
  */
 hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
-                                               hybbx_packet_radio_config_t *out);
+                                               struct hybbx_packet_radio_config *out);
 
-void hybbx_packet_radio_config_free(hybbx_packet_radio_config_t *config);
+void hybbx_packet_radio_config_free(struct hybbx_packet_radio_config *config);
 
 /**
  * Return non-zero when @p baud is valid for packet radio configuration.

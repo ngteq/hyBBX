@@ -1,5 +1,7 @@
 ; HyBBX configuration (installed: etc/hybbx.ini under install prefix).
 ; Paths below are relative to the install prefix when started via hybbx-start.
+;
+; Boolean keys: canonical yes/no; aliases true/false, enable/disable, on/off, 1/0.
 
 [service]
 name = hyBBX
@@ -70,34 +72,93 @@ port = 2323
 ; port = 8080
 ; upstream = reverse-proxy   ; informational; real TLS/HTTP termination on Apache/nginx
 
+; Internal TCP/IPv4+IPv6 circuit hub (HBX framing). Link adapters attach here.
+[circuit]
+enabled = yes
+bind = 127.0.0.1
+bind6 = ::1
+port = 7323
+ipv4 = yes
+ipv6 = yes
+
 [transport.packet_radio]
 enabled = no
 
-; Primary TNC: Landolt TNC2C (https://www.landolt.de/info/afuinfo/tnc2c.htm)
-; RS232/V.24 host link, KISS + host-mode firmware, AX.25 over the air.
+; Link adapter → internal circuit (HBX over TCP)
+circuit_host = 127.0.0.1
+circuit_port = 7323
+
+; --- TNC profiles: tnc2c | baycom | pccom | generic ---
+; --- Protocols: kiss | hostmode | 6pack ---
 tnc = tnc2c
 protocol = kiss
 
-; Host serial: any baud rate (TNC2C documents 300..38400 on 10 MHz version)
+; Host serial (2400 baud is the HyBBX default for packet links)
 device_type = usb
 device = /dev/ttyUSB0
 baud = 2400
 
-; Radio/modem side (TCM 3105 default = 1200; optional 9600/19200 modems)
+; AX.25 addresses (optional; required for over-the-air UI frames)
+; mycall = DL1ABC-0
+; dest = DL9XYZ-0
+; via = RELAY-7,WIDE1-1
+; host_connect = no
+
+; Radio/modem side (TCM 3105 default = 1200; optional 9600/19200 on TNC2C-H)
 modem = tcm3105
 radio_baud = 1200
 clock_mhz = 4.9
 
-; KISS parameters (applied after "kiss on" host command when needed)
+; KISS parameters (applied after "kiss on" when kiss_on_startup = yes)
 kiss_port = 0
 kiss_on_startup = yes
 txdelay = 50
 persist = 128
 slot = 10
 txtail = 0
+
+; RF band and duplex (CB = half-duplex only; amateur may use full-duplex)
+; radio_band = cb | amateur
+; radio_duplex = half | full
+; Legacy alias: fullduplex = yes | no  (maps to radio_duplex when unset)
+radio_band = amateur
+radio_duplex = half
 fullduplex = no
 
-; Classic RS232/COM port example (1200 baud radio):
+; Over-the-air modulation (CB and amateur)
+; g3ruh_fsk = yes enables G3RUH 9600 baud FSK (higher throughput; needs compatible modem)
+; modulation = afsk | g3ruh  (alias for g3ruh_fsk)
+g3ruh_fsk = no
+
+; --- Albrecht PC-COM (CB, half-duplex only) ---
+; tnc = pccom
+; protocol = hostmode
+; radio_band = cb
+; radio_duplex = half
+; baud = 2400
+; mycall = DL1ABC-0
+; dest = DL9XYZ-0
+; host_connect = yes
+
+; --- BayCom-class modem (CB, half-duplex) ---
+; tnc = baycom
+; protocol = kiss
+; radio_band = cb
+; radio_duplex = half
+; baud = 2400
+; radio_baud = 1200
+; g3ruh_fsk = no
+
+; --- CB with G3RUH 9600 FSK (experimental; requires G3RUH-capable TNC/modem) ---
+; tnc = tnc2c
+; radio_band = cb
+; radio_duplex = half
+; g3ruh_fsk = yes
+; protocol = kiss
+; modem = 9600
+; radio_baud = 9600
+
+; Classic RS232/COM port example:
 ; device_type = serial
 ; device = /dev/ttyS0
 ; baud = 9600

@@ -4,45 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int str_ieq(const char *a, const char *b)
-{
-    if (a == NULL || b == NULL) {
-        return 0;
-    }
-
-    while (*a != '\0' && *b != '\0') {
-        char ca = (char)(*a >= 'A' && *a <= 'Z' ? *a + 32 : *a);
-        char cb = (char)(*b >= 'A' && *b <= 'Z' ? *b + 32 : *b);
-
-        if (ca != cb) {
-            return 0;
-        }
-        a++;
-        b++;
-    }
-
-    return *a == '\0' && *b == '\0';
-}
-
-static int parse_bool(const char *value, int default_value)
-{
-    if (value == NULL || value[0] == '\0') {
-        return default_value;
-    }
-
-    if (str_ieq(value, "yes") || str_ieq(value, "true") ||
-        str_ieq(value, "on") || str_ieq(value, "1")) {
-        return 1;
-    }
-
-    if (str_ieq(value, "no") || str_ieq(value, "false") ||
-        str_ieq(value, "off") || str_ieq(value, "0")) {
-        return 0;
-    }
-
-    return default_value;
-}
-
 static unsigned int parse_port(const char *value)
 {
     char *end;
@@ -155,12 +116,12 @@ hybbx_result_t hybbx_telnet_config_parse(const char *config,
 
     value = find_kv(config, "ipv4", scratch, sizeof(scratch));
     if (value != NULL) {
-        out->ipv4 = parse_bool(value, 1);
+        out->ipv4 = hybbx_parse_bool(value, 1);
     }
 
     value = find_kv(config, "ipv6", scratch, sizeof(scratch));
     if (value != NULL) {
-        out->ipv6 = parse_bool(value, 1);
+        out->ipv6 = hybbx_parse_bool(value, 1);
     }
 
     return HYBBX_OK;

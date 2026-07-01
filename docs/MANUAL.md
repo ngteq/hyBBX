@@ -1,12 +1,19 @@
 # HyBBX manual
 
-Full reference for operators and developers. For a short overview and quick start, see [README.md](../README.md).
+Full reference for operators and developers.
+
+**What HyBBX is:** a **service solution for different connection types** (telnet, packet radio, planned SSH/WebSocket), **based on and inspired by** BBS and mailbox traditions. HyBBX is **not** a new standalone BBS or mailbox system — it is a link-agnostic platform with familiar session UX.
+
+- Presentation & links: [README.md](../README.md)
+- Feature inventory: [FEATURES.md](FEATURES.md)
+- Quick start: [QUICKSTART.md](QUICKSTART.md)
+- All docs: [INDEX.md](INDEX.md)
 
 ## Connection types
 
 | Transport       | Status   | Description |
 |-----------------|----------|-------------|
-| TCP/IP Telnet   | Started  | Classic BBS access over TCP |
+| TCP/IP Telnet   | Started  | BBS-inspired terminal access over TCP |
 | Packet Radio    | Started  | TNC2C (KISS/AX.25), any baud; USB/RS232 |
 | SSH             | Planned  | Secure shell (transport plugin) |
 | WebSocket       | Planned  | Forward-proxy behind Apache/nginx only |
@@ -51,6 +58,53 @@ Plugins implement `hybbx_transport_plugin_t` in `include/hybbx/plugin.h`.
 
 HyBBX reads `-c` / `--config`. Example: `share/hybbx.ini.example`.
 
+### Boolean values (HyBBX standard)
+
+All yes/no configuration keys use the same parser (`hybbx_parse_bool` in
+`include/hybbx/util.h`). HyBBX writes the canonical form **`yes`** / **`no`**.
+
+| Meaning | Accepted values (case-insensitive) |
+|---------|-----------------------------------|
+| True | `yes`, `true`, `enable`, `enabled`, `on`, `1` |
+| False | `no`, `false`, `disable`, `disabled`, `off`, `0` |
+
+Examples: `enabled = yes`, `pace_output = enable`, `ansi = false`,
+`g3ruh_fsk = disable`, `auto_login = 1`.
+
+### Internal circuit (HBX over TCP/IPv4+IPv6)
+
+HyBBX core speaks **only TCP**. Link adapters (packet radio, future stacks) attach to an
+internal circuit hub on loopback. Payloads are wrapped in **HBX v1** frames:
+
+| HBX `proto` | Payload | Direction |
+|-------------|---------|-----------|
+| `ax25` (0x01) | Raw AX.25 frame incl. FCS | RF → core |
+| `ax25_ui` (0x02) | Masked path + UI bytes | Optional metadata |
+| `terminal` (0x10) | BBS byte stream | Core ↔ RF TX |
+
+Reserved protocol IDs (`0x20` APRS, `0x21` NETROM, …) are allocated for future stacks.
+
+```ini
+[circuit]
+enabled = yes
+bind = 127.0.0.1
+bind6 = ::1
+port = 7323
+ipv4 = yes
+ipv6 = yes
+```
+
+Packet radio connects as a **link client** (`circuit_host` / `circuit_port` in
+`[transport.packet_radio]`). The hub opens a `circuit` session and bridges HBX frames
+to `hybbx_session` — the application never parses KISS or AX.25 directly.
+
+```
+  RF (AX.25)  →  TNC  →  packet_radio  →  HBX/TCP  →  circuit hub  →  session
+  session     →  circuit hub  →  HBX/TCP  →  packet_radio  →  TNC  →  RF
+```
+
+Telnet remains native TCP to the session (no HBX wrapper on the wire).
+
 ### Telnet
 
 ```ini
@@ -83,9 +137,47 @@ ansi = no
 
 Default: plain ASCII, 40-column wrap, paced 8N1 output. Set `ansi = yes` for telnet gray-on-black (`ANSI 37;40`). Keep `text/*.txt` lines within **40 characters** when possible.
 
-### Packet radio / TNC2C
+### Packet radio / AX.25 TNC stack
 
-Primary TNC: [Landolt TNC2C](https://www.landolt.de/info/afuinfo/tnc2c.htm). RS232/V.24 (USB-serial) with **KISS** or **hostmode**.
+HyBBX implements an **AX.25 UI frame layer** and a unified TNC driver with three host protocols:
+
+| Protocol | Use |
+|----------|-----|
+| `kiss` | KISS (Mike Chepponis) — default for TNC2C and BayCom |
+| `hostmode` | TNC2 command prompt / connected converse — default for PC-COM |
+| `6pack` | 6PACK (DF6BU) — alternative serial framing |
+
+**TNC profiles** (`tnc=`):
+
+| Profile | Hardware | Default host baud | Default radio | Notes |
+|---------|----------|-------------------|---------------|-------|
+| `tnc2c` | [Landolt TNC2C](https://www.landolt.de/info/afuinfo/tnc2c.htm) | 2400 | 1200 (TCM3105) | Primary test device |
+| `baycom` | BayCom-class modems (TCM3105 AFSK) | 2400 | 1200 | KISS or host/6PACK over RS-232 |
+| `pccom` | Albrecht PC-COM CB packet modem | 2400 | 1200 | TNC2 host mode, TCM3105 |
+| `generic` | Any TNC2/KISS TNC | 2400 | configurable | User supplies all parameters |
+
+**RF band and duplex** — CB packet is **half-duplex** only (one direction at a time on a shared channel). Amateur setups may use **full-duplex** when the radio/TNC supports it (split frequency, separate RX while TX).
+
+| `radio_band` | Duplex allowed | Typical use |
+|--------------|----------------|-------------|
+| `cb` | half only | PC-COM, BayCom on 11 m CB |
+| `amateur` | half or `full` | TNC2C, 2 m / 70 cm packet |
+
+| `radio_duplex` | Meaning | TNC firmware |
+|----------------|---------|--------------|
+| `half` | Half-duplex (duplex) — wait after RX before TX | KISS full-duplex=0, `FULLDUP OFF` |
+| `full` | Full-duplex — TX while RX possible | KISS full-duplex=1, `FULLDUP ON` |
+
+`radio_duplex=full` is **rejected** when `radio_band=cb`. Legacy `fullduplex=yes|no` maps to `radio_duplex` when `radio_duplex` is not set.
+
+**Modulation** — classic CB/amateur packet uses **AFSK** (Bell 202 / TCM3105 @ 1200 baud). **G3RUH FSK** @ 9600 baud offers higher throughput when the TNC and radio support it.
+
+| Key | Values | Effect |
+|-----|--------|--------|
+| `g3ruh_fsk` | `yes` / `no` | Enable G3RUH 9600 FSK (`yes`) or AFSK 1200 (`no`, default) |
+| `modulation` | `afsk`, `g3ruh` | Alias for `g3ruh_fsk` (`modulation=g3ruh` ≡ `g3ruh_fsk=yes`) |
+
+When `g3ruh_fsk=yes`, HyBBX sets `modem=9600`, `radio_baud=9600`, TNC2C `clock_mhz=9.8` (if unset), G3RUH-oriented `txdelay`/`slot`, sends `MODEM 9600` / `HB 9600` to the TNC before KISS or host mode, and tags HBX uplink frames with `G3RUH_FSK`. CB remains half-duplex only.
 
 ```ini
 [transport.packet_radio]
@@ -97,18 +189,89 @@ device = /dev/ttyUSB0
 baud = 2400
 modem = tcm3105
 radio_baud = 1200
-clock_mhz = 4.9
+mycall = DL1ABC-0
+dest = DL9XYZ-0
+via = RELAY-7,WIDE1-1
+radio_band = amateur
+radio_duplex = half
 kiss_on_startup = yes
+host_connect = no
 ```
 
-| TNC2C feature | HyBBX |
-|---------------|-------|
-| RS232 host port | `device`, `device_type` |
-| KISS / host-mode | `protocol = kiss` or `hostmode` |
-| TCM 3105 @ 1200 | `modem = tcm3105`, `radio_baud = 1200` |
-| 9600 / 19200 modems | `modem = 9600` / `19200` |
-| 4.9 / 9.8 / 10 MHz | `clock_mhz` |
-| Any host baud | `baud` (platform serial) |
+**TNC2C example** (Landolt, amateur full-duplex capable):
+
+```ini
+tnc = tnc2c
+protocol = kiss
+radio_band = amateur
+radio_duplex = full
+clock_mhz = 4.9
+txdelay = 50
+persist = 128
+slot = 10
+```
+
+**TNC2C half-duplex** (default, safe on shared channels):
+
+```ini
+tnc = tnc2c
+radio_band = amateur
+radio_duplex = half
+```
+
+**PC-COM example** (Albrecht CB, half-duplex only):
+
+```ini
+tnc = pccom
+protocol = hostmode
+radio_band = cb
+radio_duplex = half
+baud = 2400
+mycall = DL1ABC-0
+dest = DL9XYZ-0
+host_connect = yes
+```
+
+**BayCom example** (CB half-duplex, KISS @ 2400 baud host):
+
+```ini
+tnc = baycom
+protocol = kiss
+radio_band = cb
+radio_duplex = half
+baud = 2400
+radio_baud = 1200
+```
+
+**CB G3RUH FSK example** (9600 baud, half-duplex, G3RUH-capable hardware):
+
+```ini
+tnc = tnc2c
+protocol = kiss
+radio_band = cb
+radio_duplex = half
+g3ruh_fsk = yes
+baud = 2400
+```
+
+| Key | Description |
+|-----|-------------|
+| `tnc` | `tnc2c`, `baycom`, `pccom`, `generic` |
+| `protocol` | `kiss`, `hostmode`, `6pack` |
+| `device`, `device_type`, `baud` | Host serial link |
+| `modem`, `radio_baud`, `clock_mhz` | Radio-side metadata (TNC2C) |
+| `mycall`, `dest` / `dest_call` | AX.25 addresses (`CALL` or `CALL-SSID`) |
+| `via` | Comma-separated digipeater list |
+| `radio_band` | `cb` or `amateur` (sets safe duplex defaults) |
+| `radio_duplex` | `half` or `full` (`duplex` alias for half) |
+| `g3ruh_fsk` | `yes` / `no` — G3RUH 9600 FSK vs AFSK 1200 (default `no`; HyBBX boolean aliases apply) |
+| `modulation` | `afsk` or `g3ruh` (alias for `g3ruh_fsk`) |
+| `kiss_port`, `kiss_on_startup` | KISS mode control |
+| `txdelay`, `persist`, `slot`, `txtail` | KISS/TNC2 timing |
+| `fullduplex` | Legacy boolean → `radio_duplex` when unset (HyBBX yes/no standard) |
+| `host_connect` | Auto `C <dest>` in host mode on startup |
+
+True BayCom `ser12` kernel modems (non-async serial) require the Linux `baycom` driver and `kissattach`; HyBBX talks to a **KISS or TNC2 host port** on RS-232/USB.
 
 ### Service, auth, chat
 
@@ -296,14 +459,16 @@ Install layout under prefix: `bin/hybbx`, `bin/hybbx-start`, `etc/hybbx.ini`, `t
 
 | Option | Default |
 |--------|---------|
-| `HYBBX_BUILD_PLUGINS` | ON |
-| `HYBBX_PLUGIN_TELNET` | ON |
-| `HYBBX_PLUGIN_PACKET_RADIO` | ON |
-| `HYBBX_BUILD_TESTS` | OFF |
-| `HYBBX_HARDENING` | ON |
-| `HYBBX_WARNINGS_AS_ERRORS` | OFF |
-| `HYBBX_CRYPTO_OPENSSL` | OFF |
-| `HYBBX_CRYPTO_LIBSODIUM` | OFF |
+| `HYBBX_BUILD_PLUGINS` | ON | Build transport plugins |
+| `HYBBX_PLUGIN_TELNET` | ON | Telnet plugin |
+| `HYBBX_PLUGIN_PACKET_RADIO` | ON | Packet radio plugin |
+| `HYBBX_BUILD_TESTS` | OFF | Test targets |
+| `HYBBX_HARDENING` | ON | Compiler security flags |
+| `HYBBX_WARNINGS_AS_ERRORS` | OFF | Treat warnings as errors |
+| `HYBBX_CRYPTO_OPENSSL` | OFF | OpenSSL crypto backends |
+| `HYBBX_CRYPTO_LIBSODIUM` | OFF | libsodium ChaCha/X25519 backends |
+
+See [BUILD.md](BUILD.md) for descriptions and toolchain notes.
 
 ### Hardening
 
@@ -316,3 +481,17 @@ cmake -B build-amiga \
   -DCMAKE_TOOLCHAIN_FILE=cmake/Toolchain-AmigaOS.cmake \
   -DAMIGA_SDK_PATH=/path/to/amiga-sdk
 ```
+
+## Licensing
+
+HyBBX is licensed under **GNU GPL v3** — see [LICENSE.txt](../LICENSE.txt).
+
+Bundled third-party code under `third_party/` is compiled into `hybbx_core` (or plugins) and retains its own license. When you distribute binaries, include attribution for these components as required by their licenses:
+
+| Component | Path | License |
+|-----------|------|---------|
+| Monocypher | `third_party/monocypher/` | BSD-2-Clause **or** CC0-1.0 (dual-licensed; SPDX in headers) |
+| tiny-AES-c | `third_party/tinyaes/` | Public domain ([kokke/tiny-AES-c](https://github.com/kokke/tiny-AES-c)) |
+| tinysha256 | `third_party/tinysha256/` | The Unlicense (adapted from [983/SHA-256](https://github.com/983/SHA-256)) |
+
+Optional build-time backends (OpenSSL, libsodium) are linked externally when enabled via CMake; their license terms apply to those libraries, not to the HyBBX sources themselves.

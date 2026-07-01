@@ -1,0 +1,39 @@
+# HyBBX repository layout
+
+Source tree overview for developers. HyBBX is a multi-transport **service platform** inspired by BBS/mailbox UX — see [README.md](../README.md). Public API headers live under `include/hybbx/`.
+
+```
+hyBBX/
+  include/hybbx/          Public C API (config, session, plugin, circuit, tnc, …)
+  src/
+    core/                 Service, sessions, storage, crypto, traffic, circuit hub
+    main.c                Entry point, plugin registration
+  plugins/
+    telnet/               TCP/IPv4+IPv6 telnet link adapter
+    packet_radio/         AX.25 + TNC stack (TNC2C, BayCom, PC-COM); HBX client
+  third_party/            Bundled crypto (tinysha256, Monocypher, tiny-AES-c)
+  text/                   banner.txt, motd.txt, news.txt (BBS texts)
+  share/                  hybbx.ini.example (shipped config sample)
+  local/                  Local dev config and data (not required for install)
+  scripts/                hybbx.sh dev start helper
+  cmake/                  CMake modules, AmigaOS toolchain file
+  docs/                   Documentation (FEATURES, MANUAL, QUICKSTART, …)
+```
+
+## Main components
+
+| Path | Role |
+|------|------|
+| `src/core/service.c` | Config apply, transport plugins, circuit hub, session attachment |
+| `src/core/circuit*.c` | HBX framing and internal TCP hub (IPv4/IPv6) |
+| `src/core/session.c` | Per-connection BBS-inspired session, areas, I/O |
+| `src/core/command.c` | `/` command dispatch and privileges |
+| `src/core/storage_flatfile.c` | INI user shards, legacy migration |
+| `plugins/packet_radio/` | KISS, 6PACK, TNC2 host mode, AX.25, TNC profiles |
+| `plugins/telnet/` | Minimal RFC telnet over TCP |
+
+Plugin interface: `include/hybbx/plugin.h` (`hybbx_transport_plugin_t`).
+
+Build system: top-level `CMakeLists.txt`, `src/CMakeLists.txt`, per-plugin `CMakeLists.txt`.
+
+See also: [BUILD.md](BUILD.md), [MANUAL.md — Architecture](MANUAL.md#architecture).

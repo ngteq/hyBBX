@@ -1,0 +1,66 @@
+#ifndef HYBBX_CIRCUIT_TCP_H
+#define HYBBX_CIRCUIT_TCP_H
+
+/**
+ * Internal TCP/IPv4+IPv6 circuit hub.
+ *
+ * Listens on loopback, accepts one link-adapter connection (packet radio, …),
+ * unwraps HBX frames into hybbx_session, and wraps session output back to HBX.
+ */
+
+#include "hybbx/circuit.h"
+#include "hybbx/service.h"
+#include "hybbx/types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct hybbx_circuit_hub hybbx_circuit_hub_t;
+
+typedef struct hybbx_circuit_config {
+    char bind4[64];
+    char bind6[64];
+    unsigned port;
+    int ipv4;
+    int ipv6;
+} hybbx_circuit_config_t;
+
+/** Internal transport plugin used for sessions bridged over the circuit hub. */
+extern const hybbx_transport_plugin_t hybbx_plugin_circuit;
+
+void hybbx_circuit_config_defaults(hybbx_circuit_config_t *cfg);
+
+hybbx_circuit_hub_t *hybbx_circuit_hub_create(hybbx_service_t *service);
+void hybbx_circuit_hub_destroy(hybbx_circuit_hub_t *hub);
+
+hybbx_result_t hybbx_circuit_hub_start(hybbx_circuit_hub_t *hub,
+                                       const hybbx_circuit_config_t *cfg);
+
+void hybbx_circuit_hub_stop(hybbx_circuit_hub_t *hub);
+
+int hybbx_circuit_hub_running(const hybbx_circuit_hub_t *hub);
+
+unsigned hybbx_circuit_hub_port(const hybbx_circuit_hub_t *hub);
+
+/**
+ * Send a pre-encoded HBX frame to the attached link adapter.
+ */
+hybbx_result_t hybbx_circuit_hub_send_raw(hybbx_circuit_hub_t *hub,
+                                          const uint8_t *frame, size_t len);
+
+/** Link adapter: connect to the internal circuit hub (TCP client). */
+hybbx_result_t hybbx_circuit_link_connect(const char *host, unsigned port,
+                                        int *out_fd);
+
+hybbx_result_t hybbx_circuit_link_write(int fd, const uint8_t *frame,
+                                        size_t len);
+
+hybbx_result_t hybbx_circuit_link_read(int fd, uint8_t *buf, size_t buf_len,
+                                       size_t *read_len);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* HYBBX_CIRCUIT_TCP_H */

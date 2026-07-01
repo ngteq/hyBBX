@@ -1,5 +1,6 @@
 #include "hybbx/config.h"
 #include "hybbx/limits.h"
+#include "hybbx/util.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -7,26 +8,6 @@
 #include <string.h>
 
 #define HYBBX_CONFIG_INITIAL_CAP 32
-
-static int hybbx_strcasecmp(const char *a, const char *b)
-{
-    if (a == NULL || b == NULL) {
-        return (a != NULL) - (b != NULL);
-    }
-
-    while (*a != '\0' && *b != '\0') {
-        unsigned char ca = (unsigned char)tolower((unsigned char)*a);
-        unsigned char cb = (unsigned char)tolower((unsigned char)*b);
-
-        if (ca != cb) {
-            return (int)ca - (int)cb;
-        }
-        a++;
-        b++;
-    }
-
-    return (int)(unsigned char)*a - (int)(unsigned char)*b;
-}
 
 static char *hybbx_strdup(const char *s)
 {
@@ -271,17 +252,7 @@ int hybbx_config_get_bool(const hybbx_config_t *config,
         return default_value;
     }
 
-    if (hybbx_strcasecmp(value, "yes") == 0 || hybbx_strcasecmp(value, "true") == 0 ||
-        strcmp(value, "1") == 0) {
-        return 1;
-    }
-
-    if (hybbx_strcasecmp(value, "no") == 0 || hybbx_strcasecmp(value, "false") == 0 ||
-        strcmp(value, "0") == 0) {
-        return 0;
-    }
-
-    return default_value;
+    return hybbx_parse_bool(value, default_value);
 }
 
 unsigned hybbx_config_get_uint(const hybbx_config_t *config,

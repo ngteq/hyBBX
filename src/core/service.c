@@ -3,6 +3,7 @@
 #include "hybbx/config.h"
 #include "hybbx/crypto_config.h"
 #include "hybbx/traffic.h"
+#include "hybbx/circuit_tcp.h"
 #include "hybbx/auth.h"
 #include "hybbx/storage.h"
 #include "hybbx/texts.h"
@@ -62,6 +63,7 @@ struct hybbx_service_internal {
     hybbx_chat_config_t chat;
     active_transport_t transports[HYBBX_MAX_ACTIVE_TRANSPORTS];
     size_t transport_count;
+    hybbx_circuit_hub_t *circuit_hub;
     int running;
 };
 
@@ -118,6 +120,11 @@ void hybbx_service_destroy(hybbx_service_t *service)
     }
 
     hybbx_service_stop(service);
+
+    if (svc->circuit_hub != NULL) {
+        hybbx_circuit_hub_destroy(svc->circuit_hub);
+        svc->circuit_hub = NULL;
+    }
 
     for (i = 0; i < svc->transport_count; i++) {
         if (svc->transports[i].running &&
@@ -517,6 +524,47 @@ static void service_apply_auth(struct hybbx_service_internal *svc,
     printf("[service] guest_timeout_minutes=%u\n", svc->guest_timeout_minutes);
 }
 
+static hybbx_result_t service_apply_circuit(struct hybbx_service_internal *svc,
+                                            const hybbx_config_t *config)
+{
+    hybbx_circuit_config_t cfg;
+    const char *bind4;
+    const char *bind6;
+    hybbx_result_t rc;
+
+    if (!hybbx_config_get_bool(config, "circuit", "enabled", 1)) {
+        if (svc->circuit_hub != NULL) {
+            hybbx_circuit_hub_stop(svc->circuit_hub);
+        }
+        return HYBBX_OK;
+    }
+
+    hybbx_circuit_config_defaults(&cfg);
+    bind4 = hybbx_config_get(config, "circuit", "bind", NULL);
+    bind6 = hybbx_config_get(config, "circuit", "bind6", NULL);
+    if (bind4 != NULL && bind4[0] != '\0') {
+        hybbx_strlcpy(cfg.bind4, bind4, sizeof(cfg.bind4));
+    }
+    if (bind6 != NULL && bind6[0] != '\0') {
+        hybbx_strlcpy(cfg.bind6, bind6, sizeof(cfg.bind6));
+    }
+
+    cfg.port = hybbx_config_get_uint(config, "circuit", "port",
+                                     HYBBX_CIRCUIT_DEFAULT_PORT, 1u, 65535u);
+    cfg.ipv4 = hybbx_config_get_bool(config, "circuit", "ipv4", 1);
+    cfg.ipv6 = hybbx_config_get_bool(config, "circuit", "ipv6", 1);
+
+    if (svc->circuit_hub == NULL) {
+        svc->circuit_hub = hybbx_circuit_hub_create((hybbx_service_t *)svc);
+        if (svc->circuit_hub == NULL) {
+            return HYBBX_ERR_NOMEM;
+        }
+    }
+
+    rc = hybbx_circuit_hub_start(svc->circuit_hub, &cfg);
+    return rc;
+}
+
 hybbx_result_t hybbx_service_load_transport(hybbx_service_t *service,
                                             const char *plugin_name)
 {
@@ -737,6 +785,11 @@ hybbx_result_t hybbx_service_apply_config(hybbx_service_t *service,
     hybbx_traffic_config_apply(config);
 
     rc = service_open_storage(svc, config);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    rc = service_apply_circuit(svc, config);
     if (rc != HYBBX_OK) {
         return rc;
     }

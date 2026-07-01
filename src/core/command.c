@@ -76,7 +76,7 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
 
 static int cmd_deleteme_confirmed(const char *arg)
 {
-    return arg != NULL && (str_ieq(arg, "yes") || str_ieq(arg, "true"));
+    return arg != NULL && hybbx_bool_is_true(arg);
 }
 
 static int cmd_help_shows_deleteme(hybbx_user_level_t level)

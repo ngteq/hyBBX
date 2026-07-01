@@ -432,7 +432,7 @@ static hybbx_result_t save_user_shard(const struct flatfile_state *state,
         fprintf(fp, "id = %llu\n", (unsigned long long)user->id);
         fprintf(fp, "username = %s\n", user->username);
         fprintf(fp, "level = %s\n", hybbx_user_level_name(user->level));
-        fprintf(fp, "active = %s\n", user->active ? "yes" : "no");
+        fprintf(fp, "active = %s\n", hybbx_bool_to_string(user->active));
         fprintf(fp, "created = %lld\n", (long long)user->created_at);
         fprintf(fp, "fullname = %s\n", user->full_name);
         fprintf(fp, "country = %s\n", user->country);

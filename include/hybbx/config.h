@@ -33,7 +33,7 @@ const char *hybbx_config_get(const hybbx_config_t *config,
                              const char *key,
                              const char *default_value);
 
-/** Parse yes/no, true/false, 1/0 (case-insensitive). */
+/** Parse HyBBX boolean tokens (yes/no and aliases; see hybbx_parse_bool). */
 int hybbx_config_get_bool(const hybbx_config_t *config,
                           const char *section,
                           const char *key,

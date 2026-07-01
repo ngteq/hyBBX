@@ -1,5 +1,7 @@
 #include "hybbx/packet_radio.h"
-#include "hybbx/tnc2c.h"
+#include "hybbx/tnc.h"
+#include "hybbx/circuit.h"
+#include "hybbx/util.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -111,7 +113,16 @@ static hybbx_packet_radio_tnc_t parse_tnc(const char *value)
         return HYBBX_PACKET_RADIO_TNC_TNC2C;
     }
 
-    if (str_ieq(value, "generic")) {
+    if (str_ieq(value, "baycom") || str_ieq(value, "bay-com")) {
+        return HYBBX_PACKET_RADIO_TNC_BAYCOM;
+    }
+
+    if (str_ieq(value, "pccom") || str_ieq(value, "pc-com") ||
+        str_ieq(value, "albrecht")) {
+        return HYBBX_PACKET_RADIO_TNC_PCCOM;
+    }
+
+    if (str_ieq(value, "generic") || str_ieq(value, "tnc")) {
         return HYBBX_PACKET_RADIO_TNC_GENERIC;
     }
 
@@ -124,8 +135,13 @@ static hybbx_packet_radio_protocol_t parse_protocol(const char *value)
         return HYBBX_PACKET_RADIO_PROTO_KISS;
     }
 
-    if (str_ieq(value, "hostmode") || str_ieq(value, "host")) {
+    if (str_ieq(value, "hostmode") || str_ieq(value, "host") ||
+        str_ieq(value, "tnc2")) {
         return HYBBX_PACKET_RADIO_PROTO_HOSTMODE;
+    }
+
+    if (str_ieq(value, "6pack") || str_ieq(value, "sixpack")) {
+        return HYBBX_PACKET_RADIO_PROTO_SIXPACK;
     }
 
     return HYBBX_PACKET_RADIO_PROTO_KISS;
@@ -138,6 +154,11 @@ static hybbx_tnc2c_modem_t parse_modem(const char *value)
     }
 
     if (str_ieq(value, "9600")) {
+        return HYBBX_TNC2C_MODEM_9600;
+    }
+
+    if (str_ieq(value, "g3ruh") || str_ieq(value, "g3ruh_fsk") ||
+        str_ieq(value, "fsk9600")) {
         return HYBBX_TNC2C_MODEM_9600;
     }
 
@@ -182,21 +203,61 @@ static unsigned int parse_uint(const char *value, unsigned int default_value)
     return (unsigned int)n;
 }
 
-static int parse_bool(const char *value, int default_value)
+static hybbx_packet_radio_band_t parse_radio_band(const char *value)
 {
-    if (value == NULL) {
-        return default_value;
+    if (value == NULL || value[0] == '\0') {
+        return HYBBX_PACKET_RADIO_BAND_UNSET;
     }
 
-    if (str_ieq(value, "yes") || str_ieq(value, "true") || strcmp(value, "1") == 0) {
-        return 1;
+    if (str_ieq(value, "cb") || str_ieq(value, "11m") ||
+        str_ieq(value, "27mhz") || str_ieq(value, "citizen")) {
+        return HYBBX_PACKET_RADIO_BAND_CB;
     }
 
-    if (str_ieq(value, "no") || str_ieq(value, "false") || strcmp(value, "0") == 0) {
-        return 0;
+    if (str_ieq(value, "amateur") || str_ieq(value, "ham") ||
+        str_ieq(value, "amateurfunk") || str_ieq(value, "afu")) {
+        return HYBBX_PACKET_RADIO_BAND_AMATEUR;
     }
 
-    return default_value;
+    return HYBBX_PACKET_RADIO_BAND_UNSET;
+}
+
+static hybbx_packet_radio_duplex_t parse_radio_duplex(const char *value)
+{
+    if (value == NULL || value[0] == '\0') {
+        return HYBBX_PACKET_RADIO_DUPLEX_UNSET;
+    }
+
+    if (str_ieq(value, "full") || str_ieq(value, "full-duplex") ||
+        str_ieq(value, "fullduplex") || str_ieq(value, "fulldup")) {
+        return HYBBX_PACKET_RADIO_DUPLEX_FULL;
+    }
+
+    if (str_ieq(value, "half") || str_ieq(value, "half-duplex") ||
+        str_ieq(value, "duplex") || str_ieq(value, "simplex")) {
+        return HYBBX_PACKET_RADIO_DUPLEX_HALF;
+    }
+
+    return HYBBX_PACKET_RADIO_DUPLEX_UNSET;
+}
+
+static hybbx_packet_radio_modulation_t parse_modulation(const char *value)
+{
+    if (value == NULL || value[0] == '\0') {
+        return HYBBX_PACKET_RADIO_MOD_UNSET;
+    }
+
+    if (str_ieq(value, "g3ruh") || str_ieq(value, "g3ruh_fsk") ||
+        str_ieq(value, "fsk9600") || str_ieq(value, "9600fsk")) {
+        return HYBBX_PACKET_RADIO_MOD_G3RUH_FSK;
+    }
+
+    if (str_ieq(value, "afsk") || str_ieq(value, "bell202") ||
+        str_ieq(value, "tcm3105") || str_ieq(value, "1200")) {
+        return HYBBX_PACKET_RADIO_MOD_AFSK;
+    }
+
+    return HYBBX_PACKET_RADIO_MOD_UNSET;
 }
 
 static unsigned int default_radio_baud_for_modem(hybbx_tnc2c_modem_t modem)
@@ -212,6 +273,36 @@ static unsigned int default_radio_baud_for_modem(hybbx_tnc2c_modem_t modem)
     }
 }
 
+static hybbx_result_t parse_via_list(hybbx_packet_radio_config_t *out,
+                                     const char *value)
+{
+    char scratch[256];
+    char *cursor;
+    char *token;
+
+    if (value == NULL || value[0] == '\0') {
+        return HYBBX_OK;
+    }
+
+    if (strlen(value) >= sizeof(scratch)) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    memcpy(scratch, value, strlen(value) + 1);
+    cursor = scratch;
+
+    while ((token = strtok(cursor, ",")) != NULL && out->via_count < HYBBX_PACKET_RADIO_VIA_MAX) {
+        char *item = hybbx_strdup(token);
+        if (item == NULL) {
+            return HYBBX_ERR_NOMEM;
+        }
+        out->via[out->via_count++] = item;
+        cursor = NULL;
+    }
+
+    return HYBBX_OK;
+}
+
 int hybbx_packet_radio_baud_valid(unsigned int baud)
 {
     return baud > 0;
@@ -223,6 +314,7 @@ hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
     char scratch[256];
     const char *value;
     unsigned long baud;
+    hybbx_result_t rc;
 
     if (out == NULL) {
         return HYBBX_ERR_INVALID;
@@ -231,17 +323,20 @@ hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
     memset(out, 0, sizeof(*out));
 
     out->tnc = HYBBX_PACKET_RADIO_TNC_TNC2C;
-    out->protocol = HYBBX_PACKET_RADIO_PROTO_KISS;
-    out->tnc2c.clock_mhz = HYBBX_TNC2C_CLOCK_4_9_MHZ;
-    out->tnc2c.modem = HYBBX_TNC2C_MODEM_TCM3105;
-    out->tnc2c.radio_baud = HYBBX_TNC2C_DEFAULT_RADIO_BAUD;
-    out->tnc2c.kiss_port = 0;
-    out->tnc2c.txdelay = 50;
-    out->tnc2c.persist = 128;
-    out->tnc2c.slot = 10;
-    out->tnc2c.txtail = 0;
-    out->tnc2c.fullduplex = 0;
-    out->tnc2c.kiss_on_startup = 1;
+    out->protocol = 0; /* profile may choose */
+    out->params.clock_mhz = HYBBX_TNC2C_CLOCK_4_9_MHZ;
+    out->params.modem = HYBBX_TNC2C_MODEM_TCM3105;
+    out->params.radio_baud = HYBBX_TNC2C_DEFAULT_RADIO_BAUD;
+    out->params.kiss_port = 0;
+    out->params.txdelay = 50;
+    out->params.persist = 128;
+    out->params.slot = 10;
+    out->params.txtail = 0;
+    out->params.band = HYBBX_PACKET_RADIO_BAND_UNSET;
+    out->params.duplex = HYBBX_PACKET_RADIO_DUPLEX_UNSET;
+    out->params.modulation = HYBBX_PACKET_RADIO_MOD_UNSET;
+    out->params.kiss_on_startup = 1;
+    out->params.host_connect_on_start = 0;
 
     value = find_kv(config, "device_type", scratch, sizeof(scratch));
     out->device_type = parse_device_type(value);
@@ -274,57 +369,159 @@ hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
     out->tnc = parse_tnc(value);
 
     value = find_kv(config, "protocol", scratch, sizeof(scratch));
-    out->protocol = parse_protocol(value);
+    if (value != NULL) {
+        out->protocol = parse_protocol(value);
+    }
 
     value = find_kv(config, "clock_mhz", scratch, sizeof(scratch));
-    out->tnc2c.clock_mhz = parse_clock_mhz(value);
+    out->params.clock_mhz = parse_clock_mhz(value);
 
     value = find_kv(config, "modem", scratch, sizeof(scratch));
-    out->tnc2c.modem = parse_modem(value);
+    out->params.modem = parse_modem(value);
 
     value = find_kv(config, "radio_baud", scratch, sizeof(scratch));
     if (value == NULL) {
-        out->tnc2c.radio_baud = default_radio_baud_for_modem(out->tnc2c.modem);
+        out->params.radio_baud = default_radio_baud_for_modem(out->params.modem);
     } else {
         unsigned int radio_baud = parse_uint(value, 0);
         if (!hybbx_packet_radio_baud_valid(radio_baud)) {
             hybbx_packet_radio_config_free(out);
             return HYBBX_ERR_INVALID;
         }
-        out->tnc2c.radio_baud = radio_baud;
+        out->params.radio_baud = radio_baud;
     }
 
     value = find_kv(config, "kiss_port", scratch, sizeof(scratch));
-    out->tnc2c.kiss_port = parse_uint(value, 0);
+    out->params.kiss_port = parse_uint(value, 0);
 
     value = find_kv(config, "txdelay", scratch, sizeof(scratch));
-    out->tnc2c.txdelay = parse_uint(value, out->tnc2c.txdelay);
+    out->params.txdelay = parse_uint(value, out->params.txdelay);
 
     value = find_kv(config, "persist", scratch, sizeof(scratch));
-    out->tnc2c.persist = parse_uint(value, out->tnc2c.persist);
+    out->params.persist = parse_uint(value, out->params.persist);
 
     value = find_kv(config, "slot", scratch, sizeof(scratch));
-    out->tnc2c.slot = parse_uint(value, out->tnc2c.slot);
+    out->params.slot = parse_uint(value, out->params.slot);
 
     value = find_kv(config, "txtail", scratch, sizeof(scratch));
-    out->tnc2c.txtail = parse_uint(value, out->tnc2c.txtail);
+    out->params.txtail = parse_uint(value, out->params.txtail);
+
+    value = find_kv(config, "radio_band", scratch, sizeof(scratch));
+    if (value != NULL) {
+        out->params.band = parse_radio_band(value);
+    }
+
+    value = find_kv(config, "radio_duplex", scratch, sizeof(scratch));
+    if (value == NULL) {
+        value = find_kv(config, "duplex", scratch, sizeof(scratch));
+    }
+    if (value != NULL) {
+        out->params.duplex = parse_radio_duplex(value);
+    }
 
     value = find_kv(config, "fullduplex", scratch, sizeof(scratch));
-    out->tnc2c.fullduplex = parse_bool(value, out->tnc2c.fullduplex);
+    if (value != NULL &&
+        out->params.duplex == HYBBX_PACKET_RADIO_DUPLEX_UNSET) {
+        out->params.duplex = hybbx_parse_bool(value, 0) ?
+            HYBBX_PACKET_RADIO_DUPLEX_FULL :
+            HYBBX_PACKET_RADIO_DUPLEX_HALF;
+    }
+
+    value = find_kv(config, "g3ruh_fsk", scratch, sizeof(scratch));
+    if (value != NULL) {
+        out->params.modulation = hybbx_parse_bool(value, 0) ?
+            HYBBX_PACKET_RADIO_MOD_G3RUH_FSK :
+            HYBBX_PACKET_RADIO_MOD_AFSK;
+    }
+
+    value = find_kv(config, "modulation", scratch, sizeof(scratch));
+    if (value != NULL) {
+        hybbx_packet_radio_modulation_t mod = parse_modulation(value);
+        if (mod != HYBBX_PACKET_RADIO_MOD_UNSET) {
+            out->params.modulation = mod;
+        }
+    }
 
     value = find_kv(config, "kiss_on_startup", scratch, sizeof(scratch));
-    out->tnc2c.kiss_on_startup = parse_bool(value, out->tnc2c.kiss_on_startup);
+    out->params.kiss_on_startup = hybbx_parse_bool(value, out->params.kiss_on_startup);
 
+    value = find_kv(config, "host_connect", scratch, sizeof(scratch));
+    out->params.host_connect_on_start = hybbx_parse_bool(value,
+                                                   out->params.host_connect_on_start);
+
+    value = find_kv(config, "mycall", scratch, sizeof(scratch));
+    if (value != NULL && value[0] != '\0') {
+        out->mycall = hybbx_strdup(value);
+        if (out->mycall == NULL) {
+            hybbx_packet_radio_config_free(out);
+            return HYBBX_ERR_NOMEM;
+        }
+    }
+
+    value = find_kv(config, "dest", scratch, sizeof(scratch));
+    if (value == NULL) {
+        value = find_kv(config, "dest_call", scratch, sizeof(scratch));
+    }
+    if (value != NULL && value[0] != '\0') {
+        out->dest_call = hybbx_strdup(value);
+        if (out->dest_call == NULL) {
+            hybbx_packet_radio_config_free(out);
+            return HYBBX_ERR_NOMEM;
+        }
+    }
+
+    value = find_kv(config, "via", scratch, sizeof(scratch));
+    rc = parse_via_list(out, value);
+    if (rc != HYBBX_OK) {
+        hybbx_packet_radio_config_free(out);
+        return rc;
+    }
+
+    value = find_kv(config, "circuit_host", scratch, sizeof(scratch));
+    if (value != NULL && value[0] != '\0') {
+        out->circuit_host = hybbx_strdup(value);
+        if (out->circuit_host == NULL) {
+            hybbx_packet_radio_config_free(out);
+            return HYBBX_ERR_NOMEM;
+        }
+    }
+
+    value = find_kv(config, "circuit_port", scratch, sizeof(scratch));
+    if (value != NULL && value[0] != '\0') {
+        out->circuit_port = parse_uint(value, HYBBX_CIRCUIT_DEFAULT_PORT);
+    }
+
+    if (out->circuit_port == 0) {
+        out->circuit_port = HYBBX_CIRCUIT_DEFAULT_PORT;
+    }
+    if (out->circuit_host == NULL) {
+        out->circuit_host = hybbx_strdup("127.0.0.1");
+        if (out->circuit_host == NULL) {
+            hybbx_packet_radio_config_free(out);
+            return HYBBX_ERR_NOMEM;
+        }
+    }
+
+    (void)hybbx_tnc_profile_apply_defaults(out);
     return HYBBX_OK;
 }
 
 void hybbx_packet_radio_config_free(hybbx_packet_radio_config_t *config)
 {
+    unsigned i;
+
     if (config == NULL) {
         return;
     }
 
     free(config->device);
-    config->device = NULL;
-    config->baud = 0;
+    free(config->mycall);
+    free(config->dest_call);
+    free(config->circuit_host);
+    for (i = 0; i < config->via_count; i++) {
+        free(config->via[i]);
+        config->via[i] = NULL;
+    }
+
+    memset(config, 0, sizeof(*config));
 }

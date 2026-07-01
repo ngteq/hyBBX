@@ -1,8 +1,90 @@
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+
+static int bool_token_ieq(const char *value, const char *token)
+{
+    if (value == NULL || token == NULL) {
+        return 0;
+    }
+
+    while (*value != '\0' && *token != '\0') {
+        unsigned char cv = (unsigned char)tolower((unsigned char)*value);
+        unsigned char ct = (unsigned char)tolower((unsigned char)*token);
+
+        if (cv != ct) {
+            return 0;
+        }
+        value++;
+        token++;
+    }
+
+    return *value == '\0' && *token == '\0';
+}
+
+static int bool_match_any(const char *value, const char *const *tokens, size_t count)
+{
+    size_t i;
+
+    if (value == NULL || value[0] == '\0') {
+        return 0;
+    }
+
+    for (i = 0; i < count; i++) {
+        if (bool_token_ieq(value, tokens[i])) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static const char *const hybbx_bool_true_tokens[] = {
+    HYBBX_BOOL_YES, "true", "enable", "enabled", "on", "1"
+};
+
+static const char *const hybbx_bool_false_tokens[] = {
+    HYBBX_BOOL_NO, "false", "disable", "disabled", "off", "0"
+};
+
+int hybbx_bool_is_true(const char *value)
+{
+    return bool_match_any(value, hybbx_bool_true_tokens,
+                          sizeof(hybbx_bool_true_tokens) /
+                              sizeof(hybbx_bool_true_tokens[0]));
+}
+
+int hybbx_bool_is_false(const char *value)
+{
+    return bool_match_any(value, hybbx_bool_false_tokens,
+                          sizeof(hybbx_bool_false_tokens) /
+                              sizeof(hybbx_bool_false_tokens[0]));
+}
+
+int hybbx_parse_bool(const char *value, int default_value)
+{
+    if (value == NULL || value[0] == '\0') {
+        return default_value;
+    }
+
+    if (hybbx_bool_is_true(value)) {
+        return 1;
+    }
+
+    if (hybbx_bool_is_false(value)) {
+        return 0;
+    }
+
+    return default_value;
+}
+
+const char *hybbx_bool_to_string(int value)
+{
+    return value ? HYBBX_BOOL_YES : HYBBX_BOOL_NO;
+}
 
 size_t hybbx_strlcpy(char *dst, const char *src, size_t dst_size)
 {
