@@ -35,6 +35,8 @@ static int str_ieq(const char *a, const char *b)
     return *a == '\0' && *b == '\0';
 }
 
+static void cmd_deny_privilege(hybbx_session_t *session);
+
 static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
 {
     if (verb == NULL || verb[0] == '\0') {
@@ -61,9 +63,17 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
         str_ieq(verb, "reset") || str_ieq(verb, "echo") ||
         str_ieq(verb, "exit") || str_ieq(verb, "logout") ||
         str_ieq(verb, "bye") || str_ieq(verb, "quit") ||
-        str_ieq(verb, "login") || str_ieq(verb, "register") ||
+        str_ieq(verb, "login") ||
         str_ieq(verb, "deleteme")) {
         return 1;
+    }
+
+    if (str_ieq(verb, "register")) {
+        return hybbx_auth_may_register(level);
+    }
+
+    if (str_ieq(verb, "createuser") || str_ieq(verb, "create")) {
+        return hybbx_auth_may_create_user(level);
     }
 
     if (str_ieq(verb, "chat")) {
@@ -118,6 +128,9 @@ static hybbx_result_t cmd_check_access(hybbx_session_t *session,
     if (level == HYBBX_LEVEL_GUEST) {
         hybbx_session_write_line(session,
             "Not available to guests. Try /help.");
+    } else if (str_ieq(verb, "register")) {
+        hybbx_session_write_line(session,
+            "Only guests may self-register with /register.");
     } else {
         hybbx_session_write_line(session, "Insufficient privileges.");
     }
@@ -196,15 +209,20 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
     cmd_help_group(session, "Screen", "/clear  /echo");
     cmd_help_group(session, "Areas",
                    "/leave  /main  /chat  /mail  /exit");
-    cmd_help_group(session, "Account", "/login  /register");
+    cmd_help_group(session, "Account", "/login");
 
     if (cmd_help_shows_deleteme(level)) {
         hybbx_session_write_line(session, "             /deleteme yes");
     }
 
     staff[0] = '\0';
+    if (hybbx_auth_may_create_user(level)) {
+        hybbx_strlcpy(staff, "/createuser", sizeof(staff));
+    }
     if (hybbx_auth_may_activate(level)) {
-        hybbx_strlcpy(staff, "/activate", sizeof(staff));
+        snprintf(staff + strlen(staff), sizeof(staff) - strlen(staff),
+                 "%s/activate",
+                 staff[0] != '\0' ? "  " : "");
     }
     if (level == HYBBX_LEVEL_SYSOP || level == HYBBX_LEVEL_ADMIN) {
         snprintf(staff + strlen(staff), sizeof(staff) - strlen(staff),
@@ -355,15 +373,33 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
     }
 
     if (str_ieq(canonical, "register")) {
-        cmd_help_topic_title(session, "/register", "create user account");
+        cmd_help_topic_title(session, "/register", "self-registration (guests)");
         cmd_help_topic_detail(session,
             "  /register <user> <name> <country> <location> <email>");
         cmd_help_topic_detail(session,
-            "  username 4-12 chars (a-z 0-9) — pending until /activate");
+            "  guests only — pending until Sysop or Admin /activate");
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(canonical, "createuser") || str_ieq(canonical, "create")) {
+        if (!hybbx_auth_may_create_user(level)) {
+            cmd_deny_privilege(session);
+            return HYBBX_OK;
+        }
+        cmd_help_topic_title(session, "/createuser",
+                             "create user account (Sysop, Admin)");
+        cmd_help_topic_detail(session,
+            "  /createuser <user> <name> <country> <location> <email>");
+        cmd_help_topic_detail(session,
+            "  account is inactive until /activate");
         return HYBBX_OK;
     }
 
     if (str_ieq(canonical, "activate")) {
+        if (!hybbx_auth_may_activate(level)) {
+            cmd_deny_privilege(session);
+            return HYBBX_OK;
+        }
         cmd_help_topic_title(session, "/activate",
                              "enable pending account (staff)");
         cmd_help_topic_detail(session, "  /activate <username>");
@@ -837,9 +873,10 @@ static hybbx_result_t cmd_deleteme(hybbx_service_t *service,
     return HYBBX_SESSION_END;
 }
 
-static hybbx_result_t cmd_register(hybbx_service_t *service,
-                                   hybbx_session_t *session,
-                                   const hybbx_parsed_command_t *cmd)
+static hybbx_result_t cmd_register_user(hybbx_service_t *service,
+                                        hybbx_session_t *session,
+                                        const hybbx_parsed_command_t *cmd,
+                                        int staff_created)
 {
     hybbx_storage_t *storage;
     hybbx_user_registration_t reg;
@@ -878,14 +915,49 @@ static hybbx_result_t cmd_register(hybbx_service_t *service,
         return rc;
     }
 
-    snprintf(buf, sizeof(buf), "Registration received for '%s'.",
-             user.username);
+    if (staff_created) {
+        snprintf(buf, sizeof(buf), "User '%s' created.", user.username);
+    } else {
+        snprintf(buf, sizeof(buf), "Registration received for '%s'.",
+                 user.username);
+    }
     hybbx_session_write_line(session, buf);
     snprintf(buf, sizeof(buf), "Name: %s", user.full_name);
     hybbx_session_write_line(session, buf);
-    hybbx_session_write_line(session,
-        "A Sysop or Admin must activate your account before you can log in.");
+    if (staff_created) {
+        hybbx_session_write_line(session,
+            "Account is inactive. Use /activate before the user can log in.");
+    } else {
+        hybbx_session_write_line(session,
+            "A Sysop or Admin must activate your account before you can log in.");
+    }
     return HYBBX_OK;
+}
+
+static hybbx_result_t cmd_register(hybbx_service_t *service,
+                                   hybbx_session_t *session,
+                                   const hybbx_parsed_command_t *cmd)
+{
+    if (!hybbx_auth_may_register(hybbx_session_user_level(session))) {
+        hybbx_session_write_line(session,
+            "Only guests may self-register with /register.");
+        return HYBBX_ERR_DENIED;
+    }
+
+    return cmd_register_user(service, session, cmd, 0);
+}
+
+static hybbx_result_t cmd_createuser(hybbx_service_t *service,
+                                     hybbx_session_t *session,
+                                     const hybbx_parsed_command_t *cmd)
+{
+    if (cmd->argc < 5) {
+        hybbx_session_write_line(session,
+            "Usage: /createuser <username> <full-name> <country> <location> <email>");
+        return HYBBX_OK;
+    }
+
+    return cmd_register_user(service, session, cmd, 1);
 }
 
 static hybbx_result_t cmd_login(hybbx_service_t *service,
@@ -1355,6 +1427,10 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
 
     if (str_ieq(cmd->verb, "register")) {
         return cmd_register(service, session, cmd);
+    }
+
+    if (str_ieq(cmd->verb, "createuser") || str_ieq(cmd->verb, "create")) {
+        return cmd_createuser(service, session, cmd);
     }
 
     if (str_ieq(cmd->verb, "activate")) {

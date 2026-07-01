@@ -94,10 +94,11 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Feature | Status | Description |
 |---------|--------|-------------|
 | Guest auto-login | Done | `Guest1`… prefix; optional timeout disconnect |
-| User registration | Done | `/register`; inactive until staff `/activate` |
+| User registration | Done | `/register` (guests only); inactive until `/activate` |
+| Staff create user | Done | `/createuser` (Sysop, Admin) |
 | Login / logout | Done | `/login`; session level updated |
 | User levels | Done | Sysop, Admin, Mod, User, Guest (privilege rules enforced) |
-| Staff user management | Done | `/activate`, `/promote`, `/demote`, `/delete` |
+| Staff user management | Done | `/activate`, `/promote`, `/demote`, `/delete` (Sysop, Admin) |
 | Self-delete | Done | `/deleteme yes` (all boolean true aliases) |
 | Username validation | Done | 4–12 chars, lowercase + limited digits/separators |
 | Password formats | Done | `{sha256}`, legacy `{md5}`, plain auto-upgrade |
@@ -129,7 +130,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | `/who` | Done | Online users |
 | `/session` (`/info`) | Done | Current session details |
 | `/version` (`/ver`) | Done | HyBBX version string |
-| `/login`, `/register` | Done | Authentication and signup |
+| `/login`, `/register` | Done | Login; guest self-registration |
+| `/createuser` | Done | Sysop/Admin create pending user accounts |
 | `/chat` | Done | List/join channels (registered users) |
 | `/mail` | Done | Inbox list, read, delete, send (registered users) |
 | `/leave` (`/back`) | Done | One level up in the area stack |

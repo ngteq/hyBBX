@@ -484,7 +484,7 @@ Legacy `users.dat` (`id|name|level|…`) migrates on first startup. Plain passwo
 
 **Default Sysop** (if none exists): username `Sysop`, password `Sysop` — change after first login.
 
-**Levels** (high → low): Sysop (one), Admin, Mod, User, Guest. `/register` creates inactive users until `/activate`.
+**Levels** (high → low): Sysop (one), Admin, Mod, User, Guest. Guests use `/register` (self-signup, inactive until staff activates). Sysop and Admin use `/createuser` and `/activate`.
 
 ## Cryptography
 
@@ -515,7 +515,9 @@ Guests (`Guest1` … `Guest111`) may use: `/help`, `/motd`, `/news`, `/login`, `
 
 | Action | Who |
 |--------|-----|
-| Activate `/register` accounts | Sysop, Admin |
+| Self-register (`/register`) | Guest only |
+| Create user (`/createuser`) | Sysop, Admin |
+| Activate pending accounts (`/activate`) | Sysop, Admin |
 | Promote → Admin | Sysop only |
 | Promote → Mod | Sysop, Admin |
 | Demote Admin | Sysop only |
@@ -558,8 +560,9 @@ Banner tokens: `@version@`, `@service@`.
 | `/chat` | List/join channels |
 | `/mail` | Inbox; `/mail list 1-15`, `read`, `delete`, `send` |
 | `/login <user> <pass>` | Login |
-| `/register <user> <name> <country> <location> <email>` | Register |
-| `/activate`, `/promote`, `/demote`, `/delete` | Staff |
+| `/register <user> …>` | Self-registration (guests only) |
+| `/createuser <user> …>` | Create user account (Sysop, Admin) |
+| `/activate`, `/promote`, `/demote`, `/delete` | Staff (Sysop, Admin) |
 | `/deleteme yes` | Delete own account |
 | `/exit` | Disconnect (`/quit`, `/logout`, `/bye`) |
 

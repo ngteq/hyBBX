@@ -91,6 +91,16 @@ int hybbx_auth_may_activate(hybbx_user_level_t actor)
     return hybbx_user_level_is_sysop_or_admin(actor);
 }
 
+int hybbx_auth_may_register(hybbx_user_level_t actor)
+{
+    return hybbx_user_level_is_guest(actor);
+}
+
+int hybbx_auth_may_create_user(hybbx_user_level_t actor)
+{
+    return hybbx_user_level_is_sysop_or_admin(actor);
+}
+
 int hybbx_auth_may_promote(hybbx_user_level_t actor,
                            hybbx_user_level_t target_level,
                            int target_active,

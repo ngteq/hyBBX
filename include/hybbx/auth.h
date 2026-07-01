@@ -54,6 +54,12 @@ int hybbx_user_level_is_sysop_or_admin(hybbx_user_level_t level);
 /** Non-zero when @p actor may activate pending registered accounts. */
 int hybbx_auth_may_activate(hybbx_user_level_t actor);
 
+/** Non-zero when @p actor may self-register via `/register` (guests only). */
+int hybbx_auth_may_register(hybbx_user_level_t actor);
+
+/** Non-zero when @p actor may create user accounts via `/createuser` (Sysop, Admin). */
+int hybbx_auth_may_create_user(hybbx_user_level_t actor);
+
 /**
  * Non-zero when @p actor may promote a user at @p target_level to @p new_level.
  * Target must be active and not a guest. Sysop: admin; Sysop or Admin: mod.
