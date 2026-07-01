@@ -94,7 +94,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Feature | Status | Description |
 |---------|--------|-------------|
 | Guest auto-login | Done | `Guest1`… prefix; optional timeout disconnect |
-| User registration | Done | `/register` (guests); mail to Sysop/Admin; `/activate` |
+| User registration | Done | `/register` (guests); staff mail lists all registration fields |
 | Staff create user | Done | `/createuser` (Sysop, Admin) |
 | Login / logout | Done | `/login`; session level updated |
 | User levels | Done | Sysop, Admin, Mod, User, Guest (privilege rules enforced) |

@@ -104,12 +104,14 @@ hybbx_result_t hybbx_mail_deliver(struct hybbx_service *service,
                                   const char *body);
 
 /**
- * Mail active Sysop and Admin accounts when a guest self-registers.
+ * Mail active Sysop and Admin when a guest self-registers.
+ * Body lists every field from `/register` plus assigned account metadata.
  * No-op when mail is disabled. Individual delivery failures are ignored.
  */
 hybbx_result_t hybbx_mail_notify_staff_registration(
     struct hybbx_service *service,
-    const hybbx_user_record_t *registered);
+    const hybbx_user_registration_t *reg,
+    const hybbx_user_record_t *user);
 
 #ifdef __cplusplus
 }

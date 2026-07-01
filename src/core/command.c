@@ -379,7 +379,7 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         cmd_help_topic_detail(session,
             "  guests only — pending until Sysop or Admin /activate");
         cmd_help_topic_detail(session,
-            "  Sysop and Admin receive mail to review the registration");
+            "  Sysop and Admin receive mail with all /register fields");
         return HYBBX_OK;
     }
 
@@ -932,7 +932,7 @@ static hybbx_result_t cmd_register_user(hybbx_service_t *service,
     } else {
         const hybbx_mail_config_t *mail_cfg = hybbx_service_get_mail(service);
 
-        (void)hybbx_mail_notify_staff_registration(service, &user);
+        (void)hybbx_mail_notify_staff_registration(service, &reg, &user);
         hybbx_session_write_line(session,
             "A Sysop or Admin must activate your account before you can log in.");
         if (mail_cfg != NULL && mail_cfg->enabled) {

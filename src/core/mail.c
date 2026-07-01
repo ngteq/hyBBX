@@ -1054,9 +1054,28 @@ hybbx_result_t hybbx_mail_recycle_empty(hybbx_service_t *service,
 
 #define HYBBX_MAIL_SYSTEM_FROM "system"
 
+static void mail_format_utc_time(time_t when, char *buf, size_t len)
+{
+    if (buf == NULL || len == 0) {
+        return;
+    }
+
+    buf[0] = '\0';
+    if (when <= 0) {
+        return;
+    }
+
+    {
+        const struct tm *tm = gmtime(&when);
+
+        if (tm != NULL) {
+            (void)strftime(buf, len, "%Y-%m-%d %H:%M:%S UTC", tm);
+        }
+    }
+}
+
 typedef struct mail_notify_staff_ctx {
     hybbx_service_t *service;
-    const hybbx_user_record_t *registered;
     char subject[HYBBX_MAIL_SUBJECT_MAX];
     char body[HYBBX_MAIL_BODY_MAX];
 } mail_notify_staff_ctx_t;
@@ -1066,7 +1085,7 @@ static hybbx_result_t mail_notify_staff_cb(const hybbx_user_record_t *user,
 {
     mail_notify_staff_ctx_t *nctx = (mail_notify_staff_ctx_t *)ctx;
 
-    if (user == NULL || nctx == NULL || nctx->registered == NULL) {
+    if (user == NULL || nctx == NULL) {
         return HYBBX_OK;
     }
 
@@ -1080,14 +1099,16 @@ static hybbx_result_t mail_notify_staff_cb(const hybbx_user_record_t *user,
 }
 
 hybbx_result_t hybbx_mail_notify_staff_registration(hybbx_service_t *service,
-                                                    const hybbx_user_record_t *registered)
+                                                    const hybbx_user_registration_t *reg,
+                                                    const hybbx_user_record_t *user)
 {
     const hybbx_mail_config_t *mail;
     hybbx_storage_t *storage;
     mail_notify_staff_ctx_t ctx;
+    char created[48];
     int n;
 
-    if (service == NULL || registered == NULL) {
+    if (service == NULL || reg == NULL || user == NULL) {
         return HYBBX_ERR_INVALID;
     }
 
@@ -1102,32 +1123,46 @@ hybbx_result_t hybbx_mail_notify_staff_registration(hybbx_service_t *service,
     }
 
     n = snprintf(ctx.subject, sizeof(ctx.subject),
-                 "Registration pending: %s", registered->username);
+                 "Registration pending: %s", reg->username);
     if (n < 0 || (size_t)n >= sizeof(ctx.subject)) {
         return HYBBX_ERR_INVALID;
     }
 
+    mail_format_utc_time(user->created_at, created, sizeof(created));
+    if (created[0] == '\0') {
+        hybbx_strlcpy(created, "(unknown)", sizeof(created));
+    }
+
     n = snprintf(ctx.body, sizeof(ctx.body),
-                 "Guest self-registration pending approval.\n\n"
-                 "Username: %s\n"
-                 "Name: %s\n"
-                 "Country: %s\n"
-                 "Location: %s\n"
-                 "Email: %s\n\n"
-                 "Review the profile. If correct, activate with:\n"
+                 "Guest self-registration pending approval.\n"
+                 "/register data submitted:\n\n"
+                 "  Username:   %s\n"
+                 "  Full name:  %s\n"
+                 "  Country:    %s\n"
+                 "  Location:   %s\n"
+                 "  Email:      %s\n\n"
+                 "Account record:\n\n"
+                 "  User ID:    %llu\n"
+                 "  Level:      %s\n"
+                 "  Active:     %s\n"
+                 "  Created:    %s\n\n"
+                 "Review all fields. If correct, activate with:\n"
                  "  /activate %s\n",
-                 registered->username,
-                 registered->full_name,
-                 registered->country,
-                 registered->location,
-                 registered->email,
-                 registered->username);
+                 reg->username,
+                 reg->full_name,
+                 reg->country,
+                 reg->location,
+                 reg->email,
+                 (unsigned long long)user->id,
+                 hybbx_user_level_name(user->level),
+                 hybbx_bool_to_string(user->active),
+                 created,
+                 reg->username);
     if (n < 0 || (size_t)n >= sizeof(ctx.body)) {
         return HYBBX_ERR_INVALID;
     }
 
     ctx.service = service;
-    ctx.registered = registered;
 
     (void)hybbx_storage_foreach_user(storage, mail_notify_staff_cb, &ctx);
     return HYBBX_OK;

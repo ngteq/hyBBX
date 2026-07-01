@@ -484,7 +484,7 @@ Legacy `users.dat` (`id|name|level|…`) migrates on first startup. Plain passwo
 
 **Default Sysop** (if none exists): username `Sysop`, password `Sysop` — change after first login.
 
-**Levels** (high → low): Sysop (one), Admin, Mod, User, Guest. Guests use `/register` (self-signup; Sysop and Admin get mail to review; inactive until `/activate`). Sysop and Admin use `/createuser` and `/activate`.
+**Levels** (high → low): Sysop (one), Admin, Mod, User, Guest. Guests use `/register` (self-signup; Sysop and Admin receive mail with username, full name, country, location, email, and account metadata; inactive until `/activate`). Sysop and Admin use `/createuser` and `/activate`.
 
 ## Cryptography
 
@@ -515,7 +515,7 @@ Guests (`Guest1` … `Guest111`) may use: `/help`, `/motd`, `/news`, `/login`, `
 
 | Action | Who |
 |--------|-----|
-| Self-register (`/register`) | Guest only; staff notified by mail |
+| Self-register (`/register`) | Guest only; staff mail with all registration data |
 | Create user (`/createuser`) | Sysop, Admin |
 | Activate pending accounts (`/activate`) | Sysop, Admin |
 | Promote → Admin | Sysop only |
