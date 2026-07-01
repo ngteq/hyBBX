@@ -2,7 +2,7 @@
 
 **Version:** 0.1.0 (early development)
 
-**Positioning:** HyBBX is a service solution for multiple connection types, **oriented on and inspired by** classic BBS/mailbox experiences. It is **not** a new BBS or mailbox product. **Planned layout:** **1× central hyBBX**; all other nodes are gateways, **digipeaters**, repeaters, or links only — [ROADMAP.md](ROADMAP.md).
+**Positioning:** HyBBX is a service solution for multiple connection types, **oriented on and inspired by** classic BBS/mailbox experiences. It is **not** a new BBS or mailbox product. **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features** — [ROADMAP.md](ROADMAP.md).
 
 Living inventory of functional and important HyBBX capabilities. **Update this file whenever a feature is added, removed, or materially changed.** See [CONTRIBUTING.md](../CONTRIBUTING.md) and [DEVELOPMENT.md](DEVELOPMENT.md).
 
@@ -58,7 +58,7 @@ Operator details: [MANUAL.md](MANUAL.md). Quick start: [QUICKSTART.md](QUICKSTAR
 | **hybbx-terminal** client | Done | Pure CLI AX.25 / HBX circuit terminal (`build/src/clients/hybbx-terminal`) |
 | Link password auth | Done | HBX `LINK_AUTH` on circuit attach — **no** ping/pong health checks |
 | Stale link removal | Done | Links with no password auth for `link_stale_days` (default 10) auto-removed |
-| Auto-generated link codes | Done | Issued on successful edge-to-central password auth |
+| Auto-generated link codes | Done | Issued on successful link/repeater edge auth to centralized daemon |
 | Telnet dual-stack bind | Done | `bind`, `bind6`, per-family `ipv4`/`ipv6` toggles |
 | Packet radio | Done | AX.25 link adapter over internal HBX/TCP circuit |
 | SSH | Planned | Same session core as telnet |
@@ -187,12 +187,12 @@ Operator details: [MANUAL.md](MANUAL.md). Quick start: [QUICKSTART.md](QUICKSTAR
 
 ## Roadmap (not yet implemented)
 
-**Architecture:** **1× central hyBBX** (users, mail, sessions). Every other node: **gateway, digipeater, repeater, or link only** — no second full instance. Details: [ROADMAP.md](ROADMAP.md).
+**Architecture:** HyBBX uses a **centralized daemon** and **link/repeater daemon technologies** to expand networks, range, and features. Details: [ROADMAP.md](ROADMAP.md).
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| Mail-Area | Planned | Mailbox on **central only** (not chat) |
-| Gateway / digipeater / repeater / link | Planned | Dedicated edge roles and multi-site relay modes |
+| Mail-Area | Planned | Mailbox on **centralized daemon** only (not chat) |
+| Link/repeater edge daemons | Planned | Gateway, digipeater, repeater, and link relay modes |
 | SSH transport | Planned | Same session core as telnet |
 | WebSocket transport | Planned | Reverse-proxy only |
 | SQL storage | Planned | SQLite, MySQL/MariaDB on core |

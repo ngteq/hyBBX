@@ -7,7 +7,7 @@ labels: enhancement
 
 ## Problem / use case
 
-<!-- What problem does this solve? RF, telnet, mail-area, digipeater topology, … -->
+<!-- What problem does this solve? RF, telnet, mail-area, link/repeater expansion, … -->
 
 ## Proposed solution
 
@@ -15,7 +15,7 @@ labels: enhancement
 
 ## Fits HyBBX model?
 
-- [ ] Central **1× hyBBX** + edge gateway/digipeater/repeater/link ([docs/ROADMAP.md](../../docs/ROADMAP.md))
+- [ ] Centralized daemon + link/repeater daemon technologies ([docs/ROADMAP.md](../../docs/ROADMAP.md))
 - [ ] BBS-**inspired** service (not a classic BBS clone)
 - [ ] Link adapter or HBX/circuit extension (not core wire-protocol parsing)
 

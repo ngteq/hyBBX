@@ -1,6 +1,6 @@
 # HyBBX standalone clients
 
-`hybbx-telnet` and `hybbx-terminal` are **pure CLI clients** — command-line parameters and environment variables only. No INI files, no configuration files, no GUI.
+`hybbx-telnet` and `hybbx-terminal` are **pure CLI clients** for the **centralized daemon** and **link/repeater** circuit paths — command-line parameters and environment variables only. No INI files, no configuration files, no GUI.
 
 They connect to a running HyBBX server (or any compatible endpoint) and do not embed the daemon, transport plugins, or server storage.
 
@@ -104,6 +104,6 @@ hybbx-terminal --mycall DL1ABC-0 --dest DL9XYZ-0 --via RELAY-7 --ax25-ui
 | TX (`--ax25-ui`) | `AX25_UI` | Requires `--mycall` and `--dest` |
 | RX | `TERMINAL`, `AX25_UI`, `AX25` | UI payload extracted and paced to stdout |
 
-Link authentication uses HBX `LINK_AUTH` / `LINK_AUTH_ACK` with password only (no ping/pong health checks).
+Link authentication uses HBX `LINK_AUTH` / `LINK_AUTH_ACK` (link/repeater edge daemon toward centralized daemon). Password only — no ping/pong health checks.
 
 Server-side circuit and packet-radio setup: [MANUAL.md](MANUAL.md).

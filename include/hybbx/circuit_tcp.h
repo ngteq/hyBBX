@@ -2,9 +2,9 @@
 #define HYBBX_CIRCUIT_TCP_H
 
 /**
- * Internal TCP/IPv4+IPv6 circuit hub.
+ * Internal TCP/IPv4+IPv6 circuit hub on the centralized daemon.
  *
- * Listens on loopback, accepts one link-adapter connection (packet radio, …),
+ * Listens on loopback, accepts link/repeater edge daemon connections,
  * unwraps HBX frames into hybbx_session, and wraps session output back to HBX.
  */
 
@@ -68,8 +68,8 @@ hybbx_result_t hybbx_circuit_link_read(int fd, uint8_t *buf, size_t buf_len,
                                        size_t *read_len);
 
 /**
- * Send LINK_AUTH HBX frame after TCP connect (edge gateway/repeater/link).
- * No heartbeat/ping — password only.
+ * Send LINK_AUTH HBX frame after TCP connect (link/repeater edge daemon
+ * toward the centralized daemon). Password only — no heartbeat/ping.
  */
 hybbx_result_t hybbx_circuit_link_authenticate(int fd,
                                                const char *password,

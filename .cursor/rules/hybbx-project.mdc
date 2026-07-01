@@ -10,7 +10,7 @@ Read [AGENTS.md](../../AGENTS.md) and [docs/DEVELOPMENT.md](../../docs/DEVELOPME
 ## Product
 
 - BBS/**mailbox-inspired** multi-link **service** — not a new BBS product.
-- **1× central hyBBX**; edge nodes = gateway / digipeater / repeater / link only ([docs/ROADMAP.md](../../docs/ROADMAP.md)).
+- **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features** ([docs/ROADMAP.md](../../docs/ROADMAP.md)).
 
 ## Code
 

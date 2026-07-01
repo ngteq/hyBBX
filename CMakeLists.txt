@@ -12,7 +12,7 @@ endif()
 
 project(HyBBX
     VERSION 0.1.0
-    DESCRIPTION "BBS/mailbox-inspired service for multiple connection types"
+    DESCRIPTION "Centralized daemon with link/repeater technologies for multiple connection types"
     LANGUAGES C
 )
 

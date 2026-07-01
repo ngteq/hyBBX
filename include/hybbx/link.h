@@ -2,7 +2,10 @@
 #define HYBBX_LINK_H
 
 /**
- * HyBBX edge link registry (gateway / digipeater / repeater / link).
+ * HyBBX link/repeater edge daemon registry.
+ *
+ * Role names (gateway, digipeater, repeater, link) identify edge daemons
+ * that relay toward the centralized daemon.
  *
  * Links are authenticated by password only — no TCP/IP-style ping/pong or
  * heartbeat health checks across networks or protocols.

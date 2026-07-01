@@ -2,7 +2,7 @@
 
 Central index for all project documentation. The root [README.md](../README.md) is a short presentation only; details live here.
 
-HyBBX is a **connection-type service platform** inspired by classic BBS/mailbox culture — not a new BBS or mailbox product. See [README.md](../README.md) for the positioning statement.
+HyBBX is a **connection-type service platform** inspired by classic BBS/mailbox culture — not a new BBS or mailbox product. **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features.** See [README.md](../README.md) for the positioning statement.
 
 ## For contributors
 
@@ -20,7 +20,7 @@ HyBBX is a **connection-type service platform** inspired by classic BBS/mailbox 
 | **[QUICKSTART.md](QUICKSTART.md)** | Operators | Clone, build, run, install, first telnet session |
 | **[MANUAL.md](MANUAL.md)** | Operators & developers | Full reference: config, transports, packet radio, auth, commands, crypto |
 | **[CLIENTS.md](CLIENTS.md)** | Operators | Standalone `hybbx-telnet` / `hybbx-terminal` (no server build) |
-| **[ROADMAP.md](ROADMAP.md)** | Everyone | **1× central**; gateway, digipeater, repeater, link |
+| **[ROADMAP.md](ROADMAP.md)** | Everyone | Architecture standard: centralized daemon + link/repeater technologies |
 | **[REPOSITORY.md](REPOSITORY.md)** | Developers | Source tree layout and main directories |
 | **[BUILD.md](BUILD.md)** | Developers | CMake options, toolchains, hardening |
 | **[PLATFORMS.md](PLATFORMS.md)** | Developers | GCC/Clang on Windows 10+, macOS X+, AmigaOS 3.9+, Linux/BSD |
@@ -38,5 +38,5 @@ HyBBX is a **connection-type service platform** inspired by classic BBS/mailbox 
 ## Maintainers
 
 - Update [FEATURES.md](FEATURES.md) when adding or changing functionality.
-- Update [ROADMAP.md](ROADMAP.md) for planned topology/features not yet coded.
+- Update [ROADMAP.md](ROADMAP.md) for planned link/repeater expansion and features not yet coded.
 - **Git / public pushes:** `user.name=ngteq`, `user.email` empty. No `Co-authored-by` or agent attribution in commit messages.

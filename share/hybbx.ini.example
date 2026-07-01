@@ -80,7 +80,7 @@ bind6 = ::1
 port = 7323
 ipv4 = yes
 ipv6 = yes
-; Edge links/repeaters: password auth only — no TCP ping/pong health checks.
+; Link/repeater edge daemons: password auth only — no TCP ping/pong health checks.
 link_auth = yes
 link_password = changeme
 link_stale_days = 10

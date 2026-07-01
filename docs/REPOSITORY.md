@@ -1,16 +1,17 @@
 # HyBBX repository layout
 
-Source tree overview for developers. HyBBX is a multi-transport **service platform** inspired by BBS/mailbox UX — see [README.md](../README.md). Public API headers live under `include/hybbx/`.
+Source tree overview for developers. HyBBX is a multi-transport **service platform** inspired by BBS/mailbox UX — **centralized daemon plus link/repeater daemon technologies** ([ROADMAP.md](ROADMAP.md)). Public API headers live under `include/hybbx/`.
 
 ```
 hyBBX/
   include/hybbx/          Public C API (config, session, plugin, circuit, tnc, …)
   src/
-    core/                 Service, sessions, storage, crypto, traffic, circuit hub
+    core/                 Centralized daemon: sessions, storage, crypto, circuit hub
+    clients/              Standalone CLI clients (hybbx-telnet, hybbx-terminal)
     main.c                Entry point, plugin registration
   plugins/
     telnet/               TCP/IPv4+IPv6 telnet link adapter
-    packet_radio/         AX.25 + TNC stack (TNC2C, BayCom, PC-COM); HBX client
+    packet_radio/         Link/repeater edge: AX.25 + TNC stack; HBX client to circuit
   third_party/            Bundled crypto (tinysha256, Monocypher, tiny-AES-c)
   text/                   banner.txt, motd.txt, news.txt (BBS texts)
   share/                  hybbx.ini.example (shipped config sample)

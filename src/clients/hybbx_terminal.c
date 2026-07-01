@@ -72,7 +72,7 @@ static void print_usage(const char *prog)
             "  -p, --port PORT         Circuit hub port (default 7323)\n"
             "      --link-id ID        Link identity for password auth\n"
             "      --link-password P   Link password (HBX LINK_AUTH)\n"
-            "      --link-role ROLE    gateway | repeater | link | digipeater\n"
+            "      --link-role ROLE    link/repeater edge role: gateway | repeater | link | digipeater\n"
             "      --mycall CALL       AX.25 source (CALL or CALL-SSID)\n"
             "      --dest CALL         AX.25 destination\n"
             "      --via LIST          Comma-separated digipeater path\n"

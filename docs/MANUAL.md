@@ -8,7 +8,7 @@ Full reference for operators and developers.
 - Feature inventory: [FEATURES.md](FEATURES.md)
 - Quick start: [QUICKSTART.md](QUICKSTART.md)
 - All docs: [INDEX.md](INDEX.md)
-- Planned layout (1× central, gateway / digipeater / repeater / link): [ROADMAP.md](ROADMAP.md)
+- Architecture standard: [ROADMAP.md](ROADMAP.md)
 - Contributing: [CONTRIBUTING.md](../CONTRIBUTING.md) · Development: [DEVELOPMENT.md](DEVELOPMENT.md) · AI: [AGENTS.md](../AGENTS.md)
 
 ## Connection types
@@ -49,7 +49,7 @@ HyBBX uses **TCP/IP (IPv4 and IPv6) as the only internal network semantics**. Th
 
 Plugins implement `hybbx_transport_plugin_t` in `include/hybbx/plugin.h`.
 
-**Planned deployment:** **one central hyBBX** only. All additional nodes are **gateways, digipeaters, repeaters, or links** (common packet-radio terms) that relay toward that central instance — never parallel full hyBBX installs. On-air **`via`** digipeater paths apply as today in `[transport.packet_radio]`. See [ROADMAP.md](ROADMAP.md).
+**Architecture:** HyBBX uses a **centralized daemon** and **link/repeater daemon technologies** to expand networks, range, and features. On-air **`via`** digipeater paths apply as today in `[transport.packet_radio]`. See [ROADMAP.md](ROADMAP.md).
 
 ### Planned transports
 
@@ -149,7 +149,7 @@ Environment: `HYBBX_CIRCUIT_HOST`, `HYBBX_CIRCUIT_PORT`. See [CLIENTS.md](CLIENT
 
 ### Circuit link authentication
 
-Edge adapters (packet radio, future gateways) authenticate to `[circuit]` with **password only**. HyBBX does **not** use TCP/IP-style ping/pong or heartbeat health checks across links or protocols.
+Edge adapters (packet radio, future link/repeater edge daemons) authenticate to `[circuit]` with **password only**. HyBBX does **not** use TCP/IP-style ping/pong or heartbeat health checks across links or protocols.
 
 ```ini
 [circuit]

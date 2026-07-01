@@ -16,7 +16,7 @@ Builds with **GCC** and **LLVM/Clang** on **Linux, BSD, macOS 10+, Windows 10+, 
 - **Flat-file storage** with INI user shards; bundled crypto (optional OpenSSL/libsodium)
 - **Standalone CLI clients** — `hybbx-telnet` and `hybbx-terminal` (parameters/env only; no INI) build without the server ([docs/CLIENTS.md](docs/CLIENTS.md))
 
-For scope, status, and the **1× central / N× gateway–digipeater–repeater–link** layout see **[docs/FEATURES.md](docs/FEATURES.md)** and **[docs/ROADMAP.md](docs/ROADMAP.md)**.
+HyBBX uses a **centralized daemon** and **link/repeater daemon technologies** to expand networks, range, and features. See **[docs/FEATURES.md](docs/FEATURES.md)** and **[docs/ROADMAP.md](docs/ROADMAP.md)**.
 
 ## Try it
 
@@ -36,7 +36,7 @@ More detail: **[docs/QUICKSTART.md](docs/QUICKSTART.md)**
 | **[docs/QUICKSTART.md](docs/QUICKSTART.md)** | Build, install, first session |
 | **[docs/MANUAL.md](docs/MANUAL.md)** | Full operator & developer reference |
 | **[docs/INDEX.md](docs/INDEX.md)** | Documentation index |
-| **[docs/ROADMAP.md](docs/ROADMAP.md)** | **1× central**; gateway, digipeater, repeater, link |
+| **[docs/ROADMAP.md](docs/ROADMAP.md)** | Architecture standard: centralized daemon + link/repeater technologies |
 | **[docs/PLATFORMS.md](docs/PLATFORMS.md)** | GCC/Clang targets: Win10+, macOS, AmigaOS 3.9+, Linux/BSD |
 | **[docs/CLIENTS.md](docs/CLIENTS.md)** | Standalone `hybbx-telnet` / `hybbx-terminal` builds |
 | **[CONTRIBUTING.md](CONTRIBUTING.md)** | How to contribute (humans) |
