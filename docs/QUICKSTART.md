@@ -1,6 +1,6 @@
 # HyBBX quick start
 
-Get HyBBX running locally in a few minutes. HyBBX is a **BBS/mailbox-inspired service** for multiple link types — not a classic BBS replacement. Full reference: [MANUAL.md](MANUAL.md). Feature overview: [FEATURES.md](FEATURES.md).
+Get HyBBX running locally in a few minutes. HyBBX is plugin-based, extensible, transport-oriented service software for linking networks of different connection and stack types into a centralized server service — text-only commands at mailbox/BBS-like standards. Full reference: [MANUAL.md](MANUAL.md). Feature overview: [FEATURES.md](FEATURES.md).
 
 ## Requirements
 

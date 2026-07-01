@@ -2,7 +2,7 @@
 
 **Version:** 0.1.0 (early development)
 
-**Positioning:** HyBBX is a service solution for multiple connection types, **oriented on and inspired by** classic BBS/mailbox experiences. It is **not** a new BBS or mailbox product. **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features** — [ROADMAP.md](ROADMAP.md).
+**Positioning:** HyBBX is plugin-based, extensible, transport-oriented service software for linking, expanding, and featuring networks of different connection and stack types into a **centralized server service** — text-only commands at mailbox/BBS-like standards, and more. **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features** — [ROADMAP.md](ROADMAP.md).
 
 Living inventory of functional and important HyBBX capabilities. **Update this file whenever a feature is added, removed, or materially changed.** See [CONTRIBUTING.md](../CONTRIBUTING.md) and [DEVELOPMENT.md](DEVELOPMENT.md).
 

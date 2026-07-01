@@ -2,7 +2,7 @@
 
 Full reference for operators and developers.
 
-**What HyBBX is:** a **service solution for different connection types** (telnet, packet radio, planned SSH/WebSocket), **based on and inspired by** BBS and mailbox traditions. HyBBX is **not** a new standalone BBS or mailbox system — it is a link-agnostic platform with familiar session UX.
+**What HyBBX is:** plugin-based, extensible, transport-oriented service software for linking, expanding, and featuring networks of different connection and stack types (telnet, packet radio, planned SSH/WebSocket) into a **centralized server service** — text-only commands at mailbox/BBS-like standards.
 
 - Presentation & links: [README.md](../README.md)
 - Feature inventory: [FEATURES.md](FEATURES.md)

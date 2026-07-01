@@ -4,7 +4,7 @@ Thank you for helping improve HyBBX. This project welcomes **human and AI-assist
 
 ## Start here
 
-1. Read [README.md](README.md) — what HyBBX is (BBS/**mailbox-inspired** service, not a new BBS product).
+1. Read [README.md](README.md) — what HyBBX is (plugin-based transport service; mailbox/BBS-like text commands).
 2. Read [docs/FEATURES.md](docs/FEATURES.md) — current capabilities and status.
 3. Read [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — coding rules and workflow.
 4. **AI agents:** read [AGENTS.md](AGENTS.md) first.

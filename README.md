@@ -1,6 +1,6 @@
 # HyBBX
 
-**HyBBX** is a plugin-based **service solution for different connection types** — telnet, amateur **packet radio**, and future links. It is **based on and inspired by** classic BBS and mailbox culture (sessions, MOTD, chat, slow-link terminal UX). HyBBX is **not** a new BBS or mailbox product; it is a transport-oriented platform that carries that spirit across modern and radio links.
+**HyBBX** is plugin-based, extensible, transport-oriented service software for linking, expanding, and featuring networks of different connection and stack types (telnet, amateur **packet radio**, and future links) into a **centralized server service** — text-only commands at mailbox/BBS-like standards (sessions, MOTD, chat, slow-link terminal UX), and more.
 
 Plain **C99**, **INI** configuration, **40 columns** and **2400 baud** pacing for slow links.
 
@@ -12,7 +12,7 @@ Builds with **GCC** and **LLVM/Clang** on **Linux, BSD, macOS 10+, Windows 10+, 
 
 - **Telnet** over TCP/IPv4 and IPv6 (port **2323**)
 - **Packet radio** — TNC2C, BayCom, PC-COM; KISS, host mode, 6PACK; AX.25 over an internal HBX/TCP circuit
-- **BBS-inspired session core** — guests, registration, multi-channel chat, MOTD/news, staff commands
+- **Mailbox/BBS-like session core** — guests, registration, multi-channel chat, MOTD/news, staff commands
 - **Flat-file storage** with INI user shards; bundled crypto (optional OpenSSL/libsodium)
 - **Standalone CLI clients** — `hybbx-telnet` and `hybbx-terminal` (parameters/env only; no INI) build without the server ([docs/CLIENTS.md](docs/CLIENTS.md))
 

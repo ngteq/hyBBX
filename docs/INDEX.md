@@ -2,7 +2,7 @@
 
 Central index for all project documentation. The root [README.md](../README.md) is a short presentation only; details live here.
 
-HyBBX is a **connection-type service platform** inspired by classic BBS/mailbox culture — not a new BBS or mailbox product. **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features.** See [README.md](../README.md) for the positioning statement.
+HyBBX is plugin-based, extensible, transport-oriented service software for linking, expanding, and featuring networks of different connection and stack types into a **centralized server service** — text-only commands at mailbox/BBS-like standards, and more. **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features.** See [README.md](../README.md) for the positioning statement.
 
 ## For contributors
 

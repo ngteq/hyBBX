@@ -4,7 +4,7 @@ Instructions for **AI coding agents** and human developers working in this repos
 
 ## Project in one paragraph
 
-**HyBBX** is a C99, plugin-based **service solution for different connection types** (telnet, packet radio, …). It is **based on and inspired by** classic BBS/mailbox culture — **not** a new BBS product. **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features** ([docs/ROADMAP.md](docs/ROADMAP.md)).
+**HyBBX** is plugin-based, extensible, transport-oriented service software (C99) for linking, expanding, and featuring networks of different connection and stack types into a **centralized server service** — text-only commands at mailbox/BBS-like standards, and more. **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features** ([docs/ROADMAP.md](docs/ROADMAP.md)).
 
 Internally the core uses **TCP/IPv4+IPv6 + HBX framing** only. Wire protocols (telnet, KISS, AX.25) live in **link adapter** plugins under `plugins/`.
 

@@ -28,7 +28,7 @@ static void register_builtin_plugins(void)
 static void print_usage(const char *prog)
 {
     fprintf(stderr,
-            "HyBBX %s — connection service (BBS/mailbox-inspired)\n"
+            "HyBBX %s — transport service (mailbox/BBS-like text commands)\n"
             "\n"
             "Usage: %s [options]\n"
             "\n"

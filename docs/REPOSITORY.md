@@ -1,6 +1,6 @@
 # HyBBX repository layout
 
-Source tree overview for developers. HyBBX is a multi-transport **service platform** inspired by BBS/mailbox UX — **centralized daemon plus link/repeater daemon technologies** ([ROADMAP.md](ROADMAP.md)). Public API headers live under `include/hybbx/`.
+Source tree overview for developers. HyBBX is plugin-based, extensible, transport-oriented service software for different connection and stack types — **centralized daemon plus link/repeater daemon technologies** ([ROADMAP.md](ROADMAP.md)). Public API headers live under `include/hybbx/`.
 
 ```
 hyBBX/
