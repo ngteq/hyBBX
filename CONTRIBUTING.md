@@ -24,7 +24,7 @@ Details: [docs/QUICKSTART.md](docs/QUICKSTART.md), [docs/BUILD.md](docs/BUILD.md
 ## What we look for
 
 - **Focused changes** — one concern per PR when possible.
-- **Architecture respected** — centralized daemon + link/repeater daemon technologies ([AGENTS.md](AGENTS.md), [docs/ROADMAP.md](docs/ROADMAP.md)).
+- **Architecture respected** — Main + Secondary layout ([AGENTS.md](AGENTS.md), [docs/ROADMAP.md](docs/ROADMAP.md)).
 - **Docs updated** — [docs/FEATURES.md](docs/FEATURES.md) for functional changes; [docs/MANUAL.md](docs/MANUAL.md) / `share/hybbx.ini.example` for config/operator changes.
 - **GCC** or **LLVM/Clang** — [docs/PLATFORMS.md](docs/PLATFORMS.md)
 - **GPL-3.0** compatible — see [LICENSE.txt](LICENSE.txt).

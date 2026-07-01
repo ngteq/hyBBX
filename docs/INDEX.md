@@ -25,7 +25,7 @@ Doc index. Short intro: [README.md](../README.md). Config reference: `share/hybb
 
 ## Also useful
 
-- Example config: [share/hybbx.ini.example](../share/hybbx.ini.example) (main)
+- Main config: [share/hybbx.ini.example](../share/hybbx.ini.example)
 - Secondary config: [share/hybbx-secondary.ini.example](../share/hybbx-secondary.ini.example)
 - Dev config: [local/hybbx.ini](../local/hybbx.ini)
 - License: [LICENSE.txt](../LICENSE.txt)

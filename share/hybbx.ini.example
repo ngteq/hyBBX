@@ -1,4 +1,4 @@
-; HyBBX centralized daemon configuration — version target: 0.5.0
+; HyBBX Main instance configuration — version target: 0.5.0
 ; Release scope docs (RELEASE-*) begin at v1.0.0 — see docs/ROADMAP.md
 ; Arch: docs/ROADMAP.md  |  API: include/hybbx/*.h  |  Install: <prefix>/etc/hybbx.ini
 ;
@@ -10,15 +10,15 @@
 ;   [traffic]            baud/line_width pacing (default 2400/80)
 ;   [texts]              banner, motd, news
 ;   [chat]               channels
-;   [mail]               personal mailbox (centralized daemon)
+;   [mail]               personal mailbox (Main only)
 ;   [networks]           connection switches (ax25, websocket, circuit)
 ;   [transport.telnet]   TCP telnet adapter (port 2323) — static enabled
 ;   [circuit]            HBX TCP hub — secondaries connect here (main instance)
 ;   [transport.packet_radio]  RF link adapter (secondary → main over TCP/IP)
 ;
 ; Templates:
-;   share/hybbx.ini.example           — main / datacenter instance
-;   share/hybbx-secondary.ini.example — shack node with TNC (no local mail hub)
+;   share/hybbx.ini.example           — Main
+;   share/hybbx-secondary.ini.example — Secondary (TNC/modem, no local mail)
 ;
 ; Booleans: yes/no (aliases true/false, on/off, 1/0). Storage path supports ~ for $HOME.
 
@@ -109,7 +109,7 @@ ipv6 = yes
 ; upstream = reverse-proxy   ; informational; real TLS/HTTP termination on Apache/nginx
 
 ; Internal TCP/IPv4+IPv6 circuit hub (HBX framing). Secondaries attach over TCP/IP.
-; Main/datacenter: set bind to 0.0.0.0 / :: and open firewall TCP port (default 7323).
+; Main: set bind to 0.0.0.0 / :: and open firewall TCP port (default 7323).
 ; Local dev: keep 127.0.0.1 / ::1. HyBBX does not integrate VPN — use plain TCP or
 ; an external VPN/tunnel if desired.
 ; Master switch: [networks] circuit = yes|no
@@ -120,7 +120,7 @@ bind6 = ::1
 port = 7323
 ipv4 = yes
 ipv6 = yes
-; Link/repeater edge daemons: password auth only — no TCP ping/pong health checks.
+; Secondary password auth only — no TCP ping/pong health checks.
 link_auth = yes
 link_password = changeme
 link_stale_days = 10

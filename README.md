@@ -1,6 +1,6 @@
 # HyBBX
 
-Plugin-based C99 transport service: **centralized `hybbx` daemon**, **link/repeater edge daemons**, text-only mailbox/BBS-like sessions.
+Plugin-based C99 transport service: **Main** and **Secondary** `hybbx` instances, text-only mailbox/BBS-like sessions, TCP/IP bridge over HBX.
 
 Config: [`share/hybbx.ini.example`](share/hybbx.ini.example) · Arch: [`docs/ROADMAP.md`](docs/ROADMAP.md) · **0.5.0**
 
@@ -20,7 +20,7 @@ Clients: `build/src/clients/hybbx-telnet`, `hybbx-terminal` ([docs/CLIENTS.md](d
 | [FEATURES.md](docs/FEATURES.md) | Status |
 | [MANUAL.md](docs/MANUAL.md) | INI, transports, commands |
 | [QUICKSTART.md](docs/QUICKSTART.md) | First run |
-| [ROADMAP.md](docs/ROADMAP.md) | Central + edge daemon layout |
+| [ROADMAP.md](docs/ROADMAP.md) | Main + Secondary layout |
 | [PLATFORMS.md](docs/PLATFORMS.md) | GCC/Clang targets |
 | [INDEX.md](docs/INDEX.md) | Full index |
 

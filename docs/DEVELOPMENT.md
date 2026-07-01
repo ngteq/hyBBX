@@ -50,7 +50,7 @@ Link adapters: telnet | packet_radio | (future ssh, ws)
 
 ### Architecture
 
-Centralized daemon + link/repeater edge daemons. [ROADMAP.md](ROADMAP.md), `share/hybbx.ini.example` `[circuit]`.
+Main + Secondary layout. [ROADMAP.md](ROADMAP.md), `share/hybbx.ini.example` `[circuit]`.
 
 ### Transport plugin API
 

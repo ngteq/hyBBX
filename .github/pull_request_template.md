@@ -25,7 +25,7 @@
 
 ## Architecture
 
-- [ ] Aligns with architecture standard: centralized daemon + link/repeater daemon technologies ([docs/ROADMAP.md](../docs/ROADMAP.md))
+- [ ] Aligns with architecture standard: Main + Secondary ([docs/ROADMAP.md](../docs/ROADMAP.md))
 - [ ] No KISS/AX.25/telnet wire parsing added to `src/core/`
 - [ ] Follows plugin / HBX circuit model ([AGENTS.md](../AGENTS.md))
 

@@ -1,6 +1,6 @@
 # HyBBX manual
 
-INI, transports, commands. Config: `share/hybbx.ini.example` (main), `share/hybbx-secondary.ini.example` (secondary). Arch: [ROADMAP.md](ROADMAP.md).
+INI, transports, commands. Config: `share/hybbx.ini.example` (Main), `share/hybbx-secondary.ini.example` (Secondary). Arch: [ROADMAP.md](ROADMAP.md).
 
 - [FEATURES.md](FEATURES.md) · [QUICKSTART.md](QUICKSTART.md) · [INDEX.md](INDEX.md)
 
@@ -12,7 +12,7 @@ INI, transports, commands. Config: `share/hybbx.ini.example` (main), `share/hybb
 | SSH             | Planned  | **static** (always on) | Secure shell (transport plugin) |
 | AX.25 / Packet Radio | Started | `ax25 = yes\|no` | TNC2C (KISS/AX.25); USB/RS232 |
 | WebSocket       | Planned  | `websocket = yes\|no` | Forward-proxy behind Apache/nginx only |
-| HBX circuit hub | Started  | `circuit = yes\|no` | Internal TCP hub for edge link adapters |
+| HBX circuit hub | Started  | `circuit = yes\|no` | Internal TCP hub for Secondary adapters |
 
 Telnet and SSH ignore `enabled` in their `[transport.*]` sections — they start whenever the plugin is built. All other adapters are off unless `[networks]` enables them.
 
@@ -20,7 +20,7 @@ Telnet and SSH ignore `enabled` in their `[transport.*]` sections — they start
 
 Plugins: `hybbx_transport_plugin_t` in `include/hybbx/plugin.h`. Core = TCP/IPv4+IPv6 + HBX only.
 
-Arch (central + edge daemons): [ROADMAP.md](ROADMAP.md). Circuit INI: `[circuit]` in `share/hybbx.ini.example`.
+Arch (Main + Secondary): [ROADMAP.md](ROADMAP.md). Circuit INI: `[circuit]` in `share/hybbx.ini.example`.
 
 ### Planned transports
 
@@ -54,7 +54,7 @@ Master switches for optional connection adapters. Core IP transports are static-
 [networks]
 ax25 = no          ; packet_radio plugin (AX.25 / KISS / TNC)
 websocket = no     ; planned
-circuit = yes      ; HBX TCP hub for edge link/repeater daemons
+circuit = yes      ; HBX TCP hub (Main); Secondaries connect here
 ```
 
 | Key | Default | Controls |
@@ -101,12 +101,12 @@ Telnet remains native TCP to the session (no HBX wrapper on the wire).
 
 ### Main and secondary deployment (TCP/IP bridge)
 
-HyBBX uses a **main** instance (datacenter or primary BBS) and **secondary** nodes (shack, remote site) with TNC/modem hardware. Secondaries connect to the main **circuit hub** over plain **TCP/IP** — no VPN inside HyBBX. Admins may add VPN, SSH tunnels, or firewalls externally.
+HyBBX uses a **Main** instance and **Secondary** instances with TNC/modem hardware. Secondaries connect to the Main **circuit hub** over plain **TCP/IP** — no VPN inside HyBBX. Admins may add VPN, SSH tunnels, or firewalls externally.
 
-| Role | Template | Typical host |
-|------|----------|--------------|
-| **Main** | `share/hybbx.ini.example` | Datacenter server, no TNC |
-| **Secondary** | `share/hybbx-secondary.ini.example` | Shack box with TNC2C/modem |
+| Role | Template |
+|------|----------|
+| **Main** | `share/hybbx.ini.example` |
+| **Secondary** | `share/hybbx-secondary.ini.example` |
 
 ```
   Secondary                         Main
@@ -115,7 +115,7 @@ HyBBX uses a **main** instance (datacenter or primary BBS) and **secondary** nod
                                               mail, storage, chat
 ```
 
-**Main (datacenter)** — expose the circuit hub to secondaries:
+**Main** — expose the circuit hub to Secondaries:
 
 ```ini
 [networks]
@@ -133,7 +133,7 @@ link_password = <shared-secret>
 
 Open **TCP 7323** on the firewall (and **2323** for telnet users). Restart HyBBX; boot log should show `circuit hub 0.0.0.0:7323`, not loopback only.
 
-**Secondary (shack with TNC)** — bridge RF to main:
+**Secondary** — bridge RF to Main:
 
 ```ini
 [networks]
@@ -144,12 +144,12 @@ circuit = no
 enabled = no
 
 [transport.packet_radio]
-circuit_host = <main-public-ip-or-dns>
+circuit_host = <main-host>
 circuit_port = 7323
-link_id = shack-1
+link_id = secondary-1
 link_password = <same-as-main>
 link_role = link
-device = /dev/ttyU0
+device = /dev/ttyUSB0
 tnc = tnc2c
 protocol = kiss
 ```
@@ -163,7 +163,7 @@ Run: `hybbx -c /path/to/hybbx-secondary.ini` (or copy to `hybbx.ini`).
 3. Main validates → link registry → opens one circuit session
 4. RF frames uplink as HBX `ax25`; BBS output downlink as HBX `terminal`
 
-**Today:** one active circuit link per main (one secondary RF path → one session). Multiple simultaneous secondaries: [ROADMAP.md — Multi-link](ROADMAP.md#multi-link-several-secondaries--one-main--planned).
+**Today:** one active circuit link per Main (one Secondary RF path → one session). Multiple simultaneous Secondaries: [ROADMAP.md — Multi-link](ROADMAP.md#multi-link-several-secondaries--one-main--planned).
 
 **VPN:** not built into HyBBX. Point `circuit_host` at the main's reachable IP, or at a VPN endpoint you configure outside HyBBX.
 
@@ -199,7 +199,7 @@ Environment: `HYBBX_HOST`, `HYBBX_PORT`. See [CLIENTS.md](CLIENTS.md).
 
 ```bash
 hybbx-terminal -H 127.0.0.1 -p 7323
-hybbx-terminal --link-id edge-1 --link-password changeme
+hybbx-terminal --link-id secondary-1 --link-password changeme
 hybbx-terminal --mycall DL1ABC-0 --dest DL9XYZ-0 --ax25-ui
 ```
 
@@ -207,7 +207,7 @@ Environment: `HYBBX_CIRCUIT_HOST`, `HYBBX_CIRCUIT_PORT`. See [CLIENTS.md](CLIENT
 
 ### Circuit link authentication
 
-Edge adapters (packet radio, future link/repeater edge daemons) authenticate to `[circuit]` with **password only**. HyBBX does **not** use TCP/IP-style ping/pong or heartbeat health checks across links or protocols.
+Secondary adapters (packet radio and future stacks) authenticate to Main `[circuit]` with **password only**. HyBBX does **not** use TCP/IP-style ping/pong or heartbeat health checks across links or protocols.
 
 ```ini
 [circuit]
@@ -216,7 +216,7 @@ link_password = changeme
 link_stale_days = 10
 
 [transport.packet_radio]
-link_id = edge-1
+link_id = secondary-1
 link_password = changeme
 link_role = repeater
 ```
@@ -410,7 +410,7 @@ subject_max = 72
 body_max = 2048
 ```
 
-Messages stored under `data/mail/<username>/inbox/` on the **centralized daemon** only.
+Messages stored under `data/mail/<username>/inbox/` on **Main** only.
 
 ## Input routing
 
@@ -480,7 +480,7 @@ Legacy `users.dat` (`id|name|level|…`) migrates on first startup. Plain passwo
 | plain text | Auto-upgraded to `{sha256}` |
 
 | `sessions.dat`, `guest.next`, `user.next`, `session.next` | Counters / session log |
-| `mail/<user>/inbox/*.msg` | Personal mail (centralized daemon) |
+| `mail/<user>/inbox/*.msg` | Personal mail (Main only) |
 
 **Default Sysop** (if none exists): username `Sysop`, password `Sysop` — change after first login.
 

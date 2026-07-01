@@ -6,15 +6,15 @@ Source tree. API: `include/hybbx/`. Config: `share/hybbx.ini.example`.
 hyBBX/
   include/hybbx/          Public C API (config, session, plugin, circuit, tnc, …)
   src/
-    core/                 Centralized daemon: sessions, storage, crypto, circuit hub
+    core/                 Main: sessions, storage, crypto, circuit hub
     clients/              Standalone CLI clients (hybbx-telnet, hybbx-terminal)
     main.c                Entry point, plugin registration
   plugins/
     telnet/               TCP/IPv4+IPv6 telnet link adapter
-    packet_radio/         Link/repeater edge: AX.25 + TNC stack; HBX client to circuit
+    packet_radio/         Secondary: AX.25 + TNC stack; HBX client to Main circuit
   third_party/            Bundled crypto (tinysha256, Monocypher, tiny-AES-c)
   text/                   banner.txt, motd.txt, news.txt (BBS texts)
-  share/                  hybbx.ini.example (main), hybbx-secondary.ini.example (edge)
+  share/                  hybbx.ini.example (Main), hybbx-secondary.ini.example (Secondary)
   local/                  Local dev config and data (not required for install)
   scripts/                hybbx.sh, dev-setup.sh
   cmake/                  CMake modules, platform toolchains (AmigaOS 3.9+)

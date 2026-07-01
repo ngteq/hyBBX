@@ -4,7 +4,7 @@ Instructions for **AI coding agents** and human developers working in this repos
 
 ## Project
 
-C99 plugin transport service: centralized `hybbx` daemon + link/repeater edge daemons. **0.5.x** development line (per-version `RELEASE-*` docs start at **v1.0.0**). Config: `share/hybbx.ini.example`.
+C99 plugin transport service: **Main** and **Secondary** instances. **0.5.x** development line (per-version `RELEASE-*` docs start at **v1.0.0**). Config: `share/hybbx.ini.example` (Main), `share/hybbx-secondary.ini.example` (Secondary).
 
 ## Documentation map (read first)
 
@@ -28,7 +28,7 @@ C99 plugin transport service: centralized `hybbx` daemon + link/repeater edge da
 ## Architecture rules (do not break)
 
 0. **Scope** — match [docs/FEATURES.md](docs/FEATURES.md) and [docs/ROADMAP.md](docs/ROADMAP.md); no per-version `RELEASE-*` files until v1.0.0.
-1. **Arch** — centralized daemon + link/repeater edge ([docs/ROADMAP.md](docs/ROADMAP.md)); INI: `share/hybbx.ini.example`.
+1. **Arch** — Main + Secondary ([docs/ROADMAP.md](docs/ROADMAP.md)); INI: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
 2. **Core never parses on-air radio formats** — no KISS/AX.25 in `src/core/` except HBX circuit handling (`circuit.c`, `circuit_tcp.c`).
 3. **Link adapters** implement `hybbx_transport_plugin_t` ([include/hybbx/plugin.h](include/hybbx/plugin.h)).
 4. **Packet radio** bridges RF ↔ internal HBX/TCP (`circuit_host` / `[circuit]` hub), not direct session I/O.

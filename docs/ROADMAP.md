@@ -4,26 +4,26 @@ Planned work on the **0.5.x** line. Per-version `docs/RELEASE-*` freeze/scope fi
 
 ## Architecture
 
-Centralized **main** daemon + **secondary** (edge) nodes over **TCP/IP**. Same `hybbx` binary; role is defined by INI.
+**Main** and **Secondary** instances over **TCP/IP**. Same `hybbx` binary; role is defined by INI.
 
-| Role | Also called | Purpose |
-|------|-------------|---------|
-| **Main** | centralized, primary | Users, storage, mail, chat, telnet, HBX circuit hub |
-| **Secondary** | edge, link, shack node | TNC/modem/RF locally; bridges to main via HBX/TCP |
+| Role | Purpose |
+|------|---------|
+| **Main** | Users, storage, mail, chat, telnet, HBX circuit hub |
+| **Secondary** | TNC/modem/RF locally; bridges to Main via HBX/TCP |
 
 HyBBX does **not** integrate VPNs. Links use plain TCP/IP (`circuit_host`:`circuit_port`). Admins and sysops may add VPN, SSH tunnels, or reverse proxies externally.
 
 Config templates:
 
-| Template | Use |
-|----------|-----|
-| `share/hybbx.ini.example` | Main / datacenter instance |
-| `share/hybbx-secondary.ini.example` | Secondary with TNC (no local mail hub) |
+| Template | Role |
+|----------|------|
+| `share/hybbx.ini.example` | Main |
+| `share/hybbx-secondary.ini.example` | Secondary |
 
 ### Main / secondary bridge (HBX over TCP) — **done (single link)**
 
 ```
-  Secondary (TNC + RF)                 Main (datacenter)
+  Secondary (TNC + RF)                 Main
   ┌────────────────────┐   TCP :7323   ┌─────────────────────────┐
   │ hybbx              │ ────────────► │ hybbx                   │
   │ [networks] ax25=yes│   HBX v1      │ [circuit] hub           │
@@ -41,42 +41,42 @@ Config templates:
 - AX.25 uplink → session; session output → terminal downlink
 - Standalone test client: `hybbx-terminal`
 
-**Current limit:** the hub accepts **one active circuit link** at a time (one RF site → one BBS session on main). Multi-secondary fan-in is planned below.
+**Current limit:** the Main hub accepts **one active circuit link** at a time (one Secondary RF path → one BBS session on Main). Multi-secondary fan-in is planned below.
 
-### Edge roles (packet radio)
+### Secondary `link_role` (INI)
 
-| Term | Secondary role |
-|------|----------------|
-| **Link** | P2P RF hop → main (`link_role = link`) |
-| **Gateway** | IP/RF edge → main |
-| **Digipeater** | AX.25 `via` relay on RF |
-| **Repeater** | RF range extension |
+Recorded in the link registry on successful `LINK_AUTH`. Routing semantics per role are **planned**.
 
-`link_role` is recorded in the link registry today; routing semantics per role are **planned**.
+| `link_role` | Typical Secondary use |
+|-------------|------------------------|
+| `link` | Default RF bridge to Main |
+| `gateway` | IP/RF access path to Main |
+| `digipeater` | AX.25 `via` relay on RF |
+| `repeater` | RF range extension |
 
 ```
                          ┌──────────────────────────────────┐
-                         │   main instance (hybbx)          │
+                         │   Main                           │
                          │   telnet + circuit + mail        │
                          └────────────────┬─────────────────┘
                                           │ HBX/TCP
-              secondary nodes (link · gateway · digi · repeater)
+                                    Secondary nodes
                                           │
          ┌────────────────────────────────┼────────────────────────────────┐
          │                                │                                │
   ┌──────▼──────┐                 ┌───────▼───────┐                 ┌──────▼──────┐
-  │  gateway    │                 │ digipeater /  │                 │    link     │
-  │  (IP edge)  │                 │   repeater    │◄───────────────►│  (shack)    │
-  └──────┬──────┘                 └───────┬───────┘   via RELAY…    └──────┬──────┘
+  │ Secondary A │                 │ Secondary B   │◄───────────────►│ Secondary C │
+  │ (gateway)   │                 │ (digipeater)  │   via RELAY…    │ (link)      │
+  └──────┬──────┘                 └───────┬───────┘                 └──────┬──────┘
          │                                │                                │
-    telnet clients                 expanded RF reach                  TNC2C + RF
+    telnet users                   expanded RF reach                  TNC + RF
 ```
 
 ---
 
-## Multi-link (several secondaries → one main) — **planned**
+## Multi-link (several secondaries → one Main) — **planned**
 
-Goal: multiple secondary nodes connected to one main instance simultaneously, each with its own authenticated link and session (or shared pool — TBD).
+Goal: multiple Secondary nodes connected to one Main instance simultaneously, each with its own authenticated link and session (or shared pool — TBD).
 
 | Phase | Scope | Status |
 |-------|--------|--------|
@@ -90,8 +90,8 @@ Goal: multiple secondary nodes connected to one main instance simultaneously, ea
 
 - Replace single `link_fd` in `circuit_tcp.c` with a per-link table keyed by `link_id`
 - Cap concurrent links (`max_links` in `[circuit]`, default TBD)
-- Main storage remains authoritative; secondaries do not host mail/user DB
-- No VPN/TLS inside HyBBX — document external wrapping only
+- Main storage remains authoritative; Secondaries do not host mail/user DB
+- No VPN/TLS inside HyBBX — external wrapping only
 
 Operator doc: [MANUAL.md — Main and secondary deployment](MANUAL.md#main-and-secondary-deployment-tcpip-bridge).
 
@@ -99,21 +99,21 @@ Operator doc: [MANUAL.md — Main and secondary deployment](MANUAL.md#main-and-s
 
 ## Mail-Area
 
-Mailbox on **main** only (`data/mail/<user>/inbox/`). Secondaries forward RF sessions; `enabled = no` in secondary INI.
+Mailbox on **Main** only (`data/mail/<user>/inbox/`). Secondaries forward RF sessions; `enabled = no` in secondary INI.
 
 ---
 
-## Link/repeater edge modes — **partial**
+## Secondary modes — **partial**
 
-Relay HBX/AX.25 to `[circuit]`. INI: `link_role`, `circuit_host`, `link_*`. Packet-radio secondary template ships in 0.5.x.
+Relay HBX/AX.25 to Main `[circuit]`. INI: `link_role`, `circuit_host`, `link_*`. Secondary template ships in 0.5.x.
 
-Dedicated minimal edge-only binary mode (no local telnet hub) — optional future simplification; today the same `hybbx` process with secondary INI is enough.
+Optional future: minimal Secondary-only process layout; today the same `hybbx` binary with secondary INI is enough.
 
 ---
 
 ## Link codes — **done**
 
-Short token after successful secondary→main `LINK_AUTH` handshake (`LINK_AUTH_ACK`). Registry: `data/links/<id>.ini` and `[link.<id>]` in hybbx.ini. Not used for user login.
+Short token after successful Secondary→Main `LINK_AUTH` handshake (`LINK_AUTH_ACK`). Registry: `data/links/<id>.ini` and `[link.<id>]` in hybbx.ini. Not used for user login.
 
 ---
 
@@ -122,9 +122,9 @@ Short token after successful secondary→main `LINK_AUTH` handshake (`LINK_AUTH_
 | Item | Notes |
 |------|-------|
 | Multi-link hub | See table above |
-| SSH transport | Gateway secondary → main session core |
-| WebSocket | Gateway secondary behind reverse-proxy |
-| SQL storage | On **main** only |
+| SSH transport | Secondary or Main session access |
+| WebSocket | Behind reverse-proxy |
+| SQL storage | On **Main** only |
 | HBX protocols | APRS, NETROM reserved IDs |
 | BayCom `ser12` | Use `kissattach` + KISS until documented |
 

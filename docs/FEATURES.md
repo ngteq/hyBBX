@@ -58,7 +58,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | **hybbx-terminal** client | Done | Pure CLI AX.25 / HBX circuit terminal (`build/src/clients/hybbx-terminal`) |
 | Link password auth | Done | HBX `LINK_AUTH` on circuit attach — **no** ping/pong health checks |
 | Stale link removal | Done | Links with no password auth for `link_stale_days` (default 10) auto-removed |
-| Auto-generated link codes | Done | Issued on successful link/repeater edge auth to centralized daemon |
+| Auto-generated link codes | Done | Issued on successful Secondary→Main `LINK_AUTH` |
 | Telnet dual-stack bind | Done | `ipv4`/`ipv6` toggles; `bind` / `bind6`; `IPV6_V6ONLY` |
 | Packet radio | Done | AX.25 link adapter; `[networks] ax25 = yes` + `[transport.packet_radio]` |
 | SSH | Planned | Same session core as telnet |
@@ -155,7 +155,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| Flat-file inbox | Done | `data/mail/<user>/inbox/*.msg` on centralized daemon |
+| Flat-file inbox | Done | `data/mail/<user>/inbox/*.msg` on Main |
 | Recycle bin | Done | `.../recycle/*.msg`; auto-purge after `recycle_days` (default 10) |
 | `/mail list` | Done | Range `1-15` or `5-20` (newest first); `*` = unread |
 | `/mail read` / `delete` | Done | By index or range (`delete 5-20` → recycle) |
@@ -206,14 +206,14 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 ## Roadmap (not yet implemented)
 
-**Architecture:** HyBBX uses a **centralized daemon** and **link/repeater daemon technologies** to expand networks, range, and features. Details: [ROADMAP.md](ROADMAP.md).
+**Architecture:** HyBBX uses a **Main** instance and **Secondary** instances over TCP/IP. Details: [ROADMAP.md](ROADMAP.md).
 
 | Feature | Status | Description |
 |---------|--------|-------------|
 | Mail-Area | Done | Mailbox on **main** only (not chat) |
 | Main/secondary bridge | Done | HBX/TCP `LINK_AUTH`; templates in `share/` |
 | Multi-link hub | Planned | Several secondaries → one main concurrently |
-| Link/repeater edge modes | Partial | Secondary INI + `link_role` metadata; role routing planned |
+| Secondary modes | Partial | Secondary INI + `link_role` metadata; role routing planned |
 | SSH transport | Planned | Same session core as telnet |
 | WebSocket transport | Planned | Reverse-proxy only |
 | SQL storage | Planned | SQLite, MySQL/MariaDB on core |

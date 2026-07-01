@@ -1,21 +1,20 @@
-; HyBBX secondary (edge) — RF/TNC bridge to a main instance over TCP/IP
-; Copy/adapt for a shack or remote site with packet radio hardware.
+; HyBBX Secondary — RF/TNC bridge to a Main instance over TCP/IP
 ;
 ;   cp share/hybbx-secondary.ini.example ~/.hybbx-secondary.ini
 ;   hybbx -c ~/.hybbx-secondary.ini
 ;
-; Main (datacenter) template: share/hybbx.ini.example
+; Main template: share/hybbx.ini.example
 ;   [circuit] bind = 0.0.0.0  +  link_password  +  firewall TCP 7323
 ;
 ; HyBBX does not integrate VPNs — use plain TCP/IP. Admins may add VPN or
 ; TLS wrappers externally; the HBX protocol stays on TCP port 7323.
 
 [service]
-name = hyBBX-edge
+name = hyBBX-secondary
 
 [storage]
 backend = flatfile
-path = ~/.hybbx-edge
+path = ~/.hybbx-secondary
 
 [auth]
 auto_login = no
@@ -35,7 +34,7 @@ ax25 = yes
 circuit = no
 
 [transport.telnet]
-; Local maintenance only — not a public BBS endpoint
+; Local maintenance only
 bind = 127.0.0.1
 bind6 = ::1
 port = 2323
@@ -43,10 +42,10 @@ ipv4 = yes
 ipv6 = yes
 
 [transport.packet_radio]
-; TCP/IP bridge to the main instance (HBX v1 on [circuit])
-circuit_host = 92.60.36.150
+; TCP/IP bridge to Main (HBX v1 on [circuit])
+circuit_host = main.example.com
 circuit_port = 7323
-link_id = shack-1
+link_id = secondary-1
 link_password = changeme
 link_role = link
 
@@ -54,7 +53,7 @@ link_role = link
 tnc = tnc2c
 protocol = kiss
 device_type = usb
-device = /dev/ttyU0
+device = /dev/ttyUSB0
 baud = 2400
 modem = tcm3105
 radio_baud = 1200
