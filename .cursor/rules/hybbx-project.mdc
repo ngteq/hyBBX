@@ -9,7 +9,7 @@ Read [AGENTS.md](../../AGENTS.md) and [docs/DEVELOPMENT.md](../../docs/DEVELOPME
 
 ## Product
 
-- Plugin-based, extensible, transport-oriented service — mailbox/BBS-like text commands ([README.md](../../README.md)).
+- Arch: centralized daemon + link/repeater edge ([docs/ROADMAP.md](../../docs/ROADMAP.md), `share/hybbx.ini.example`).
 - **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features** ([docs/ROADMAP.md](../../docs/ROADMAP.md)).
 
 ## Code

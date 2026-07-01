@@ -4,13 +4,9 @@
 /**
  * HyBBX link/repeater edge daemon registry.
  *
- * Role names (gateway, digipeater, repeater, link) identify edge daemons
- * that relay toward the centralized daemon.
- *
- * Links are authenticated by password only — no TCP/IP-style ping/pong or
- * heartbeat health checks across networks or protocols.
- * Stale entries (no successful password auth within @ref HYBBX_LINK_STALE_DAYS)
- * are removed from the registry and from hybbx.ini @c [link.*] sections.
+ * Roles: gateway, digipeater, repeater, link — edge daemons toward centralized
+ * daemon [circuit]. Password auth only (LINK_AUTH); stale prune link_stale_days.
+ * INI: [circuit] link_* ; data/links/<id>.ini ; [link.<id>] in hybbx.ini.
  */
 
 #include "hybbx/types.h"

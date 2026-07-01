@@ -1,5 +1,5 @@
-# Standalone HyBBX client library (hybbx-telnet, hybbx-terminal).
-# Does not require the hybbx server daemon or transport plugins.
+# Standalone CLI clients (hybbx-telnet, hybbx-terminal).
+# No centralized daemon; flags/env only — see src/clients/*.c for options.
 
 add_library(hybbx_client STATIC
     ${CMAKE_SOURCE_DIR}/src/core/util.c

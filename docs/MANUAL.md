@@ -1,15 +1,8 @@
 # HyBBX manual
 
-Full reference for operators and developers.
+INI, transports, commands. Config template: `share/hybbx.ini.example`. Arch: [ROADMAP.md](ROADMAP.md).
 
-**What HyBBX is:** plugin-based, extensible, transport-oriented service software for linking, expanding, and featuring networks of different connection and stack types (telnet, packet radio, planned SSH/WebSocket) into a **centralized server service** — text-only commands at mailbox/BBS-like standards.
-
-- Presentation & links: [README.md](../README.md)
-- Feature inventory: [FEATURES.md](FEATURES.md)
-- Quick start: [QUICKSTART.md](QUICKSTART.md)
-- All docs: [INDEX.md](INDEX.md)
-- Architecture standard: [ROADMAP.md](ROADMAP.md)
-- Contributing: [CONTRIBUTING.md](../CONTRIBUTING.md) · Development: [DEVELOPMENT.md](DEVELOPMENT.md) · AI: [AGENTS.md](../AGENTS.md)
+- [FEATURES.md](FEATURES.md) · [QUICKSTART.md](QUICKSTART.md) · [INDEX.md](INDEX.md)
 
 ## Connection types
 
@@ -22,34 +15,9 @@ Full reference for operators and developers.
 
 ## Architecture
 
-HyBBX uses **TCP/IP (IPv4 and IPv6) as the only internal network semantics**. The core never speaks AX.25, KISS, or other link protocols directly — only byte streams over internal TCP circuits. External technologies are **link adapters**.
+Plugins: `hybbx_transport_plugin_t` in `include/hybbx/plugin.h`. Core = TCP/IPv4+IPv6 + HBX only.
 
-| Layer | Responsibility |
-|-------|----------------|
-| **Application** | HyBBX session (lines, commands, chat, auth, storage) |
-| **Internal transport** | TCP over IPv4/IPv6 (loopback, LAN, tunnel) |
-| **Link adapters** | Telnet (native TCP), packet radio (AX.25/KISS → internal TCP), future stacks |
-
-```
-                    ┌─────────────────────────────────┐
-                    │     hybbx_core (application)     │
-                    │  sessions · commands · storage   │
-                    └───────────────┬─────────────────┘
-                                    │ byte stream
-                    ┌───────────────▼─────────────────┐
-                    │   internal TCP (IPv4 / IPv6)     │
-                    └───────────────┬─────────────────┘
-          ┌─────────────────────────┼─────────────────────────┐
-   ┌──────▼──────┐          ┌───────▼───────┐         ┌───────▼───────┐
-   │   telnet    │          │ packet_radio  │         │  ssh / ws     │
-   │  (TCP in)   │          │ AX.25/KISS    │         │   (later)     │
-   │             │          │ → TCP circuit │         │  → TCP in     │
-   └─────────────┘          └───────────────┘         └───────────────┘
-```
-
-Plugins implement `hybbx_transport_plugin_t` in `include/hybbx/plugin.h`.
-
-**Architecture:** HyBBX uses a **centralized daemon** and **link/repeater daemon technologies** to expand networks, range, and features. On-air **`via`** digipeater paths apply as today in `[transport.packet_radio]`. See [ROADMAP.md](ROADMAP.md).
+Arch (central + edge daemons): [ROADMAP.md](ROADMAP.md). Circuit INI: `[circuit]` in `share/hybbx.ini.example`.
 
 ### Planned transports
 

@@ -2,10 +2,8 @@
 #define HYBBX_CIRCUIT_TCP_H
 
 /**
- * Internal TCP/IPv4+IPv6 circuit hub on the centralized daemon.
- *
- * Listens on loopback, accepts link/repeater edge daemon connections,
- * unwraps HBX frames into hybbx_session, and wraps session output back to HBX.
+ * HBX circuit TCP hub on centralized daemon + link client API for edge daemons.
+ * Hub: [circuit] bind/port. Client: hybbx_circuit_link_* + LINK_AUTH.
  */
 
 #include "hybbx/circuit.h"

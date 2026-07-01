@@ -1,8 +1,6 @@
 # HyBBX documentation
 
-Central index for all project documentation. The root [README.md](../README.md) is a short presentation only; details live here.
-
-HyBBX is plugin-based, extensible, transport-oriented service software for linking, expanding, and featuring networks of different connection and stack types into a **centralized server service** — text-only commands at mailbox/BBS-like standards, and more. **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features.** See [README.md](../README.md) for the positioning statement.
+Doc index. Short intro: [README.md](../README.md). Config reference: `share/hybbx.ini.example`.
 
 ## For contributors
 

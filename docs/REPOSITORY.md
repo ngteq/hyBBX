@@ -1,6 +1,6 @@
 # HyBBX repository layout
 
-Source tree overview for developers. HyBBX is plugin-based, extensible, transport-oriented service software for different connection and stack types — **centralized daemon plus link/repeater daemon technologies** ([ROADMAP.md](ROADMAP.md)). Public API headers live under `include/hybbx/`.
+Source tree. API: `include/hybbx/`. Config: `share/hybbx.ini.example`.
 
 ```
 hyBBX/

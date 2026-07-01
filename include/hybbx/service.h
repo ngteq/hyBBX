@@ -1,6 +1,14 @@
 #ifndef HYBBX_SERVICE_H
 #define HYBBX_SERVICE_H
 
+/**
+ * Centralized HyBBX daemon API (`hybbx` binary).
+ *
+ * Loads INI ([service], [storage], [auth], [transport.*], [circuit]), starts
+ * transport plugins and the HBX circuit hub. Edge link/repeater daemons attach
+ * to [circuit]; see share/hybbx.ini.example and docs/ROADMAP.md.
+ */
+
 #include "hybbx/config.h"
 #include "hybbx/plugin.h"
 #include "hybbx/auth.h"

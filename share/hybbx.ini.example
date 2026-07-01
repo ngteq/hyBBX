@@ -1,7 +1,19 @@
-; HyBBX configuration (installed: etc/hybbx.ini under install prefix).
-; Paths below are relative to the install prefix when started via hybbx-start.
+; HyBBX centralized daemon configuration
+; Arch: docs/ROADMAP.md  |  API: include/hybbx/*.h  |  Install: <prefix>/etc/hybbx.ini
 ;
-; Boolean keys: canonical yes/no; aliases true/false, enable/disable, on/off, 1/0.
+; Sections:
+;   [service]            daemon name, max_online, prompt
+;   [storage]            flatfile path (sql planned)
+;   [auth]               guests, registration
+;   [crypto]             backends (bundled default; optional OpenSSL/libsodium via CMake)
+;   [traffic]            baud/line_width pacing (default 2400/40)
+;   [texts]              banner, motd, news
+;   [chat]               channels
+;   [transport.telnet]   TCP telnet adapter (port 2323)
+;   [circuit]            HBX TCP hub — edge link/repeater daemons connect here
+;   [transport.packet_radio]  RF link adapter (KISS/AX.25 → circuit)
+;
+; Booleans: yes/no (aliases true/false, on/off, 1/0). Paths relative to install prefix.
 
 [service]
 name = hyBBX

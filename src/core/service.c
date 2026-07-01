@@ -1,3 +1,7 @@
+/*
+ * Centralized daemon: INI apply, plugin lifecycle, HBX circuit hub, sessions,
+ * link registry prune. Wire protocols stay in plugins/ (telnet, packet_radio).
+ */
 #include "hybbx/service.h"
 #include "hybbx/registry.h"
 #include "hybbx/config.h"

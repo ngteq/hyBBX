@@ -1,3 +1,6 @@
+/*
+ * telnet — TCP transport plugin (port 2323). INI: [transport.telnet].
+ */
 #include "hybbx/plugin.h"
 #include "hybbx/service.h"
 #include "hybbx/session.h"

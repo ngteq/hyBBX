@@ -48,9 +48,9 @@ Link adapters: telnet | packet_radio | (future ssh, ws)
 - **Do not** add KISS, AX.25, or telnet protocol parsing to `src/core/`.
 - **Do** extend plugins or `circuit.c` / `circuit_tcp.c` for new wire formats.
 
-### Architecture standard
+### Architecture
 
-HyBBX uses a **centralized daemon** and **link/repeater daemon technologies** to expand networks, range, and features. See [ROADMAP.md](ROADMAP.md).
+Centralized daemon + link/repeater edge daemons. [ROADMAP.md](ROADMAP.md), `share/hybbx.ini.example` `[circuit]`.
 
 ### Transport plugin API
 

@@ -1,3 +1,7 @@
+/*
+ * packet_radio — link/repeater edge adapter: serial TNC, KISS/AX.25 → HBX client.
+ * INI: [transport.packet_radio], upstream [circuit]. See share/hybbx.ini.example.
+ */
 #include "hybbx/plugin.h"
 #include "hybbx/service.h"
 #include "hybbx/packet_radio.h"

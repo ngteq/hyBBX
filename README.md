@@ -1,53 +1,27 @@
 # HyBBX
 
-**HyBBX** is plugin-based, extensible, transport-oriented service software for linking, expanding, and featuring networks of different connection and stack types (telnet, amateur **packet radio**, and future links) into a **centralized server service** — text-only commands at mailbox/BBS-like standards (sessions, MOTD, chat, slow-link terminal UX), and more.
+Plugin-based C99 transport service: **centralized `hybbx` daemon**, **link/repeater edge daemons**, text-only mailbox/BBS-like sessions.
 
-Plain **C99**, **INI** configuration, **40 columns** and **2400 baud** pacing for slow links.
+Config: [`share/hybbx.ini.example`](share/hybbx.ini.example) · Arch: [`docs/ROADMAP.md`](docs/ROADMAP.md) · **0.1.0**
 
-Builds with **GCC** and **LLVM/Clang** on **Linux, BSD, macOS 10+, Windows 10+, AmigaOS 3.9+**, and other POSIX systems ([docs/PLATFORMS.md](docs/PLATFORMS.md)).
-
-**Version 0.1.0** (early development)
-
-## At a glance
-
-- **Telnet** over TCP/IPv4 and IPv6 (port **2323**)
-- **Packet radio** — TNC2C, BayCom, PC-COM; KISS, host mode, 6PACK; AX.25 over an internal HBX/TCP circuit
-- **Mailbox/BBS-like session core** — guests, registration, multi-channel chat, MOTD/news, staff commands
-- **Flat-file storage** with INI user shards; bundled crypto (optional OpenSSL/libsodium)
-- **Standalone CLI clients** — `hybbx-telnet` and `hybbx-terminal` (parameters/env only; no INI) build without the server ([docs/CLIENTS.md](docs/CLIENTS.md))
-
-HyBBX uses a **centralized daemon** and **link/repeater daemon technologies** to expand networks, range, and features. See **[docs/FEATURES.md](docs/FEATURES.md)** and **[docs/ROADMAP.md](docs/ROADMAP.md)**.
-
-## Try it
+## Build
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
 ./scripts/hybbx.sh
-./build/src/clients/hybbx-telnet
 ```
 
-More detail: **[docs/QUICKSTART.md](docs/QUICKSTART.md)**
+Clients: `build/src/clients/hybbx-telnet`, `hybbx-terminal` ([docs/CLIENTS.md](docs/CLIENTS.md))
 
-## Documentation
+## Docs
 
-| Document | Purpose |
-|----------|---------|
-| **[docs/FEATURES.md](docs/FEATURES.md)** | All functional features (read this for scope & status) |
-| **[docs/QUICKSTART.md](docs/QUICKSTART.md)** | Build, install, first session |
-| **[docs/MANUAL.md](docs/MANUAL.md)** | Full operator & developer reference |
-| **[docs/INDEX.md](docs/INDEX.md)** | Documentation index |
-| **[docs/ROADMAP.md](docs/ROADMAP.md)** | Architecture standard: centralized daemon + link/repeater technologies |
-| **[docs/PLATFORMS.md](docs/PLATFORMS.md)** | GCC/Clang targets: Win10+, macOS, AmigaOS 3.9+, Linux/BSD |
-| **[docs/CLIENTS.md](docs/CLIENTS.md)** | Standalone `hybbx-telnet` / `hybbx-terminal` builds |
-| **[CONTRIBUTING.md](CONTRIBUTING.md)** | How to contribute (humans) |
-| **[AGENTS.md](AGENTS.md)** | Agent & developer quick guide (AI) |
+| Doc | |
+|-----|---|
+| [FEATURES.md](docs/FEATURES.md) | Status |
+| [MANUAL.md](docs/MANUAL.md) | INI, transports, commands |
+| [QUICKSTART.md](docs/QUICKSTART.md) | First run |
+| [ROADMAP.md](docs/ROADMAP.md) | Central + edge daemon layout |
+| [PLATFORMS.md](docs/PLATFORMS.md) | GCC/Clang targets |
+| [INDEX.md](docs/INDEX.md) | Full index |
 
-Example config: `share/hybbx.ini.example`
-
-## Contributing
-
-We welcome patches and docs improvements. See **[CONTRIBUTING.md](CONTRIBUTING.md)** and **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**. AI tools: start with **[AGENTS.md](AGENTS.md)**.
-
-## License
-
-**GPL-3.0** — see [LICENSE.txt](LICENSE.txt).
+GPL-3.0 — [LICENSE.txt](LICENSE.txt)

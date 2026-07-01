@@ -1,3 +1,8 @@
+/*
+ * hybbx — centralized server daemon (main).
+ * Plugins: CMake HYBBX_PLUGIN_* ; config: -c path/to/hybbx.ini
+ * Standalone clients: src/clients/hybbx-telnet, hybbx-terminal
+ */
 #include "hybbx/hybbx.h"
 #include "hybbx/service.h"
 #include "hybbx/registry.h"
@@ -28,7 +33,7 @@ static void register_builtin_plugins(void)
 static void print_usage(const char *prog)
 {
     fprintf(stderr,
-            "HyBBX %s — transport service (mailbox/BBS-like text commands)\n"
+            "HyBBX %s — centralized transport daemon\n"
             "\n"
             "Usage: %s [options]\n"
             "\n"

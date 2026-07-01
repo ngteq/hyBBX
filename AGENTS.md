@@ -2,11 +2,9 @@
 
 Instructions for **AI coding agents** and human developers working in this repository.
 
-## Project in one paragraph
+## Project
 
-**HyBBX** is plugin-based, extensible, transport-oriented service software (C99) for linking, expanding, and featuring networks of different connection and stack types into a **centralized server service** — text-only commands at mailbox/BBS-like standards, and more. **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features** ([docs/ROADMAP.md](docs/ROADMAP.md)).
-
-Internally the core uses **TCP/IPv4+IPv6 + HBX framing** only. Wire protocols (telnet, KISS, AX.25) live in **link adapter** plugins under `plugins/`.
+C99 plugin transport service: centralized `hybbx` daemon + link/repeater edge daemons. Core = TCP/HBX; wire formats in `plugins/`. Arch: [docs/ROADMAP.md](docs/ROADMAP.md). Config: `share/hybbx.ini.example`.
 
 ## Documentation map (read first)
 
@@ -29,7 +27,7 @@ Internally the core uses **TCP/IPv4+IPv6 + HBX framing** only. Wire protocols (t
 
 ## Architecture rules (do not break)
 
-0. **Architecture standard** — HyBBX uses a **centralized daemon** and **link/repeater daemon technologies** to expand networks, range, and features ([docs/ROADMAP.md](docs/ROADMAP.md)).
+0. **Arch** — centralized daemon + link/repeater edge daemons ([docs/ROADMAP.md](docs/ROADMAP.md)); INI: `share/hybbx.ini.example`.
 1. **Core never parses on-air radio formats** — no KISS/AX.25 in `src/core/` except HBX circuit handling (`circuit.c`, `circuit_tcp.c`).
 2. **Link adapters** implement `hybbx_transport_plugin_t` ([include/hybbx/plugin.h](include/hybbx/plugin.h)).
 3. **Packet radio** bridges RF ↔ internal HBX/TCP (`circuit_host` / `[circuit]` hub), not direct session I/O.
