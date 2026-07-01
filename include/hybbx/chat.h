@@ -18,7 +18,7 @@ struct hybbx_session;
 
 #define HYBBX_DEFAULT_CHAT_CHANNELS HYBBX_CHAT_CHANNEL_MAX
 
-/** Maximum characters per chat message line (2400 baud / 40 columns). */
+/** Maximum characters per chat message line (fits 80-column wrap). */
 #define HYBBX_CHAT_MESSAGE_MAX 72u
 
 typedef struct hybbx_chat_config {

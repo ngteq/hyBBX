@@ -15,7 +15,7 @@ Or `./scripts/build-clients.sh` · Binaries: `build-clients/src/clients/hybbx-{t
 
 ```bash
 hybbx-telnet -H 127.0.0.1 -p 2323
-hybbx-telnet -u user -P pass --baud 2400 --line-width 40
+hybbx-telnet -u user -P pass --baud 2400 --line-width 80
 ```
 
 Env: `HYBBX_HOST`, `HYBBX_PORT`

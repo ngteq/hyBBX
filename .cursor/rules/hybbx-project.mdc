@@ -10,7 +10,7 @@ Read [AGENTS.md](../../AGENTS.md) and [docs/DEVELOPMENT.md](../../docs/DEVELOPME
 ## Product
 
 - Arch: centralized daemon + link/repeater edge ([docs/ROADMAP.md](../../docs/ROADMAP.md), `share/hybbx.ini.example`).
-- **0.5.x stability line:** [docs/RELEASE-0.5.0.md](../../docs/RELEASE-0.5.0.md) — no new features except in-scope until next release bump.
+- **0.5.x** line — no `docs/RELEASE-*` files until v1.0.0; use [docs/FEATURES.md](../../docs/FEATURES.md) and [docs/ROADMAP.md](../../docs/ROADMAP.md).
 - **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features** ([docs/ROADMAP.md](../../docs/ROADMAP.md)).
 
 ## Code

@@ -40,7 +40,7 @@ static volatile int g_telnet_running = 0;
 
 static hybbx_result_t telnet_stop(void);
 
-static int set_socket_options(int fd)
+static int set_socket_options(int fd, int family)
 {
     int on = 1;
 
@@ -51,6 +51,16 @@ static int set_socket_options(int fd)
     if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) != 0) {
         return -1;
     }
+
+#ifdef IPV6_V6ONLY
+    if (family == AF_INET6) {
+        if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on)) != 0) {
+            return -1;
+        }
+    }
+#else
+    (void)family;
+#endif
 
     return 0;
 }
@@ -65,7 +75,7 @@ static int create_listen_socket(int family, const char *bind_addr, unsigned port
         return -1;
     }
 
-    if (set_socket_options(fd) != 0) {
+    if (set_socket_options(fd, family) != 0) {
         close(fd);
         return -1;
     }
@@ -210,7 +220,7 @@ static void *telnet_client_thread(void *arg)
         return NULL;
     }
 
-    (void)set_socket_options(client->fd);
+    (void)set_socket_options(client->fd, 0);
 
     rc = hybbx_telnet_send_greeting(client->fd);
     if (rc != HYBBX_OK) {
@@ -410,18 +420,14 @@ static hybbx_result_t telnet_start(const char *config)
     if (g_config.ipv6) {
         g_listen_v6 = create_listen_socket(AF_INET6, g_config.bind_v6, g_config.port);
         if (g_listen_v6 < 0) {
-            fprintf(stderr, "[telnet] failed to bind IPv6 [%s]:%u (%s)\n",
+            fprintf(stderr,
+                    "[telnet] IPv6 bind [%s]:%u skipped (%s)\n",
                     g_config.bind_v6, g_config.port, strerror(errno));
-            if (g_listen_v4 >= 0) {
-                close(g_listen_v4);
-                g_listen_v4 = -1;
-            }
-            return HYBBX_ERR_IO;
         }
     }
 
     if (g_listen_v4 < 0 && g_listen_v6 < 0) {
-        return HYBBX_ERR_INVALID;
+        return HYBBX_ERR_IO;
     }
 
     g_telnet_running = 1;

@@ -18,9 +18,7 @@ Doc index. Short intro: [README.md](../README.md). Config reference: `share/hybb
 | **[QUICKSTART.md](QUICKSTART.md)** | Operators | Clone, build, run, install, first telnet session |
 | **[MANUAL.md](MANUAL.md)** | Operators & developers | Full reference: config, transports, packet radio, auth, commands, crypto |
 | **[CLIENTS.md](CLIENTS.md)** | Operators | Standalone `hybbx-telnet` / `hybbx-terminal` (no server build) |
-| **[RELEASE-0.5.0.md](RELEASE-0.5.0.md)** | Everyone | **Active 0.5.x stability line**, scope and checklist |
-| **[RELEASE-0.4.75.md](RELEASE-0.4.75.md)** | Everyone | Previous release (shipped) |
-| **[ROADMAP.md](ROADMAP.md)** | Everyone | Post-release planned work |
+| **[ROADMAP.md](ROADMAP.md)** | Everyone | Planned work (`RELEASE-*` docs from v1.0.0) |
 | **[REPOSITORY.md](REPOSITORY.md)** | Developers | Source tree layout and main directories |
 | **[BUILD.md](BUILD.md)** | Developers | CMake options, toolchains, hardening |
 | **[PLATFORMS.md](PLATFORMS.md)** | Developers | GCC/Clang on Windows 10+, macOS X+, AmigaOS 3.9+, Linux/BSD |
@@ -37,6 +35,6 @@ Doc index. Short intro: [README.md](../README.md). Config reference: `share/hybb
 
 ## Maintainers
 
-- Update [FEATURES.md](FEATURES.md) when changing shipped functionality (0.5.x line: see [RELEASE-0.5.0.md](RELEASE-0.5.0.md)).
-- Update [ROADMAP.md](ROADMAP.md) only for post-0.5.0 planned work.
+- Update [FEATURES.md](FEATURES.md) when changing shipped functionality.
+- Update [ROADMAP.md](ROADMAP.md) for planned work. Per-version `docs/RELEASE-*` files begin at **v1.0.0**.
 - **Git / public pushes:** `user.name=ngteq`, `user.email` empty. No `Co-authored-by` or agent attribution in commit messages.

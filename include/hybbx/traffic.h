@@ -15,8 +15,11 @@ struct hybbx_session;
 /** Host link speed HyBBX is optimized for (8N1, ~1 byte per 10 bit times). */
 #define HYBBX_BAUD2400 2400u
 
-/** Classic packet-BBS display width (columns). */
-#define HYBBX_LINE_WIDTH 40u
+/** Default terminal width (columns). */
+#define HYBBX_LINE_WIDTH 80u
+
+/** Maximum configurable `line_width` in INI. */
+#define HYBBX_LINE_WIDTH_MAX 132u
 
 /** Maximum user input line (commands / chat). */
 #define HYBBX_LINE_MAX 80u
@@ -29,6 +32,7 @@ typedef struct hybbx_traffic_config {
     unsigned line_width;
     int pace_output;
     int ansi;
+    int input_echo;
 } hybbx_traffic_config_t;
 
 void hybbx_traffic_config_defaults(hybbx_traffic_config_t *cfg);

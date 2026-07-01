@@ -55,12 +55,12 @@ void hybbx_circuit_config_defaults(hybbx_circuit_config_t *cfg)
     snprintf(cfg->bind6, sizeof(cfg->bind6), "::1");
     cfg->port = HYBBX_CIRCUIT_DEFAULT_PORT;
     cfg->ipv4 = 1;
-    cfg->ipv6 = 1;
+    cfg->ipv6 = 0;
     cfg->link_stale_days = HYBBX_LINK_STALE_DAYS;
     cfg->link_auth = 1;
 }
 
-static int set_socket_options(int fd)
+static int set_socket_options(int fd, int family)
 {
     int on = 1;
 
@@ -71,6 +71,16 @@ static int set_socket_options(int fd)
     if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) != 0) {
         return -1;
     }
+
+#ifdef IPV6_V6ONLY
+    if (family == AF_INET6) {
+        if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on)) != 0) {
+            return -1;
+        }
+    }
+#else
+    (void)family;
+#endif
 
     return 0;
 }
@@ -85,7 +95,7 @@ static int create_listen_socket(int family, const char *bind_addr, unsigned port
         return -1;
     }
 
-    if (set_socket_options(fd) != 0) {
+    if (set_socket_options(fd, family) != 0) {
         close(fd);
         return -1;
     }
@@ -531,7 +541,7 @@ static void *circuit_accept_thread(void *arg)
                     continue;
                 }
 
-                (void)set_socket_options(client);
+                (void)set_socket_options(client, 0);
                 pthread_mutex_lock(&hub->lock);
                 hub->link_fd = client;
                 pthread_mutex_unlock(&hub->lock);
@@ -608,16 +618,24 @@ hybbx_result_t hybbx_circuit_hub_start(hybbx_circuit_hub_t *hub,
     if (cfg->ipv6) {
         hub->listen_v6 = create_listen_socket(AF_INET6, cfg->bind6, cfg->port);
         if (hub->listen_v6 < 0) {
-            fprintf(stderr, "[circuit] IPv6 bind [%s]:%u failed\n",
-                    cfg->bind6, cfg->port);
-            hybbx_circuit_hub_stop(hub);
-            return HYBBX_ERR_IO;
+            fprintf(stderr, "[circuit] IPv6 bind [%s]:%u skipped (%s)\n",
+                    cfg->bind6, cfg->port, strerror(errno));
         }
     }
 
-    printf("[circuit] internal TCP hub %s:%u / [%s]:%u (HBX v%u)\n",
-           cfg->bind4, cfg->port, cfg->bind6, cfg->port,
-           (unsigned)HYBBX_CIRCUIT_VERSION);
+    if (hub->listen_v4 < 0 && hub->listen_v6 < 0) {
+        hybbx_circuit_hub_stop(hub);
+        return HYBBX_ERR_IO;
+    }
+
+    printf("[circuit] internal TCP hub");
+    if (hub->listen_v4 >= 0) {
+        printf(" %s:%u", cfg->bind4, cfg->port);
+    }
+    if (hub->listen_v6 >= 0) {
+        printf(" [%s]:%u", cfg->bind6, cfg->port);
+    }
+    printf(" (HBX v%u)\n", (unsigned)HYBBX_CIRCUIT_VERSION);
 
     if (pthread_create(&hub->accept_thread, NULL, circuit_accept_thread,
                        hub) != 0) {

@@ -82,10 +82,10 @@ Reserved protocol IDs (`0x20` APRS, `0x21` NETROM, …) are allocated for future
 [circuit]
 enabled = yes
 bind = 127.0.0.1
-bind6 = ::1
 port = 7323
 ipv4 = yes
-ipv6 = yes
+ipv6 = no
+; bind6 = ::1             ; only when ipv6 = yes
 ```
 
 Packet radio connects as a **link client** (`circuit_host` / `circuit_port` in
@@ -105,13 +105,13 @@ Telnet remains native TCP to the session (no HBX wrapper on the wire).
 [transport.telnet]
 enabled = yes
 bind = 0.0.0.0
-bind6 = ::
 port = 2323
-; ipv4 = yes
-; ipv6 = yes
+ipv4 = yes
+ipv6 = no
+; bind6 = ::              ; only when ipv6 = yes
 ```
 
-Listens on IPv4 and IPv6 on the same port.
+Listens on IPv4 by default. Set `ipv6 = yes` (and `bind6`) for an additional IPv6 socket on the same port (`IPV6_V6ONLY` when both are enabled).
 
 ### hybbx-telnet (HyBBX client)
 
@@ -119,7 +119,7 @@ Listens on IPv4 and IPv6 on the same port.
 
 ```bash
 hybbx-telnet -H 127.0.0.1 -p 2323
-hybbx-telnet --baud 2400 --line-width 40
+hybbx-telnet --baud 2400 --line-width 80
 hybbx-telnet -u myuser -P secret
 ```
 
@@ -168,12 +168,13 @@ Server telnet behaviour:
 ```ini
 [traffic]
 baud = 2400
-line_width = 40
+line_width = 80
 pace_output = yes
 ansi = no
+input_echo = yes
 ```
 
-Default: plain ASCII, 40-column wrap, paced 8N1 output. Set `ansi = yes` for telnet gray-on-black (`ANSI 37;40`). Keep `text/*.txt` lines within **40 characters** when possible.
+Default: plain ASCII, **80-column** wrap, paced 8N1 output. `input_echo = yes` echoes typed/pasted characters to the client. Set `ansi = yes` for telnet gray-on-black (`ANSI 37;40`) and ANSI screen clear (`/clear`). Keep `text/*.txt` lines within **80 characters** when possible.
 
 ### Packet radio / AX.25 TNC stack
 
@@ -440,7 +441,7 @@ Bundled: [Monocypher](third_party/monocypher/), [tiny-AES-c](third_party/tinyaes
 
 ## Authentication & privileges
 
-Guests (`Guest1` … `Guest111`) may use: `/help`, `/motd`, `/news`, `/login`, `/register`.
+Guests (`Guest1` … `Guest111`) may use: `/help`, `/motd`, `/news`, `/login`, `/register`, `/clear`, `/echo`.
 
 **Username rules:** 4–12 chars, `a`–`z`, ≤4 digits, at most one `_` or `-` (not both).
 
@@ -484,6 +485,8 @@ Banner tokens: `@version@`, `@service@`.
 | `/version` | Version (`/ver`) |
 | `/leave` | Up one area (`/back`) |
 | `/main` | Main area (`/menu`) |
+| `/clear` | Clear screen and input (`/cls`, `/reset`) |
+| `/echo` | Show or toggle input echo (`/echo yes\|no`) |
 | `/chat` | List/join channels |
 | `/mail` | Inbox; `/mail send`, `read`, `delete` |
 | `/login <user> <pass>` | Login |
@@ -494,7 +497,7 @@ Banner tokens: `@version@`, `@service@`.
 
 ### Chat
 
-`/chat <number>` or `/chat <name>`. Channel name = topic. Messages: `ME: …` / `<user>: …`. Max length: `message_max` (default 72). Output wraps at 40 columns.
+`/chat <number>` or `/chat <name>`. Channel name = topic. Messages: `ME: …` / `<user>: …`. Max length: `message_max` (default 72). Output wraps at 80 columns.
 
 **Mail** (registered users): `/mail` lists inbox (`*` = unread). `/mail read <n>`, `/mail delete <n>`. `/mail send <user> <subject>` then type body lines; `/mail done` sends. `/mail cancel`, `/leave`, or `/main` aborts compose.
 

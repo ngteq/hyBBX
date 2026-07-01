@@ -1,5 +1,5 @@
 ; HyBBX centralized daemon configuration — version target: 0.5.0
-; Stability line: docs/RELEASE-0.5.0.md
+; Release scope docs (RELEASE-*) begin at v1.0.0 — see docs/ROADMAP.md
 ; Arch: docs/ROADMAP.md  |  API: include/hybbx/*.h  |  Install: <prefix>/etc/hybbx.ini
 ;
 ; Sections:
@@ -7,7 +7,7 @@
 ;   [storage]            flatfile path (sql planned)
 ;   [auth]               guests, registration
 ;   [crypto]             backends (bundled default; optional OpenSSL/libsodium via CMake)
-;   [traffic]            baud/line_width pacing (default 2400/40)
+;   [traffic]            baud/line_width pacing (default 2400/80)
 ;   [texts]              banner, motd, news
 ;   [chat]               channels
 ;   [mail]               personal mailbox (centralized daemon)
@@ -44,12 +44,13 @@ chacha = monocypher           ; monocypher | libsodium
 x25519 = monocypher           ; monocypher | libsodium
 random = system               ; system | openssl
 
-; 2400 baud traffic profile (40 columns, paced 8N1 output, plain ASCII).
+; 2400 baud traffic profile (80 columns, paced 8N1 output, plain ASCII).
 [traffic]
 baud = 2400
-line_width = 40
+line_width = 80
 pace_output = yes
 ansi = no
+input_echo = yes
 
 [texts]
 path = ./text
@@ -86,10 +87,10 @@ circuit = yes
 [transport.telnet]
 ; Static-enabled (always started when built). Port/bind only:
 bind = 0.0.0.0
-bind6 = ::
 port = 2323
-; ipv4 = yes
-; ipv6 = yes
+ipv4 = yes
+ipv6 = no
+; bind6 = ::              ; used only when ipv6 = yes
 
 ; Planned later (not implemented):
 ; [transport.ssh]
@@ -107,10 +108,10 @@ port = 2323
 [circuit]
 enabled = yes
 bind = 127.0.0.1
-bind6 = ::1
 port = 7323
 ipv4 = yes
-ipv6 = yes
+ipv6 = no
+; bind6 = ::1             ; used only when ipv6 = yes
 ; Link/repeater edge daemons: password auth only — no TCP ping/pong health checks.
 link_auth = yes
 link_password = changeme

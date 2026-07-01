@@ -71,3 +71,28 @@ hybbx_result_t hybbx_term_init_session(hybbx_session_t *session)
 
     return hybbx_session_write(session, HYBBX_TERM_SGR_LIGHTGRAY_ON_BLACK);
 }
+
+hybbx_result_t hybbx_term_clear_screen(hybbx_session_t *session)
+{
+    const hybbx_traffic_config_t *traffic;
+    int i;
+
+    if (session == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    traffic = hybbx_traffic_config_get();
+    if (traffic != NULL && traffic->ansi) {
+        return hybbx_session_write(session, HYBBX_TERM_CLEAR_SCREEN);
+    }
+
+    for (i = 0; i < 24; i++) {
+        hybbx_result_t rc = hybbx_session_write(session, "\n");
+
+        if (rc != HYBBX_OK) {
+            return rc;
+        }
+    }
+
+    return HYBBX_OK;
+}

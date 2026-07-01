@@ -1,6 +1,6 @@
 # HyBBX feature list
 
-**Version:** 0.5.0 — see [RELEASE-0.5.0.md](RELEASE-0.5.0.md).
+**Version:** 0.5.0 — see [FEATURES.md](FEATURES.md).
 
 Feature inventory — update when behavior changes. Operator INI: `share/hybbx.ini.example`, [MANUAL.md](MANUAL.md). Arch: [ROADMAP.md](ROADMAP.md).
 
@@ -22,9 +22,10 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | `[networks]` switches | Done | `ax25`, `websocket`, `circuit`; telnet/ssh static-enabled |
 | Service lifecycle | Done | Load config, start circuit hub and enabled transports, run until shutdown |
 | Session model | Done | Per-connection BBS-inspired session; node limit (`max_online` / `nodes`) |
-| 2400 baud traffic layer | Done | 40-column wrap, paced 8N1 output, optional ANSI; tuned for slow links |
+| 2400 baud traffic layer | Done | 80-column wrap, paced 8N1 output, optional ANSI; tuned for slow links |
 | Boolean config standard | Done | Canonical `yes`/`no`; aliases `true`/`false`, `enable`/`disable`, `on`/`off`, `1`/`0` |
 | Command routing | Done | `/` HyBBX commands; `;`/`#` comments ignored; other input local/mailbox (silent) |
+| Input echo | Done | `[traffic] input_echo`; `/echo yes\|no` per session |
 | Areas | Done | `main` (default), `mail` (personal inbox), `chat` (registered users) |
 | Hardening | Done | Optional stack protector, FORTIFY, RELRO/PIE; bounded buffers in `limits.h` |
 
@@ -35,7 +36,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Feature | Status | Description |
 |---------|--------|-------------|
 | TCP-only core semantics | Done | Application never parses KISS/AX.25 on-air formats directly |
-| Circuit hub | Done | `[circuit]` TCP listen on IPv4+IPv6 loopback (default port 7323) |
+| Circuit hub | Done | `[circuit]` TCP listen on IPv4 loopback (default port 7323); optional IPv6 |
 | HBX v1 framing | Done | Magic `HBX\x01`, proto, flags, length, payload |
 | Protocol `ax25` | Done | Raw AX.25 frame (incl. FCS) RF ↔ core |
 | Protocol `ax25_ui` | Done | UI payload with optional path metadata |
@@ -50,13 +51,13 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| Telnet (TCP) | Done | IPv4 + IPv6, default port 2323; **static-enabled** (always on when built) |
+| Telnet (TCP) | Done | IPv4 default port 2323; optional IPv6; **static-enabled** (always on when built) |
 | **hybbx-telnet** client | Done | Pure CLI telnet client — parameters/env only (`build/src/clients/hybbx-telnet`) |
 | **hybbx-terminal** client | Done | Pure CLI AX.25 / HBX circuit terminal (`build/src/clients/hybbx-terminal`) |
 | Link password auth | Done | HBX `LINK_AUTH` on circuit attach — **no** ping/pong health checks |
 | Stale link removal | Done | Links with no password auth for `link_stale_days` (default 10) auto-removed |
 | Auto-generated link codes | Done | Issued on successful link/repeater edge auth to centralized daemon |
-| Telnet dual-stack bind | Done | `bind`, `bind6`, per-family `ipv4`/`ipv6` toggles |
+| Telnet dual-stack bind | Done | `ipv4`/`ipv6` toggles; `bind` / `bind6`; IPv6 off by default |
 | Packet radio | Done | AX.25 link adapter; `[networks] ax25 = yes` + `[transport.packet_radio]` |
 | SSH | Planned | Same session core as telnet |
 | WebSocket | Planned | Local endpoint behind reverse-proxy only |
@@ -120,6 +121,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Command | Status | Description |
 |---------|--------|-------------|
 | `/help` | Done | Level-aware list and per-command help |
+| `/clear` | Done | Clear screen and input line (`/cls`, `/reset`) |
+| `/echo` | Done | Toggle typed-character echo |
 | `/motd`, `/news` | Done | Text files from `[texts]` path |
 | `/who` | Done | Online users |
 | `/session` (`/info`) | Done | Current session details |
@@ -142,7 +145,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Multi-channel chat | Done | Configurable channel count and names |
 | Join by number or name | Done | `/chat <n>` or `/chat <name>` |
 | Message length limit | Done | `message_max` (default 72) |
-| 40-column chat output | Done | Wraps with traffic profile |
+| 80-column output | Done | Wraps with `[traffic] line_width` (default 80) |
 
 ---
 
@@ -213,4 +216,4 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 ---
 
-*Last aligned with codebase: HyBBX 0.5.0 — [RELEASE-0.5.0.md](RELEASE-0.5.0.md).*
+*Last aligned with codebase: HyBBX 0.5.0.*

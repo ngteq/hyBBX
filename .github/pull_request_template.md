@@ -5,8 +5,7 @@
 ## Type
 
 - [ ] Bug fix
-- [ ] 0.5.x in-scope (see [docs/RELEASE-0.5.0.md](../docs/RELEASE-0.5.0.md))
-- [ ] Feature (blocked during 0.5.x unless release doc lists it)
+- [ ] Feature (see [docs/ROADMAP.md](../docs/ROADMAP.md))
 - [ ] Documentation
 - [ ] Refactor / internal
 - [ ] Build / CI

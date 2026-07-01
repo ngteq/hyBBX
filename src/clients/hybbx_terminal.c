@@ -78,7 +78,7 @@ static void print_usage(const char *prog)
             "      --via LIST          Comma-separated digipeater path\n"
             "      --ax25-ui           Send lines as AX.25 UI frames (needs mycall/dest)\n"
             "      --baud N            Pace output (default 2400, 0=off)\n"
-            "      --line-width N      Wrap display columns (default 40)\n"
+            "      --line-width N      Wrap display columns (default 80)\n"
             "      --pace yes|no       Output pacing\n"
             "      --ansi yes|no       Pass ANSI sequences\n"
             "  -6, --ipv6              Prefer IPv6 (reserved)\n"

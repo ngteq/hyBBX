@@ -52,6 +52,15 @@ hybbx_result_t hybbx_session_write_line(hybbx_session_t *session,
  */
 hybbx_result_t hybbx_session_show_prompt(hybbx_session_t *session);
 
+/** Clear screen and discard the current input line; show prompt when set. */
+hybbx_result_t hybbx_session_clear_terminal(hybbx_session_t *session);
+
+/** Non-zero when typed characters are echoed back to the client. */
+int hybbx_session_input_echo(const hybbx_session_t *session);
+
+/** Enable or disable per-session input echo. */
+hybbx_result_t hybbx_session_set_input_echo(hybbx_session_t *session, int enabled);
+
 /** Current session area (main, mail, chat, …). */
 hybbx_session_area_t hybbx_session_area(const hybbx_session_t *session);
 

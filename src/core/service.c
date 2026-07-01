@@ -587,7 +587,7 @@ static hybbx_result_t service_apply_circuit(struct hybbx_service_internal *svc,
     cfg.port = hybbx_config_get_uint(config, "circuit", "port",
                                      HYBBX_CIRCUIT_DEFAULT_PORT, 1u, 65535u);
     cfg.ipv4 = hybbx_config_get_bool(config, "circuit", "ipv4", 1);
-    cfg.ipv6 = hybbx_config_get_bool(config, "circuit", "ipv6", 1);
+    cfg.ipv6 = hybbx_config_get_bool(config, "circuit", "ipv6", 0);
     cfg.link_auth = hybbx_config_get_bool(config, "circuit", "link_auth", 1);
     cfg.link_stale_days = hybbx_config_get_uint(
         config, "circuit", "link_stale_days", HYBBX_LINK_STALE_DAYS, 1u, 365u);

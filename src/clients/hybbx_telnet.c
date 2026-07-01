@@ -2,7 +2,7 @@
  * hybbx-telnet — HyBBX-native telnet client (CLI only, no GUI).
  *
  * Full telnet negotiation support for testing HyBBX servers.
- * Optional 2400 baud pacing and 40-column display profile.
+ * Optional 2400 baud pacing and 80-column display profile.
  */
 
 #if defined(__linux__) || defined(__GLIBC__)
@@ -68,7 +68,7 @@ static void print_usage(const char *prog)
             "  -u, --user USER       Send /login USER after connect\n"
             "  -P, --password PASS   Password for /login\n"
             "      --baud N          Pace output like HyBBX (default 2400, 0=off)\n"
-            "      --line-width N    Wrap display columns (default 40, 0=off)\n"
+            "      --line-width N    Wrap display columns (default 80, 0=off)\n"
             "      --pace yes|no     Output pacing (default yes)\n"
             "      --ansi yes|no     Pass ANSI sequences (default no)\n"
             "  -6, --ipv6            Prefer IPv6 when resolving host\n"

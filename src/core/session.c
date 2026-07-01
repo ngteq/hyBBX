@@ -59,6 +59,7 @@ typedef struct hybbx_session_core {
     char mail_compose_body[HYBBX_MAIL_BODY_MAX + 1];
     size_t mail_compose_body_len;
     unsigned out_col;
+    int input_echo;
 } hybbx_session_core_t;
 
 static unsigned session_chat_message_max(const hybbx_session_core_t *core)
@@ -219,6 +220,66 @@ hybbx_result_t hybbx_session_show_prompt(hybbx_session_t *session)
     return hybbx_session_write(session, prompt);
 }
 
+hybbx_result_t hybbx_session_clear_terminal(hybbx_session_t *session)
+{
+    hybbx_session_core_t *core;
+    hybbx_result_t rc;
+
+    if (session == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL || !core->logged_in) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    rc = hybbx_term_clear_screen(session);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    core->line_len = 0;
+    core->line_buf[0] = '\0';
+    core->out_col = 0;
+    core->expect_lf = 0;
+
+    return hybbx_session_show_prompt(session);
+}
+
+int hybbx_session_input_echo(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return 0;
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return 0;
+    }
+
+    return core->input_echo != 0;
+}
+
+hybbx_result_t hybbx_session_set_input_echo(hybbx_session_t *session, int enabled)
+{
+    hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL || !core->logged_in) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    core->input_echo = enabled ? 1 : 0;
+    return HYBBX_OK;
+}
+
 static void session_submit_line(hybbx_session_core_t *core)
 {
     core->line_buf[core->line_len] = '\0';
@@ -237,6 +298,55 @@ static void session_erase_char(hybbx_session_core_t *core)
     }
 }
 
+static int session_char_echoable(char ch)
+{
+    unsigned char byte = (unsigned char)ch;
+
+    return byte >= 0x20 && byte != 0x7f;
+}
+
+static hybbx_result_t session_echo_backspace(hybbx_session_core_t *core)
+{
+    hybbx_result_t rc;
+
+    if (core == NULL || !core->input_echo) {
+        return HYBBX_OK;
+    }
+
+    rc = hybbx_session_write(&core->pub, "\b \b");
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    if (core->out_col > 0) {
+        core->out_col--;
+    }
+
+    return HYBBX_OK;
+}
+
+static hybbx_result_t session_echo_char(hybbx_session_core_t *core, char ch)
+{
+    char buf[2];
+
+    if (core == NULL || !core->input_echo || !session_char_echoable(ch)) {
+        return HYBBX_OK;
+    }
+
+    buf[0] = ch;
+    buf[1] = '\0';
+    return hybbx_session_write(&core->pub, buf);
+}
+
+static hybbx_result_t session_echo_newline(hybbx_session_core_t *core)
+{
+    if (core == NULL || !core->input_echo) {
+        return HYBBX_OK;
+    }
+
+    return hybbx_session_write(&core->pub, "\n");
+}
+
 static hybbx_result_t session_handle_user_byte(hybbx_session_core_t *core,
                                                unsigned char byte)
 {
@@ -247,11 +357,25 @@ static hybbx_result_t session_handle_user_byte(hybbx_session_core_t *core,
     }
 
     if (ch == '\b' || ch == 127) {
+        if (core->line_len > 0) {
+            hybbx_result_t rc = session_echo_backspace(core);
+
+            if (rc != HYBBX_OK) {
+                return rc;
+            }
+        }
         session_erase_char(core);
         return HYBBX_OK;
     }
 
     if (ch == '\r') {
+        {
+            hybbx_result_t rc = session_echo_newline(core);
+
+            if (rc != HYBBX_OK) {
+                return rc;
+            }
+        }
         session_submit_line(core);
         if (!core->logged_in) {
             return HYBBX_SESSION_END;
@@ -264,6 +388,14 @@ static hybbx_result_t session_handle_user_byte(hybbx_session_core_t *core,
         if (core->expect_lf) {
             core->expect_lf = 0;
             return HYBBX_OK;
+        }
+
+        {
+            hybbx_result_t rc = session_echo_newline(core);
+
+            if (rc != HYBBX_OK) {
+                return rc;
+            }
         }
 
         session_submit_line(core);
@@ -285,7 +417,14 @@ static hybbx_result_t session_handle_user_byte(hybbx_session_core_t *core,
         }
 
         if (core->line_len < line_max) {
+            hybbx_result_t rc;
+
             core->line_buf[core->line_len++] = ch;
+            rc = session_echo_char(core, ch);
+            if (rc != HYBBX_OK) {
+                core->line_len--;
+                return rc;
+            }
         }
     }
 
@@ -444,6 +583,12 @@ hybbx_result_t hybbx_session_open(hybbx_service_t *service,
     core->area = HYBBX_AREA_MAIN;
     core->area_stack[0] = HYBBX_AREA_MAIN;
     core->area_depth = 1;
+
+    {
+        const hybbx_traffic_config_t *traffic = hybbx_traffic_config_get();
+
+        core->input_echo = traffic != NULL && traffic->input_echo;
+    }
 
     (void)hybbx_term_init_session(&core->pub);
 

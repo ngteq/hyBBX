@@ -16,7 +16,7 @@ struct hybbx_session;
 /** Maximum stored messages per user inbox. */
 #define HYBBX_MAIL_MAX_MESSAGES 50u
 
-/** Subject line limit (2400 baud / 40 columns). */
+/** Subject line limit (80-column profile). */
 #define HYBBX_MAIL_SUBJECT_MAX 72u
 
 /** Total message body size (all lines). */

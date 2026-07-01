@@ -1,6 +1,6 @@
 # HyBBX roadmap
 
-Planned work after **0.5.0** — see [RELEASE-0.5.0.md](RELEASE-0.5.0.md) for active stability line and release scope.
+Planned work on the **0.5.x** line. Per-version `docs/RELEASE-*` freeze/scope files are introduced at **v1.0.0** (generated then, not maintained before).
 
 ## Architecture
 

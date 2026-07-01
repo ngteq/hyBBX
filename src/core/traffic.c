@@ -28,6 +28,7 @@ void hybbx_traffic_config_defaults(hybbx_traffic_config_t *cfg)
     cfg->line_width = HYBBX_LINE_WIDTH;
     cfg->pace_output = 1;
     cfg->ansi = 0;
+    cfg->input_echo = 1;
 }
 
 #if !defined(HYBBX_CLIENT_BUILD)
@@ -55,17 +56,21 @@ void hybbx_traffic_config_apply(const struct hybbx_config *config)
         g_traffic_config.baud = parse_uint_default(
             config, "traffic", "baud", HYBBX_BAUD2400, 300u, 38400u);
         g_traffic_config.line_width = parse_uint_default(
-            config, "traffic", "line_width", HYBBX_LINE_WIDTH, 20u, 80u);
+            config, "traffic", "line_width", HYBBX_LINE_WIDTH, 20u,
+            HYBBX_LINE_WIDTH_MAX);
         g_traffic_config.pace_output =
             hybbx_config_get_bool(config, "traffic", "pace_output", 1);
         g_traffic_config.ansi =
             hybbx_config_get_bool(config, "traffic", "ansi", 0);
+        g_traffic_config.input_echo =
+            hybbx_config_get_bool(config, "traffic", "input_echo", 1);
     }
 
-    printf("[traffic] baud=%u line_width=%u pace=%s ansi=%s\n",
+    printf("[traffic] baud=%u line_width=%u pace=%s ansi=%s echo=%s\n",
            g_traffic_config.baud, g_traffic_config.line_width,
            hybbx_bool_to_string(g_traffic_config.pace_output),
-           hybbx_bool_to_string(g_traffic_config.ansi));
+           hybbx_bool_to_string(g_traffic_config.ansi),
+           hybbx_bool_to_string(g_traffic_config.input_echo));
 #else
     (void)config;
 #endif
