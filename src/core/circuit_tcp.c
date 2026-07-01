@@ -9,6 +9,7 @@
 #include "hybbx/traffic.h"
 #include "hybbx/link.h"
 #include "hybbx/password.h"
+#include "hybbx/socket.h"
 #include "hybbx/util.h"
 
 #include <arpa/inet.h>
@@ -71,6 +72,8 @@ static int set_socket_options(int fd, int family)
     if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) != 0) {
         return -1;
     }
+
+    hybbx_socket_nosigpipe(fd);
 
 #ifdef IPV6_V6ONLY
     if (family == AF_INET6) {

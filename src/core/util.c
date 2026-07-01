@@ -1,5 +1,6 @@
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
+#include "hybbx/socket.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -264,4 +265,17 @@ hybbx_result_t hybbx_path_join(char *out, size_t out_len,
     }
 
     return HYBBX_OK;
+}
+
+void hybbx_socket_nosigpipe(int fd)
+{
+#ifdef SO_NOSIGPIPE
+    int on = 1;
+
+    if (fd >= 0) {
+        (void)setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on));
+    }
+#else
+    (void)fd;
+#endif
 }

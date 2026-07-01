@@ -4,6 +4,7 @@
 #include "hybbx/plugin.h"
 #include "hybbx/service.h"
 #include "hybbx/session.h"
+#include "hybbx/socket.h"
 #include "hybbx/telnet.h"
 #include "telnet_proto.h"
 
@@ -16,7 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
 typedef struct telnet_client {
@@ -51,6 +51,8 @@ static int set_socket_options(int fd, int family)
     if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) != 0) {
         return -1;
     }
+
+    hybbx_socket_nosigpipe(fd);
 
 #ifdef IPV6_V6ONLY
     if (family == AF_INET6) {

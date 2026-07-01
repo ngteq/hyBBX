@@ -11,6 +11,7 @@
 
 #include "client_display.h"
 #include "hybbx/limits.h"
+#include "hybbx/socket.h"
 #include "hybbx/traffic.h"
 #include "hybbx/util.h"
 #include "telnet_proto.h"
@@ -24,7 +25,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
 #define HYBBX_TELNET_DEFAULT_PORT 2323u
@@ -111,6 +111,7 @@ static int tcp_connect(const hybbx_telnet_client_config_t *cfg, int *out_fd)
         }
 
         (void)setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
+        hybbx_socket_nosigpipe(fd);
         if (connect(fd, ai->ai_addr, ai->ai_addrlen) == 0) {
             break;
         }

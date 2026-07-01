@@ -5,6 +5,7 @@
 #include "hybbx/circuit_tcp.h"
 #include "hybbx/circuit.h"
 #include "hybbx/link.h"
+#include "hybbx/socket.h"
 #include "hybbx/util.h"
 
 #include <arpa/inet.h>
@@ -30,6 +31,8 @@ static int set_socket_options(int fd)
     if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) != 0) {
         return -1;
     }
+
+    hybbx_socket_nosigpipe(fd);
 
     return 0;
 }

@@ -1,8 +1,9 @@
 #include "telnet_proto.h"
 
+#include "hybbx/socket.h"
+
 #include <errno.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
 #define TELNET_IAC   255
