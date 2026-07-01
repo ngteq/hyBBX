@@ -49,4 +49,4 @@ New capability requires an explicit **0.5.x required** note in the PR/issue befo
 - [x] Area navigation (`/main`, `/leave`) documented
 - [x] `[networks]` section documented
 - [x] Smoke: telnet session, guest auto-login, MOTD
-- [ ] Git tag `v0.5.0` on maintainer host
+- [x] Git tag `v0.5.0` created locally (push: `git push origin main && git push origin v0.5.0`)
