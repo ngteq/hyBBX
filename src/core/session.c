@@ -49,6 +49,8 @@ typedef struct hybbx_session_core {
     int logged_in;
     time_t guest_expires_at;
     hybbx_session_area_t area;
+    hybbx_session_area_t area_stack[HYBBX_AREA_STACK_MAX];
+    unsigned area_depth;
     unsigned chat_channel;
     int chat_max_notice_shown;
     int mail_composing;
@@ -73,6 +75,58 @@ static unsigned session_chat_message_max(const hybbx_session_core_t *core)
     }
 
     return chat->message_max;
+}
+
+static void session_area_clear_state(hybbx_session_core_t *core,
+                                   hybbx_session_area_t area)
+{
+    if (core == NULL) {
+        return;
+    }
+
+    if (area == HYBBX_AREA_CHAT) {
+        core->chat_channel = 0;
+    }
+
+    if (area == HYBBX_AREA_MAIL) {
+        core->mail_composing = 0;
+        core->mail_compose_body[0] = '\0';
+        core->mail_compose_body_len = 0;
+        core->mail_compose_to[0] = '\0';
+        core->mail_compose_subject[0] = '\0';
+    }
+}
+
+static void session_area_sync(hybbx_session_core_t *core)
+{
+    if (core == NULL || core->area_depth == 0) {
+        return;
+    }
+
+    core->area = core->area_stack[core->area_depth - 1];
+}
+
+static hybbx_result_t session_area_push(hybbx_session_core_t *core,
+                                        hybbx_session_area_t area)
+{
+    if (core == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (core->area_depth >= HYBBX_AREA_STACK_MAX) {
+        return HYBBX_ERR_BUSY;
+    }
+
+    if (core->area_depth > 0 &&
+        core->area_stack[core->area_depth - 1] == area) {
+        core->area = area;
+        return HYBBX_OK;
+    }
+
+    core->area_stack[core->area_depth] = area;
+    core->area_depth++;
+    core->area = area;
+    return HYBBX_OK;
 }
 
 static void session_arm_guest_timer(hybbx_session_core_t *core)
@@ -388,6 +442,8 @@ hybbx_result_t hybbx_session_open(hybbx_service_t *service,
     core->pub.transport_data = transport_data;
     core->pub.core_data = core;
     core->area = HYBBX_AREA_MAIN;
+    core->area_stack[0] = HYBBX_AREA_MAIN;
+    core->area_depth = 1;
 
     (void)hybbx_term_init_session(&core->pub);
 
@@ -704,11 +760,35 @@ hybbx_result_t hybbx_session_enter_area(hybbx_session_t *session,
         return HYBBX_ERR_INVALID;
     }
 
-    core->area = area;
-    return HYBBX_OK;
+    return session_area_push(core, area);
 }
 
 hybbx_result_t hybbx_session_leave_area(hybbx_session_t *session)
+{
+    hybbx_session_core_t *core;
+    hybbx_session_area_t leaving;
+
+    if (session == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (core->area_depth <= 1) {
+        return HYBBX_OK;
+    }
+
+    leaving = core->area_stack[core->area_depth - 1];
+    session_area_clear_state(core, leaving);
+    core->area_depth--;
+    session_area_sync(core);
+    return HYBBX_OK;
+}
+
+hybbx_result_t hybbx_session_go_main(hybbx_session_t *session)
 {
     hybbx_session_core_t *core;
 
@@ -721,21 +801,16 @@ hybbx_result_t hybbx_session_leave_area(hybbx_session_t *session)
         return HYBBX_ERR_INVALID;
     }
 
-    if (core->area == HYBBX_AREA_MAIN) {
-        return HYBBX_OK;
+    while (core->area_depth > 1) {
+        hybbx_session_area_t leaving = core->area_stack[core->area_depth - 1];
+
+        session_area_clear_state(core, leaving);
+        core->area_depth--;
     }
 
-    if (core->mail_composing) {
-        hybbx_session_mail_compose_cancel(session);
-    }
-
+    core->area_stack[0] = HYBBX_AREA_MAIN;
+    core->area_depth = 1;
     core->area = HYBBX_AREA_MAIN;
-    core->chat_channel = 0;
-    core->mail_composing = 0;
-    core->mail_compose_body[0] = '\0';
-    core->mail_compose_body_len = 0;
-    core->mail_compose_to[0] = '\0';
-    core->mail_compose_subject[0] = '\0';
     return HYBBX_OK;
 }
 
@@ -761,7 +836,14 @@ hybbx_result_t hybbx_session_join_chat_channel(hybbx_session_t *session,
         return HYBBX_ERR_NOT_FOUND;
     }
 
-    core->area = HYBBX_AREA_CHAT;
+    if (core->area != HYBBX_AREA_CHAT) {
+        hybbx_result_t push_rc = session_area_push(core, HYBBX_AREA_CHAT);
+
+        if (push_rc != HYBBX_OK) {
+            return push_rc;
+        }
+    }
+
     core->chat_channel = channel_index;
 
     if (!core->chat_max_notice_shown) {
@@ -838,7 +920,10 @@ hybbx_result_t hybbx_session_mail_compose_start(hybbx_session_t *session,
     core->mail_compose_body[0] = '\0';
     core->mail_compose_body_len = 0;
     core->mail_composing = 1;
-    core->area = HYBBX_AREA_MAIL;
+
+    if (core->area != HYBBX_AREA_MAIL) {
+        return session_area_push(core, HYBBX_AREA_MAIL);
+    }
 
     return HYBBX_OK;
 }
@@ -861,9 +946,6 @@ void hybbx_session_mail_compose_cancel(hybbx_session_t *session)
     core->mail_compose_body_len = 0;
     core->mail_compose_to[0] = '\0';
     core->mail_compose_subject[0] = '\0';
-    if (core->area == HYBBX_AREA_MAIL) {
-        core->area = HYBBX_AREA_MAIN;
-    }
 }
 
 const char *hybbx_session_mail_compose_body(const hybbx_session_t *session)

@@ -16,6 +16,9 @@ typedef enum hybbx_session_area {
     HYBBX_AREA_CHAT = 3
 } hybbx_session_area_t;
 
+/** Maximum nested area depth (main + sub-areas). */
+#define HYBBX_AREA_STACK_MAX 8u
+
 /**
  * Open a new connection session.
  * When auto-login is enabled (default), assigns Guest1, Guest2, … Guest111.
@@ -58,10 +61,13 @@ const char *hybbx_session_area_name(hybbx_session_area_t area);
 /** Parse area name (main, mail, chat). */
 hybbx_session_area_t hybbx_session_area_parse(const char *name);
 
-/** Leave the current area and return to main. */
+/** Go up one area level (alias: /back). Clears state for the area being left. */
 hybbx_result_t hybbx_session_leave_area(hybbx_session_t *session);
 
-/** Enter an area (mail, chat, … — for future use). */
+/** Return to main from any depth (alias: /menu). Clears all sub-area state. */
+hybbx_result_t hybbx_session_go_main(hybbx_session_t *session);
+
+/** Enter an area (pushes onto the area stack). */
 hybbx_result_t hybbx_session_enter_area(hybbx_session_t *session,
                                         hybbx_session_area_t area);
 

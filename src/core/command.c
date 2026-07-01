@@ -52,7 +52,8 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
     if (str_ieq(verb, "news") || str_ieq(verb, "motd") ||
         str_ieq(verb, "who") || str_ieq(verb, "session") || str_ieq(verb, "info") ||
         str_ieq(verb, "version") || str_ieq(verb, "ver") ||
-        str_ieq(verb, "leave") ||
+        str_ieq(verb, "leave") || str_ieq(verb, "back") ||
+        str_ieq(verb, "main") || str_ieq(verb, "menu") ||
         str_ieq(verb, "exit") || str_ieq(verb, "logout") ||
         str_ieq(verb, "bye") || str_ieq(verb, "quit") ||
         str_ieq(verb, "login") || str_ieq(verb, "register") ||
@@ -143,7 +144,8 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
     hybbx_session_write_line(session, "  /who   or / who");
     hybbx_session_write_line(session, "  /session or / session");
     hybbx_session_write_line(session, "  /version or / version");
-    hybbx_session_write_line(session, "  /leave or / leave");
+    hybbx_session_write_line(session, "  /leave or / back");
+    hybbx_session_write_line(session, "  /main  or / menu");
     hybbx_session_write_line(session, "  /chat  or / chat");
     hybbx_session_write_line(session, "  /mail  or / mail");
     hybbx_session_write_line(session, "  /exit  or / exit");
@@ -199,6 +201,10 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         canonical = "help";
     } else if (str_ieq(topic, "del")) {
         canonical = "delete";
+    } else if (str_ieq(topic, "back")) {
+        canonical = "leave";
+    } else if (str_ieq(topic, "menu")) {
+        canonical = "main";
     }
 
     if (!cmd_verb_allowed(level, canonical) ||
@@ -257,13 +263,21 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
     }
 
     if (str_ieq(canonical, "leave")) {
-        char line[128];
+        hybbx_session_write_line(session, "/leave - Go up one area level");
+        hybbx_session_write_line(session,
+            "Leaves the current menu/sub-area and returns to the parent.");
+        hybbx_session_write_line(session,
+            "From chat or mail compose this returns to main (today).");
+        hybbx_session_write_line(session, "Alias: /back");
+        hybbx_session_write_line(session, "Does not close the connection.");
+        return HYBBX_OK;
+    }
 
-        hybbx_session_write_line(session, "/leave - Leave current area");
-        snprintf(line, sizeof(line),
-            "Returns from mail, chat, or other areas to %s.",
-            hybbx_session_area_name(HYBBX_AREA_MAIN));
-        hybbx_session_write_line(session, line);
+    if (str_ieq(canonical, "main")) {
+        hybbx_session_write_line(session, "/main - Return to main area");
+        hybbx_session_write_line(session,
+            "Leaves all sub-areas and returns to main from any depth.");
+        hybbx_session_write_line(session, "Alias: /menu");
         hybbx_session_write_line(session, "Does not close the connection.");
         return HYBBX_OK;
     }
@@ -277,7 +291,7 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
             "Channel name is the topic. Message length: see [chat] message_max in INI.");
         hybbx_session_write_line(session,
             "You see your lines as ME: …; others as <username>: …");
-        hybbx_session_write_line(session, "Guests cannot use chat. /leave to exit.");
+        hybbx_session_write_line(session, "Guests cannot use chat. /leave or /main.");
         return HYBBX_OK;
     }
 
@@ -983,10 +997,8 @@ static hybbx_result_t cmd_chat(hybbx_service_t *service,
     name = hybbx_chat_channel_name(chat, channel_index);
     snprintf(line, sizeof(line), "Channel %u: %s", channel_index, name);
     hybbx_session_write_line(session, line);
-    snprintf(line, sizeof(line),
-        "Each line is a message; /leave to return to %s.",
-        hybbx_session_area_name(HYBBX_AREA_MAIN));
-    hybbx_session_write_line(session, line);
+    hybbx_session_write_line(session,
+        "Each line is a message; /leave or /main to exit.");
     return HYBBX_OK;
 }
 
@@ -1124,7 +1136,6 @@ static hybbx_result_t cmd_mail(hybbx_service_t *service,
 
         rc = hybbx_mail_deliver(service, hybbx_session_username(session),
                                 to_user, mail_subject, body);
-        hybbx_session_mail_compose_cancel(session);
 
         if (rc == HYBBX_ERR_NOT_FOUND) {
             hybbx_session_write_line(session, "Unknown recipient.");
@@ -1140,13 +1151,14 @@ static hybbx_result_t cmd_mail(hybbx_service_t *service,
         }
 
         hybbx_session_write_line(session, "Message sent.");
+        hybbx_session_leave_area(session);
         hybbx_session_show_prompt(session);
         return HYBBX_OK;
     }
 
     if (str_ieq(cmd->argv[0], "cancel")) {
         if (hybbx_session_mail_composing(session)) {
-            hybbx_session_mail_compose_cancel(session);
+            hybbx_session_leave_area(session);
             hybbx_session_write_line(session, "Compose cancelled.");
         } else {
             hybbx_session_write_line(session, "Not composing mail.");
@@ -1158,19 +1170,36 @@ static hybbx_result_t cmd_mail(hybbx_service_t *service,
     return HYBBX_OK;
 }
 
-static hybbx_result_t cmd_leave(hybbx_session_t *session)
+static void cmd_emit_current_area(hybbx_session_t *session)
 {
-    hybbx_session_area_t area = hybbx_session_area(session);
+    const char *name = hybbx_session_area_name(hybbx_session_area(session));
     char line[64];
 
-    hybbx_session_leave_area(session);
-    if (area != HYBBX_AREA_MAIN) {
-        const char *name = hybbx_session_area_name(HYBBX_AREA_MAIN);
+    snprintf(line, sizeof(line), "%c%s.",
+             (char)toupper((unsigned char)name[0]), name + 1);
+    hybbx_session_write_line(session, line);
+    hybbx_session_show_prompt(session);
+}
 
-        snprintf(line, sizeof(line), "%c%s.",
-                 (char)toupper((unsigned char)name[0]), name + 1);
-        hybbx_session_write_line(session, line);
-        hybbx_session_show_prompt(session);
+static hybbx_result_t cmd_leave(hybbx_session_t *session)
+{
+    hybbx_session_area_t before = hybbx_session_area(session);
+
+    hybbx_session_leave_area(session);
+    if (hybbx_session_area(session) != before) {
+        cmd_emit_current_area(session);
+    }
+
+    return HYBBX_OK;
+}
+
+static hybbx_result_t cmd_main(hybbx_session_t *session)
+{
+    hybbx_session_area_t before = hybbx_session_area(session);
+
+    hybbx_session_go_main(session);
+    if (before != HYBBX_AREA_MAIN) {
+        cmd_emit_current_area(session);
     }
 
     return HYBBX_OK;
@@ -1238,8 +1267,12 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
         return cmd_version(session);
     }
 
-    if (str_ieq(cmd->verb, "leave")) {
+    if (str_ieq(cmd->verb, "leave") || str_ieq(cmd->verb, "back")) {
         return cmd_leave(session);
+    }
+
+    if (str_ieq(cmd->verb, "main") || str_ieq(cmd->verb, "menu")) {
+        return cmd_main(session);
     }
 
     if (str_ieq(cmd->verb, "chat")) {

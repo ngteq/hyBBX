@@ -1,6 +1,6 @@
 # HyBBX feature list
 
-**Version:** 0.4.75 — **feature freeze** until release ([RELEASE-0.4.75.md](RELEASE-0.4.75.md)).
+**Version:** 0.4.75-up1 — see [RELEASE-0.4.75.md](RELEASE-0.4.75.md).
 
 Feature inventory — update when behavior changes. Operator INI: `share/hybbx.ini.example`, [MANUAL.md](MANUAL.md). Arch: [ROADMAP.md](ROADMAP.md).
 
@@ -126,7 +126,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | `/login`, `/register` | Done | Authentication and signup |
 | `/chat` | Done | List/join channels (registered users) |
 | `/mail` | Done | Inbox list, read, delete, send (registered users) |
-| `/leave` | Done | Return to main area from chat |
+| `/leave` (`/back`) | Done | One level up in the area stack |
+| `/main` (`/menu`) | Done | Return to main from any depth |
 | `/activate`, `/promote`, `/demote`, `/delete` | Done | Staff administration |
 | `/deleteme` | Done | Delete own account (confirmed) |
 | `/exit` (`/quit`, `/bye`, `/logout`) | Done | Disconnect |
@@ -211,4 +212,4 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 ---
 
-*Last aligned with codebase: HyBBX 0.4.75 — freeze active — [RELEASE-0.4.75.md](RELEASE-0.4.75.md).*
+*Last aligned with codebase: HyBBX 0.4.75-up1 — [RELEASE-0.4.75.md](RELEASE-0.4.75.md).*

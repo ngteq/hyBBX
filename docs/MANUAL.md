@@ -337,9 +337,11 @@ Messages stored under `data/mail/<username>/inbox/` on the **centralized daemon*
 
 | Area | Enter | Notes |
 |------|-------|-------|
-| `main` | Default at connect | `/leave` returns here |
+| `main` | Default at connect | `/main` or `/menu` from anywhere |
 | `mail` | `/mail send …` | Compose body; `/mail done` sends |
 | `chat` | `/chat` | Registered users only |
+
+`/leave` (`/back`) goes up **one** level (parent area). `/main` (`/menu`) returns to **main** directly and clears all sub-areas.
 
 ## Storage
 
@@ -457,7 +459,8 @@ Banner tokens: `@version@`, `@service@`.
 | `/who` | Online users |
 | `/session` | Session info (`/info`) |
 | `/version` | Version (`/ver`) |
-| `/leave` | Back to main |
+| `/leave` | Up one area (`/back`) |
+| `/main` | Main area (`/menu`) |
 | `/chat` | List/join channels |
 | `/mail` | Inbox; `/mail send`, `read`, `delete` |
 | `/login <user> <pass>` | Login |
@@ -470,7 +473,9 @@ Banner tokens: `@version@`, `@service@`.
 
 `/chat <number>` or `/chat <name>`. Channel name = topic. Messages: `ME: …` / `<user>: …`. Max length: `message_max` (default 72). Output wraps at 40 columns.
 
-**Mail** (registered users): `/mail` lists inbox (`*` = unread). `/mail read <n>`, `/mail delete <n>`. `/mail send <user> <subject>` then type body lines; `/mail done` sends. `/mail cancel` or `/leave` aborts compose.
+**Mail** (registered users): `/mail` lists inbox (`*` = unread). `/mail read <n>`, `/mail delete <n>`. `/mail send <user> <subject>` then type body lines; `/mail done` sends. `/mail cancel`, `/leave`, or `/main` aborts compose.
+
+**Navigation:** `/leave` (`/back`) = one menu level up. `/main` (`/menu`) = main area from anywhere.
 
 ## Building & installing
 

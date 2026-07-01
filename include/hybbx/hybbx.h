@@ -5,6 +5,6 @@
 #define HYBBX_VERSION_MINOR 4
 #define HYBBX_VERSION_PATCH 75
 
-#define HYBBX_VERSION_STRING "0.4.75"
+#define HYBBX_VERSION_STRING "0.4.75-up1"
 
 #endif /* HYBBX_H */
