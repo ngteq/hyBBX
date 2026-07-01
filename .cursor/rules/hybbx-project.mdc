@@ -1,0 +1,31 @@
+---
+description: HyBBX project conventions for all work in this repo
+alwaysApply: true
+---
+
+# HyBBX project rules
+
+Read [AGENTS.md](../../AGENTS.md) and [docs/DEVELOPMENT.md](../../docs/DEVELOPMENT.md) for full context.
+
+## Product
+
+- BBS/**mailbox-inspired** multi-link **service** — not a new BBS product.
+- **1× central hyBBX**; edge nodes = gateway / digipeater / repeater / link only ([docs/ROADMAP.md](../../docs/ROADMAP.md)).
+
+## Code
+
+- C99, `hybbx_` prefix, `hybbx_result_t` for errors.
+- Core (`src/core/`) = sessions + HBX/TCP circuit only — **no KISS/AX.25/telnet parsing** in core.
+- Link adapters live in `plugins/`.
+- Booleans: `hybbx_parse_bool()` — yes/no + standard aliases ([include/hybbx/util.h](../../include/hybbx/util.h)).
+- Minimal scope; match existing style; respect [include/hybbx/limits.h](../../include/hybbx/limits.h).
+
+## Docs
+
+- Update [docs/FEATURES.md](../../docs/FEATURES.md) when changing functionality.
+- Config changes → [docs/MANUAL.md](../../docs/MANUAL.md) + `share/hybbx.ini.example`.
+
+## Git
+
+- Public commits: `user.name=ngteq`, empty `user.email`, **no** `Co-authored-by` agent lines.
+- Do not commit or push unless the user asks.

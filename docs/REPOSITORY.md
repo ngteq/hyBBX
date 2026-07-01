@@ -15,9 +15,14 @@ hyBBX/
   text/                   banner.txt, motd.txt, news.txt (BBS texts)
   share/                  hybbx.ini.example (shipped config sample)
   local/                  Local dev config and data (not required for install)
-  scripts/                hybbx.sh dev start helper
+  scripts/                hybbx.sh, dev-setup.sh
   cmake/                  CMake modules, AmigaOS toolchain file
-  docs/                   Documentation (FEATURES, MANUAL, QUICKSTART, …)
+  docs/                   Documentation (INDEX, FEATURES, DEVELOPMENT, …)
+  .github/                Issue and PR templates
+  .cursor/rules/          Cursor AI project rules
+  AGENTS.md               AI agent onboarding
+  CONTRIBUTING.md         Human contributor guide
+  .editorconfig           Editor formatting defaults
 ```
 
 ## Main components
@@ -36,4 +41,4 @@ Plugin interface: `include/hybbx/plugin.h` (`hybbx_transport_plugin_t`).
 
 Build system: top-level `CMakeLists.txt`, `src/CMakeLists.txt`, per-plugin `CMakeLists.txt`.
 
-See also: [BUILD.md](BUILD.md), [MANUAL.md — Architecture](MANUAL.md#architecture).
+See also: [BUILD.md](BUILD.md), [DEVELOPMENT.md](DEVELOPMENT.md), [MANUAL.md — Architecture](MANUAL.md#architecture).

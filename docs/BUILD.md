@@ -7,7 +7,10 @@ CMake build options and toolchains. Quick compile steps: [QUICKSTART.md](QUICKST
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
+ctest --test-dir build --output-on-failure   # with -DHYBBX_BUILD_TESTS=ON
 ```
+
+Optional: `scripts/dev-setup.sh` (build + IDE `compile_commands.json` symlink).
 
 Clang:
 

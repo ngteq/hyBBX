@@ -50,6 +50,9 @@ int hybbx_parse_bool(const char *value, int default_value);
 /** Canonical @c yes / @c no string for a boolean value. */
 const char *hybbx_bool_to_string(int value);
 
+/** Short name for @p rc (logging / tests). */
+const char *hybbx_result_name(hybbx_result_t rc);
+
 #ifdef __cplusplus
 }
 #endif

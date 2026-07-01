@@ -8,6 +8,8 @@ Full reference for operators and developers.
 - Feature inventory: [FEATURES.md](FEATURES.md)
 - Quick start: [QUICKSTART.md](QUICKSTART.md)
 - All docs: [INDEX.md](INDEX.md)
+- Planned layout (1× central, gateway / digipeater / repeater / link): [ROADMAP.md](ROADMAP.md)
+- Contributing: [CONTRIBUTING.md](../CONTRIBUTING.md) · Development: [DEVELOPMENT.md](DEVELOPMENT.md) · AI: [AGENTS.md](../AGENTS.md)
 
 ## Connection types
 
@@ -46,6 +48,8 @@ HyBBX uses **TCP/IP (IPv4 and IPv6) as the only internal network semantics**. Th
 ```
 
 Plugins implement `hybbx_transport_plugin_t` in `include/hybbx/plugin.h`.
+
+**Planned deployment:** **one central hyBBX** only. All additional nodes are **gateways, digipeaters, repeaters, or links** (common packet-radio terms) that relay toward that central instance — never parallel full hyBBX installs. On-air **`via`** digipeater paths apply as today in `[transport.packet_radio]`. See [ROADMAP.md](ROADMAP.md).
 
 ### Planned transports
 

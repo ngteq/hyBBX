@@ -2,9 +2,11 @@
 
 **Version:** 0.1.0 (early development)
 
-**Positioning:** HyBBX is a service solution for multiple connection types, **oriented on and inspired by** classic BBS/mailbox experiences. It is **not** intended as a new BBS or mailbox replacement — rather as a link-agnostic platform (telnet, packet radio, …) that reuses familiar session patterns.
+**Positioning:** HyBBX is a service solution for multiple connection types, **oriented on and inspired by** classic BBS/mailbox experiences. It is **not** a new BBS or mailbox product. **Planned layout:** **1× central hyBBX**; all other nodes are gateways, **digipeaters**, repeaters, or links only — [ROADMAP.md](ROADMAP.md).
 
-Living inventory of functional and important HyBBX capabilities. **Update this file whenever a feature is added, removed, or materially changed.** Operator details: [MANUAL.md](MANUAL.md). Quick start: [QUICKSTART.md](QUICKSTART.md). Doc index: [INDEX.md](INDEX.md).
+Living inventory of functional and important HyBBX capabilities. **Update this file whenever a feature is added, removed, or materially changed.** See [CONTRIBUTING.md](../CONTRIBUTING.md) and [DEVELOPMENT.md](DEVELOPMENT.md).
+
+Operator details: [MANUAL.md](MANUAL.md). Quick start: [QUICKSTART.md](QUICKSTART.md). Doc index: [INDEX.md](INDEX.md). AI agents: [AGENTS.md](../AGENTS.md).
 
 | Status | Meaning |
 |--------|---------|
@@ -172,18 +174,27 @@ Living inventory of functional and important HyBBX capabilities. **Update this f
 | Optional OpenSSL | Done | `-DHYBBX_CRYPTO_OPENSSL=ON` |
 | Optional libsodium | Done | `-DHYBBX_CRYPTO_LIBSODIUM=ON` |
 | Plugin build toggles | Done | Telnet / packet_radio on by default |
+| `hybbx_result_name()` | Done | Short `hybbx_result_t` name for logs/tests ([util.h](include/hybbx/util.h)) |
+| Unit tests (`HYBBX_BUILD_TESTS`) | Done | `tests/test_util.c` — boolean parser + result names; CI on push/PR |
+| `scripts/dev-setup.sh` | Done | Configure, build, `compile_commands.json` symlink |
 | GPL-3.0 license | Done | See `LICENSE.txt`; third-party table in MANUAL |
-
----
+| GitHub CI | Done | `.github/workflows/ci.yml` — build + tests on push/PR |
 
 ## Roadmap (not yet implemented)
 
-- SSH transport plugin
-- WebSocket transport (reverse-proxy only)
-- SQL storage backends (SQLite, MySQL/MariaDB)
-- Additional HBX protocols (APRS, NETROM)
-- True BayCom `ser12` kernel path (use `kissattach` + KISS today)
+**Architecture:** **1× central hyBBX** (users, mail, sessions). Every other node: **gateway, digipeater, repeater, or link only** — no second full instance. Details: [ROADMAP.md](ROADMAP.md).
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Mail-Area | Planned | Mailbox on **central only** (not chat) |
+| Gateway / digipeater / repeater / link | Planned | Edge nodes (common packet terms) relay toward the one central instance |
+| Auto-generated link codes | Planned | Tokens on **successful** edge-to-central pairing only |
+| SSH transport | Planned | Same session core as telnet |
+| WebSocket transport | Planned | Reverse-proxy only |
+| SQL storage | Planned | SQLite, MySQL/MariaDB on core |
+| HBX APRS / NETROM | Planned | Reserved protocol IDs on internal circuit |
+| BayCom `ser12` path | Planned | Use `kissattach` + KISS until documented |
 
 ---
 
-*Last aligned with codebase: HyBBX 0.1.0 — telnet, packet radio (TNC2C/BayCom/PC-COM), HBX circuit, G3RUH FSK switch, HyBBX boolean standard.*
+*Last aligned with codebase: HyBBX 0.1.0 — telnet, packet radio (TNC2C/BayCom/PC-COM), HBX circuit, G3RUH FSK switch, HyBBX boolean standard. Planned: mail-area, central+repeater topology — [ROADMAP.md](ROADMAP.md).*

@@ -86,6 +86,34 @@ const char *hybbx_bool_to_string(int value)
     return value ? HYBBX_BOOL_YES : HYBBX_BOOL_NO;
 }
 
+const char *hybbx_result_name(hybbx_result_t rc)
+{
+    switch (rc) {
+    case HYBBX_OK:
+        return "ok";
+    case HYBBX_LOCAL_CMD:
+        return "local_cmd";
+    case HYBBX_SESSION_END:
+        return "session_end";
+    case HYBBX_ERR_INVALID:
+        return "invalid";
+    case HYBBX_ERR_NOMEM:
+        return "nomem";
+    case HYBBX_ERR_NOT_FOUND:
+        return "not_found";
+    case HYBBX_ERR_IO:
+        return "io";
+    case HYBBX_ERR_UNSUPPORTED:
+        return "unsupported";
+    case HYBBX_ERR_BUSY:
+        return "busy";
+    case HYBBX_ERR_DENIED:
+        return "denied";
+    default:
+        return "unknown";
+    }
+}
+
 size_t hybbx_strlcpy(char *dst, const char *src, size_t dst_size)
 {
     size_t src_len;

@@ -1,0 +1,22 @@
+---
+description: C/H coding patterns for HyBBX core and plugins
+globs: "**/*.{c,h}"
+alwaysApply: false
+---
+
+# HyBBX C conventions
+
+```c
+/* ✅ Public API in include/hybbx/ */
+hybbx_result_t hybbx_foo_do_thing(hybbx_foo_t *foo, const char *in);
+
+/* ✅ Booleans from INI / config strings */
+int enabled = hybbx_parse_bool(value, default_value);
+
+/* ✅ Safe copy */
+hybbx_strlcpy(dst, src, sizeof(dst));
+```
+
+- Return `HYBBX_ERR_*` from [include/hybbx/types.h](../../include/hybbx/types.h); `HYBBX_OK` on success.
+- Plugin wire code stays in `plugins/` — not `src/core/`.
+- Packet radio: TNC/AX.25 in `plugins/packet_radio/`; HBX client to `[circuit]`.

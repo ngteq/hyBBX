@@ -12,7 +12,7 @@ endif()
 
 project(HyBBX
     VERSION 0.1.0
-    DESCRIPTION "BBS/Mailbox inspired service for multiple connection types"
+    DESCRIPTION "BBS/mailbox-inspired service for multiple connection types"
     LANGUAGES C
 )
 
@@ -109,6 +109,11 @@ add_subdirectory(src)
 
 if(HYBBX_BUILD_PLUGINS)
     add_subdirectory(plugins)
+endif()
+
+if(HYBBX_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
 endif()
 
 # ---------------------------------------------------------------------------

@@ -13,7 +13,7 @@ Plain **C99**, **INI** configuration, **40 columns** and **2400 baud** pacing fo
 - **BBS-inspired session core** — guests, registration, multi-channel chat, MOTD/news, staff commands
 - **Flat-file storage** with INI user shards; bundled crypto (optional OpenSSL/libsodium)
 
-For the complete, maintained capability list see **[docs/FEATURES.md](docs/FEATURES.md)**.
+For scope, status, and the **1× central / N× gateway–digipeater–repeater–link** layout see **[docs/FEATURES.md](docs/FEATURES.md)** and **[docs/ROADMAP.md](docs/ROADMAP.md)**.
 
 ## Try it
 
@@ -33,8 +33,15 @@ More detail: **[docs/QUICKSTART.md](docs/QUICKSTART.md)**
 | **[docs/QUICKSTART.md](docs/QUICKSTART.md)** | Build, install, first session |
 | **[docs/MANUAL.md](docs/MANUAL.md)** | Full operator & developer reference |
 | **[docs/INDEX.md](docs/INDEX.md)** | Documentation index |
+| **[docs/ROADMAP.md](docs/ROADMAP.md)** | **1× central**; gateway, digipeater, repeater, link |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | How to contribute (humans) |
+| **[AGENTS.md](AGENTS.md)** | Agent & developer quick guide (AI) |
 
 Example config: `share/hybbx.ini.example`
+
+## Contributing
+
+We welcome patches and docs improvements. See **[CONTRIBUTING.md](CONTRIBUTING.md)** and **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**. AI tools: start with **[AGENTS.md](AGENTS.md)**.
 
 ## License
 
