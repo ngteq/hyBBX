@@ -1,6 +1,6 @@
 # HyBBX feature list
 
-**Version:** 0.1.0
+**Version:** 0.4.75 — **feature freeze** until release ([RELEASE-0.4.75.md](RELEASE-0.4.75.md)).
 
 Feature inventory — update when behavior changes. Operator INI: `share/hybbx.ini.example`, [MANUAL.md](MANUAL.md). Arch: [ROADMAP.md](ROADMAP.md).
 
@@ -24,7 +24,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | 2400 baud traffic layer | Done | 40-column wrap, paced 8N1 output, optional ANSI; tuned for slow links |
 | Boolean config standard | Done | Canonical `yes`/`no`; aliases `true`/`false`, `enable`/`disable`, `on`/`off`, `1`/`0` |
 | Command routing | Done | `/` HyBBX commands; `;`/`#` comments ignored; other input local/mailbox (silent) |
-| Areas | Done | `main` (default), `mail` (local), `chat` (registered users) |
+| Areas | Done | `main` (default), `mail` (personal inbox), `chat` (registered users) |
 | Hardening | Done | Optional stack protector, FORTIFY, RELRO/PIE; bounded buffers in `limits.h` |
 
 ---
@@ -125,6 +125,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | `/version` (`/ver`) | Done | HyBBX version string |
 | `/login`, `/register` | Done | Authentication and signup |
 | `/chat` | Done | List/join channels (registered users) |
+| `/mail` | Done | Inbox list, read, delete, send (registered users) |
 | `/leave` | Done | Return to main area from chat |
 | `/activate`, `/promote`, `/demote`, `/delete` | Done | Staff administration |
 | `/deleteme` | Done | Delete own account (confirmed) |
@@ -140,6 +141,19 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Join by number or name | Done | `/chat <n>` or `/chat <name>` |
 | Message length limit | Done | `message_max` (default 72) |
 | 40-column chat output | Done | Wraps with traffic profile |
+
+---
+
+## Mail
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Flat-file inbox | Done | `data/mail/<user>/inbox/*.msg` on centralized daemon |
+| `/mail` list | Done | Newest first; `*` = unread |
+| `/mail read` / `delete` | Done | By list index |
+| `/mail send` | Done | Multi-line compose; `/mail done` to deliver |
+| Guest restriction | Done | Registered active users only |
+| INI `[mail]` | Done | `enabled`, `max_messages`, `subject_max`, `body_max` |
 
 ---
 
@@ -187,7 +201,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| Mail-Area | Planned | Mailbox on **centralized daemon** only (not chat) |
+| Mail-Area | Done | Mailbox on **centralized daemon** only (not chat) |
 | Link/repeater edge daemons | Planned | Gateway, digipeater, repeater, and link relay modes |
 | SSH transport | Planned | Same session core as telnet |
 | WebSocket transport | Planned | Reverse-proxy only |
@@ -197,4 +211,4 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 ---
 
-*Last aligned with codebase: HyBBX 0.1.0 — telnet, hybbx-telnet/hybbx-terminal clients, packet radio, HBX link auth — [ROADMAP.md](ROADMAP.md).*
+*Last aligned with codebase: HyBBX 0.4.75 — freeze active — [RELEASE-0.4.75.md](RELEASE-0.4.75.md).*

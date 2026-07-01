@@ -6,9 +6,11 @@
 #include "hybbx/storage.h"
 #include "hybbx/auth.h"
 #include "hybbx/chat.h"
+#include "hybbx/mail.h"
 #include "hybbx/util.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -59,6 +61,10 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
     }
 
     if (str_ieq(verb, "chat")) {
+        return !hybbx_user_level_is_guest(level);
+    }
+
+    if (str_ieq(verb, "mail")) {
         return !hybbx_user_level_is_guest(level);
     }
 
@@ -139,6 +145,7 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
     hybbx_session_write_line(session, "  /version or / version");
     hybbx_session_write_line(session, "  /leave or / leave");
     hybbx_session_write_line(session, "  /chat  or / chat");
+    hybbx_session_write_line(session, "  /mail  or / mail");
     hybbx_session_write_line(session, "  /exit  or / exit");
     hybbx_session_write_line(session, "  /login or / login");
     hybbx_session_write_line(session, "  /register or / register");
@@ -271,6 +278,20 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         hybbx_session_write_line(session,
             "You see your lines as ME: …; others as <username>: …");
         hybbx_session_write_line(session, "Guests cannot use chat. /leave to exit.");
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(canonical, "mail")) {
+        hybbx_session_write_line(session, "/mail - Personal mailbox");
+        hybbx_session_write_line(session, "  /mail              List inbox");
+        hybbx_session_write_line(session, "  /mail read <n>     Read message n");
+        hybbx_session_write_line(session, "  /mail delete <n>   Delete message n");
+        hybbx_session_write_line(session,
+            "  /mail send <user> <subject>  Compose (type body, /mail done)");
+        hybbx_session_write_line(session, "  /mail done         Send composed mail");
+        hybbx_session_write_line(session, "  /mail cancel       Cancel compose");
+        hybbx_session_write_line(session,
+            "Mail is stored on the centralized daemon only. Guests cannot use mail.");
         return HYBBX_OK;
     }
 
@@ -969,6 +990,174 @@ static hybbx_result_t cmd_chat(hybbx_service_t *service,
     return HYBBX_OK;
 }
 
+static void mail_join_subject(const hybbx_parsed_command_t *cmd,
+                              char *out, size_t out_len)
+{
+    size_t i;
+    size_t pos = 0;
+
+    if (out == NULL || out_len == 0) {
+        return;
+    }
+
+    out[0] = '\0';
+    if (cmd == NULL || cmd->argc < 3) {
+        return;
+    }
+
+    for (i = 2; i < cmd->argc; i++) {
+        size_t part_len;
+
+        if (cmd->argv[i] == NULL) {
+            continue;
+        }
+
+        if (pos > 0) {
+            if (pos + 1 >= out_len) {
+                break;
+            }
+            out[pos++] = ' ';
+            out[pos] = '\0';
+        }
+
+        part_len = strlen(cmd->argv[i]);
+        if (pos + part_len >= out_len) {
+            part_len = out_len - pos - 1;
+        }
+        memcpy(out + pos, cmd->argv[i], part_len);
+        pos += part_len;
+        out[pos] = '\0';
+    }
+}
+
+static hybbx_result_t cmd_mail(hybbx_service_t *service,
+                               hybbx_session_t *session,
+                               const hybbx_parsed_command_t *cmd)
+{
+    char subject[HYBBX_MAIL_SUBJECT_MAX + 1];
+    hybbx_result_t rc;
+
+    if (hybbx_session_is_guest(session)) {
+        hybbx_session_write_line(session, "Guests cannot use mail.");
+        return HYBBX_ERR_DENIED;
+    }
+
+    if (cmd->argc == 0) {
+        hybbx_mail_list_inbox(service, session);
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(cmd->argv[0], "read")) {
+        unsigned index;
+
+        if (cmd->argc < 2 || cmd->argv[1] == NULL) {
+            hybbx_session_write_line(session, "Usage: /mail read <n>");
+            return HYBBX_OK;
+        }
+
+        index = (unsigned)strtoul(cmd->argv[1], NULL, 10);
+        if (index == 0) {
+            hybbx_session_write_line(session, "Usage: /mail read <n>");
+            return HYBBX_OK;
+        }
+
+        return hybbx_mail_read(service, session, index);
+    }
+
+    if (str_ieq(cmd->argv[0], "delete") || str_ieq(cmd->argv[0], "del")) {
+        unsigned index;
+
+        if (cmd->argc < 2 || cmd->argv[1] == NULL) {
+            hybbx_session_write_line(session, "Usage: /mail delete <n>");
+            return HYBBX_OK;
+        }
+
+        index = (unsigned)strtoul(cmd->argv[1], NULL, 10);
+        if (index == 0) {
+            hybbx_session_write_line(session, "Usage: /mail delete <n>");
+            return HYBBX_OK;
+        }
+
+        return hybbx_mail_delete(service, session, index);
+    }
+
+    if (str_ieq(cmd->argv[0], "send")) {
+        if (cmd->argc < 3) {
+            hybbx_session_write_line(session,
+                "Usage: /mail send <user> <subject>");
+            return HYBBX_OK;
+        }
+
+        mail_join_subject(cmd, subject, sizeof(subject));
+        if (subject[0] == '\0') {
+            hybbx_session_write_line(session,
+                "Usage: /mail send <user> <subject>");
+            return HYBBX_OK;
+        }
+
+        rc = hybbx_session_mail_compose_start(session, cmd->argv[1], subject);
+        if (rc == HYBBX_ERR_INVALID) {
+            hybbx_session_write_line(session, "Subject too long.");
+            return HYBBX_OK;
+        }
+        if (rc != HYBBX_OK) {
+            return rc;
+        }
+
+        hybbx_session_write_line(session, "Compose body. /mail done to send.");
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(cmd->argv[0], "done")) {
+        const char *body;
+        const char *to_user;
+        const char *mail_subject;
+
+        if (!hybbx_session_mail_composing(session)) {
+            hybbx_session_write_line(session, "Not composing mail.");
+            return HYBBX_OK;
+        }
+
+        to_user = hybbx_session_mail_compose_to(session);
+        mail_subject = hybbx_session_mail_compose_subject(session);
+        body = hybbx_session_mail_compose_body(session);
+
+        rc = hybbx_mail_deliver(service, hybbx_session_username(session),
+                                to_user, mail_subject, body);
+        hybbx_session_mail_compose_cancel(session);
+
+        if (rc == HYBBX_ERR_NOT_FOUND) {
+            hybbx_session_write_line(session, "Unknown recipient.");
+            return HYBBX_OK;
+        }
+        if (rc == HYBBX_ERR_DENIED) {
+            hybbx_session_write_line(session, "Cannot mail that user.");
+            return HYBBX_OK;
+        }
+        if (rc != HYBBX_OK) {
+            hybbx_session_write_line(session, "Send failed.");
+            return rc;
+        }
+
+        hybbx_session_write_line(session, "Message sent.");
+        hybbx_session_show_prompt(session);
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(cmd->argv[0], "cancel")) {
+        if (hybbx_session_mail_composing(session)) {
+            hybbx_session_mail_compose_cancel(session);
+            hybbx_session_write_line(session, "Compose cancelled.");
+        } else {
+            hybbx_session_write_line(session, "Not composing mail.");
+        }
+        return HYBBX_OK;
+    }
+
+    hybbx_session_write_line(session, "Unknown /mail subcommand. Try /help mail.");
+    return HYBBX_OK;
+}
+
 static hybbx_result_t cmd_leave(hybbx_session_t *session)
 {
     hybbx_session_area_t area = hybbx_session_area(session);
@@ -1055,6 +1244,10 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
 
     if (str_ieq(cmd->verb, "chat")) {
         return cmd_chat(service, session, cmd);
+    }
+
+    if (str_ieq(cmd->verb, "mail")) {
+        return cmd_mail(service, session, cmd);
     }
 
     if (str_ieq(cmd->verb, "login")) {

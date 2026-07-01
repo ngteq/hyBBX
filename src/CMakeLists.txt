@@ -19,6 +19,7 @@ if(HYBBX_BUILD_DAEMON)
         core/storage_sql.c
         core/session.c
         core/chat.c
+        core/mail.c
         core/terminal.c
         core/texts.c
         core/util.c

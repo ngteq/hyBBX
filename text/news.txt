@@ -1,8 +1,4 @@
 HyBBX News
-==========
-
-* HyBBX development started — flat-file storage, guest auto-login.
-* Packet radio via TNC2C (KISS/AX.25) in progress.
-* Telnet transport coming online.
-
-Type /news anytime to read this file again.
+Mail area work for 0.4.75.
+Telnet test client: hybbx-telnet.
+Packet radio: KISS/AX.25 plugin.

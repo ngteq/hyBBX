@@ -1,6 +1,6 @@
 # HyBBX roadmap
 
-Planned work — update [FEATURES.md](FEATURES.md) when shipped.
+Planned work after **0.4.75** — see [RELEASE-0.4.75.md](RELEASE-0.4.75.md) for active freeze and release scope.
 
 ## Architecture
 
@@ -52,9 +52,9 @@ Link/repeater edge daemons → `circuit_host` / `[circuit]`. Today: telnet + `pa
 
 ---
 
-## Mail-Area (planned)
+## Mail-Area
 
-Mailbox on centralized daemon only. Edge daemons forward; no local mail DB.
+Mailbox on centralized daemon only (`data/mail/<user>/inbox/`). Edge daemons forward sessions; no local mail DB.
 
 ---
 

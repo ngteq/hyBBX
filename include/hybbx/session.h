@@ -82,6 +82,23 @@ hybbx_result_t hybbx_session_join_chat_channel(hybbx_session_t *session,
 /** Current chat channel (1-based), or 0 when not in chat. */
 unsigned hybbx_session_chat_channel(const hybbx_session_t *session);
 
+/** Non-zero when composing an outbound mail message. */
+int hybbx_session_mail_composing(const hybbx_session_t *session);
+
+/** Start mail compose to @p to_user with @p subject; enters mail area. */
+hybbx_result_t hybbx_session_mail_compose_start(hybbx_session_t *session,
+                                                const char *to_user,
+                                                const char *subject);
+
+/** Cancel an in-progress mail compose. */
+void hybbx_session_mail_compose_cancel(hybbx_session_t *session);
+
+/** Body accumulated so far during compose (NUL-terminated). */
+const char *hybbx_session_mail_compose_body(const hybbx_session_t *session);
+
+const char *hybbx_session_mail_compose_to(const hybbx_session_t *session);
+const char *hybbx_session_mail_compose_subject(const hybbx_session_t *session);
+
 #ifdef __cplusplus
 }
 #endif

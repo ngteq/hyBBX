@@ -3,6 +3,7 @@
  * link registry prune. Wire protocols stay in plugins/ (telnet, packet_radio).
  */
 #include "hybbx/service.h"
+#include "storage_private.h"
 #include "hybbx/registry.h"
 #include "hybbx/config.h"
 #include "hybbx/crypto_config.h"
@@ -13,6 +14,7 @@
 #include "hybbx/storage.h"
 #include "hybbx/texts.h"
 #include "hybbx/chat.h"
+#include "hybbx/mail.h"
 #include "hybbx/session.h"
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
@@ -21,6 +23,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(_WIN32)
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 
 #define HYBBX_MAX_ACTIVE_TRANSPORTS 8
 
@@ -67,6 +74,7 @@ struct hybbx_service_internal {
     hybbx_auth_config_t auth;
     hybbx_texts_config_t texts;
     hybbx_chat_config_t chat;
+    hybbx_mail_config_t mail;
     active_transport_t transports[HYBBX_MAX_ACTIVE_TRANSPORTS];
     size_t transport_count;
     hybbx_circuit_hub_t *circuit_hub;
@@ -85,6 +93,7 @@ hybbx_service_t *hybbx_service_create(const char *name)
     hybbx_auth_config_defaults(&svc->auth);
     hybbx_texts_config_defaults(&svc->texts);
     hybbx_chat_config_defaults(&svc->chat);
+    hybbx_mail_config_defaults(&svc->mail);
     svc->max_online = HYBBX_DEFAULT_MAX_ONLINE;
     svc->guest_timeout_minutes = HYBBX_DEFAULT_GUEST_TIMEOUT_MINUTES;
     svc->active_nodes = 0;
@@ -211,6 +220,18 @@ const hybbx_chat_config_t *hybbx_service_get_chat(const hybbx_service_t *service
     }
 
     return &svc->chat;
+}
+
+const hybbx_mail_config_t *hybbx_service_get_mail(const hybbx_service_t *service)
+{
+    const struct hybbx_service_internal *svc =
+        (const struct hybbx_service_internal *)service;
+
+    if (svc == NULL) {
+        return NULL;
+    }
+
+    return &svc->mail;
 }
 
 const char *hybbx_service_get_prompt(const hybbx_service_t *service)
@@ -721,7 +742,9 @@ hybbx_result_t hybbx_service_run(hybbx_service_t *service)
     svc->running = 1;
 
     while (svc->running) {
-#if defined(_POSIX_VERSION)
+#if defined(_WIN32)
+        Sleep(1000);
+#else
         static unsigned prune_tick;
 
         sleep(1);
@@ -732,8 +755,6 @@ hybbx_result_t hybbx_service_run(hybbx_service_t *service)
                 hybbx_circuit_hub_prune_links(svc->circuit_hub);
             }
         }
-#else
-        break;
 #endif
     }
 
@@ -826,6 +847,16 @@ hybbx_result_t hybbx_service_apply_config(hybbx_service_t *service,
     rc = service_open_storage(svc, config);
     if (rc != HYBBX_OK) {
         return rc;
+    }
+
+    {
+        const char *storage_path = HYBBX_DEFAULT_DATA_PATH;
+
+        if (svc->storage != NULL && svc->storage->path != NULL &&
+            svc->storage->path[0] != '\0') {
+            storage_path = svc->storage->path;
+        }
+        hybbx_mail_config_apply(&svc->mail, config, storage_path);
     }
 
     rc = service_apply_circuit(svc, config);

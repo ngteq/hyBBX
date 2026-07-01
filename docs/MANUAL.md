@@ -305,8 +305,21 @@ guest_timeout_minutes = 30
 [chat]
 channels = 10
 message_max = 72
-channel1 = General
+channel1 = Channel1
+; channel2 = Channel2   ; omit keys to keep code defaults (Channel1 … Channel10)
 ```
+
+### Mail
+
+```ini
+[mail]
+enabled = yes
+max_messages = 50
+subject_max = 72
+body_max = 2048
+```
+
+Messages stored under `data/mail/<username>/inbox/` on the **centralized daemon** only.
 
 ## Input routing
 
@@ -314,7 +327,8 @@ channel1 = General
 |-------|-------|---------|
 | `/help`, `/exit`, … | HyBBX | Core (`/` required) |
 | `;` / `#` … | Comment | Ignored |
-| plain text (non-chat) | Local mailbox | Ignored silently |
+| plain text (non-chat, non-mail-compose) | Local mailbox | Ignored silently |
+| plain text in mail compose | Mail body | Appended until `/mail done` |
 | plain text in chat | Chat | Broadcast to channel |
 
 **Rules:** `/verb`, `/ verb`, `/command verb`; `/` alone → `/help`.
@@ -324,7 +338,7 @@ channel1 = General
 | Area | Enter | Notes |
 |------|-------|-------|
 | `main` | Default at connect | `/leave` returns here |
-| `mail` | (local mailbox) | |
+| `mail` | `/mail send …` | Compose body; `/mail done` sends |
 | `chat` | `/chat` | Registered users only |
 
 ## Storage
@@ -371,7 +385,8 @@ Legacy `users.dat` (`id|name|level|…`) migrates on first startup. Plain passwo
 | `{md5}<hex>` | Verify-only legacy |
 | plain text | Auto-upgraded to `{sha256}` |
 
-Other data files: `sessions.dat`, `guest.next`, `user.next`, `session.next`.
+| `sessions.dat`, `guest.next`, `user.next`, `session.next` | Counters / session log |
+| `mail/<user>/inbox/*.msg` | Personal mail (centralized daemon) |
 
 **Default Sysop** (if none exists): username `Sysop`, password `Sysop` — change after first login.
 
@@ -444,6 +459,7 @@ Banner tokens: `@version@`, `@service@`.
 | `/version` | Version (`/ver`) |
 | `/leave` | Back to main |
 | `/chat` | List/join channels |
+| `/mail` | Inbox; `/mail send`, `read`, `delete` |
 | `/login <user> <pass>` | Login |
 | `/register <user> <name> <country> <location> <email>` | Register |
 | `/activate`, `/promote`, `/demote`, `/delete` | Staff |
@@ -453,6 +469,8 @@ Banner tokens: `@version@`, `@service@`.
 ### Chat
 
 `/chat <number>` or `/chat <name>`. Channel name = topic. Messages: `ME: …` / `<user>: …`. Max length: `message_max` (default 72). Output wraps at 40 columns.
+
+**Mail** (registered users): `/mail` lists inbox (`*` = unread). `/mail read <n>`, `/mail delete <n>`. `/mail send <user> <subject>` then type body lines; `/mail done` sends. `/mail cancel` or `/leave` aborts compose.
 
 ## Building & installing
 

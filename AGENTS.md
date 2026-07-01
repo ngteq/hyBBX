@@ -4,7 +4,7 @@ Instructions for **AI coding agents** and human developers working in this repos
 
 ## Project
 
-C99 plugin transport service: centralized `hybbx` daemon + link/repeater edge daemons. Core = TCP/HBX; wire formats in `plugins/`. Arch: [docs/ROADMAP.md](docs/ROADMAP.md). Config: `share/hybbx.ini.example`.
+C99 plugin transport service: centralized `hybbx` daemon + link/repeater edge daemons. **0.4.75 feature freeze** — [docs/RELEASE-0.4.75.md](docs/RELEASE-0.4.75.md). Config: `share/hybbx.ini.example`.
 
 ## Documentation map (read first)
 
@@ -15,7 +15,8 @@ C99 plugin transport service: centralized `hybbx` daemon + link/repeater edge da
 | [docs/INDEX.md](docs/INDEX.md)             | Full doc index                                         |
 | [docs/FEATURES.md](docs/FEATURES.md)       | **What exists** — update when adding/changing features |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | **How to code** — style, architecture, workflow        |
-| [docs/ROADMAP.md](docs/ROADMAP.md)         | Architecture standard; planned mail-area and edge daemons |
+| [docs/RELEASE-0.4.75.md](docs/RELEASE-0.4.75.md) | **0.4.75 freeze** and release scope |
+| [docs/ROADMAP.md](docs/ROADMAP.md)         | Post-release planned work |
 | [docs/MANUAL.md](docs/MANUAL.md)           | Operator reference (INI, transports, commands)         |
 | [docs/BUILD.md](docs/BUILD.md)             | CMake options                                          |
 | [docs/PLATFORMS.md](docs/PLATFORMS.md)     | GCC/Clang targets (Win10+, macOS, AmigaOS 3.9+, …)     |
@@ -27,15 +28,16 @@ C99 plugin transport service: centralized `hybbx` daemon + link/repeater edge da
 
 ## Architecture rules (do not break)
 
-0. **Arch** — centralized daemon + link/repeater edge daemons ([docs/ROADMAP.md](docs/ROADMAP.md)); INI: `share/hybbx.ini.example`.
-1. **Core never parses on-air radio formats** — no KISS/AX.25 in `src/core/` except HBX circuit handling (`circuit.c`, `circuit_tcp.c`).
-2. **Link adapters** implement `hybbx_transport_plugin_t` ([include/hybbx/plugin.h](include/hybbx/plugin.h)).
-3. **Packet radio** bridges RF ↔ internal HBX/TCP (`circuit_host` / `[circuit]` hub), not direct session I/O.
-4. **Boolean INI values** — use `hybbx_parse_bool()` / `hybbx_config_get_bool()` ([include/hybbx/util.h](include/hybbx/util.h)): canonical `yes`/`no`, aliases `true`/`false`, `enable`/`disable`, `on`/`off`, `1`/`0`.
-5. **Bounded buffers** — respect [include/hybbx/limits.h](include/hybbx/limits.h); use `hybbx_strlcpy`, `hybbx_path_join`.
-6. **C99** — `CMAKE_C_STANDARD 99`, extensions off. Match existing naming (`hybbx_`*, `snake_case` files).
-7. **GCC or LLVM/Clang** — see [docs/PLATFORMS.md](docs/PLATFORMS.md).
-8. **Minimal diffs** — only change what the task requires; match surrounding style.
+0. **Freeze (0.4.75)** — no new features except [docs/RELEASE-0.4.75.md](docs/RELEASE-0.4.75.md) in-scope items (mail-area, stabilization, release).
+1. **Arch** — centralized daemon + link/repeater edge ([docs/ROADMAP.md](docs/ROADMAP.md)); INI: `share/hybbx.ini.example`.
+2. **Core never parses on-air radio formats** — no KISS/AX.25 in `src/core/` except HBX circuit handling (`circuit.c`, `circuit_tcp.c`).
+3. **Link adapters** implement `hybbx_transport_plugin_t` ([include/hybbx/plugin.h](include/hybbx/plugin.h)).
+4. **Packet radio** bridges RF ↔ internal HBX/TCP (`circuit_host` / `[circuit]` hub), not direct session I/O.
+5. **Boolean INI values** — use `hybbx_parse_bool()` / `hybbx_config_get_bool()` ([include/hybbx/util.h](include/hybbx/util.h)): canonical `yes`/`no`, aliases `true`/`false`, `enable`/`disable`, `on`/`off`, `1`/`0`.
+6. **Bounded buffers** — respect [include/hybbx/limits.h](include/hybbx/limits.h); use `hybbx_strlcpy`, `hybbx_path_join`.
+7. **C99** — `CMAKE_C_STANDARD 99`, extensions off. Match existing naming (`hybbx_`*, `snake_case` files).
+8. **GCC or LLVM/Clang** — see [docs/PLATFORMS.md](docs/PLATFORMS.md).
+9. **Minimal diffs** — only change what the task requires; match surrounding style.
 
 
 
@@ -50,11 +52,12 @@ Tests (optional): `cmake -B build -DHYBBX_BUILD_TESTS=ON && cmake --build build 
 
 ## Adding a feature (checklist)
 
-1. Read [docs/FEATURES.md](docs/FEATURES.md) and [docs/ROADMAP.md](docs/ROADMAP.md) — avoid duplicating planned work.
-2. Implement with architecture rules above.
-3. Update **docs/FEATURES.md** (status table) and **docs/MANUAL.md** / **share/hybbx.ini.example** if user-facing.
-4. Build successfully before finishing.
-5. Do **not** commit unless the user asks.
+1. Read [docs/RELEASE-0.4.75.md](docs/RELEASE-0.4.75.md) — **freeze active**; only in-scope work until tag ships.
+2. Read [docs/FEATURES.md](docs/FEATURES.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
+3. Implement with architecture rules above.
+4. Update **docs/FEATURES.md** and **docs/MANUAL.md** / **share/hybbx.ini.example** if user-facing.
+5. Build successfully before finishing.
+6. Do **not** commit unless the user asks.
 
 
 

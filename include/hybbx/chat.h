@@ -27,8 +27,8 @@ typedef struct hybbx_chat_config {
     /** Maximum characters per chat message line. */
     unsigned message_max;
     /**
-     * Channel names (index 0 = channel 1). The name is the channel topic;
-     * HyBBX does not support separate custom topics.
+     * Channel names (index 0 = channel 1). Default: Channel1 … Channel10.
+     * Override with [chat] channel1 … channel10 in INI.
      */
     char names[HYBBX_CHAT_CHANNEL_MAX][HYBBX_CHAT_CHANNEL_NAME_MAX];
 } hybbx_chat_config_t;

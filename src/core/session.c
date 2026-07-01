@@ -5,10 +5,12 @@
 #include "hybbx/texts.h"
 #include "hybbx/auth.h"
 #include "hybbx/chat.h"
+#include "hybbx/mail.h"
 #include "hybbx/terminal.h"
 #include "hybbx/traffic.h"
 #include "hybbx/hybbx.h"
 #include "hybbx/limits.h"
+#include "hybbx/util.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,6 +51,11 @@ typedef struct hybbx_session_core {
     hybbx_session_area_t area;
     unsigned chat_channel;
     int chat_max_notice_shown;
+    int mail_composing;
+    char mail_compose_to[HYBBX_USER_NAME_MAX];
+    char mail_compose_subject[HYBBX_MAIL_SUBJECT_MAX + 1];
+    char mail_compose_body[HYBBX_MAIL_BODY_MAX + 1];
+    size_t mail_compose_body_len;
     unsigned out_col;
 } hybbx_session_core_t;
 
@@ -163,7 +170,8 @@ static void session_submit_line(hybbx_session_core_t *core)
     core->line_buf[core->line_len] = '\0';
     session_process_line(core, core->line_buf);
     core->line_len = 0;
-    if (core->logged_in && core->area != HYBBX_AREA_CHAT) {
+    if (core->logged_in && core->area != HYBBX_AREA_CHAT &&
+        !(core->area == HYBBX_AREA_MAIL && core->mail_composing)) {
         hybbx_session_show_prompt(&core->pub);
     }
 }
@@ -218,6 +226,8 @@ static hybbx_result_t session_handle_user_byte(hybbx_session_core_t *core,
 
         if (core->area == HYBBX_AREA_CHAT) {
             line_max = session_chat_message_max(core);
+        } else if (core->area == HYBBX_AREA_MAIL && core->mail_composing) {
+            line_max = HYBBX_LINE_MAX - 1;
         }
 
         if (core->line_len < line_max) {
@@ -272,6 +282,30 @@ static void session_process_line(hybbx_session_core_t *core, const char *line)
 
     scope = hybbx_command_classify(line);
     if (scope == HYBBX_CMD_SCOPE_COMMENT) {
+        return;
+    }
+
+    if (core->area == HYBBX_AREA_MAIL && core->mail_composing &&
+        scope == HYBBX_CMD_SCOPE_LOCAL) {
+        const hybbx_mail_config_t *mail;
+        size_t line_len;
+        size_t body_max;
+
+        mail = hybbx_service_get_mail(core->service);
+        body_max = mail != NULL ? mail->body_max : HYBBX_MAIL_BODY_MAX;
+        line_len = strlen(line);
+
+        if (core->mail_compose_body_len + line_len + 2 > body_max) {
+            hybbx_session_write_line(&core->pub, "Message body too long.");
+            return;
+        }
+
+        if (core->mail_compose_body_len > 0) {
+            core->mail_compose_body[core->mail_compose_body_len++] = '\n';
+        }
+        memcpy(core->mail_compose_body + core->mail_compose_body_len,
+               line, line_len + 1);
+        core->mail_compose_body_len += line_len;
         return;
     }
 
@@ -691,8 +725,17 @@ hybbx_result_t hybbx_session_leave_area(hybbx_session_t *session)
         return HYBBX_OK;
     }
 
+    if (core->mail_composing) {
+        hybbx_session_mail_compose_cancel(session);
+    }
+
     core->area = HYBBX_AREA_MAIN;
     core->chat_channel = 0;
+    core->mail_composing = 0;
+    core->mail_compose_body[0] = '\0';
+    core->mail_compose_body_len = 0;
+    core->mail_compose_to[0] = '\0';
+    core->mail_compose_subject[0] = '\0';
     return HYBBX_OK;
 }
 
@@ -747,4 +790,126 @@ unsigned hybbx_session_chat_channel(const hybbx_session_t *session)
     }
 
     return core->chat_channel;
+}
+
+int hybbx_session_mail_composing(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return 0;
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return 0;
+    }
+
+    return core->mail_composing;
+}
+
+hybbx_result_t hybbx_session_mail_compose_start(hybbx_session_t *session,
+                                                const char *to_user,
+                                                const char *subject)
+{
+    hybbx_session_core_t *core;
+    const hybbx_mail_config_t *mail;
+    size_t subject_len;
+
+    if (session == NULL || to_user == NULL || subject == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    mail = hybbx_service_get_mail(core->service);
+    subject_len = strlen(subject);
+    if (mail != NULL && subject_len > mail->subject_max) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    hybbx_strlcpy(core->mail_compose_to, to_user, sizeof(core->mail_compose_to));
+    hybbx_username_normalize(core->mail_compose_to);
+    hybbx_strlcpy(core->mail_compose_subject, subject,
+                  sizeof(core->mail_compose_subject));
+    core->mail_compose_body[0] = '\0';
+    core->mail_compose_body_len = 0;
+    core->mail_composing = 1;
+    core->area = HYBBX_AREA_MAIL;
+
+    return HYBBX_OK;
+}
+
+void hybbx_session_mail_compose_cancel(hybbx_session_t *session)
+{
+    hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return;
+    }
+
+    core->mail_composing = 0;
+    core->mail_compose_body[0] = '\0';
+    core->mail_compose_body_len = 0;
+    core->mail_compose_to[0] = '\0';
+    core->mail_compose_subject[0] = '\0';
+    if (core->area == HYBBX_AREA_MAIL) {
+        core->area = HYBBX_AREA_MAIN;
+    }
+}
+
+const char *hybbx_session_mail_compose_body(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return "";
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL || !core->mail_composing) {
+        return "";
+    }
+
+    return core->mail_compose_body;
+}
+
+const char *hybbx_session_mail_compose_to(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return "";
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL || !core->mail_composing) {
+        return "";
+    }
+
+    return core->mail_compose_to;
+}
+
+const char *hybbx_session_mail_compose_subject(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return "";
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL || !core->mail_composing) {
+        return "";
+    }
+
+    return core->mail_compose_subject;
 }

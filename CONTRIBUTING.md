@@ -23,6 +23,7 @@ Details: [docs/QUICKSTART.md](docs/QUICKSTART.md), [docs/BUILD.md](docs/BUILD.md
 
 ## What we look for
 
+- **0.4.75 freeze** — no new features except [docs/RELEASE-0.4.75.md](docs/RELEASE-0.4.75.md) in-scope (mail-area, stabilization, release).
 - **Focused changes** — one concern per PR when possible.
 - **Architecture respected** — centralized daemon + link/repeater daemon technologies ([AGENTS.md](AGENTS.md), [docs/ROADMAP.md](docs/ROADMAP.md)).
 - **Docs updated** — [docs/FEATURES.md](docs/FEATURES.md) for functional changes; [docs/MANUAL.md](docs/MANUAL.md) / `share/hybbx.ini.example` for config/operator changes.

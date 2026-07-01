@@ -5,7 +5,8 @@
 ## Type
 
 - [ ] Bug fix
-- [ ] Feature
+- [ ] 0.4.75 in-scope (see [docs/RELEASE-0.4.75.md](../docs/RELEASE-0.4.75.md))
+- [ ] Feature (blocked during freeze unless release doc lists it)
 - [ ] Documentation
 - [ ] Refactor / internal
 - [ ] Build / CI
