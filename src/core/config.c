@@ -364,3 +364,89 @@ void hybbx_config_foreach(const hybbx_config_t *config,
         fn(entry->section, entry->key, entry->value, ctx);
     }
 }
+
+hybbx_result_t hybbx_config_set(hybbx_config_t *config,
+                               const char *section,
+                               const char *key,
+                               const char *value)
+{
+    size_t i;
+
+    if (config == NULL || section == NULL || key == NULL || value == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    for (i = 0; i < config->count; i++) {
+        if (strcmp(config->entries[i].section, section) == 0 &&
+            strcmp(config->entries[i].key, key) == 0) {
+            char *copy = hybbx_strdup(value);
+
+            if (copy == NULL) {
+                return HYBBX_ERR_NOMEM;
+            }
+            free(config->entries[i].value);
+            config->entries[i].value = copy;
+            return HYBBX_OK;
+        }
+    }
+
+    return append_entry(config, section, key, value);
+}
+
+void hybbx_config_remove_section(hybbx_config_t *config, const char *section)
+{
+    size_t i;
+
+    if (config == NULL || section == NULL) {
+        return;
+    }
+
+    i = 0;
+    while (i < config->count) {
+        if (strcmp(config->entries[i].section, section) == 0) {
+            free(config->entries[i].section);
+            free(config->entries[i].key);
+            free(config->entries[i].value);
+            if (i + 1 < config->count) {
+                memmove(&config->entries[i], &config->entries[i + 1],
+                        (config->count - i - 1) * sizeof(config->entries[i]));
+            }
+            config->count--;
+        } else {
+            i++;
+        }
+    }
+}
+
+hybbx_result_t hybbx_config_save(const hybbx_config_t *config,
+                                 const char *path)
+{
+    FILE *fp;
+    size_t i;
+    const char *current = NULL;
+
+    if (config == NULL || path == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    fp = fopen(path, "w");
+    if (fp == NULL) {
+        return HYBBX_ERR_IO;
+    }
+
+    for (i = 0; i < config->count; i++) {
+        const hybbx_config_entry_t *entry = &config->entries[i];
+
+        if (current == NULL || strcmp(current, entry->section) != 0) {
+            if (current != NULL) {
+                fputc('\n', fp);
+            }
+            fprintf(fp, "[%s]\n", entry->section);
+            current = entry->section;
+        }
+        fprintf(fp, "%s = %s\n", entry->key, entry->value);
+    }
+
+    fclose(fp);
+    return HYBBX_OK;
+}

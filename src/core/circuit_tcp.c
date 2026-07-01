@@ -3,8 +3,13 @@
 #endif
 
 #include "hybbx/circuit_tcp.h"
+#include "hybbx/circuit.h"
 #include "hybbx/session.h"
+#include "hybbx/service.h"
 #include "hybbx/traffic.h"
+#include "hybbx/link.h"
+#include "hybbx/password.h"
+#include "hybbx/util.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -18,10 +23,14 @@
 #include <unistd.h>
 
 #define HYBBX_CIRCUIT_LINK_POLL_MS 50
+#define HYBBX_CIRCUIT_AUTH_TIMEOUT_MS 15000
 
 struct hybbx_circuit_hub {
     hybbx_service_t *service;
     hybbx_circuit_config_t config;
+    hybbx_link_registry_t links;
+    char link_password[128];
+    int link_auth;
     int listen_v4;
     int listen_v6;
     int link_fd;
@@ -47,6 +56,8 @@ void hybbx_circuit_config_defaults(hybbx_circuit_config_t *cfg)
     cfg->port = HYBBX_CIRCUIT_DEFAULT_PORT;
     cfg->ipv4 = 1;
     cfg->ipv6 = 1;
+    cfg->link_stale_days = HYBBX_LINK_STALE_DAYS;
+    cfg->link_auth = 1;
 }
 
 static int set_socket_options(int fd)
@@ -243,6 +254,135 @@ static void circuit_close_link(hybbx_circuit_hub_t *hub)
     }
 }
 
+typedef struct circuit_auth_ctx {
+    hybbx_circuit_hub_t *hub;
+    int done;
+    int ok;
+    hybbx_link_auth_t auth;
+} circuit_auth_ctx_t;
+
+static void circuit_on_auth_frame(hybbx_circuit_proto_t proto, uint16_t flags,
+                                  const uint8_t *payload, size_t len,
+                                  void *userdata)
+{
+    circuit_auth_ctx_t *ctx = (circuit_auth_ctx_t *)userdata;
+    char code[HYBBX_LINK_CODE_MAX];
+    char ack[HYBBX_LINK_AUTH_PAYLOAD_MAX];
+    uint8_t frame[HYBBX_CIRCUIT_MAX_FRAME];
+    size_t frame_len;
+
+    (void)flags;
+
+    if (ctx == NULL || ctx->done) {
+        return;
+    }
+
+    if (proto != HYBBX_CIRCUIT_PROTO_LINK_AUTH) {
+        return;
+    }
+
+    if (hybbx_link_auth_parse((const char *)payload, len, &ctx->auth) != HYBBX_OK) {
+        ctx->done = 1;
+        ctx->ok = 0;
+        return;
+    }
+
+    if (ctx->hub->link_auth &&
+        ctx->hub->link_password[0] != '\0' &&
+        !hybbx_password_match(ctx->hub->link_password, ctx->auth.password)) {
+        fprintf(stderr, "[circuit] link auth failed for id=%s\n", ctx->auth.id);
+        ctx->done = 1;
+        ctx->ok = 0;
+        return;
+    }
+
+    if (ctx->hub->link_auth && ctx->hub->link_password[0] == '\0') {
+        fprintf(stderr, "[circuit] link auth rejected: link_password not set\n");
+        ctx->done = 1;
+        ctx->ok = 0;
+        return;
+    }
+
+    code[0] = '\0';
+    (void)hybbx_link_registry_touch(&ctx->hub->links, ctx->auth.id,
+                                    ctx->auth.role, code, sizeof(code));
+
+    snprintf(ack, sizeof(ack), "ok=yes\nid=%s\ncode=%s\n",
+             ctx->auth.id, code[0] != '\0' ? code : "-");
+    frame_len = hybbx_circuit_encode_link_msg(HYBBX_CIRCUIT_PROTO_LINK_AUTH_ACK,
+                                              ack, strlen(ack),
+                                              frame, sizeof(frame));
+    if (frame_len > 0) {
+        (void)hybbx_circuit_hub_send_raw(ctx->hub, frame, frame_len);
+    }
+
+    printf("[circuit] link authenticated id=%s role=%s code=%s\n",
+           ctx->auth.id, ctx->auth.role, code[0] != '\0' ? code : "-");
+    ctx->done = 1;
+    ctx->ok = 1;
+}
+
+static int circuit_wait_link_auth(hybbx_circuit_hub_t *hub)
+{
+    circuit_auth_ctx_t ctx;
+    hybbx_circuit_decoder_t dec;
+    uint8_t buf[256];
+    unsigned elapsed = 0;
+
+    if (hub == NULL) {
+        return 0;
+    }
+
+    if (!hub->link_auth) {
+        return 1;
+    }
+
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.hub = hub;
+    hybbx_circuit_decoder_init(&dec);
+
+    while (!ctx.done && elapsed < HYBBX_CIRCUIT_AUTH_TIMEOUT_MS) {
+        struct pollfd pfd;
+        ssize_t n;
+        int pr;
+
+        pthread_mutex_lock(&hub->lock);
+        pfd.fd = hub->link_fd;
+        pthread_mutex_unlock(&hub->lock);
+
+        if (pfd.fd < 0) {
+            return 0;
+        }
+
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+        pr = poll(&pfd, 1, HYBBX_CIRCUIT_LINK_POLL_MS);
+        if (pr < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            return 0;
+        }
+        if (pr == 0) {
+            elapsed += HYBBX_CIRCUIT_LINK_POLL_MS;
+            continue;
+        }
+        if ((pfd.revents & POLLIN) == 0) {
+            return 0;
+        }
+
+        n = recv(pfd.fd, buf, sizeof(buf), 0);
+        if (n <= 0) {
+            return 0;
+        }
+
+        hybbx_circuit_decoder_feed(&dec, buf, (size_t)n,
+                                   circuit_on_auth_frame, &ctx);
+    }
+
+    return ctx.ok;
+}
+
 static void *circuit_link_thread(void *arg)
 {
     hybbx_circuit_hub_t *hub = (hybbx_circuit_hub_t *)arg;
@@ -250,6 +390,12 @@ static void *circuit_link_thread(void *arg)
     hybbx_result_t rc;
 
     if (hub == NULL) {
+        return NULL;
+    }
+
+    if (!circuit_wait_link_auth(hub)) {
+        fprintf(stderr, "[circuit] link authentication failed or timed out\n");
+        circuit_close_link(hub);
         return NULL;
     }
 
@@ -441,6 +587,11 @@ hybbx_result_t hybbx_circuit_hub_start(hybbx_circuit_hub_t *hub,
 
     hybbx_circuit_hub_stop(hub);
     hub->config = *cfg;
+    hybbx_strlcpy(hub->link_password, cfg->link_password, sizeof(hub->link_password));
+    hub->link_auth = cfg->link_auth;
+    hybbx_link_registry_init(&hub->links, cfg->data_path, cfg->config_path,
+                             cfg->link_stale_days);
+    (void)hybbx_link_registry_prune(&hub->links);
     hub->running = 1;
     g_active_hub = hub;
 
@@ -520,105 +671,11 @@ unsigned hybbx_circuit_hub_port(const hybbx_circuit_hub_t *hub)
     return hub->config.port;
 }
 
-hybbx_result_t hybbx_circuit_link_connect(const char *host, unsigned port,
-                                          int *out_fd)
+void hybbx_circuit_hub_prune_links(hybbx_circuit_hub_t *hub)
 {
-    struct sockaddr_in6 addr6;
-    struct sockaddr_in addr4;
-    int fd;
-    int rc;
-
-    if (host == NULL || out_fd == NULL || port == 0) {
-        return HYBBX_ERR_INVALID;
+    if (hub != NULL) {
+        (void)hybbx_link_registry_prune(&hub->links);
     }
-
-    if (strchr(host, ':') != NULL) {
-        memset(&addr6, 0, sizeof(addr6));
-        addr6.sin6_family = AF_INET6;
-        addr6.sin6_port = htons((uint16_t)port);
-        if (inet_pton(AF_INET6, host, &addr6.sin6_addr) != 1) {
-            return HYBBX_ERR_INVALID;
-        }
-
-        fd = socket(AF_INET6, SOCK_STREAM, 0);
-        if (fd < 0) {
-            return HYBBX_ERR_IO;
-        }
-
-        rc = connect(fd, (struct sockaddr *)&addr6, sizeof(addr6));
-    } else {
-        memset(&addr4, 0, sizeof(addr4));
-        addr4.sin_family = AF_INET;
-        addr4.sin_port = htons((uint16_t)port);
-        if (inet_pton(AF_INET, host, &addr4.sin_addr) != 1) {
-            return HYBBX_ERR_INVALID;
-        }
-
-        fd = socket(AF_INET, SOCK_STREAM, 0);
-        if (fd < 0) {
-            return HYBBX_ERR_IO;
-        }
-
-        rc = connect(fd, (struct sockaddr *)&addr4, sizeof(addr4));
-    }
-
-    if (rc != 0) {
-        close(fd);
-        return HYBBX_ERR_IO;
-    }
-
-    (void)set_socket_options(fd);
-    *out_fd = fd;
-    return HYBBX_OK;
-}
-
-hybbx_result_t hybbx_circuit_link_write(int fd, const uint8_t *frame,
-                                        size_t len)
-{
-    ssize_t sent;
-    size_t off = 0;
-
-    if (fd < 0 || frame == NULL || len == 0) {
-        return HYBBX_ERR_INVALID;
-    }
-
-    while (off < len) {
-        sent = send(fd, frame + off, len - off, MSG_NOSIGNAL);
-        if (sent < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-            return HYBBX_ERR_IO;
-        }
-        if (sent == 0) {
-            return HYBBX_ERR_IO;
-        }
-        off += (size_t)sent;
-    }
-
-    return HYBBX_OK;
-}
-
-hybbx_result_t hybbx_circuit_link_read(int fd, uint8_t *buf, size_t buf_len,
-                                       size_t *read_len)
-{
-    ssize_t n;
-
-    if (fd < 0 || buf == NULL || read_len == NULL) {
-        return HYBBX_ERR_INVALID;
-    }
-
-    n = recv(fd, buf, buf_len, 0);
-    if (n < 0) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            *read_len = 0;
-            return HYBBX_OK;
-        }
-        return HYBBX_ERR_IO;
-    }
-
-    *read_len = (size_t)n;
-    return HYBBX_OK;
 }
 
 static hybbx_result_t circuit_plugin_init(hybbx_service_t *service)

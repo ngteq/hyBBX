@@ -16,8 +16,8 @@ hyBBX/
   share/                  hybbx.ini.example (shipped config sample)
   local/                  Local dev config and data (not required for install)
   scripts/                hybbx.sh, dev-setup.sh
-  cmake/                  CMake modules, AmigaOS toolchain file
-  docs/                   Documentation (INDEX, FEATURES, DEVELOPMENT, …)
+  cmake/                  CMake modules, platform toolchains (AmigaOS 3.9+)
+  docs/                   Documentation (INDEX, FEATURES, PLATFORMS, …)
   .github/                Issue and PR templates
   .cursor/rules/          Cursor AI project rules
   AGENTS.md               AI agent onboarding

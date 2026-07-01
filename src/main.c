@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
         have_config = 1;
         printf("Loaded configuration: %s\n", config_path);
 
-        rc = hybbx_service_apply_config(service, &config);
+        rc = hybbx_service_apply_config(service, &config, config_path);
         if (rc != HYBBX_OK) {
             fprintf(stderr, "Failed to apply configuration\n");
             hybbx_config_free(&config);

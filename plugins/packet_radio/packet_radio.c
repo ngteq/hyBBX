@@ -224,6 +224,28 @@ static hybbx_result_t packet_radio_connect_circuit(void)
                                                      &g_circuit_fd);
         if (rc == HYBBX_OK) {
             hybbx_circuit_decoder_init(&g_circuit_dec);
+            if (g_active_config.link_password != NULL &&
+                g_active_config.link_password[0] != '\0') {
+                const char *link_id = g_active_config.link_id;
+                const char *link_role = g_active_config.link_role;
+
+                if (link_id == NULL || link_id[0] == '\0') {
+                    link_id = "packet-radio";
+                }
+                if (link_role == NULL || link_role[0] == '\0') {
+                    link_role = "link";
+                }
+
+                rc = hybbx_circuit_link_authenticate(
+                    g_circuit_fd, g_active_config.link_password,
+                    link_role, link_id);
+                if (rc != HYBBX_OK) {
+                    close(g_circuit_fd);
+                    g_circuit_fd = -1;
+                    packet_radio_poll_sleep_ms(100);
+                    continue;
+                }
+            }
             printf("[packet_radio] linked to internal circuit %s:%u (HBX)\n",
                    host, port);
             return HYBBX_OK;

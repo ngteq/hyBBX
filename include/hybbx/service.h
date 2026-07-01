@@ -29,7 +29,8 @@ void hybbx_service_destroy(hybbx_service_t *service);
  * Apply settings from an INI configuration (service name, enabled transports).
  */
 hybbx_result_t hybbx_service_apply_config(hybbx_service_t *service,
-                                          const hybbx_config_t *config);
+                                          const hybbx_config_t *config,
+                                          const char *config_path);
 
 /**
  * Load a transport plugin by name (e.g. "telnet", "packet_radio").

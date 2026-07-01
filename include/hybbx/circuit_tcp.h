@@ -11,6 +11,7 @@
 #include "hybbx/circuit.h"
 #include "hybbx/service.h"
 #include "hybbx/types.h"
+#include "hybbx/limits.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,6 +25,11 @@ typedef struct hybbx_circuit_config {
     unsigned port;
     int ipv4;
     int ipv6;
+    char link_password[128];
+    unsigned link_stale_days;
+    int link_auth;
+    char data_path[HYBBX_PATH_MAX];
+    char config_path[HYBBX_PATH_MAX];
 } hybbx_circuit_config_t;
 
 /** Internal transport plugin used for sessions bridged over the circuit hub. */
@@ -49,6 +55,8 @@ unsigned hybbx_circuit_hub_port(const hybbx_circuit_hub_t *hub);
 hybbx_result_t hybbx_circuit_hub_send_raw(hybbx_circuit_hub_t *hub,
                                           const uint8_t *frame, size_t len);
 
+void hybbx_circuit_hub_prune_links(hybbx_circuit_hub_t *hub);
+
 /** Link adapter: connect to the internal circuit hub (TCP client). */
 hybbx_result_t hybbx_circuit_link_connect(const char *host, unsigned port,
                                         int *out_fd);
@@ -58,6 +66,15 @@ hybbx_result_t hybbx_circuit_link_write(int fd, const uint8_t *frame,
 
 hybbx_result_t hybbx_circuit_link_read(int fd, uint8_t *buf, size_t buf_len,
                                        size_t *read_len);
+
+/**
+ * Send LINK_AUTH HBX frame after TCP connect (edge gateway/repeater/link).
+ * No heartbeat/ping — password only.
+ */
+hybbx_result_t hybbx_circuit_link_authenticate(int fd,
+                                               const char *password,
+                                               const char *role,
+                                               const char *id);
 
 #ifdef __cplusplus
 }

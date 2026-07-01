@@ -1,9 +1,11 @@
-# AmigaOS cross-compilation toolchain file (template).
+# AmigaOS 3.9+ cross-compilation toolchain (GCC).
 #
 # Usage:
-#   cmake -DCMAKE_TOOLCHAIN_FILE=cmake/Toolchain-AmigaOS.cmake ..
+#   cmake -B build-amiga \
+#     -DCMAKE_TOOLCHAIN_FILE=cmake/Toolchain-AmigaOS.cmake \
+#     -DAMIGA_SDK_PATH=/opt/amiga
 #
-# Set AMIGA_SDK_PATH to your AmigaOS 3.x SDK / cross-compiler prefix.
+# Set AMIGA_SDK_PATH to your m68k-amigaos-gcc prefix. See docs/PLATFORMS.md.
 
 set(CMAKE_SYSTEM_NAME AmigaOS)
 set(CMAKE_SYSTEM_PROCESSOR m68k)

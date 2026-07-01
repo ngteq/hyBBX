@@ -4,6 +4,7 @@
 #include "hybbx/crypto_config.h"
 #include "hybbx/traffic.h"
 #include "hybbx/circuit_tcp.h"
+#include "hybbx/link.h"
 #include "hybbx/auth.h"
 #include "hybbx/storage.h"
 #include "hybbx/texts.h"
@@ -50,6 +51,7 @@ typedef struct hybbx_attached_session {
 
 struct hybbx_service_internal {
     char *name;
+    char config_path[HYBBX_PATH_MAX];
     char prompt[HYBBX_PROMPT_MAX];
     unsigned max_online;
     unsigned guest_timeout_minutes;
@@ -553,6 +555,24 @@ static hybbx_result_t service_apply_circuit(struct hybbx_service_internal *svc,
                                      HYBBX_CIRCUIT_DEFAULT_PORT, 1u, 65535u);
     cfg.ipv4 = hybbx_config_get_bool(config, "circuit", "ipv4", 1);
     cfg.ipv6 = hybbx_config_get_bool(config, "circuit", "ipv6", 1);
+    cfg.link_auth = hybbx_config_get_bool(config, "circuit", "link_auth", 1);
+    cfg.link_stale_days = hybbx_config_get_uint(
+        config, "circuit", "link_stale_days", HYBBX_LINK_STALE_DAYS, 1u, 365u);
+
+    {
+        const char *link_pw = hybbx_config_get(config, "circuit", "link_password", NULL);
+        const char *data_path = hybbx_config_get(config, "storage", "path", "./data");
+
+        if (link_pw != NULL) {
+            hybbx_strlcpy(cfg.link_password, link_pw, sizeof(cfg.link_password));
+        }
+        if (data_path != NULL) {
+            hybbx_strlcpy(cfg.data_path, data_path, sizeof(cfg.data_path));
+        }
+        if (svc->config_path[0] != '\0') {
+            hybbx_strlcpy(cfg.config_path, svc->config_path, sizeof(cfg.config_path));
+        }
+    }
 
     if (svc->circuit_hub == NULL) {
         svc->circuit_hub = hybbx_circuit_hub_create((hybbx_service_t *)svc);
@@ -698,7 +718,16 @@ hybbx_result_t hybbx_service_run(hybbx_service_t *service)
 
     while (svc->running) {
 #if defined(_POSIX_VERSION)
+        static unsigned prune_tick;
+
         sleep(1);
+        prune_tick++;
+        if (prune_tick >= 3600u) {
+            prune_tick = 0;
+            if (svc->circuit_hub != NULL) {
+                hybbx_circuit_hub_prune_links(svc->circuit_hub);
+            }
+        }
 #else
         break;
 #endif
@@ -754,7 +783,8 @@ static void apply_transport_cb(const hybbx_transport_plugin_t *plugin,
 }
 
 hybbx_result_t hybbx_service_apply_config(hybbx_service_t *service,
-                                            const hybbx_config_t *config)
+                                            const hybbx_config_t *config,
+                                            const char *config_path)
 {
     struct hybbx_service_internal *svc =
         (struct hybbx_service_internal *)service;
@@ -765,6 +795,11 @@ hybbx_result_t hybbx_service_apply_config(hybbx_service_t *service,
 
     if (svc == NULL || config == NULL) {
         return HYBBX_ERR_INVALID;
+    }
+
+    svc->config_path[0] = '\0';
+    if (config_path != NULL && config_path[0] != '\0') {
+        hybbx_strlcpy(svc->config_path, config_path, sizeof(svc->config_path));
     }
 
     service_name = hybbx_config_get(config, "service", "name", NULL);

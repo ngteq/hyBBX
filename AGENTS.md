@@ -19,6 +19,7 @@ Internally the core uses **TCP/IPv4+IPv6 + HBX framing** only. Wire protocols (t
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Planned: mail-area, gateway/digipeater/repeater/link |
 | [docs/MANUAL.md](docs/MANUAL.md) | Operator reference (INI, transports, commands) |
 | [docs/BUILD.md](docs/BUILD.md) | CMake options |
+| [docs/PLATFORMS.md](docs/PLATFORMS.md) | GCC/Clang targets (Win10+, macOS, AmigaOS 3.9+, …) |
 | [docs/REPOSITORY.md](docs/REPOSITORY.md) | Directory layout |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | PR checklist, git policy |
 
@@ -30,7 +31,8 @@ Internally the core uses **TCP/IPv4+IPv6 + HBX framing** only. Wire protocols (t
 4. **Boolean INI values** — use `hybbx_parse_bool()` / `hybbx_config_get_bool()` ([include/hybbx/util.h](include/hybbx/util.h)): canonical `yes`/`no`, aliases `true`/`false`, `enable`/`disable`, `on`/`off`, `1`/`0`.
 5. **Bounded buffers** — respect [include/hybbx/limits.h](include/hybbx/limits.h); use `hybbx_strlcpy`, `hybbx_path_join`.
 6. **C99** — `CMAKE_C_STANDARD 99`, extensions off. Match existing naming (`hybbx_*`, `snake_case` files).
-7. **Minimal diffs** — only change what the task requires; match surrounding style.
+7. **GCC or LLVM/Clang** — see [docs/PLATFORMS.md](docs/PLATFORMS.md).
+8. **Minimal diffs** — only change what the task requires; match surrounding style.
 
 ## Build & verify
 

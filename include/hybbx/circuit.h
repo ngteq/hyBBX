@@ -38,6 +38,8 @@ extern "C" {
 typedef enum hybbx_circuit_proto {
     HYBBX_CIRCUIT_PROTO_AX25 = 0x01,       /**< Raw AX.25 frame incl. FCS */
     HYBBX_CIRCUIT_PROTO_AX25_UI = 0x02,      /**< Masked UI: path + payload */
+    HYBBX_CIRCUIT_PROTO_LINK_AUTH = 0x03,    /**< Edge link password auth (no ping) */
+    HYBBX_CIRCUIT_PROTO_LINK_AUTH_ACK = 0x04,/**< Central auth response */
     HYBBX_CIRCUIT_PROTO_TERMINAL = 0x10,     /**< BBS terminal byte stream */
     HYBBX_CIRCUIT_PROTO_RESERVED_APRS = 0x20,
     HYBBX_CIRCUIT_PROTO_RESERVED_NETROM = 0x21
@@ -86,6 +88,11 @@ size_t hybbx_circuit_encode_ax25_ui(const hybbx_ax25_path_t *path,
 
 size_t hybbx_circuit_encode_terminal(const char *data, size_t len,
                                      uint8_t *out, size_t out_cap);
+
+/** Encode LINK_AUTH or LINK_AUTH_ACK line-oriented payload. */
+size_t hybbx_circuit_encode_link_msg(hybbx_circuit_proto_t proto,
+                                   const char *payload, size_t payload_len,
+                                   uint8_t *out, size_t out_cap);
 
 /**
  * Unpack AX.25_UI masked payload into path + UI bytes.

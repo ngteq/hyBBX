@@ -26,7 +26,7 @@ Details: [docs/QUICKSTART.md](docs/QUICKSTART.md), [docs/BUILD.md](docs/BUILD.md
 - **Focused changes** — one concern per PR when possible.
 - **Architecture respected** — core = TCP/HBX only; radio/telnet in plugins ([AGENTS.md](AGENTS.md)).
 - **Docs updated** — [docs/FEATURES.md](docs/FEATURES.md) for functional changes; [docs/MANUAL.md](docs/MANUAL.md) / `share/hybbx.ini.example` for config/operator changes.
-- **C99**, builds clean with default CMake options.
+- **GCC** or **LLVM/Clang** — [docs/PLATFORMS.md](docs/PLATFORMS.md)
 - **GPL-3.0** compatible — see [LICENSE.txt](LICENSE.txt).
 
 ## Pull requests

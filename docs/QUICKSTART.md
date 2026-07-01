@@ -5,8 +5,8 @@ Get HyBBX running locally in a few minutes. HyBBX is a **BBS/mailbox-inspired se
 ## Requirements
 
 - CMake 3.16+
-- GCC or Clang
-- POSIX (Linux/BSD)
+- **GCC** or **LLVM/Clang**
+- **Linux**, **BSD**, **macOS 10+**, **Windows 10+** (MinGW), or **AmigaOS 3.9+** cross-GCC — [docs/PLATFORMS.md](docs/PLATFORMS.md)
 
 ## Build and run (development)
 
@@ -22,6 +22,7 @@ Connect:
 
 ```bash
 telnet 127.0.0.1 2323
+# or: ./build/src/clients/hybbx-telnet -H 127.0.0.1 -p 2323
 ```
 
 The dev script starts HyBBX with telnet on **127.0.0.1:2323** and the internal circuit on loopback (see `[circuit]` in `local/hybbx.ini`).

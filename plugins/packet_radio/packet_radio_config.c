@@ -502,6 +502,33 @@ hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
         }
     }
 
+    value = find_kv(config, "link_id", scratch, sizeof(scratch));
+    if (value != NULL && value[0] != '\0') {
+        out->link_id = hybbx_strdup(value);
+        if (out->link_id == NULL) {
+            hybbx_packet_radio_config_free(out);
+            return HYBBX_ERR_NOMEM;
+        }
+    }
+
+    value = find_kv(config, "link_password", scratch, sizeof(scratch));
+    if (value != NULL && value[0] != '\0') {
+        out->link_password = hybbx_strdup(value);
+        if (out->link_password == NULL) {
+            hybbx_packet_radio_config_free(out);
+            return HYBBX_ERR_NOMEM;
+        }
+    }
+
+    value = find_kv(config, "link_role", scratch, sizeof(scratch));
+    if (value != NULL && value[0] != '\0') {
+        out->link_role = hybbx_strdup(value);
+        if (out->link_role == NULL) {
+            hybbx_packet_radio_config_free(out);
+            return HYBBX_ERR_NOMEM;
+        }
+    }
+
     (void)hybbx_tnc_profile_apply_defaults(out);
     return HYBBX_OK;
 }
@@ -518,6 +545,9 @@ void hybbx_packet_radio_config_free(hybbx_packet_radio_config_t *config)
     free(config->mycall);
     free(config->dest_call);
     free(config->circuit_host);
+    free(config->link_id);
+    free(config->link_password);
+    free(config->link_role);
     for (i = 0; i < config->via_count; i++) {
         free(config->via[i]);
         config->via[i] = NULL;

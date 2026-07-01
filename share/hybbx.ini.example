@@ -80,6 +80,10 @@ bind6 = ::1
 port = 7323
 ipv4 = yes
 ipv6 = yes
+; Edge links/repeaters: password auth only — no TCP ping/pong health checks.
+link_auth = yes
+link_password = changeme
+link_stale_days = 10
 
 [transport.packet_radio]
 enabled = no
@@ -87,6 +91,9 @@ enabled = no
 ; Link adapter → internal circuit (HBX over TCP)
 circuit_host = 127.0.0.1
 circuit_port = 7323
+link_id = packet-radio-1
+link_password = changeme
+link_role = link
 
 ; --- TNC profiles: tnc2c | baycom | pccom | generic ---
 ; --- Protocols: kiss | hostmode | 6pack ---
@@ -96,6 +103,8 @@ protocol = kiss
 ; Host serial (2400 baud is the HyBBX default for packet links)
 device_type = usb
 device = /dev/ttyUSB0
+; Windows: device = COM3
+; AmigaOS: device = serial.device   (or serial.device:1, or 0 for unit 0)
 baud = 2400
 
 ; AX.25 addresses (optional; required for over-the-air UI frames)
@@ -160,7 +169,9 @@ g3ruh_fsk = no
 
 ; Classic RS232/COM port example:
 ; device_type = serial
-; device = /dev/ttyS0
+; device = /dev/ttyS0        ; Linux/BSD
+; device = COM1              ; Windows (MinGW)
+; device = serial.device     ; AmigaOS
 ; baud = 9600
 ; radio_baud = 1200
 

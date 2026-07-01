@@ -20,7 +20,7 @@ Operator details: [MANUAL.md](MANUAL.md). Quick start: [QUICKSTART.md](QUICKSTAR
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| C99 core | Done | Plain C, CMake build, POSIX (Linux/BSD); AmigaOS cross-build toolchain |
+| C99 core | Done | GCC + LLVM/Clang; Windows 10+, macOS X+, Linux/BSD, AmigaOS 3.9+ — see [PLATFORMS.md](PLATFORMS.md) |
 | Plugin transports | Done | `hybbx_transport_plugin_t` registry; telnet and packet radio built in |
 | INI configuration | Done | `-c` / `--config`; sections for service, storage, auth, traffic, transports |
 | Service lifecycle | Done | Load config, start circuit hub and enabled transports, run until shutdown |
@@ -54,6 +54,11 @@ Operator details: [MANUAL.md](MANUAL.md). Quick start: [QUICKSTART.md](QUICKSTAR
 | Feature | Status | Description |
 |---------|--------|-------------|
 | Telnet (TCP) | Done | IPv4 + IPv6, default port 2323; minimal RFC telnet (ECHO, SGA) |
+| **hybbx-telnet** client | Done | Pure CLI telnet client — parameters/env only (`build/src/clients/hybbx-telnet`) |
+| **hybbx-terminal** client | Done | Pure CLI AX.25 / HBX circuit terminal (`build/src/clients/hybbx-terminal`) |
+| Link password auth | Done | HBX `LINK_AUTH` on circuit attach — **no** ping/pong health checks |
+| Stale link removal | Done | Links with no password auth for `link_stale_days` (default 10) auto-removed |
+| Auto-generated link codes | Done | Issued on successful edge-to-central password auth |
 | Telnet dual-stack bind | Done | `bind`, `bind6`, per-family `ipv4`/`ipv6` toggles |
 | Packet radio | Done | AX.25 link adapter over internal HBX/TCP circuit |
 | SSH | Planned | Same session core as telnet |
@@ -73,7 +78,7 @@ Operator details: [MANUAL.md](MANUAL.md). Quick start: [QUICKSTART.md](QUICKSTAR
 | TNC profile: BayCom | Done | TCM3105 AFSK @ 1200; CB-oriented defaults |
 | TNC profile: PC-COM | Done | Albrecht CB modem; host mode @ 2400 baud |
 | TNC profile: generic | Done | User-supplied parameters for any KISS/TNC2 TNC |
-| USB / serial devices | Done | `device_type` usb/serial; configurable host `baud` |
+| USB / serial devices | Done | POSIX `/dev/*`, Windows `COMx`, AmigaOS `serial.device` — see [PLATFORMS.md](PLATFORMS.md) |
 | Radio band `cb` / `amateur` | Done | Sets safe defaults; CB forces half-duplex |
 | Duplex half / full | Done | KISS full-duplex param + TNC `FULLDUP`; TX guard after RX in half-duplex |
 | AFSK 1200 (TCM3105) | Done | Default over-the-air modulation |
@@ -187,8 +192,7 @@ Operator details: [MANUAL.md](MANUAL.md). Quick start: [QUICKSTART.md](QUICKSTAR
 | Feature | Status | Description |
 |---------|--------|-------------|
 | Mail-Area | Planned | Mailbox on **central only** (not chat) |
-| Gateway / digipeater / repeater / link | Planned | Edge nodes (common packet terms) relay toward the one central instance |
-| Auto-generated link codes | Planned | Tokens on **successful** edge-to-central pairing only |
+| Gateway / digipeater / repeater / link | Planned | Dedicated edge roles and multi-site relay modes |
 | SSH transport | Planned | Same session core as telnet |
 | WebSocket transport | Planned | Reverse-proxy only |
 | SQL storage | Planned | SQLite, MySQL/MariaDB on core |
@@ -197,4 +201,4 @@ Operator details: [MANUAL.md](MANUAL.md). Quick start: [QUICKSTART.md](QUICKSTAR
 
 ---
 
-*Last aligned with codebase: HyBBX 0.1.0 — telnet, packet radio (TNC2C/BayCom/PC-COM), HBX circuit, G3RUH FSK switch, HyBBX boolean standard. Planned: mail-area, central+repeater topology — [ROADMAP.md](ROADMAP.md).*
+*Last aligned with codebase: HyBBX 0.1.0 — telnet, hybbx-telnet/hybbx-terminal clients, packet radio, HBX link auth — [ROADMAP.md](ROADMAP.md).*

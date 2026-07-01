@@ -34,6 +34,10 @@ const char *hybbx_circuit_proto_name(hybbx_circuit_proto_t proto)
         return "ax25";
     case HYBBX_CIRCUIT_PROTO_AX25_UI:
         return "ax25_ui";
+    case HYBBX_CIRCUIT_PROTO_LINK_AUTH:
+        return "link_auth";
+    case HYBBX_CIRCUIT_PROTO_LINK_AUTH_ACK:
+        return "link_auth_ack";
     case HYBBX_CIRCUIT_PROTO_TERMINAL:
         return "terminal";
     case HYBBX_CIRCUIT_PROTO_RESERVED_APRS:
@@ -243,6 +247,20 @@ size_t hybbx_circuit_encode_terminal(const char *data, size_t len,
     return hybbx_circuit_encode(HYBBX_CIRCUIT_PROTO_TERMINAL,
                                 HYBBX_CIRCUIT_FLAG_TX,
                                 (const uint8_t *)data, len, out, out_cap);
+}
+
+size_t hybbx_circuit_encode_link_msg(hybbx_circuit_proto_t proto,
+                                     const char *payload, size_t payload_len,
+                                     uint8_t *out, size_t out_cap)
+{
+    if (proto != HYBBX_CIRCUIT_PROTO_LINK_AUTH &&
+        proto != HYBBX_CIRCUIT_PROTO_LINK_AUTH_ACK) {
+        return 0;
+    }
+
+    return hybbx_circuit_encode(proto, HYBBX_CIRCUIT_FLAG_NONE,
+                                (const uint8_t *)payload, payload_len,
+                                out, out_cap);
 }
 
 static void decode_address_field(const uint8_t *in, hybbx_ax25_address_t *out)

@@ -1,8 +1,20 @@
 # HyBBX build reference
 
-CMake build options and toolchains. Quick compile steps: [QUICKSTART.md](QUICKSTART.md). Operator install notes: [MANUAL.md — Building & installing](MANUAL.md#building--installing).
+CMake build options and toolchains. **Platforms:** [PLATFORMS.md](PLATFORMS.md) (Windows 10+, macOS X+, AmigaOS 3.9+, Linux/BSD — **GCC and LLVM/Clang**). Quick steps: [QUICKSTART.md](QUICKSTART.md).
 
-## Basic build
+## Compilers
+
+| Compiler | Support |
+|----------|---------|
+| GCC | Primary |
+| LLVM Clang | Full |
+
+```bash
+CC=gcc   cmake -B build -DCMAKE_BUILD_TYPE=Release
+CC=clang cmake -B build-clang -DCMAKE_BUILD_TYPE=Release
+```
+
+## Basic build (Linux / BSD / macOS)
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -30,6 +42,11 @@ cmake -B build -DHYBBX_CRYPTO_LIBSODIUM=ON
 
 | Option | Default | Description |
 |--------|---------|-------------|
+| `HYBBX_BUILD_DAEMON` | ON | Build `hybbx` server daemon and `hybbx_core` |
+| `HYBBX_BUILD_CLIENTS` | ON | Build standalone CLI clients |
+| `HYBBX_CLIENTS_ONLY` | OFF | Shorthand: daemon OFF, plugins OFF, clients ON |
+| `HYBBX_BUILD_CLIENT_TELNET` | ON | Build `hybbx-telnet` (requires `HYBBX_BUILD_CLIENTS`) |
+| `HYBBX_BUILD_CLIENT_TERMINAL` | ON | Build `hybbx-terminal` (requires `HYBBX_BUILD_CLIENTS`) |
 | `HYBBX_BUILD_PLUGINS` | ON | Build transport plugins |
 | `HYBBX_PLUGIN_TELNET` | ON | Telnet plugin |
 | `HYBBX_PLUGIN_PACKET_RADIO` | ON | Packet radio plugin |
@@ -41,7 +58,32 @@ cmake -B build -DHYBBX_CRYPTO_LIBSODIUM=ON
 
 With `HYBBX_HARDENING=ON`: probed warnings, stack protector, `_FORTIFY_SOURCE=2` (Release), RELRO/NOW + PIE on Linux. Bounded buffers: `include/hybbx/limits.h`, safe `hybbx_path_join`.
 
-## AmigaOS cross-build
+### Clients-only build
+
+```bash
+cmake -B build-clients -DHYBBX_CLIENTS_ONLY=ON
+cmake --build build-clients
+# bin: build-clients/src/clients/hybbx-telnet, hybbx-terminal
+```
+
+Or: `./scripts/build-clients.sh`. See [CLIENTS.md](CLIENTS.md).
+
+## Windows (10+, MinGW / LLVM-MinGW)
+
+Use MSYS2 MinGW-w64 or LLVM-MinGW with GCC or Clang.
+
+```bash
+cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
+
+Telnet and packet radio serial (`COMx`) supported. Details: [PLATFORMS.md](PLATFORMS.md).
+
+## macOS (10.x+)
+
+GCC or Clang (Homebrew `gcc` / `llvm`, or the system toolchain). Same CMake flow as Linux. Adjust `device=` for USB TNC paths under `/dev/tty.*`.
+
+## AmigaOS (3.9+, cross-GCC)
 
 ```bash
 cmake -B build-amiga \

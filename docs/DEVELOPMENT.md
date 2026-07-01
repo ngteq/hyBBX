@@ -7,9 +7,9 @@ How to work on the codebase. AI agents: see also [AGENTS.md](../AGENTS.md). Huma
 | Requirement | Version / notes |
 |-------------|-----------------|
 | CMake | 3.16+ |
-| C compiler | GCC (default) or Clang, **C99** |
-| Platform | POSIX (Linux/BSD); AmigaOS cross-build optional |
-| Threads | pthread (core + plugins) |
+| C compiler | **GCC** or **LLVM/Clang** — see [PLATFORMS.md](PLATFORMS.md) |
+| OS | Linux, BSD, **macOS 10+**, **Windows 10+** (MinGW), **AmigaOS 3.9+** (cross), other POSIX |
+| Threads | pthread (`Threads::Threads` in CMake) |
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release

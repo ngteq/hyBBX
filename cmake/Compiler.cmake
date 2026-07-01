@@ -1,5 +1,8 @@
 # HyBBX toolchain detection and portable warning flags.
-# Primary compiler: GCC. Also tested with Clang/LLVM.
+#
+# Supported compilers: GCC (primary), LLVM Clang.
+# Supported OS families: Linux, BSD, macOS 10+, Windows 10+ (MinGW/Clang),
+#   AmigaOS 3.9+ (cross-GCC), and other POSIX systems.
 
 include(CheckCCompilerFlag)
 
@@ -11,12 +14,14 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
     set(HYBBX_COMPILER_GCC TRUE)
 elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang")
     if(CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-        message(FATAL_ERROR "HyBBX requires GCC or Clang; MSVC is not supported.")
+        message(FATAL_ERROR "HyBBX requires GCC or Clang.")
     endif()
     set(HYBBX_COMPILER_CLANG TRUE)
 elseif(CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
     set(HYBBX_COMPILER_CLANG TRUE)
     set(HYBBX_COMPILER_APPLECLANG TRUE)
+elseif(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+    message(FATAL_ERROR "HyBBX requires GCC or Clang.")
 else()
     message(WARNING
         "HyBBX is developed with GCC (primary) and Clang. "
@@ -83,7 +88,7 @@ hybbx_collect_supported_c_flags()
 if(HYBBX_COMPILER_GCC)
     message(STATUS "HyBBX compiler: GCC ${CMAKE_C_COMPILER_VERSION} (primary)")
 elseif(HYBBX_COMPILER_CLANG)
-    message(STATUS "HyBBX compiler: Clang ${CMAKE_C_COMPILER_VERSION} (compatible)")
+    message(STATUS "HyBBX compiler: Clang ${CMAKE_C_COMPILER_VERSION}")
 else()
     message(STATUS "HyBBX compiler: ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION}")
 endif()

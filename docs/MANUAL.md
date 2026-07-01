@@ -121,7 +121,51 @@ port = 2323
 ; ipv6 = yes
 ```
 
-Listens on IPv4 and IPv6 on the same port. HyBBX speaks minimal RFC telnet:
+Listens on IPv4 and IPv6 on the same port.
+
+### hybbx-telnet (HyBBX client)
+
+`hybbx-telnet` is the **official HyBBX telnet client** — pure CLI (parameters and environment variables only). No INI files, no GUI. Use it for testing and operator sessions against any HyBBX telnet transport.
+
+```bash
+hybbx-telnet -H 127.0.0.1 -p 2323
+hybbx-telnet --baud 2400 --line-width 40
+hybbx-telnet -u myuser -P secret
+```
+
+Environment: `HYBBX_HOST`, `HYBBX_PORT`. See [CLIENTS.md](CLIENTS.md).
+
+### hybbx-terminal (AX.25 / circuit client)
+
+`hybbx-terminal` is the **official HyBBX circuit terminal client** — pure CLI for AX.25 and HBX testing over the internal circuit hub.
+
+```bash
+hybbx-terminal -H 127.0.0.1 -p 7323
+hybbx-terminal --link-id edge-1 --link-password changeme
+hybbx-terminal --mycall DL1ABC-0 --dest DL9XYZ-0 --ax25-ui
+```
+
+Environment: `HYBBX_CIRCUIT_HOST`, `HYBBX_CIRCUIT_PORT`. See [CLIENTS.md](CLIENTS.md).
+
+### Circuit link authentication
+
+Edge adapters (packet radio, future gateways) authenticate to `[circuit]` with **password only**. HyBBX does **not** use TCP/IP-style ping/pong or heartbeat health checks across links or protocols.
+
+```ini
+[circuit]
+link_auth = yes
+link_password = changeme
+link_stale_days = 10
+
+[transport.packet_radio]
+link_id = edge-1
+link_password = changeme
+link_role = repeater
+```
+
+Successful auth records the link under `data/links/` and `[link.<id>]` in hybbx.ini. Links with no successful password auth for more than `link_stale_days` are **auto-removed** from config and storage.
+
+Server telnet behaviour:
 
 - **WILL ECHO**, **WILL SGA**; declines linemode/NAWS/terminal-type
 - Accepts **CR**, **LF**, or **CRLF**
@@ -262,7 +306,7 @@ baud = 2400
 |-----|-------------|
 | `tnc` | `tnc2c`, `baycom`, `pccom`, `generic` |
 | `protocol` | `kiss`, `hostmode`, `6pack` |
-| `device`, `device_type`, `baud` | Host serial link |
+| `device`, `device_type`, `baud` | Host serial link (`/dev/ttyUSB0`, `COM3`, `serial.device`, … — [PLATFORMS.md](PLATFORMS.md)) |
 | `modem`, `radio_baud`, `clock_mhz` | Radio-side metadata (TNC2C) |
 | `mycall`, `dest` / `dest_call` | AX.25 addresses (`CALL` or `CALL-SSID`) |
 | `via` | Comma-separated digipeater list |
@@ -472,13 +516,15 @@ Install layout under prefix: `bin/hybbx`, `bin/hybbx-start`, `etc/hybbx.ini`, `t
 | `HYBBX_CRYPTO_OPENSSL` | OFF | OpenSSL crypto backends |
 | `HYBBX_CRYPTO_LIBSODIUM` | OFF | libsodium ChaCha/X25519 backends |
 
-See [BUILD.md](BUILD.md) for descriptions and toolchain notes.
+**Platforms:** GCC and LLVM/Clang on Linux, BSD, macOS 10+, Windows 10+ (MinGW), AmigaOS 3.9+ (cross). See [PLATFORMS.md](PLATFORMS.md) and [BUILD.md](BUILD.md).
 
 ### Hardening
 
 With `HYBBX_HARDENING=ON`: probed warnings, stack protector, `_FORTIFY_SOURCE=2` (Release), RELRO/NOW + PIE on Linux. Bounded buffers in `include/hybbx/limits.h`, safe `hybbx_path_join`.
 
-### AmigaOS
+### AmigaOS (3.9+, cross-GCC)
+
+See [PLATFORMS.md](PLATFORMS.md) and [BUILD.md](BUILD.md).
 
 ```bash
 cmake -B build-amiga \

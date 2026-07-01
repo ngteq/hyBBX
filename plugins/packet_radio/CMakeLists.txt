@@ -20,7 +20,11 @@ target_compile_definitions(hybbx_plugin_packet_radio
     PRIVATE HYBBX_PLUGIN_BUILD
 )
 
-target_link_libraries(hybbx_plugin_packet_radio PRIVATE hybbx_core pthread)
+find_package(Threads REQUIRED)
+target_link_libraries(hybbx_plugin_packet_radio PRIVATE hybbx_core Threads::Threads)
+if(HYBBX_PLATFORM_AMIGAOS)
+    target_link_libraries(hybbx_plugin_packet_radio PRIVATE amiga)
+endif()
 target_link_libraries(hybbx PRIVATE hybbx_plugin_packet_radio)
 target_compile_definitions(hybbx PRIVATE HYBBX_HAVE_PLUGIN_PACKET_RADIO)
 hybbx_apply_hardening(hybbx_plugin_packet_radio)

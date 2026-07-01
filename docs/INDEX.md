@@ -19,9 +19,11 @@ HyBBX is a **connection-type service platform** inspired by classic BBS/mailbox 
 | **[FEATURES.md](FEATURES.md)** | Everyone | **Start here** for what HyBBX does — maintained feature list (Done / Planned) |
 | **[QUICKSTART.md](QUICKSTART.md)** | Operators | Clone, build, run, install, first telnet session |
 | **[MANUAL.md](MANUAL.md)** | Operators & developers | Full reference: config, transports, packet radio, auth, commands, crypto |
+| **[CLIENTS.md](CLIENTS.md)** | Operators | Standalone `hybbx-telnet` / `hybbx-terminal` (no server build) |
 | **[ROADMAP.md](ROADMAP.md)** | Everyone | **1× central**; gateway, digipeater, repeater, link |
 | **[REPOSITORY.md](REPOSITORY.md)** | Developers | Source tree layout and main directories |
 | **[BUILD.md](BUILD.md)** | Developers | CMake options, toolchains, hardening |
+| **[PLATFORMS.md](PLATFORMS.md)** | Developers | GCC/Clang on Windows 10+, macOS X+, AmigaOS 3.9+, Linux/BSD |
 
 ## Also useful
 

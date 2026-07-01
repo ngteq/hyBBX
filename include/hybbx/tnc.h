@@ -118,6 +118,9 @@ typedef struct hybbx_packet_radio_config {
     unsigned via_count;
     char *circuit_host;
     unsigned circuit_port;
+    char *link_id;
+    char *link_password;
+    char *link_role;
 } hybbx_packet_radio_config_t;
 
 typedef struct hybbx_tnc hybbx_tnc_t;

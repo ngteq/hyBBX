@@ -64,6 +64,19 @@ typedef void (*hybbx_config_iter_fn)(const char *section, const char *key,
 void hybbx_config_foreach(const hybbx_config_t *config,
                           hybbx_config_iter_fn fn, void *ctx);
 
+/** Set or replace a key in @p config (in-memory only until saved). */
+hybbx_result_t hybbx_config_set(hybbx_config_t *config,
+                               const char *section,
+                               const char *key,
+                               const char *value);
+
+/** Remove all keys in @p section from @p config. */
+void hybbx_config_remove_section(hybbx_config_t *config, const char *section);
+
+/** Write @p config to @p path (INI format). */
+hybbx_result_t hybbx_config_save(const hybbx_config_t *config,
+                                 const char *path);
+
 #ifdef __cplusplus
 }
 #endif
