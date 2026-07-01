@@ -19,6 +19,9 @@ if [ "$script_name" = "hybbx-start" ] && [ -x "$script_dir/hybbx" ]; then
     prefix="$(cd "$script_dir/.." && pwd)"
     config="${HYBBX_CONFIG:-$prefix/etc/hybbx.ini}"
     binary="$script_dir/hybbx"
+    if [ -n "$HOME" ]; then
+        mkdir -p "$HOME/.hybbx"
+    fi
     cd "$prefix"
     if [ ! -f "$config" ]; then
         echo "Config not found: $config" >&2
@@ -42,6 +45,9 @@ if [ -n "$prefix" ]; then
     config="${HYBBX_CONFIG:-$prefix/etc/hybbx.ini}"
     binary="$prefix/bin/hybbx"
     if [ -x "$binary" ] && [ -f "$config" ]; then
+        if [ -n "$HOME" ]; then
+            mkdir -p "$HOME/.hybbx"
+        fi
         cd "$prefix"
         exec "$binary" -c "$config"
     fi

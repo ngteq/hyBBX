@@ -2,7 +2,7 @@
 
 Plugin-based C99 transport service: **centralized `hybbx` daemon**, **link/repeater edge daemons**, text-only mailbox/BBS-like sessions.
 
-Config: [`share/hybbx.ini.example`](share/hybbx.ini.example) · Arch: [`docs/ROADMAP.md`](docs/ROADMAP.md) · **0.4.75** (freeze: [docs/RELEASE-0.4.75.md](docs/RELEASE-0.4.75.md))
+Config: [`share/hybbx.ini.example`](share/hybbx.ini.example) · Arch: [`docs/ROADMAP.md`](docs/ROADMAP.md) · **0.5.0** (stability line: [docs/RELEASE-0.5.0.md](docs/RELEASE-0.5.0.md))
 
 ## Build
 

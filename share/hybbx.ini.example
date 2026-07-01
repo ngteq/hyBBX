@@ -1,5 +1,5 @@
-; HyBBX centralized daemon configuration — version target: 0.4.75
-; Freeze: docs/RELEASE-0.4.75.md (mail-area + stabilization until release)
+; HyBBX centralized daemon configuration — version target: 0.5.0
+; Stability line: docs/RELEASE-0.5.0.md
 ; Arch: docs/ROADMAP.md  |  API: include/hybbx/*.h  |  Install: <prefix>/etc/hybbx.ini
 ;
 ; Sections:
@@ -11,11 +11,12 @@
 ;   [texts]              banner, motd, news
 ;   [chat]               channels
 ;   [mail]               personal mailbox (centralized daemon)
-;   [transport.telnet]   TCP telnet adapter (port 2323)
+;   [networks]           connection switches (ax25, websocket, circuit)
+;   [transport.telnet]   TCP telnet adapter (port 2323) — static enabled
 ;   [circuit]            HBX TCP hub — edge link/repeater daemons connect here
 ;   [transport.packet_radio]  RF link adapter (KISS/AX.25 → circuit)
 ;
-; Booleans: yes/no (aliases true/false, on/off, 1/0). Paths relative to install prefix.
+; Booleans: yes/no (aliases true/false, on/off, 1/0). Storage path supports ~ for $HOME.
 
 [service]
 name = hyBBX
@@ -26,7 +27,8 @@ name = hyBBX
 
 [storage]
 backend = flatfile
-path = ./data
+; User data (users, mail, sessions) — default under $HOME:
+path = ~/.hybbx
 
 [auth]
 auto_login = yes
@@ -74,8 +76,15 @@ enabled = yes
 ; body_max = 2048
 ; path = mail            ; subdirectory under [storage] path (default: mail)
 
+; Connection switches. Telnet and SSH are static-enabled core IP transports
+; (always on when built). Optional adapters are toggled here.
+[networks]
+ax25 = no
+websocket = no
+circuit = yes
+
 [transport.telnet]
-enabled = yes
+; Static-enabled (always started when built). Port/bind only:
 bind = 0.0.0.0
 bind6 = ::
 port = 2323
@@ -84,17 +93,17 @@ port = 2323
 
 ; Planned later (not implemented):
 ; [transport.ssh]
-; enabled = no
+; Static-enabled when built (port/bind only, like telnet).
 ;
 ; WebSocket: forward-proxy only — place Apache/nginx/httpd in front as reverse-proxy.
 ; HyBBX accepts proxied upgrades locally; TLS and public HTTP stay on the web server.
 ; [transport.websocket]
-; enabled = no
 ; bind = 127.0.0.1
 ; port = 8080
 ; upstream = reverse-proxy   ; informational; real TLS/HTTP termination on Apache/nginx
 
 ; Internal TCP/IPv4+IPv6 circuit hub (HBX framing). Link adapters attach here.
+; Master switch: [networks] circuit = yes|no
 [circuit]
 enabled = yes
 bind = 127.0.0.1
@@ -108,9 +117,7 @@ link_password = changeme
 link_stale_days = 10
 
 [transport.packet_radio]
-enabled = no
-
-; Link adapter → internal circuit (HBX over TCP)
+; Requires [networks] ax25 = yes. Plugin tuning below:
 circuit_host = 127.0.0.1
 circuit_port = 7323
 link_id = packet-radio-1

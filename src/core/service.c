@@ -15,6 +15,7 @@
 #include "hybbx/texts.h"
 #include "hybbx/chat.h"
 #include "hybbx/mail.h"
+#include "hybbx/networks.h"
 #include "hybbx/session.h"
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
@@ -58,7 +59,7 @@ typedef struct hybbx_attached_session {
     struct hybbx_attached_session *next;
 } hybbx_attached_session_t;
 
-#define HYBBX_DEFAULT_DATA_PATH "./data"
+#define HYBBX_DEFAULT_DATA_PATH "~/.hybbx"
 
 struct hybbx_service_internal {
     char *name;
@@ -75,6 +76,7 @@ struct hybbx_service_internal {
     hybbx_texts_config_t texts;
     hybbx_chat_config_t chat;
     hybbx_mail_config_t mail;
+    hybbx_networks_config_t networks;
     active_transport_t transports[HYBBX_MAX_ACTIVE_TRANSPORTS];
     size_t transport_count;
     hybbx_circuit_hub_t *circuit_hub;
@@ -94,6 +96,7 @@ hybbx_service_t *hybbx_service_create(const char *name)
     hybbx_texts_config_defaults(&svc->texts);
     hybbx_chat_config_defaults(&svc->chat);
     hybbx_mail_config_defaults(&svc->mail);
+    hybbx_networks_config_defaults(&svc->networks);
     svc->max_online = HYBBX_DEFAULT_MAX_ONLINE;
     svc->guest_timeout_minutes = HYBBX_DEFAULT_GUEST_TIMEOUT_MINUTES;
     svc->active_nodes = 0;
@@ -105,20 +108,6 @@ hybbx_service_t *hybbx_service_create(const char *name)
     if (svc->name == NULL) {
         free(svc);
         return NULL;
-    }
-
-    {
-        hybbx_storage_options_t options;
-
-        options.backend = HYBBX_STORAGE_FLATFILE;
-        options.path = HYBBX_DEFAULT_DATA_PATH;
-        options.guest_prefix = svc->auth.guest_prefix;
-        svc->storage = hybbx_storage_open(&options);
-        if (svc->storage == NULL) {
-            free(svc->name);
-            free(svc);
-            return NULL;
-        }
     }
 
     return (hybbx_service_t *)svc;
@@ -503,8 +492,10 @@ static hybbx_result_t service_open_storage(struct hybbx_service_internal *svc,
 {
     hybbx_storage_options_t options;
     const char *backend_str;
-    const char *path;
+    const char *path_raw;
+    char path_expanded[HYBBX_PATH_MAX];
     const char *guest_prefix;
+    hybbx_result_t rc;
 
     if (svc->storage != NULL) {
         hybbx_storage_close(svc->storage);
@@ -512,20 +503,30 @@ static hybbx_result_t service_open_storage(struct hybbx_service_internal *svc,
     }
 
     backend_str = hybbx_config_get(config, "storage", "backend", "flatfile");
-    path = hybbx_config_get(config, "storage", "path", HYBBX_DEFAULT_DATA_PATH);
+    path_raw = hybbx_config_get(config, "storage", "path", HYBBX_DEFAULT_DATA_PATH);
+
+    rc = hybbx_path_expand(path_expanded, sizeof(path_expanded), path_raw);
+    if (rc != HYBBX_OK) {
+        fprintf(stderr, "[storage] invalid path '%s'\n",
+                path_raw != NULL ? path_raw : "");
+        return HYBBX_ERR_IO;
+    }
+
     guest_prefix = hybbx_config_get(config, "auth", "guest_prefix", NULL);
 
     options.backend = parse_storage_backend(backend_str);
-    options.path = path;
+    options.path = path_expanded;
     options.guest_prefix = guest_prefix != NULL ? guest_prefix :
                                                   svc->auth.guest_prefix;
 
     svc->storage = hybbx_storage_open(&options);
     if (svc->storage == NULL) {
+        fprintf(stderr, "[storage] cannot open '%s' (writable?)\n",
+                path_expanded);
         return HYBBX_ERR_IO;
     }
 
-    printf("[storage] backend=%s path=%s\n", backend_str, path);
+    printf("[storage] backend=%s path=%s\n", backend_str, path_expanded);
     return HYBBX_OK;
 }
 
@@ -566,6 +567,13 @@ static hybbx_result_t service_apply_circuit(struct hybbx_service_internal *svc,
         return HYBBX_OK;
     }
 
+    if (!svc->networks.circuit) {
+        if (svc->circuit_hub != NULL) {
+            hybbx_circuit_hub_stop(svc->circuit_hub);
+        }
+        return HYBBX_OK;
+    }
+
     hybbx_circuit_config_defaults(&cfg);
     bind4 = hybbx_config_get(config, "circuit", "bind", NULL);
     bind6 = hybbx_config_get(config, "circuit", "bind6", NULL);
@@ -586,13 +594,22 @@ static hybbx_result_t service_apply_circuit(struct hybbx_service_internal *svc,
 
     {
         const char *link_pw = hybbx_config_get(config, "circuit", "link_password", NULL);
-        const char *data_path = hybbx_config_get(config, "storage", "path", "./data");
 
         if (link_pw != NULL) {
             hybbx_strlcpy(cfg.link_password, link_pw, sizeof(cfg.link_password));
         }
-        if (data_path != NULL) {
-            hybbx_strlcpy(cfg.data_path, data_path, sizeof(cfg.data_path));
+        if (svc->storage != NULL && svc->storage->path != NULL &&
+            svc->storage->path[0] != '\0') {
+            hybbx_strlcpy(cfg.data_path, svc->storage->path, sizeof(cfg.data_path));
+        } else {
+            char data_expanded[HYBBX_PATH_MAX];
+            const char *path_raw = hybbx_config_get(config, "storage", "path",
+                                                    HYBBX_DEFAULT_DATA_PATH);
+
+            if (hybbx_path_expand(data_expanded, sizeof(data_expanded),
+                                  path_raw) == HYBBX_OK) {
+                hybbx_strlcpy(cfg.data_path, data_expanded, sizeof(cfg.data_path));
+            }
         }
         if (svc->config_path[0] != '\0') {
             hybbx_strlcpy(cfg.config_path, svc->config_path, sizeof(cfg.config_path));
@@ -774,6 +791,7 @@ void hybbx_service_stop(hybbx_service_t *service)
 typedef struct apply_transport_ctx {
     hybbx_service_t *service;
     const hybbx_config_t *config;
+    const hybbx_networks_config_t *networks;
     hybbx_result_t last_error;
 } apply_transport_ctx_t;
 
@@ -784,10 +802,23 @@ static void apply_transport_cb(const hybbx_transport_plugin_t *plugin,
     char section[128];
     char *transport_config;
     hybbx_result_t rc;
+    int transport_enabled;
+
+    if (ctx->networks == NULL ||
+        !hybbx_networks_transport_wanted(plugin->name, ctx->networks)) {
+        return;
+    }
 
     snprintf(section, sizeof(section), "transport.%s", plugin->name);
 
-    if (!hybbx_config_get_bool(ctx->config, section, "enabled", 0)) {
+    if (hybbx_networks_is_static_transport(plugin->name)) {
+        transport_enabled = 1;
+    } else {
+        transport_enabled = hybbx_config_get_bool(ctx->config, section,
+                                                  "enabled", 1);
+    }
+
+    if (!transport_enabled) {
         return;
     }
 
@@ -851,13 +882,19 @@ hybbx_result_t hybbx_service_apply_config(hybbx_service_t *service,
 
     {
         const char *storage_path = HYBBX_DEFAULT_DATA_PATH;
+        char storage_expanded[HYBBX_PATH_MAX];
 
         if (svc->storage != NULL && svc->storage->path != NULL &&
             svc->storage->path[0] != '\0') {
             storage_path = svc->storage->path;
+        } else if (hybbx_path_expand(storage_expanded, sizeof(storage_expanded),
+                                     storage_path) == HYBBX_OK) {
+            storage_path = storage_expanded;
         }
         hybbx_mail_config_apply(&svc->mail, config, storage_path);
     }
+
+    hybbx_networks_config_apply(&svc->networks, config);
 
     rc = service_apply_circuit(svc, config);
     if (rc != HYBBX_OK) {
@@ -866,6 +903,7 @@ hybbx_result_t hybbx_service_apply_config(hybbx_service_t *service,
 
     ctx.service = service;
     ctx.config = config;
+    ctx.networks = &svc->networks;
     ctx.last_error = HYBBX_OK;
 
     hybbx_registry_foreach(apply_transport_cb, &ctx);

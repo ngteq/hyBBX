@@ -1,8 +1,10 @@
 # HyBBX 0.4.75
 
+**Shipped.** Superseded by [RELEASE-0.5.0.md](RELEASE-0.5.0.md) (tag `v0.5.0`).
+
 Release target: **full-functional test build** of the current feature set, plus **mail-area**, then **source release**.
 
-## Feature freeze (active until 0.4.75 ships)
+## Feature freeze (lifted — 0.4.75 shipped)
 
 **No new features** except those listed under **In scope** below.
 
@@ -43,4 +45,4 @@ New capability requires an explicit **0.4.75 required** note in the PR/issue bef
 - [x] `share/hybbx.ini.example` + [MANUAL.md](MANUAL.md) updated for mail
 - [ ] Full build: daemon, plugins, clients (`HYBBX_CLIENTS_ONLY`)
 - [ ] Smoke: telnet session, chat, mail, packet_radio/circuit if enabled
-- [ ] Git tag `v0.4.75` on maintainer host
+- [x] Git tag `v0.4.75` on maintainer host (superseded by `v0.5.0`)

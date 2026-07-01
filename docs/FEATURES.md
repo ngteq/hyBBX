@@ -1,6 +1,6 @@
 # HyBBX feature list
 
-**Version:** 0.4.75-up1 — see [RELEASE-0.4.75.md](RELEASE-0.4.75.md).
+**Version:** 0.5.0 — see [RELEASE-0.5.0.md](RELEASE-0.5.0.md).
 
 Feature inventory — update when behavior changes. Operator INI: `share/hybbx.ini.example`, [MANUAL.md](MANUAL.md). Arch: [ROADMAP.md](ROADMAP.md).
 
@@ -19,6 +19,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | C99 core | Done | GCC + LLVM/Clang; Windows 10+, macOS X+, Linux/BSD, AmigaOS 3.9+ — see [PLATFORMS.md](PLATFORMS.md) |
 | Plugin transports | Done | `hybbx_transport_plugin_t` registry; telnet and packet radio built in |
 | INI configuration | Done | `-c` / `--config`; sections for service, storage, auth, traffic, transports |
+| `[networks]` switches | Done | `ax25`, `websocket`, `circuit`; telnet/ssh static-enabled |
 | Service lifecycle | Done | Load config, start circuit hub and enabled transports, run until shutdown |
 | Session model | Done | Per-connection BBS-inspired session; node limit (`max_online` / `nodes`) |
 | 2400 baud traffic layer | Done | 40-column wrap, paced 8N1 output, optional ANSI; tuned for slow links |
@@ -49,14 +50,14 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| Telnet (TCP) | Done | IPv4 + IPv6, default port 2323; minimal RFC telnet (ECHO, SGA) |
+| Telnet (TCP) | Done | IPv4 + IPv6, default port 2323; **static-enabled** (always on when built) |
 | **hybbx-telnet** client | Done | Pure CLI telnet client — parameters/env only (`build/src/clients/hybbx-telnet`) |
 | **hybbx-terminal** client | Done | Pure CLI AX.25 / HBX circuit terminal (`build/src/clients/hybbx-terminal`) |
 | Link password auth | Done | HBX `LINK_AUTH` on circuit attach — **no** ping/pong health checks |
 | Stale link removal | Done | Links with no password auth for `link_stale_days` (default 10) auto-removed |
 | Auto-generated link codes | Done | Issued on successful link/repeater edge auth to centralized daemon |
 | Telnet dual-stack bind | Done | `bind`, `bind6`, per-family `ipv4`/`ipv6` toggles |
-| Packet radio | Done | AX.25 link adapter over internal HBX/TCP circuit |
+| Packet radio | Done | AX.25 link adapter; `[networks] ax25 = yes` + `[transport.packet_radio]` |
 | SSH | Planned | Same session core as telnet |
 | WebSocket | Planned | Local endpoint behind reverse-proxy only |
 
@@ -212,4 +213,4 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 ---
 
-*Last aligned with codebase: HyBBX 0.4.75-up1 — [RELEASE-0.4.75.md](RELEASE-0.4.75.md).*
+*Last aligned with codebase: HyBBX 0.5.0 — [RELEASE-0.5.0.md](RELEASE-0.5.0.md).*

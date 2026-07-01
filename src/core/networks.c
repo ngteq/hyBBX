@@ -1,0 +1,124 @@
+#include "hybbx/networks.h"
+#include "hybbx/config.h"
+#include "hybbx/util.h"
+
+#include <stdio.h>
+#include <string.h>
+
+static int str_ieq(const char *a, const char *b)
+{
+    if (a == NULL || b == NULL) {
+        return 0;
+    }
+
+    while (*a != '\0' && *b != '\0') {
+        char ca = (char)(*a >= 'A' && *a <= 'Z' ? *a + 32 : *a);
+        char cb = (char)(*b >= 'A' && *b <= 'Z' ? *b + 32 : *b);
+
+        if (ca != cb) {
+            return 0;
+        }
+        a++;
+        b++;
+    }
+
+    return *a == '\0' && *b == '\0';
+}
+
+static int networks_has_key(const hybbx_config_t *config, const char *key)
+{
+    const char *value;
+
+    if (config == NULL || key == NULL) {
+        return 0;
+    }
+
+    value = hybbx_config_get(config, "networks", key, NULL);
+    return value != NULL && value[0] != '\0';
+}
+
+void hybbx_networks_config_defaults(hybbx_networks_config_t *networks)
+{
+    if (networks == NULL) {
+        return;
+    }
+
+    networks->ax25 = 0;
+    networks->websocket = 0;
+    networks->circuit = 1;
+}
+
+void hybbx_networks_config_apply(hybbx_networks_config_t *networks,
+                                 const hybbx_config_t *config)
+{
+    if (networks == NULL) {
+        return;
+    }
+
+    hybbx_networks_config_defaults(networks);
+
+    if (config == NULL) {
+        return;
+    }
+
+    if (networks_has_key(config, "ax25")) {
+        networks->ax25 = hybbx_config_get_bool(config, "networks", "ax25", 0);
+    } else if (networks_has_key(config, "packet_radio")) {
+        networks->ax25 = hybbx_config_get_bool(config, "networks",
+                                              "packet_radio", 0);
+    } else {
+        networks->ax25 = hybbx_config_get_bool(config, "transport.packet_radio",
+                                               "enabled", 0);
+    }
+
+    networks->websocket = hybbx_config_get_bool(config, "networks",
+                                                "websocket", 0);
+
+    if (networks_has_key(config, "circuit")) {
+        networks->circuit = hybbx_config_get_bool(config, "networks",
+                                                  "circuit", 1);
+    } else {
+        networks->circuit = hybbx_config_get_bool(config, "circuit", "enabled",
+                                                  1);
+    }
+
+    printf("[networks] telnet=static ssh=static ax25=%s websocket=%s circuit=%s\n",
+           hybbx_bool_to_string(networks->ax25),
+           hybbx_bool_to_string(networks->websocket),
+           hybbx_bool_to_string(networks->circuit));
+}
+
+int hybbx_networks_is_static_transport(const char *plugin_name)
+{
+    if (plugin_name == NULL || plugin_name[0] == '\0') {
+        return 0;
+    }
+
+    return str_ieq(plugin_name, "telnet") || str_ieq(plugin_name, "ssh");
+}
+
+int hybbx_networks_transport_wanted(const char *plugin_name,
+                                    const hybbx_networks_config_t *networks)
+{
+    if (plugin_name == NULL || plugin_name[0] == '\0') {
+        return 0;
+    }
+
+    if (hybbx_networks_is_static_transport(plugin_name)) {
+        return 1;
+    }
+
+    if (networks == NULL) {
+        return 0;
+    }
+
+    if (str_ieq(plugin_name, "packet_radio")) {
+        return networks->ax25;
+    }
+
+    if (str_ieq(plugin_name, "websocket")) {
+        return networks->websocket;
+    }
+
+    return 0;
+}

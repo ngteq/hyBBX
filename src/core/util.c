@@ -3,7 +3,9 @@
 
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static int bool_token_ieq(const char *value, const char *token)
 {
@@ -140,6 +142,77 @@ size_t hybbx_strlcpy(char *dst, const char *src, size_t dst_size)
 
     memcpy(dst, src, src_len + 1);
     return src_len;
+}
+
+hybbx_result_t hybbx_default_user_data_path(char *out, size_t out_len)
+{
+    const char *home;
+
+    if (out == NULL || out_len == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    home = getenv("HOME");
+    if (home != NULL && home[0] != '\0') {
+        if (snprintf(out, out_len, "%s/.hybbx", home) >= (int)out_len) {
+            return HYBBX_ERR_INVALID;
+        }
+        return HYBBX_OK;
+    }
+
+    if (hybbx_strlcpy(out, ".hybbx", out_len) >= out_len) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    return HYBBX_OK;
+}
+
+hybbx_result_t hybbx_path_expand(char *out, size_t out_len, const char *path)
+{
+    const char *home;
+
+    if (out == NULL || out_len == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (path == NULL || path[0] == '\0') {
+        return hybbx_default_user_data_path(out, out_len);
+    }
+
+    if (path[0] != '~') {
+        if (hybbx_strlcpy(out, path, out_len) >= out_len) {
+            return HYBBX_ERR_INVALID;
+        }
+        return HYBBX_OK;
+    }
+
+    if (path[1] != '\0' && path[1] != '/') {
+        return HYBBX_ERR_INVALID;
+    }
+
+    home = getenv("HOME");
+    if (home == NULL || home[0] == '\0') {
+        if (path[1] == '\0') {
+            return hybbx_default_user_data_path(out, out_len);
+        }
+        if (hybbx_strlcpy(out, path + 2, out_len) >= out_len) {
+            return HYBBX_ERR_INVALID;
+        }
+        return HYBBX_OK;
+    }
+
+    if (path[1] == '\0') {
+        if (hybbx_strlcpy(out, home, out_len) >= out_len) {
+            return HYBBX_ERR_INVALID;
+        }
+        return HYBBX_OK;
+    }
+
+    if (snprintf(out, out_len, "%s%s", home, path + 1) >= (int)out_len) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    return HYBBX_OK;
 }
 
 int hybbx_size_ok(size_t len)

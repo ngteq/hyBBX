@@ -6,12 +6,15 @@ INI, transports, commands. Config template: `share/hybbx.ini.example`. Arch: [RO
 
 ## Connection types
 
-| Transport       | Status   | Description |
-|-----------------|----------|-------------|
-| TCP/IP Telnet   | Started  | BBS-inspired terminal access over TCP |
-| Packet Radio    | Started  | TNC2C (KISS/AX.25), any baud; USB/RS232 |
-| SSH             | Planned  | Secure shell (transport plugin) |
-| WebSocket       | Planned  | Forward-proxy behind Apache/nginx only |
+| Transport       | Status   | `[networks]` switch | Description |
+|-----------------|----------|---------------------|-------------|
+| TCP/IP Telnet   | Started  | **static** (always on) | BBS-inspired terminal access over TCP |
+| SSH             | Planned  | **static** (always on) | Secure shell (transport plugin) |
+| AX.25 / Packet Radio | Started | `ax25 = yes\|no` | TNC2C (KISS/AX.25); USB/RS232 |
+| WebSocket       | Planned  | `websocket = yes\|no` | Forward-proxy behind Apache/nginx only |
+| HBX circuit hub | Started  | `circuit = yes\|no` | Internal TCP hub for edge link adapters |
+
+Telnet and SSH ignore `enabled` in their `[transport.*]` sections — they start whenever the plugin is built. All other adapters are off unless `[networks]` enables them.
 
 ## Architecture
 
@@ -42,6 +45,25 @@ All yes/no configuration keys use the same parser (`hybbx_parse_bool` in
 
 Examples: `enabled = yes`, `pace_output = enable`, `ansi = false`,
 `g3ruh_fsk = disable`, `auto_login = 1`.
+
+### Networks (`[networks]`)
+
+Master switches for optional connection adapters. Core IP transports are static-enabled.
+
+```ini
+[networks]
+ax25 = no          ; packet_radio plugin (AX.25 / KISS / TNC)
+websocket = no     ; planned
+circuit = yes      ; HBX TCP hub for edge link/repeater daemons
+```
+
+| Key | Default | Controls |
+|-----|---------|----------|
+| `ax25` | `no` | `[transport.packet_radio]` (alias: `packet_radio`) |
+| `websocket` | `no` | `[transport.websocket]` when implemented |
+| `circuit` | `yes` | `[circuit]` HBX hub (also respects `[circuit] enabled`) |
+
+Telnet and SSH are **not** listed here — they are static-enabled when compiled in.
 
 ### Internal circuit (HBX over TCP/IPv4+IPv6)
 
@@ -348,22 +370,23 @@ Messages stored under `data/mail/<username>/inbox/` on the **centralized daemon*
 ```ini
 [storage]
 backend = flatfile
-path = ./data
+path = ~/.hybbx
 ```
+
+Default flat-file layout under `$HOME/.hybbx/` (created on first start):
+
+| Path | Purpose |
+|------|---------|
+| `users/users.ini` | User accounts |
+| `mail/<user>/inbox/` | Personal mail |
+| `sessions.dat`, `*.next` | Session counters |
+
+`~` in `path` expands to `$HOME`. `hybbx-start` creates `$HOME/.hybbx` if needed.
 
 | Backend | Status |
 |---------|--------|
 | `flatfile` | Implemented |
 | `sqlite`, `mysql`, `mariadb` | Planned |
-
-### User files (INI, 50 per shard)
-
-| Path | Purpose |
-|------|---------|
-| `users/users.ini` | Users 1–50 |
-| `users/users2.ini` | Users 51–100 |
-| `users/usersN.ini` | Further shards |
-| `users.dat.migrated` | Legacy pipe-format after upgrade |
 
 ```ini
 [user.1]

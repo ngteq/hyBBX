@@ -1,3 +1,4 @@
+#include "hybbx/limits.h"
 #include "hybbx/util.h"
 
 #include <stdio.h>
@@ -41,6 +42,26 @@ int main(void)
     check_str("result ok", hybbx_result_name(HYBBX_OK), "ok");
     check_str("result invalid", hybbx_result_name(HYBBX_ERR_INVALID), "invalid");
     check_str("result unknown", hybbx_result_name((hybbx_result_t)-99), "unknown");
+
+    {
+        char path[HYBBX_PATH_MAX];
+        const char *home = getenv("HOME");
+
+        if (home != NULL && home[0] != '\0') {
+            char want[HYBBX_PATH_MAX];
+
+            snprintf(want, sizeof(want), "%s/.hybbx", home);
+            if (hybbx_path_expand(path, sizeof(path), NULL) == HYBBX_OK) {
+                check_str("path expand null", path, want);
+            }
+            if (hybbx_path_expand(path, sizeof(path), "~/.hybbx") == HYBBX_OK) {
+                check_str("path expand tilde", path, want);
+            }
+            if (hybbx_path_expand(path, sizeof(path), "~") == HYBBX_OK) {
+                check_str("path expand home only", path, home);
+            }
+        }
+    }
 
     if (g_failures != 0) {
         fprintf(stderr, "%u test(s) failed\n", g_failures);

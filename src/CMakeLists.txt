@@ -20,6 +20,7 @@ if(HYBBX_BUILD_DAEMON)
         core/session.c
         core/chat.c
         core/mail.c
+        core/networks.c
         core/terminal.c
         core/texts.c
         core/util.c

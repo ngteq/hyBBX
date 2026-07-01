@@ -812,6 +812,8 @@ hybbx_result_t hybbx_storage_flatfile_open(hybbx_storage_t *storage)
     }
 
     if (mkdir_p(storage->path) != 0) {
+        fprintf(stderr, "[storage] cannot create data path '%s'\n",
+                storage->path);
         return HYBBX_ERR_IO;
     }
 

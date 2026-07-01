@@ -22,7 +22,16 @@ size_t hybbx_strlcpy(char *dst, const char *src, size_t dst_size);
 hybbx_result_t hybbx_path_join(char *out, size_t out_len,
                                const char *base, const char *name);
 
-/** Return non-zero when @p len is a safe allocation size. */
+/** Expand `~` / `~/…` and return the default user data directory `$HOME/.hybbx`. */
+hybbx_result_t hybbx_default_user_data_path(char *out, size_t out_len);
+
+/**
+ * Expand a config path: `~` → $HOME, `~/foo` → $HOME/foo.
+ * Other paths are copied unchanged.
+ */
+hybbx_result_t hybbx_path_expand(char *out, size_t out_len, const char *path);
+
+/** Return non-zero when @p len is safe for HyBBX allocations. */
 int hybbx_size_ok(size_t len);
 
 /**

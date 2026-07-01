@@ -1,6 +1,6 @@
 # HyBBX roadmap
 
-Planned work after **0.4.75** — see [RELEASE-0.4.75.md](RELEASE-0.4.75.md) for active freeze and release scope.
+Planned work after **0.5.0** — see [RELEASE-0.5.0.md](RELEASE-0.5.0.md) for active stability line and release scope.
 
 ## Architecture
 

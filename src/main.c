@@ -3,15 +3,23 @@
  * Plugins: CMake HYBBX_PLUGIN_* ; config: -c path/to/hybbx.ini
  * Standalone clients: src/clients/hybbx-telnet, hybbx-terminal
  */
+#if defined(__linux__)
+#define _DEFAULT_SOURCE
+#endif
+
 #include "hybbx/hybbx.h"
 #include "hybbx/service.h"
 #include "hybbx/registry.h"
 #include "hybbx/config.h"
 #include "hybbx/command.h"
+#include "hybbx/util.h"
+#include "hybbx/limits.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <libgen.h>
 
 #ifdef HYBBX_HAVE_PLUGIN_TELNET
 extern const hybbx_transport_plugin_t hybbx_plugin_telnet;
@@ -62,11 +70,84 @@ static void list_plugins_cb(const hybbx_transport_plugin_t *plugin, void *userda
            plugin->name, (int)plugin->kind, plugin->version);
 }
 
+static int path_is_readable(const char *path)
+{
+    return path != NULL && path[0] != '\0' && access(path, R_OK) == 0;
+}
+
+/**
+ * When -c is omitted: HYBBX_CONFIG, then <binary>/../etc/hybbx.ini (install layout).
+ */
+static const char *discover_config_path(char *buf, size_t buflen,
+                                        const char *argv0)
+{
+    const char *env;
+
+    if (buf == NULL || buflen == 0) {
+        return NULL;
+    }
+
+    env = getenv("HYBBX_CONFIG");
+    if (path_is_readable(env)) {
+        snprintf(buf, buflen, "%s", env);
+        return buf;
+    }
+
+    if (argv0 == NULL || argv0[0] == '\0') {
+        return NULL;
+    }
+
+#if defined(__linux__)
+    {
+        char exe[HYBBX_PATH_MAX];
+        char etc[HYBBX_PATH_MAX];
+        ssize_t n = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+
+        if (n > 0) {
+            char *slash;
+            size_t dir_len;
+
+            exe[n] = '\0';
+            slash = strrchr(exe, '/');
+            if (slash != NULL) {
+                dir_len = (size_t)(slash - exe);
+                if (dir_len + 1 < sizeof(etc)) {
+                    memcpy(etc, exe, dir_len);
+                    etc[dir_len] = '\0';
+                    snprintf(buf, buflen, "%s/../etc/hybbx.ini", etc);
+                    if (path_is_readable(buf)) {
+                        return buf;
+                    }
+                }
+            }
+        }
+    }
+#endif
+
+    snprintf(buf, buflen, "%s", argv0);
+    {
+        char path_copy[HYBBX_PATH_MAX];
+        char candidate[HYBBX_PATH_MAX];
+        char *dir;
+
+        snprintf(path_copy, sizeof(path_copy), "%s", argv0);
+        dir = dirname(path_copy);
+        snprintf(candidate, sizeof(candidate), "%s/../etc/hybbx.ini", dir);
+        if (path_is_readable(candidate)) {
+            snprintf(buf, buflen, "%s", candidate);
+            return buf;
+        }
+    }
+
+    return NULL;
+}
+
 int main(int argc, char *argv[])
 {
     hybbx_service_t *service;
     hybbx_config_t config;
     const char *config_path = NULL;
+    char discovered_config[HYBBX_PATH_MAX];
     int have_config = 0;
     int i;
 
@@ -93,6 +174,11 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    if (config_path == NULL) {
+        config_path = discover_config_path(discovered_config,
+                                           sizeof(discovered_config), argv[0]);
+    }
+
     register_builtin_plugins();
 
     printf("HyBBX %s starting\n", HYBBX_VERSION_STRING);
@@ -101,7 +187,7 @@ int main(int argc, char *argv[])
 
     service = hybbx_service_create(NULL);
     if (service == NULL) {
-        fprintf(stderr, "Failed to create service\n");
+        fprintf(stderr, "Failed to create service (out of memory?)\n");
         return EXIT_FAILURE;
     }
 
@@ -119,11 +205,19 @@ int main(int argc, char *argv[])
 
         rc = hybbx_service_apply_config(service, &config, config_path);
         if (rc != HYBBX_OK) {
-            fprintf(stderr, "Failed to apply configuration\n");
+            fprintf(stderr,
+                    "Failed to apply configuration (storage path writable? "
+                    "telnet/circuit bind ok?) — %s\n",
+                    hybbx_result_name(rc));
             hybbx_config_free(&config);
             hybbx_service_destroy(service);
             return EXIT_FAILURE;
         }
+    } else {
+        fprintf(stderr,
+                "No configuration loaded. Use -c <hybbx.ini>, set HYBBX_CONFIG, "
+                "or run hybbx-start.\n");
+        fprintf(stderr, "No transports will listen without a config file.\n");
     }
 
     hybbx_service_run(service);

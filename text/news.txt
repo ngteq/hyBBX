@@ -1,4 +1,4 @@
 HyBBX News
-Mail area work for 0.4.75.
-Telnet test client: hybbx-telnet.
-Packet radio: KISS/AX.25 plugin.
+HyBBX 0.5.0 — user data in ~/.hybbx.
+Mail area and area navigation live.
+Telnet: port 2323. Type /help.
