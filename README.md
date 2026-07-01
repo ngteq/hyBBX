@@ -1,8 +1,15 @@
 # HyBBX
 
-Plugin-based C99 transport service: **Main** and **Secondary** `hybbx` instances, text-only mailbox/BBS-like sessions, TCP/IP bridge over HBX.
+C99 plugin transport service with text-only BBS sessions and personal mail.
 
-Config: [`share/hybbx.ini.example`](share/hybbx.ini.example) · Arch: [`docs/ROADMAP.md`](docs/ROADMAP.md) · **0.5.0**
+**Main** — central instance: users, storage, mailbox, chat, telnet, and the HBX circuit hub (TCP).
+
+**Secondary** — instance with TNC, modem, or radio hardware; bridges that link to Main over **TCP/IP** (HBX).
+
+Same `hybbx` binary; role is set by INI. HyBBX uses plain TCP only — VPN or tunnels are external.
+
+Config: [`share/hybbx.ini.example`](share/hybbx.ini.example) (Main) · [`share/hybbx-secondary.ini.example`](share/hybbx-secondary.ini.example) (Secondary) · **0.5.0**  
+Arch: [`docs/ROADMAP.md`](docs/ROADMAP.md)
 
 ## Build
 
