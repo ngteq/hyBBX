@@ -154,11 +154,13 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Feature | Status | Description |
 |---------|--------|-------------|
 | Flat-file inbox | Done | `data/mail/<user>/inbox/*.msg` on centralized daemon |
-| `/mail` list | Done | Newest first; `*` = unread |
-| `/mail read` / `delete` | Done | By list index |
+| Recycle bin | Done | `.../recycle/*.msg`; auto-purge after `recycle_days` (default 10) |
+| `/mail list` | Done | Range `1-15` or `5-20` (newest first); `*` = unread |
+| `/mail read` / `delete` | Done | By index or range (`delete 5-20` → recycle) |
+| `/mail recycle` | Done | Permanently empty recycle bin |
 | `/mail send` | Done | Multi-line compose; `/mail done` to deliver |
 | Guest restriction | Done | Registered active users only |
-| INI `[mail]` | Done | `enabled`, `max_messages`, `subject_max`, `body_max` |
+| INI `[mail]` | Done | `enabled`, `max_messages`, `subject_max`, `body_max`, `recycle_days` |
 
 ---
 

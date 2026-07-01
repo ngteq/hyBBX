@@ -488,7 +488,7 @@ Banner tokens: `@version@`, `@service@`.
 | `/clear` | Clear screen and input (`/cls`, `/reset`) |
 | `/echo` | Show or toggle input echo (`/echo yes\|no`) |
 | `/chat` | List/join channels |
-| `/mail` | Inbox; `/mail send`, `read`, `delete` |
+| `/mail` | Inbox; `/mail list 1-15`, `read`, `delete`, `send` |
 | `/login <user> <pass>` | Login |
 | `/register <user> <name> <country> <location> <email>` | Register |
 | `/activate`, `/promote`, `/demote`, `/delete` | Staff |
@@ -499,7 +499,7 @@ Banner tokens: `@version@`, `@service@`.
 
 `/chat <number>` or `/chat <name>`. Channel name = topic. Messages: `ME: …` / `<user>: …`. Max length: `message_max` (default 72). Output wraps at 80 columns.
 
-**Mail** (registered users): `/mail` lists inbox (`*` = unread). `/mail read <n>`, `/mail delete <n>`. `/mail send <user> <subject>` then type body lines; `/mail done` sends. `/mail cancel`, `/leave`, or `/main` aborts compose.
+**Mail** (registered users): `/mail` or `/mail list` shows inbox (`*` = unread). `/mail list 1-15` shows messages 1–15; `/mail list 5-20` shows 5–20 only. `/mail read <n>`, `/mail delete <n>` or `/mail delete <from-to>` (moves to recycle bin). `/mail recycle` permanently empties the recycle bin. Deleted mail is auto-purged after `recycle_days` (default 10, `[mail]` in INI). `/mail send <user> <subject>` then body lines; `/mail done` sends. `/mail cancel`, `/leave`, or `/main` aborts compose.
 
 **Navigation:** `/leave` (`/back`) = one menu level up. `/main` (`/menu`) = main area from anywhere.
 

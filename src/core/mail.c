@@ -17,6 +17,7 @@
 
 #define HYBBX_MAIL_DIR_NAME "mail"
 #define HYBBX_MAIL_INBOX_NAME "inbox"
+#define HYBBX_MAIL_RECYCLE_NAME "recycle"
 #define HYBBX_MAIL_NEXT_FILE "mail.next"
 
 static int str_ieq(const char *a, const char *b)
@@ -125,6 +126,25 @@ static hybbx_result_t mail_user_inbox_path(const hybbx_mail_config_t *mail,
     }
 
     return hybbx_path_join(out, out_len, user_dir, HYBBX_MAIL_INBOX_NAME);
+}
+
+static hybbx_result_t mail_user_recycle_path(const hybbx_mail_config_t *mail,
+                                             const char *username,
+                                             char *out, size_t out_len)
+{
+    char user_dir[HYBBX_PATH_MAX];
+
+    if (mail == NULL || username == NULL || username[0] == '\0' ||
+        out == NULL || out_len == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (hybbx_path_join(user_dir, sizeof(user_dir), mail->root, username) !=
+        HYBBX_OK) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    return hybbx_path_join(out, out_len, user_dir, HYBBX_MAIL_RECYCLE_NAME);
 }
 
 static int parse_msg_filename(const char *name, uint64_t *out_id)
@@ -296,6 +316,7 @@ void hybbx_mail_config_defaults(hybbx_mail_config_t *mail)
     mail->max_messages = HYBBX_MAIL_MAX_MESSAGES;
     mail->subject_max = HYBBX_MAIL_SUBJECT_MAX;
     mail->body_max = HYBBX_MAIL_BODY_MAX;
+    mail->recycle_days = HYBBX_MAIL_DEFAULT_RECYCLE_DAYS;
     mail->root[0] = '\0';
 }
 
@@ -320,6 +341,9 @@ void hybbx_mail_config_apply(hybbx_mail_config_t *mail,
         mail->body_max = hybbx_config_get_uint(
             config, "mail", "body_max", HYBBX_MAIL_BODY_MAX, 64u,
             HYBBX_MAIL_BODY_MAX);
+        mail->recycle_days = hybbx_config_get_uint(
+            config, "mail", "recycle_days", HYBBX_MAIL_DEFAULT_RECYCLE_DAYS,
+            1u, 365u);
     }
 
     mail->root[0] = '\0';
@@ -340,8 +364,9 @@ void hybbx_mail_config_apply(hybbx_mail_config_t *mail,
         }
     }
 
-    printf("[mail] enabled=%s max_messages=%u root=%s\n",
+    printf("[mail] enabled=%s max_messages=%u recycle_days=%u root=%s\n",
            hybbx_bool_to_string(mail->enabled), mail->max_messages,
+           mail->recycle_days,
            mail->root[0] != '\0' ? mail->root : "(unset)");
 }
 
@@ -432,13 +457,211 @@ static hybbx_result_t mail_trim_inbox(const char *inbox_path,
 
 void hybbx_mail_list_inbox(hybbx_service_t *service, hybbx_session_t *session)
 {
+    hybbx_mail_list_inbox_range(service, session, 1, 0);
+}
+
+static void mail_list_print(hybbx_session_t *session,
+                            const hybbx_mail_entry_t *entries,
+                            size_t count,
+                            unsigned from,
+                            unsigned to)
+{
+    size_t i;
+    size_t start;
+    size_t end;
+    char line[HYBBX_MAIL_SUBJECT_MAX + 64];
+    char header[48];
+
+    if (to == 0 || to > count) {
+        to = (unsigned)count;
+    }
+
+    if (count == 0) {
+        hybbx_session_write_line(session, "Inbox empty.");
+        hybbx_session_write_line(session,
+            "Use /mail send <user> <subject> to compose.");
+        return;
+    }
+
+    if (from == 0 || from > count || from > to) {
+        hybbx_session_write_line(session, "No messages in that range.");
+        return;
+    }
+
+    start = (size_t)(from - 1);
+    end = (size_t)to;
+
+    if (from == 1 && to == (unsigned)count) {
+        hybbx_session_write_line(session, "Inbox (newest first):");
+    } else {
+        snprintf(header, sizeof(header), "Inbox %u-%u (newest first):",
+                 from, to);
+        hybbx_session_write_line(session, header);
+    }
+
+    for (i = start; i < end; i++) {
+        snprintf(line, sizeof(line), "  %zu  %s%s  %s",
+                 i + 1,
+                 entries[i].read ? " " : "* ",
+                 entries[i].from,
+                 entries[i].subject[0] != '\0' ? entries[i].subject
+                                                 : "(no subject)");
+        hybbx_session_write_line(session, line);
+    }
+
+    hybbx_session_write_line(session,
+        "  /mail read <n>  delete <n|from-to>  list <from-to>  recycle");
+}
+
+static unsigned mail_recycle_purge_expired(const hybbx_mail_config_t *mail,
+                                           const char *recycle_path)
+{
+    DIR *dir;
+    struct dirent *ent;
+    time_t now = time(NULL);
+    time_t max_age;
+    unsigned removed = 0;
+
+    if (mail == NULL || recycle_path == NULL || recycle_path[0] == '\0') {
+        return 0;
+    }
+
+    max_age = (time_t)mail->recycle_days * 86400;
+
+    dir = opendir(recycle_path);
+    if (dir == NULL) {
+        if (errno == ENOENT) {
+            return 0;
+        }
+        return 0;
+    }
+
+    while ((ent = readdir(dir)) != NULL) {
+        uint64_t id;
+        char path[HYBBX_PATH_MAX];
+        struct stat st;
+
+        if (!parse_msg_filename(ent->d_name, &id)) {
+            continue;
+        }
+
+        if (hybbx_path_join(path, sizeof(path), recycle_path, ent->d_name) !=
+            HYBBX_OK) {
+            continue;
+        }
+
+        if (stat(path, &st) != 0) {
+            continue;
+        }
+
+        if (now - st.st_mtime >= max_age) {
+            if (remove(path) == 0) {
+                removed++;
+            }
+        }
+    }
+
+    closedir(dir);
+    return removed;
+}
+
+static hybbx_result_t mail_move_id_to_recycle(const char *inbox_path,
+                                              const char *recycle_path,
+                                              uint64_t id)
+{
+    char src[HYBBX_PATH_MAX];
+    char dst[HYBBX_PATH_MAX];
+    FILE *in_fp;
+    FILE *out_fp;
+    char line[HYBBX_LINE_MAX];
+    char tmp[HYBBX_PATH_MAX + 8];
+    int has_deleted = 0;
+
+    if (msg_file_path(inbox_path, id, src, sizeof(src)) != HYBBX_OK) {
+        return HYBBX_ERR_IO;
+    }
+
+    if (mkdir_p(recycle_path) != 0) {
+        return HYBBX_ERR_IO;
+    }
+
+    if (msg_file_path(recycle_path, id, dst, sizeof(dst)) != HYBBX_OK) {
+        return HYBBX_ERR_IO;
+    }
+
+    if (strlen(dst) + 4 >= sizeof(tmp)) {
+        return HYBBX_ERR_IO;
+    }
+    snprintf(tmp, sizeof(tmp), "%s.tmp", dst);
+
+    in_fp = fopen(src, "r");
+    out_fp = fopen(tmp, "w");
+    if (in_fp == NULL || out_fp == NULL) {
+        if (in_fp != NULL) {
+            fclose(in_fp);
+        }
+        if (out_fp != NULL) {
+            fclose(out_fp);
+        }
+        remove(tmp);
+        return HYBBX_ERR_IO;
+    }
+
+    while (fgets(line, sizeof(line), in_fp) != NULL) {
+        if (strncmp(line, "deleted=", 8) == 0) {
+            continue;
+        }
+        if (!has_deleted && line[0] == '-' && line[1] == '-' && line[2] == '-') {
+            fprintf(out_fp, "deleted=%ld\n", (long)time(NULL));
+            has_deleted = 1;
+        }
+        fputs(line, out_fp);
+    }
+
+    if (!has_deleted) {
+        fprintf(out_fp, "deleted=%ld\n", (long)time(NULL));
+    }
+
+    fclose(in_fp);
+    fclose(out_fp);
+
+    if (remove(src) != 0) {
+        remove(tmp);
+        return HYBBX_ERR_IO;
+    }
+
+    if (rename(tmp, dst) != 0) {
+        remove(tmp);
+        return HYBBX_ERR_IO;
+    }
+
+    return HYBBX_OK;
+}
+
+static hybbx_result_t mail_purge_user_recycle(const hybbx_mail_config_t *mail,
+                                              const char *username)
+{
+    char recycle[HYBBX_PATH_MAX];
+
+    if (mail_user_recycle_path(mail, username, recycle, sizeof(recycle)) !=
+        HYBBX_OK) {
+        return HYBBX_ERR_IO;
+    }
+
+    (void)mail_recycle_purge_expired(mail, recycle);
+    return HYBBX_OK;
+}
+
+void hybbx_mail_list_inbox_range(hybbx_service_t *service,
+                                 hybbx_session_t *session,
+                                 unsigned from,
+                                 unsigned to)
+{
     const hybbx_mail_config_t *mail;
     hybbx_mail_entry_t entries[HYBBX_MAIL_MAX_MESSAGES];
     char inbox[HYBBX_PATH_MAX];
     size_t count;
-    size_t i;
     hybbx_result_t rc;
-    char line[HYBBX_MAIL_SUBJECT_MAX + 64];
 
     if (service == NULL || session == NULL) {
         return;
@@ -468,30 +691,63 @@ void hybbx_mail_list_inbox(hybbx_service_t *service, hybbx_session_t *session)
         return;
     }
 
+    (void)mail_purge_user_recycle(mail, hybbx_session_username(session));
+
     rc = load_inbox(inbox, entries, HYBBX_MAIL_MAX_MESSAGES, &count);
     if (rc != HYBBX_OK) {
         hybbx_session_write_line(session, "Cannot read inbox.");
         return;
     }
 
-    if (count == 0) {
-        hybbx_session_write_line(session, "Inbox empty.");
-        hybbx_session_write_line(session,
-            "Use /mail send <user> <subject> to compose.");
-        return;
+    mail_list_print(session, entries, count, from, to);
+}
+
+int hybbx_mail_parse_list_range(const char *spec,
+                                unsigned *from, unsigned *to)
+{
+    const char *dash;
+    char *end;
+    unsigned long start;
+    unsigned long end_num;
+
+    if (from == NULL || to == NULL) {
+        return 0;
     }
 
-    hybbx_session_write_line(session, "Inbox (newest first):");
-    for (i = 0; i < count; i++) {
-        snprintf(line, sizeof(line), "  %zu  %s%s  %s",
-                 i + 1,
-                 entries[i].read ? " " : "* ",
-                 entries[i].from,
-                 entries[i].subject[0] != '\0' ? entries[i].subject : "(no subject)");
-        hybbx_session_write_line(session, line);
+    if (spec == NULL || spec[0] == '\0') {
+        *from = 1;
+        *to = 0;
+        return 1;
     }
-    hybbx_session_write_line(session,
-        "  /mail read <n>   /mail delete <n>   /mail send <user> <subject>");
+
+    dash = strchr(spec, '-');
+    if (dash == NULL) {
+        start = strtoul(spec, &end, 10);
+        if (end == spec || *end != '\0' || start == 0) {
+            return 0;
+        }
+        *from = (unsigned)start;
+        *to = (unsigned)start;
+        return 1;
+    }
+
+    start = strtoul(spec, &end, 10);
+    if (end != dash || start == 0) {
+        return 0;
+    }
+
+    end_num = strtoul(dash + 1, &end, 10);
+    if (end == dash + 1 || *end != '\0' || end_num == 0) {
+        return 0;
+    }
+
+    if (start > end_num) {
+        return 0;
+    }
+
+    *from = (unsigned)start;
+    *to = (unsigned)end_num;
+    return 1;
 }
 
 static hybbx_result_t mail_resolve_index(hybbx_service_t *service,
@@ -550,6 +806,9 @@ hybbx_result_t hybbx_mail_read(hybbx_service_t *service,
         hybbx_session_write_line(session, "Guests cannot use mail.");
         return HYBBX_ERR_DENIED;
     }
+
+    (void)mail_purge_user_recycle(hybbx_service_get_mail(service),
+                                  hybbx_session_username(session));
 
     rc = mail_resolve_index(service, session, list_index, &id,
                             inbox, sizeof(inbox));
@@ -624,13 +883,18 @@ hybbx_result_t hybbx_mail_read(hybbx_service_t *service,
     return HYBBX_OK;
 }
 
-hybbx_result_t hybbx_mail_delete(hybbx_service_t *service,
-                                 hybbx_session_t *session,
-                                 unsigned list_index)
+hybbx_result_t hybbx_mail_delete_range(hybbx_service_t *service,
+                                       hybbx_session_t *session,
+                                       unsigned from,
+                                       unsigned to)
 {
+    const hybbx_mail_config_t *mail;
+    hybbx_mail_entry_t entries[HYBBX_MAIL_MAX_MESSAGES];
     char inbox[HYBBX_PATH_MAX];
-    char path[HYBBX_PATH_MAX];
-    uint64_t id;
+    char recycle[HYBBX_PATH_MAX];
+    size_t count;
+    size_t i;
+    unsigned moved = 0;
     hybbx_result_t rc;
 
     if (hybbx_session_is_guest(session)) {
@@ -638,26 +902,153 @@ hybbx_result_t hybbx_mail_delete(hybbx_service_t *service,
         return HYBBX_ERR_DENIED;
     }
 
-    rc = mail_resolve_index(service, session, list_index, &id,
-                            inbox, sizeof(inbox));
-    if (rc == HYBBX_ERR_NOT_FOUND) {
-        hybbx_session_write_line(session, "No such message.");
+    mail = hybbx_service_get_mail(service);
+    if (mail == NULL || !mail->enabled) {
+        hybbx_session_write_line(session, "Mail is disabled.");
+        return HYBBX_ERR_UNSUPPORTED;
+    }
+
+    if (to == 0) {
+        to = from;
+    }
+    if (from == 0 || from > to) {
+        hybbx_session_write_line(session, "Usage: /mail delete <n|from-to>");
         return HYBBX_OK;
     }
+
+    rc = mail_ensure_root(mail);
     if (rc != HYBBX_OK) {
         return rc;
     }
 
-    if (msg_file_path(inbox, id, path, sizeof(path)) != HYBBX_OK) {
+    rc = mail_user_inbox_path(mail, hybbx_session_username(session),
+                              inbox, sizeof(inbox));
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    rc = mail_user_recycle_path(mail, hybbx_session_username(session),
+                                recycle, sizeof(recycle));
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    (void)mail_purge_user_recycle(mail, hybbx_session_username(session));
+
+    rc = load_inbox(inbox, entries, HYBBX_MAIL_MAX_MESSAGES, &count);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    if (from > count || to > count) {
+        hybbx_session_write_line(session, "No such message.");
+        return HYBBX_OK;
+    }
+
+    for (i = (size_t)(from - 1); i < (size_t)to; i++) {
+        rc = mail_move_id_to_recycle(inbox, recycle, entries[i].id);
+        if (rc != HYBBX_OK) {
+            hybbx_session_write_line(session, "Delete failed.");
+            return rc;
+        }
+        moved++;
+    }
+
+    if (moved == 1) {
+        hybbx_session_write_line(session,
+            "Message moved to recycle (auto-purge after configured days).");
+    } else {
+        char buf[64];
+
+        snprintf(buf, sizeof(buf),
+                 "%u messages moved to recycle (auto-purge after %u days).",
+                 moved, mail->recycle_days);
+        hybbx_session_write_line(session, buf);
+    }
+
+    return HYBBX_OK;
+}
+
+hybbx_result_t hybbx_mail_delete(hybbx_service_t *service,
+                               hybbx_session_t *session,
+                               unsigned list_index)
+{
+    return hybbx_mail_delete_range(service, session, list_index, list_index);
+}
+
+hybbx_result_t hybbx_mail_recycle_empty(hybbx_service_t *service,
+                                        hybbx_session_t *session)
+{
+    const hybbx_mail_config_t *mail;
+    char recycle[HYBBX_PATH_MAX];
+    DIR *dir;
+    struct dirent *ent;
+    unsigned removed = 0;
+    hybbx_result_t rc;
+    char buf[64];
+
+    if (hybbx_session_is_guest(session)) {
+        hybbx_session_write_line(session, "Guests cannot use mail.");
+        return HYBBX_ERR_DENIED;
+    }
+
+    mail = hybbx_service_get_mail(service);
+    if (mail == NULL || !mail->enabled) {
+        hybbx_session_write_line(session, "Mail is disabled.");
+        return HYBBX_ERR_UNSUPPORTED;
+    }
+
+    rc = mail_ensure_root(mail);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    rc = mail_user_recycle_path(mail, hybbx_session_username(session),
+                                recycle, sizeof(recycle));
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    (void)mail_recycle_purge_expired(mail, recycle);
+
+    dir = opendir(recycle);
+    if (dir == NULL) {
+        if (errno == ENOENT) {
+            hybbx_session_write_line(session, "Recycle bin empty.");
+            return HYBBX_OK;
+        }
+        hybbx_session_write_line(session, "Cannot read recycle bin.");
         return HYBBX_ERR_IO;
     }
 
-    if (remove(path) != 0) {
-        hybbx_session_write_line(session, "Delete failed.");
-        return HYBBX_ERR_IO;
+    while ((ent = readdir(dir)) != NULL) {
+        uint64_t id;
+        char path[HYBBX_PATH_MAX];
+
+        if (!parse_msg_filename(ent->d_name, &id)) {
+            continue;
+        }
+
+        if (hybbx_path_join(path, sizeof(path), recycle, ent->d_name) !=
+            HYBBX_OK) {
+            continue;
+        }
+
+        if (remove(path) == 0) {
+            removed++;
+        }
     }
 
-    hybbx_session_write_line(session, "Message deleted.");
+    closedir(dir);
+
+    if (removed == 0) {
+        hybbx_session_write_line(session, "Recycle bin empty.");
+    } else {
+        snprintf(buf, sizeof(buf), "Recycle bin emptied (%u message(s)).",
+                 removed);
+        hybbx_session_write_line(session, buf);
+    }
+
     return HYBBX_OK;
 }
 

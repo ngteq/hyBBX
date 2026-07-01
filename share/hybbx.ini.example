@@ -75,6 +75,7 @@ enabled = yes
 ; max_messages = 50
 ; subject_max = 72
 ; body_max = 2048
+; recycle_days = 10       ; auto-purge deleted mail after this many days
 ; path = mail            ; subdirectory under [storage] path (default: mail)
 
 ; Connection switches. Telnet and SSH are static-enabled core IP transports

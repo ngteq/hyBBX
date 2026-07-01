@@ -22,11 +22,15 @@ struct hybbx_session;
 /** Total message body size (all lines). */
 #define HYBBX_MAIL_BODY_MAX 2048u
 
+/** Default days before recycled mail is permanently removed. */
+#define HYBBX_MAIL_DEFAULT_RECYCLE_DAYS 10u
+
 typedef struct hybbx_mail_config {
     int enabled;
     unsigned max_messages;
     unsigned subject_max;
     unsigned body_max;
+    unsigned recycle_days;
     /** Root mail directory (typically <storage>/mail). */
     char root[512];
 } hybbx_mail_config_t;
@@ -53,6 +57,21 @@ void hybbx_mail_list_inbox(struct hybbx_service *service,
                            struct hybbx_session *session);
 
 /**
+ * List inbox rows @p from..@p to (1-based, newest first).
+ * @p to = 0 means through the last message.
+ */
+void hybbx_mail_list_inbox_range(struct hybbx_service *service,
+                                 struct hybbx_session *session,
+                                 unsigned from, unsigned to);
+
+/**
+ * Parse @p spec as @c from-to (e.g. @c 1-15 , @c 5-20 ) or a single index.
+ * Returns 0 on invalid input.
+ */
+int hybbx_mail_parse_list_range(const char *spec,
+                                unsigned *from, unsigned *to);
+
+/**
  * Read message by 1-based list index (newest first).
  * Marks the message as read.
  */
@@ -60,10 +79,18 @@ hybbx_result_t hybbx_mail_read(struct hybbx_service *service,
                                struct hybbx_session *session,
                                unsigned list_index);
 
-/** Delete message by 1-based list index. */
+/** Move inbox message(s) to recycle (1-based index or range). */
 hybbx_result_t hybbx_mail_delete(struct hybbx_service *service,
                                  struct hybbx_session *session,
                                  unsigned list_index);
+
+hybbx_result_t hybbx_mail_delete_range(struct hybbx_service *service,
+                                       struct hybbx_session *session,
+                                       unsigned from, unsigned to);
+
+/** Permanently remove all messages in the user's recycle bin. */
+hybbx_result_t hybbx_mail_recycle_empty(struct hybbx_service *service,
+                                        struct hybbx_session *session);
 
 /**
  * Deliver a message from @p from_user to @p to_user.
