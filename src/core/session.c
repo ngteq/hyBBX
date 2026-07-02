@@ -255,6 +255,11 @@ hybbx_result_t hybbx_session_write_line(hybbx_session_t *session,
     return hybbx_session_write(session, "\n");
 }
 
+static int session_accepts_input(const hybbx_session_core_t *core)
+{
+    return core != NULL && (core->logged_in != 0 || core->login_prompt != 0);
+}
+
 hybbx_result_t hybbx_session_show_prompt(hybbx_session_t *session)
 {
     hybbx_session_core_t *core;
@@ -291,7 +296,7 @@ hybbx_result_t hybbx_session_clear_terminal(hybbx_session_t *session)
     }
 
     core = (hybbx_session_core_t *)session->core_data;
-    if (core == NULL || !core->logged_in) {
+    if (core == NULL || !session_accepts_input(core)) {
         return HYBBX_ERR_INVALID;
     }
 
@@ -333,7 +338,7 @@ hybbx_result_t hybbx_session_set_input_echo(hybbx_session_t *session, int enable
     }
 
     core = (hybbx_session_core_t *)session->core_data;
-    if (core == NULL || !core->logged_in) {
+    if (core == NULL || !session_accepts_input(core)) {
         return HYBBX_ERR_INVALID;
     }
 
@@ -809,13 +814,15 @@ hybbx_result_t hybbx_session_handle_input(hybbx_session_t *session,
     }
 
     core = (hybbx_session_core_t *)session->core_data;
-    if (core == NULL || !core->logged_in) {
+    if (core == NULL || !session_accepts_input(core)) {
         return HYBBX_ERR_INVALID;
     }
 
-    expiry_rc = session_check_guest_expiry(core);
-    if (expiry_rc != HYBBX_OK) {
-        return expiry_rc;
+    if (core->logged_in) {
+        expiry_rc = session_check_guest_expiry(core);
+        if (expiry_rc != HYBBX_OK) {
+            return expiry_rc;
+        }
     }
 
     for (i = 0; i < len; i++) {

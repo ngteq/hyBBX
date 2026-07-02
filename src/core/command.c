@@ -150,13 +150,17 @@ static hybbx_result_t cmd_check_access(hybbx_session_t *session,
 {
     hybbx_user_level_t level = hybbx_session_user_level(session);
 
-    if (cmd_verb_allowed(level, verb)) {
-        return HYBBX_OK;
+    if (!hybbx_session_logged_in(session) &&
+        hybbx_session_login_prompt(session)) {
+        if (cmd_verb_allowed_login_prompt(verb)) {
+            return HYBBX_OK;
+        }
+        hybbx_session_write_line(session,
+            "Log in with /login or use /register.");
+        return HYBBX_ERR_DENIED;
     }
 
-    if (!hybbx_session_logged_in(session) &&
-        hybbx_session_login_prompt(session) &&
-        cmd_verb_allowed_login_prompt(verb)) {
+    if (cmd_verb_allowed(level, verb)) {
         return HYBBX_OK;
     }
 
@@ -231,7 +235,9 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
     hybbx_session_write_line(session,
         "HyBBX commands (/ required)  —  /help <cmd> for details");
 
-    if (level == HYBBX_LEVEL_GUEST) {
+    if (level == HYBBX_LEVEL_GUEST ||
+        (hybbx_session_login_prompt(session) &&
+         !hybbx_session_logged_in(session))) {
         cmd_help_pair(session, "/help", "list or explain",
                       "/motd", "message of the day");
         cmd_help_pair(session, "/news", "system news",
@@ -239,6 +245,7 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
         cmd_help_pair(session, "/register", "new account",
                       "/clear", "clear screen");
         cmd_help_line(session, "/echo", "input echo on/off");
+        cmd_help_line(session, "/exit", "close connection");
         return;
     }
 
@@ -1400,9 +1407,14 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
     hybbx_username_normalize(username);
 
     if (hybbx_guest_slot_from_username(guest_prefix, username, &guest_slot)) {
-        hybbx_session_write_line(session,
-            "Guest access is automatic on connect (auto_login). "
-            "/login is for registered accounts only.");
+        if (auth != NULL && auth->auto_login) {
+            hybbx_session_write_line(session,
+                "Guest access is automatic on connect (auto_login). "
+                "/login is for registered accounts only.");
+        } else {
+            hybbx_session_write_line(session,
+                "/login is for registered accounts only.");
+        }
         return HYBBX_OK;
     }
 

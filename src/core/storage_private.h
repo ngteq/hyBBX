@@ -13,8 +13,6 @@ struct hybbx_storage {
 
 hybbx_result_t hybbx_storage_flatfile_open(hybbx_storage_t *storage);
 void hybbx_storage_flatfile_close(hybbx_storage_t *storage);
-hybbx_result_t hybbx_storage_flatfile_create_guest(hybbx_storage_t *storage,
-                                                     hybbx_user_record_t *out);
 hybbx_result_t hybbx_storage_flatfile_session_begin(hybbx_storage_t *storage,
                                                     const hybbx_user_record_t *user,
                                                     const char *transport,

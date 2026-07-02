@@ -106,21 +106,6 @@ hybbx_storage_backend_kind_t hybbx_storage_backend(const hybbx_storage_t *storag
     return storage->backend;
 }
 
-hybbx_result_t hybbx_storage_create_guest(hybbx_storage_t *storage,
-                                          hybbx_user_record_t *out)
-{
-    if (storage == NULL || out == NULL) {
-        return HYBBX_ERR_INVALID;
-    }
-
-    switch (storage->backend) {
-    case HYBBX_STORAGE_FLATFILE:
-        return hybbx_storage_flatfile_create_guest(storage, out);
-    default:
-        return HYBBX_ERR_UNSUPPORTED;
-    }
-}
-
 hybbx_result_t hybbx_storage_register_user(hybbx_storage_t *storage,
                                            const hybbx_user_registration_t *reg,
                                            hybbx_user_record_t *out)

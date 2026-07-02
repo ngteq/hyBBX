@@ -59,7 +59,7 @@ typedef struct hybbx_attached_session {
     struct hybbx_attached_session *next;
 } hybbx_attached_session_t;
 
-#define HYBBX_DEFAULT_DATA_PATH "~/.hybbx"
+#define HYBBX_DEFAULT_DATA_PATH "data"
 
 struct hybbx_service_internal {
     char *name;

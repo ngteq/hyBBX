@@ -85,13 +85,6 @@ void hybbx_storage_close(hybbx_storage_t *storage);
 hybbx_storage_backend_kind_t hybbx_storage_backend(const hybbx_storage_t *storage);
 
 /**
- * Deprecated: guests are ephemeral (@ref hybbx_service_guest_assign).
- * Always returns @ref HYBBX_ERR_INVALID.
- */
-hybbx_result_t hybbx_storage_create_guest(hybbx_storage_t *storage,
-                                          hybbx_user_record_t *out);
-
-/**
  * Register a new user account (level user, inactive until Sysop/Admin activates).
  */
 hybbx_result_t hybbx_storage_register_user(hybbx_storage_t *storage,

@@ -18,7 +18,6 @@ struct flatfile_state {
     char users_dir[HYBBX_PATH_MAX];
     char legacy_users_path[HYBBX_PATH_MAX];
     char sessions_path[HYBBX_PATH_MAX];
-    char guest_next_path[HYBBX_PATH_MAX];
     char session_next_path[HYBBX_PATH_MAX];
     char user_next_path[HYBBX_PATH_MAX];
 };
@@ -849,13 +848,6 @@ hybbx_result_t hybbx_storage_flatfile_open(hybbx_storage_t *storage)
         return rc;
     }
 
-    rc = hybbx_path_join(state->guest_next_path, sizeof(state->guest_next_path),
-                   storage->path, "guest.next");
-    if (rc != HYBBX_OK) {
-        free(state);
-        return rc;
-    }
-
     rc = hybbx_path_join(state->session_next_path, sizeof(state->session_next_path),
                    storage->path, "session.next");
     if (rc != HYBBX_OK) {
@@ -901,16 +893,6 @@ void hybbx_storage_flatfile_close(hybbx_storage_t *storage)
 
     free(storage->backend_data);
     storage->backend_data = NULL;
-}
-
-hybbx_result_t hybbx_storage_flatfile_create_guest(hybbx_storage_t *storage,
-                                                   hybbx_user_record_t *out)
-{
-    (void)storage;
-    (void)out;
-
-    /* Guests are ephemeral (service-layer slots); not stored in user files. */
-    return HYBBX_ERR_INVALID;
 }
 
 hybbx_result_t hybbx_storage_flatfile_find_user(hybbx_storage_t *storage,

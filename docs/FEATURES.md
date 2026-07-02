@@ -115,7 +115,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Flat-file backend | Done | `backend=flatfile`; path-configurable data dir |
 | INI user shards | Done | Up to 50 users per `users/usersN.ini` |
 | Legacy `users.dat` migration | Done | Pipe-format migrated on first startup |
-| Session / ID counters | Done | `sessions.dat`, `guest.next`, `user.next`, `session.next` |
+| Session / ID counters | Done | `sessions.dat`, `user.next`, `session.next` |
 | SQLite backend | Planned | |
 | MySQL / MariaDB | Planned | |
 

@@ -516,18 +516,18 @@ Messages stored under `data/mail/<username>/inbox/` on **Main** only.
 ```ini
 [storage]
 backend = flatfile
-path = ~/.hybbx
+path = data
 ```
 
-Default flat-file layout under `$HOME/.hybbx/` (created on first start):
+Default flat-file layout under the install prefix `data/` directory (created on first start; relative to cwd when started via `hybbx-start`):
 
 | Path | Purpose |
 |------|---------|
 | `users/users.ini` | Registered accounts (default Sysop on first start) |
 | `mail/<user>/inbox/` | Personal mail |
-| `sessions.dat`, `*.next` | Session counters |
+| `sessions.dat`, `user.next`, `session.next` | Session counters |
 
-`~` in `path` expands to `$HOME`. `hybbx-start` creates `$HOME/.hybbx` if needed.
+`~` in `path` expands to `$HOME`. Dev configs may use `path = ~/.hybbx` instead.
 
 | Backend | Status |
 |---------|--------|
@@ -556,7 +556,7 @@ Legacy `users.dat` (`id|name|level|…`) migrates on first startup. Plain passwo
 | `{md5}<hex>` | Verify-only legacy |
 | plain text | Auto-upgraded to `{sha256}` |
 
-| `sessions.dat`, `guest.next`, `user.next`, `session.next` | Counters / session log |
+| `sessions.dat`, `user.next`, `session.next` | Counters / session log |
 | `mail/<user>/inbox/*.msg` | Personal mail (Main only) |
 
 **Default Sysop** (if none exists): username `Sysop`, password `SysopPassword` — change after first login with `/changeme` (new passwords: **8–24 characters**).
@@ -588,7 +588,7 @@ Bundled: [Monocypher](third_party/monocypher/), [tiny-AES-c](third_party/tinyaes
 
 **Guests** (`Guest1` … `Guest25`) are **ephemeral** — up to 25 simultaneous slots in memory only, not written to user files. With `auto_login=yes` (default), the next free slot is assigned on connect. `/login` is for **registered accounts only**; guests cannot log in with `/login GuestN`.
 
-With `auto_login=no`, new connections see the banner and a login prompt; use `/login` or `/register` for registered accounts (no guest slots). Guests may use: `/help`, `/motd`, `/news`, `/login`, `/register`, `/clear`, `/echo`.
+With `auto_login=no`, new connections see the banner and a login prompt (not logged in). Use `/login` or `/register` for registered accounts — no guest slots. Allowed before login: `/help`, `/motd`, `/news`, `/login`, `/register`, `/clear`, `/echo`, `/exit`.
 
 Registered users (User, Mod, Admin, Sysop) use `/changeme` to update their own profile and password (not `/register`).
 
