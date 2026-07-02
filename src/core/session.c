@@ -839,6 +839,22 @@ hybbx_result_t hybbx_session_handle_input(hybbx_session_t *session,
     return HYBBX_OK;
 }
 
+const char *hybbx_session_display_name(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return "";
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return "";
+    }
+
+    return hybbx_user_display_name(&core->user);
+}
+
 const char *hybbx_session_username(const hybbx_session_t *session)
 {
     const hybbx_session_core_t *core;
@@ -1141,6 +1157,8 @@ hybbx_result_t hybbx_session_mail_compose_start(hybbx_session_t *session,
 {
     hybbx_session_core_t *core;
     const hybbx_mail_config_t *mail;
+    hybbx_user_record_t recipient;
+    hybbx_storage_t *storage;
     size_t subject_len;
 
     if (session == NULL || to_user == NULL || subject == NULL) {
@@ -1158,8 +1176,16 @@ hybbx_result_t hybbx_session_mail_compose_start(hybbx_session_t *session,
         return HYBBX_ERR_INVALID;
     }
 
-    hybbx_strlcpy(core->mail_compose_to, to_user, sizeof(core->mail_compose_to));
-    hybbx_username_normalize(core->mail_compose_to);
+    storage = hybbx_service_get_storage(core->service);
+    if (storage != NULL &&
+        hybbx_storage_resolve_user(storage, to_user, &recipient) == HYBBX_OK) {
+        hybbx_strlcpy(core->mail_compose_to, recipient.username,
+                      sizeof(core->mail_compose_to));
+    } else {
+        hybbx_strlcpy(core->mail_compose_to, to_user,
+                      sizeof(core->mail_compose_to));
+        hybbx_username_normalize(core->mail_compose_to);
+    }
     hybbx_strlcpy(core->mail_compose_subject, subject,
                   sizeof(core->mail_compose_subject));
     core->mail_compose_body[0] = '\0';

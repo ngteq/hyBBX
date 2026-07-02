@@ -138,6 +138,22 @@ hybbx_result_t hybbx_storage_find_user(hybbx_storage_t *storage,
     }
 }
 
+hybbx_result_t hybbx_storage_resolve_user(hybbx_storage_t *storage,
+                                          const char *name,
+                                          hybbx_user_record_t *out)
+{
+    if (storage == NULL || name == NULL || out == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    switch (storage->backend) {
+    case HYBBX_STORAGE_FLATFILE:
+        return hybbx_storage_flatfile_resolve_user(storage, name, out);
+    default:
+        return HYBBX_ERR_UNSUPPORTED;
+    }
+}
+
 hybbx_result_t hybbx_storage_count_level(hybbx_storage_t *storage,
                                          hybbx_user_level_t level,
                                          size_t *count)

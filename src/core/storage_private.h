@@ -22,6 +22,9 @@ hybbx_result_t hybbx_storage_flatfile_session_end(hybbx_storage_t *storage,
 hybbx_result_t hybbx_storage_flatfile_find_user(hybbx_storage_t *storage,
                                                const char *username,
                                                hybbx_user_record_t *out);
+hybbx_result_t hybbx_storage_flatfile_resolve_user(hybbx_storage_t *storage,
+                                                   const char *name,
+                                                   hybbx_user_record_t *out);
 hybbx_result_t hybbx_storage_flatfile_count_level(hybbx_storage_t *storage,
                                                  hybbx_user_level_t level,
                                                  size_t *count);

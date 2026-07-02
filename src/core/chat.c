@@ -250,7 +250,7 @@ hybbx_result_t hybbx_chat_post(hybbx_service_t *service,
 
     ctx.from = from;
     ctx.message = message;
-    ctx.from_user = hybbx_session_username(from);
+    ctx.from_user = hybbx_session_display_name(from);
     ctx.channel = channel;
 
     hybbx_service_visit_sessions(service, chat_broadcast_visitor, &ctx);

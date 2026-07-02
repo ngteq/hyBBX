@@ -20,7 +20,7 @@ struct hybbx_session;
 #define HYBBX_BANNER_TOKEN_VERSION "@version@"
 /** Substituted in banner.txt line 2. */
 #define HYBBX_BANNER_TOKEN_SERVICE "@service@"
-/** Substituted in motd.txt (current session username). */
+/** Substituted in motd.txt (current session nickname). */
 #define HYBBX_TEXT_TOKEN_USERNAME "@username@"
 
 #define HYBBX_TEXTS_PATH_MAX 512

@@ -37,6 +37,8 @@ hybbx_result_t hybbx_session_handle_input(hybbx_session_t *session,
                                          const uint8_t *data, size_t len);
 
 const char *hybbx_session_username(const hybbx_session_t *session);
+/** User-facing name (nickname) for the logged-in account. */
+const char *hybbx_session_display_name(const hybbx_session_t *session);
 uint64_t hybbx_session_id(const hybbx_session_t *session);
 const hybbx_session_record_t *hybbx_session_record(const hybbx_session_t *session);
 hybbx_user_level_t hybbx_session_user_level(const hybbx_session_t *session);

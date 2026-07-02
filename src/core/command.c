@@ -625,8 +625,7 @@ static void who_list_visitor(hybbx_session_t *session, void *userdata)
         return;
     }
 
-    name = hybbx_username_display(hybbx_session_username(session),
-                                  hybbx_session_user_level(session));
+    name = hybbx_session_display_name(session);
     rec = hybbx_session_record(session);
     transport = who_transport_label(rec != NULL ? rec->transport : NULL);
     if (rec == NULL || rec->transport[0] == '\0') {
@@ -668,7 +667,7 @@ static hybbx_result_t cmd_session(hybbx_session_t *session)
         return HYBBX_ERR_INVALID;
     }
 
-    snprintf(buf, sizeof(buf), "User: %s", rec->username);
+    snprintf(buf, sizeof(buf), "User: %s", hybbx_session_display_name(session));
     hybbx_session_write_line(session, buf);
     snprintf(buf, sizeof(buf), "Level: %s",
              hybbx_user_level_name(hybbx_session_user_level(session)));
@@ -748,6 +747,7 @@ static hybbx_result_t parse_registration(const hybbx_parsed_command_t *cmd,
     }
 
     memset(reg, 0, sizeof(*reg));
+    hybbx_strlcpy(reg->nickname, cmd->argv[0], sizeof(reg->nickname));
     hybbx_strlcpy(reg->username, cmd->argv[0], sizeof(reg->username));
     hybbx_username_normalize(reg->username);
 
@@ -819,7 +819,6 @@ static hybbx_result_t cmd_lookup_user(hybbx_service_t *service,
                                       hybbx_user_record_t *out)
 {
     hybbx_storage_t *storage;
-    char normalized[HYBBX_USER_NAME_MAX];
     hybbx_result_t rc;
 
     if (service == NULL || username == NULL || out == NULL ||
@@ -832,10 +831,7 @@ static hybbx_result_t cmd_lookup_user(hybbx_service_t *service,
         return HYBBX_ERR_INVALID;
     }
 
-    hybbx_strlcpy(normalized, username, sizeof(normalized));
-    hybbx_username_normalize(normalized);
-
-    rc = hybbx_storage_find_user(storage, normalized, out);
+    rc = hybbx_storage_resolve_user(storage, username, out);
     if (rc == HYBBX_ERR_NOT_FOUND) {
         return HYBBX_ERR_NOT_FOUND;
     }
@@ -894,7 +890,8 @@ static hybbx_result_t cmd_activate(hybbx_service_t *service,
         return rc;
     }
 
-    snprintf(buf, sizeof(buf), "Activated '%s'.", target.username);
+    snprintf(buf, sizeof(buf), "Activated '%s'.",
+             hybbx_user_display_name(&target));
     hybbx_session_write_line(session, buf);
     return HYBBX_OK;
 }
@@ -949,7 +946,8 @@ static hybbx_result_t cmd_promote(hybbx_service_t *service,
 
     if (target.level == new_level) {
         snprintf(buf, sizeof(buf), "'%s' is already %s.",
-                 target.username, hybbx_user_level_name(new_level));
+                 hybbx_user_display_name(&target),
+                 hybbx_user_level_name(new_level));
         hybbx_session_write_line(session, buf);
         return HYBBX_OK;
     }
@@ -961,7 +959,8 @@ static hybbx_result_t cmd_promote(hybbx_service_t *service,
     }
 
     snprintf(buf, sizeof(buf), "Promoted '%s' to %s.",
-             target.username, hybbx_user_level_name(new_level));
+             hybbx_user_display_name(&target),
+             hybbx_user_level_name(new_level));
     hybbx_session_write_line(session, buf);
     return HYBBX_OK;
 }
@@ -1021,7 +1020,8 @@ static hybbx_result_t cmd_demote(hybbx_service_t *service,
     }
 
     snprintf(buf, sizeof(buf), "Demoted '%s' from %s to user.",
-             target.username, hybbx_user_level_name(old_level));
+             hybbx_user_display_name(&target),
+             hybbx_user_level_name(old_level));
     hybbx_session_write_line(session, buf);
     return HYBBX_OK;
 }
@@ -1079,7 +1079,8 @@ static hybbx_result_t cmd_delete(hybbx_service_t *service,
         return rc;
     }
 
-    snprintf(buf, sizeof(buf), "Deleted account '%s'.", target.username);
+    snprintf(buf, sizeof(buf), "Deleted account '%s'.",
+             hybbx_user_display_name(&target));
     hybbx_session_write_line(session, buf);
     return HYBBX_OK;
 }
@@ -1175,7 +1176,7 @@ static hybbx_result_t cmd_register_user(hybbx_service_t *service,
 
     rc = hybbx_storage_register_user(storage, &reg, &user);
     if (rc == HYBBX_ERR_BUSY) {
-        hybbx_session_write_line(session, "Username already taken.");
+        hybbx_session_write_line(session, "Username or nickname already taken.");
         return HYBBX_OK;
     }
     if (rc == HYBBX_ERR_INVALID) {
@@ -1188,10 +1189,11 @@ static hybbx_result_t cmd_register_user(hybbx_service_t *service,
     }
 
     if (staff_created) {
-        snprintf(buf, sizeof(buf), "User '%s' created.", user.username);
+        snprintf(buf, sizeof(buf), "User '%s' created.",
+                 hybbx_user_display_name(&user));
     } else {
         snprintf(buf, sizeof(buf), "Registration received for '%s'.",
-                 user.username);
+                 hybbx_user_display_name(&user));
     }
     hybbx_session_write_line(session, buf);
     snprintf(buf, sizeof(buf), "Name: %s", user.full_name);
@@ -1432,7 +1434,8 @@ static hybbx_result_t cmd_userchange(hybbx_service_t *service,
         return rc;
     }
 
-    snprintf(buf, sizeof(buf), "Updated account '%s'.", user.username);
+    snprintf(buf, sizeof(buf), "Updated account '%s'.",
+             hybbx_user_display_name(&user));
     hybbx_session_write_line(session, buf);
     return HYBBX_OK;
 }
@@ -1482,7 +1485,8 @@ static hybbx_result_t cmd_userdelete(hybbx_service_t *service,
         return rc;
     }
 
-    snprintf(buf, sizeof(buf), "Deleted account '%s'.", target.username);
+    snprintf(buf, sizeof(buf), "Deleted account '%s'.",
+             hybbx_user_display_name(&target));
     hybbx_session_write_line(session, buf);
     return HYBBX_OK;
 }
@@ -1796,7 +1800,7 @@ static hybbx_result_t cmd_mail(hybbx_service_t *service,
         mail_subject = hybbx_session_mail_compose_subject(session);
         body = hybbx_session_mail_compose_body(session);
 
-        rc = hybbx_mail_deliver(service, hybbx_session_username(session),
+        rc = hybbx_mail_deliver(service, hybbx_session_display_name(session),
                                 to_user, mail_subject, body);
 
         if (rc == HYBBX_ERR_NOT_FOUND) {

@@ -189,8 +189,7 @@ hybbx_result_t hybbx_texts_send_motd(const hybbx_texts_config_t *texts,
         return HYBBX_ERR_INVALID;
     }
 
-    username = hybbx_username_display(hybbx_session_username(session),
-                                      hybbx_session_user_level(session));
+    username = hybbx_session_display_name(session);
     if (username[0] == '\0') {
         username = "visitor";
     }

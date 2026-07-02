@@ -123,6 +123,124 @@ static hybbx_result_t append_line(const char *path, const char *line)
     return HYBBX_OK;
 }
 
+#define HYBBX_USER_NICK_SUFFIX ".nick"
+
+static hybbx_result_t user_nickname_path(const struct flatfile_state *state,
+                                           const char *username,
+                                           char *out, size_t out_len)
+{
+    char name[HYBBX_USER_NAME_MAX + 8];
+    int n;
+
+    if (state == NULL || username == NULL || username[0] == '\0' ||
+        out == NULL || out_len == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    n = snprintf(name, sizeof(name), "%s%s", username, HYBBX_USER_NICK_SUFFIX);
+    if (n < 0 || (size_t)n >= sizeof(name)) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    return hybbx_path_join(out, out_len, state->users_dir, name);
+}
+
+static hybbx_result_t read_nickname_file(const struct flatfile_state *state,
+                                         const char *username,
+                                         char *nickname,
+                                         size_t nickname_len)
+{
+    char path[HYBBX_PATH_MAX];
+    FILE *fp;
+    char line[HYBBX_USER_NICKNAME_MAX];
+    char *nl;
+    hybbx_result_t rc;
+
+    if (nickname == NULL || nickname_len == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    nickname[0] = '\0';
+
+    rc = user_nickname_path(state, username, path, sizeof(path));
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    fp = fopen(path, "r");
+    if (fp == NULL) {
+        return HYBBX_ERR_NOT_FOUND;
+    }
+
+    if (fgets(line, sizeof(line), fp) == NULL) {
+        fclose(fp);
+        return HYBBX_ERR_IO;
+    }
+
+    fclose(fp);
+
+    nl = strchr(line, '\n');
+    if (nl != NULL) {
+        *nl = '\0';
+    }
+    nl = strchr(line, '\r');
+    if (nl != NULL) {
+        *nl = '\0';
+    }
+
+    if (line[0] == '\0') {
+        return HYBBX_ERR_NOT_FOUND;
+    }
+
+    hybbx_strlcpy(nickname, line, nickname_len);
+    return HYBBX_OK;
+}
+
+static hybbx_result_t write_nickname_file(const struct flatfile_state *state,
+                                            const char *username,
+                                            const char *nickname)
+{
+    char path[HYBBX_PATH_MAX];
+    FILE *fp;
+    hybbx_result_t rc;
+
+    if (state == NULL || username == NULL || username[0] == '\0' ||
+        nickname == NULL || nickname[0] == '\0') {
+        return HYBBX_ERR_INVALID;
+    }
+
+    rc = user_nickname_path(state, username, path, sizeof(path));
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    fp = fopen(path, "w");
+    if (fp == NULL) {
+        return HYBBX_ERR_IO;
+    }
+
+    fprintf(fp, "%s\n", nickname);
+    if (fclose(fp) != 0) {
+        return HYBBX_ERR_IO;
+    }
+
+    return HYBBX_OK;
+}
+
+static void remove_nickname_file(const struct flatfile_state *state,
+                                 const char *username)
+{
+    char path[HYBBX_PATH_MAX];
+
+    if (state == NULL || username == NULL || username[0] == '\0') {
+        return;
+    }
+
+    if (user_nickname_path(state, username, path, sizeof(path)) == HYBBX_OK) {
+        (void)remove(path);
+    }
+}
+
 static int str_ieq(const char *a, const char *b)
 {
     if (a == NULL || b == NULL) {
@@ -281,6 +399,12 @@ static int parse_user_section(const hybbx_config_t *cfg, const char *section,
         return 0;
     }
     hybbx_strlcpy(out->username, value, sizeof(out->username));
+    hybbx_username_normalize(out->username);
+
+    value = hybbx_config_get(cfg, section, "nickname", NULL);
+    if (value != NULL) {
+        hybbx_strlcpy(out->nickname, value, sizeof(out->nickname));
+    }
 
     value = hybbx_config_get(cfg, section, "level", "user");
     out->level = hybbx_user_level_parse(value);
@@ -430,6 +554,7 @@ static hybbx_result_t save_user_shard(const struct flatfile_state *state,
         fprintf(fp, "[user.%llu]\n", (unsigned long long)user->id);
         fprintf(fp, "id = %llu\n", (unsigned long long)user->id);
         fprintf(fp, "username = %s\n", user->username);
+        fprintf(fp, "nickname = %s\n", user->nickname);
         fprintf(fp, "level = %s\n", hybbx_user_level_name(user->level));
         fprintf(fp, "active = %s\n", hybbx_bool_to_string(user->active));
         fprintf(fp, "created = %lld\n", (long long)user->created_at);
@@ -438,6 +563,10 @@ static hybbx_result_t save_user_shard(const struct flatfile_state *state,
         fprintf(fp, "location = %s\n", user->location);
         fprintf(fp, "email = %s\n", user->email);
         fprintf(fp, "password = %s\n\n", user->password);
+
+        if (user->nickname[0] != '\0') {
+            (void)write_nickname_file(state, user->username, user->nickname);
+        }
     }
 
     if (fclose(fp) != 0) {
@@ -570,8 +699,9 @@ static hybbx_result_t ensure_default_sysop(hybbx_storage_t *storage)
 
     memset(&sysop, 0, sizeof(sysop));
     sysop.id = user_id;
-    hybbx_strlcpy(sysop.username, HYBBX_DEFAULT_SYSOP_USERNAME,
-                  sizeof(sysop.username));
+    hybbx_strlcpy(sysop.username, "sysop", sizeof(sysop.username));
+    hybbx_strlcpy(sysop.nickname, HYBBX_DEFAULT_SYSOP_USERNAME,
+                  sizeof(sysop.nickname));
     sysop.level = HYBBX_LEVEL_SYSOP;
     sysop.active = 1;
     sysop.created_at = now;
@@ -587,8 +717,7 @@ static hybbx_result_t ensure_default_sysop(hybbx_storage_t *storage)
     }
 
     printf("[storage] created default Sysop at %s/users/users.ini (login: %s / %s)\n",
-           storage->path, HYBBX_DEFAULT_SYSOP_USERNAME,
-           HYBBX_DEFAULT_SYSOP_PASSWORD);
+           storage->path, sysop.nickname, HYBBX_DEFAULT_SYSOP_PASSWORD);
     return HYBBX_OK;
 }
 
@@ -644,6 +773,48 @@ static hybbx_result_t find_user_cb(const hybbx_user_record_t *user, void *ctx)
     if (str_ieq(user->username, fctx->username)) {
         *fctx->out = *user;
         fctx->found = 1;
+        return HYBBX_ERR_BUSY;
+    }
+
+    return HYBBX_OK;
+}
+
+typedef struct find_nickname_ctx {
+    const char *nickname;
+    hybbx_user_record_t *out;
+    int found;
+} find_nickname_ctx_t;
+
+static hybbx_result_t find_nickname_cb(const hybbx_user_record_t *user, void *ctx)
+{
+    find_nickname_ctx_t *fctx = (find_nickname_ctx_t *)ctx;
+
+    if (user->nickname[0] != '\0' && str_ieq(user->nickname, fctx->nickname)) {
+        *fctx->out = *user;
+        fctx->found = 1;
+        return HYBBX_ERR_BUSY;
+    }
+
+    return HYBBX_OK;
+}
+
+typedef struct identity_taken_ctx {
+    const char *username;
+    const char *nickname;
+    int taken;
+} identity_taken_ctx_t;
+
+static hybbx_result_t identity_taken_cb(const hybbx_user_record_t *user,
+                                        void *ctx)
+{
+    identity_taken_ctx_t *ictx = (identity_taken_ctx_t *)ctx;
+
+    if (str_ieq(user->username, ictx->username) ||
+        str_ieq(user->username, ictx->nickname) ||
+        (user->nickname[0] != '\0' &&
+         (str_ieq(user->nickname, ictx->nickname) ||
+          str_ieq(user->nickname, ictx->username)))) {
+        ictx->taken = 1;
         return HYBBX_ERR_BUSY;
     }
 
@@ -782,6 +953,78 @@ static hybbx_result_t migrate_legacy_users_dat(hybbx_storage_t *storage)
     return HYBBX_OK;
 }
 
+typedef struct migrate_identities_ctx {
+    hybbx_storage_t *storage;
+    struct flatfile_state *state;
+    hybbx_result_t last_error;
+} migrate_identities_ctx_t;
+
+static hybbx_result_t migrate_identities_cb(const hybbx_user_record_t *user,
+                                              void *ctx)
+{
+    migrate_identities_ctx_t *mctx = (migrate_identities_ctx_t *)ctx;
+    hybbx_user_record_t updated;
+    char stored_username[HYBBX_USER_NAME_MAX];
+    int changed = 0;
+    hybbx_result_t rc;
+
+    if (user == NULL || mctx == NULL) {
+        return HYBBX_OK;
+    }
+
+    updated = *user;
+    hybbx_strlcpy(stored_username, updated.username, sizeof(stored_username));
+
+    hybbx_username_normalize(updated.username);
+    if (!str_ieq(stored_username, updated.username)) {
+        changed = 1;
+    }
+
+    if (updated.nickname[0] == '\0') {
+        if (read_nickname_file(mctx->state, updated.username, updated.nickname,
+                               sizeof(updated.nickname)) != HYBBX_OK) {
+            hybbx_nickname_infer(stored_username, updated.nickname,
+                                 sizeof(updated.nickname));
+        }
+        changed = 1;
+    }
+
+    if (!changed) {
+        (void)write_nickname_file(mctx->state, updated.username,
+                                  updated.nickname);
+        return HYBBX_OK;
+    }
+
+    rc = hybbx_storage_flatfile_update_user(mctx->storage, &updated);
+    if (rc != HYBBX_OK) {
+        mctx->last_error = rc;
+        return rc;
+    }
+
+    return HYBBX_OK;
+}
+
+static hybbx_result_t migrate_user_identities(hybbx_storage_t *storage)
+{
+    struct flatfile_state *state;
+    migrate_identities_ctx_t ctx;
+
+    if (storage == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    state = storage->backend_data;
+    if (state == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.storage = storage;
+    ctx.state = state;
+    ctx.last_error = HYBBX_OK;
+    return foreach_user(state, migrate_identities_cb, &ctx);
+}
+
 static hybbx_result_t migrate_plain_passwords(hybbx_storage_t *storage)
 {
     struct flatfile_state *state;
@@ -875,6 +1118,12 @@ hybbx_result_t hybbx_storage_flatfile_open(hybbx_storage_t *storage)
         return rc;
     }
 
+    rc = migrate_user_identities(storage);
+    if (rc != HYBBX_OK) {
+        hybbx_storage_flatfile_close(storage);
+        return rc;
+    }
+
     rc = migrate_plain_passwords(storage);
     if (rc != HYBBX_OK) {
         hybbx_storage_flatfile_close(storage);
@@ -917,6 +1166,51 @@ hybbx_result_t hybbx_storage_flatfile_find_user(hybbx_storage_t *storage,
     ctx.found = 0;
 
     rc = foreach_user(state, find_user_cb, &ctx);
+    if (rc == HYBBX_ERR_BUSY) {
+        return HYBBX_OK;
+    }
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    return HYBBX_ERR_NOT_FOUND;
+}
+
+hybbx_result_t hybbx_storage_flatfile_resolve_user(hybbx_storage_t *storage,
+                                                   const char *name,
+                                                   hybbx_user_record_t *out)
+{
+    char normalized[HYBBX_USER_NAME_MAX];
+    struct flatfile_state *state;
+    find_nickname_ctx_t nctx;
+    hybbx_result_t rc;
+
+    if (storage == NULL || name == NULL || out == NULL || name[0] == '\0') {
+        return HYBBX_ERR_INVALID;
+    }
+
+    hybbx_strlcpy(normalized, name, sizeof(normalized));
+    hybbx_username_normalize(normalized);
+
+    rc = hybbx_storage_flatfile_find_user(storage, normalized, out);
+    if (rc == HYBBX_OK) {
+        return HYBBX_OK;
+    }
+    if (rc != HYBBX_ERR_NOT_FOUND) {
+        return rc;
+    }
+
+    state = storage->backend_data;
+    if (state == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    memset(out, 0, sizeof(*out));
+    nctx.nickname = name;
+    nctx.out = out;
+    nctx.found = 0;
+
+    rc = foreach_user(state, find_nickname_cb, &nctx);
     if (rc == HYBBX_ERR_BUSY) {
         return HYBBX_OK;
     }
@@ -1005,6 +1299,22 @@ hybbx_result_t hybbx_storage_flatfile_register_user(hybbx_storage_t *storage,
         return rc;
     }
 
+    {
+        identity_taken_ctx_t taken;
+
+        memset(&taken, 0, sizeof(taken));
+        taken.username = reg->username;
+        taken.nickname = reg->nickname;
+
+        rc = foreach_user(state, identity_taken_cb, &taken);
+        if (rc == HYBBX_ERR_BUSY || taken.taken) {
+            return HYBBX_ERR_BUSY;
+        }
+        if (rc != HYBBX_OK) {
+            return rc;
+        }
+    }
+
     rc = bump_counter(state->user_next_path, &user_id);
     if (rc != HYBBX_OK) {
         return rc;
@@ -1013,6 +1323,8 @@ hybbx_result_t hybbx_storage_flatfile_register_user(hybbx_storage_t *storage,
     memset(out, 0, sizeof(*out));
     out->id = user_id;
     hybbx_strlcpy(out->username, reg->username, sizeof(out->username));
+    hybbx_username_normalize(out->username);
+    hybbx_strlcpy(out->nickname, reg->nickname, sizeof(out->nickname));
     out->level = HYBBX_LEVEL_USER;
     out->active = 0;
     out->created_at = now;
@@ -1074,6 +1386,7 @@ hybbx_result_t hybbx_storage_flatfile_update_user(hybbx_storage_t *storage,
     }
 
     shard.users[slot_index] = *user;
+    hybbx_username_normalize(shard.users[slot_index].username);
     return save_user_shard(state, shard_index, &shard);
 }
 
@@ -1114,6 +1427,8 @@ hybbx_result_t hybbx_storage_flatfile_delete_user(hybbx_storage_t *storage,
     if (slot_index >= shard.count) {
         return HYBBX_ERR_NOT_FOUND;
     }
+
+    remove_nickname_file(state, shard.users[slot_index].username);
 
     if (slot_index + 1 < shard.count) {
         memmove(&shard.users[slot_index], &shard.users[slot_index + 1],

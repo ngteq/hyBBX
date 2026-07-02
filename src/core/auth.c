@@ -272,16 +272,59 @@ void hybbx_username_normalize(char *username)
 const char *hybbx_username_display(const char *username,
                                    hybbx_user_level_t level)
 {
+    hybbx_user_record_t user;
+
     if (username == NULL || username[0] == '\0') {
         return "";
     }
 
-    if (hybbx_user_level_is_sysop(level) &&
-        str_ieq(username, HYBBX_DEFAULT_SYSOP_USERNAME)) {
-        return HYBBX_DEFAULT_SYSOP_USERNAME;
+    memset(&user, 0, sizeof(user));
+    hybbx_strlcpy(user.username, username, sizeof(user.username));
+    hybbx_username_normalize(user.username);
+    user.level = level;
+    hybbx_nickname_infer(username, user.nickname, sizeof(user.nickname));
+
+    return hybbx_user_display_name(&user);
+}
+
+void hybbx_nickname_infer(const char *stored_username,
+                          char *nickname,
+                          size_t nickname_len)
+{
+    if (stored_username == NULL || nickname == NULL || nickname_len == 0) {
+        return;
     }
 
-    return username;
+    if (str_ieq(stored_username, HYBBX_DEFAULT_SYSOP_USERNAME) ||
+        str_ieq(stored_username, "sysop")) {
+        hybbx_strlcpy(nickname, HYBBX_DEFAULT_SYSOP_USERNAME, nickname_len);
+        return;
+    }
+
+    if (stored_username[0] >= 'a' && stored_username[0] <= 'z') {
+        nickname[0] = (char)(stored_username[0] - 32);
+        hybbx_strlcpy(nickname + 1, stored_username + 1, nickname_len - 1);
+        return;
+    }
+
+    hybbx_strlcpy(nickname, stored_username, nickname_len);
+}
+
+const char *hybbx_user_display_name(const hybbx_user_record_t *user)
+{
+    if (user == NULL) {
+        return "";
+    }
+
+    if (user->nickname[0] != '\0') {
+        return user->nickname;
+    }
+
+    if (user->username[0] == '\0') {
+        return "";
+    }
+
+    return user->username;
 }
 
 int hybbx_guest_slot_from_username(const char *guest_prefix,
@@ -344,6 +387,7 @@ void hybbx_guest_fill_record(const char *guest_prefix,
     memset(out, 0, sizeof(*out));
     out->id = HYBBX_GUEST_USER_ID(slot);
     snprintf(out->username, sizeof(out->username), "%s%u", prefix, slot);
+    hybbx_strlcpy(out->nickname, out->username, sizeof(out->nickname));
     out->level = HYBBX_LEVEL_GUEST;
     out->active = 1;
     out->created_at = now;
@@ -537,6 +581,10 @@ int hybbx_registration_valid(const hybbx_user_registration_t *reg,
     }
 
     if (!hybbx_username_valid(reg->username, guest_prefix)) {
+        return 0;
+    }
+
+    if (!hybbx_username_valid(reg->nickname, guest_prefix)) {
         return 0;
     }
 

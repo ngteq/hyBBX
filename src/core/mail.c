@@ -468,7 +468,29 @@ void hybbx_mail_list_inbox(hybbx_service_t *service, hybbx_session_t *session)
     hybbx_mail_list_inbox_range(service, session, 1, 0);
 }
 
-static void mail_list_print(hybbx_session_t *session,
+static const char *mail_display_name(hybbx_service_t *service,
+                                     const char *name,
+                                     char *buf, size_t buf_len)
+{
+    hybbx_storage_t *storage;
+    hybbx_user_record_t user;
+
+    if (name == NULL || name[0] == '\0') {
+        return "";
+    }
+
+    storage = hybbx_service_get_storage(service);
+    if (storage != NULL &&
+        hybbx_storage_resolve_user(storage, name, &user) == HYBBX_OK) {
+        return hybbx_user_display_name(&user);
+    }
+
+    hybbx_strlcpy(buf, name, buf_len);
+    return buf;
+}
+
+static void mail_list_print(hybbx_service_t *service,
+                            hybbx_session_t *session,
                             const hybbx_mail_entry_t *entries,
                             size_t count,
                             unsigned from,
@@ -479,6 +501,7 @@ static void mail_list_print(hybbx_session_t *session,
     size_t end;
     char line[HYBBX_MAIL_SUBJECT_MAX + 64];
     char header[48];
+    char from_name[HYBBX_USER_NAME_MAX];
 
     if (to == 0 || to > count) {
         to = (unsigned)count;
@@ -511,9 +534,10 @@ static void mail_list_print(hybbx_session_t *session,
         snprintf(line, sizeof(line), "  %zu  %s%s  %s",
                  i + 1,
                  entries[i].read ? " " : "* ",
-                 entries[i].from,
+                 mail_display_name(service, entries[i].from, from_name,
+                                   sizeof(from_name)),
                  entries[i].subject[0] != '\0' ? entries[i].subject
-                                                 : "(no subject)");
+                                               : "(no subject)");
         hybbx_session_write_line(session, line);
     }
 
@@ -707,7 +731,7 @@ void hybbx_mail_list_inbox_range(hybbx_service_t *service,
         return;
     }
 
-    mail_list_print(session, entries, count, from, to);
+    mail_list_print(service, session, entries, count, from, to);
 }
 
 int hybbx_mail_parse_list_range(const char *spec,
@@ -798,6 +822,52 @@ static hybbx_result_t mail_resolve_index(hybbx_service_t *service,
     return HYBBX_OK;
 }
 
+static void mail_print_header_line(hybbx_service_t *service,
+                                   hybbx_session_t *session,
+                                   const char *line)
+{
+    char out_line[HYBBX_LINE_MAX];
+    char name_buf[HYBBX_USER_NAME_MAX];
+    char fallback[HYBBX_USER_NAME_MAX];
+    const char *value;
+    const char *display;
+    size_t vlen;
+
+    if (line == NULL || session == NULL) {
+        return;
+    }
+
+    if (strncmp(line, "from=", 5) == 0) {
+        value = line + 5;
+        vlen = strlen(value);
+        while (vlen > 0 && (value[vlen - 1] == '\n' || value[vlen - 1] == '\r')) {
+            vlen--;
+        }
+        memcpy(name_buf, value, vlen);
+        name_buf[vlen] = '\0';
+        display = mail_display_name(service, name_buf, fallback, sizeof(fallback));
+        snprintf(out_line, sizeof(out_line), "from=%s", display);
+        hybbx_session_write_line(session, out_line);
+        return;
+    }
+
+    if (strncmp(line, "to=", 3) == 0) {
+        value = line + 3;
+        vlen = strlen(value);
+        while (vlen > 0 && (value[vlen - 1] == '\n' || value[vlen - 1] == '\r')) {
+            vlen--;
+        }
+        memcpy(name_buf, value, vlen);
+        name_buf[vlen] = '\0';
+        display = mail_display_name(service, name_buf, fallback, sizeof(fallback));
+        snprintf(out_line, sizeof(out_line), "to=%s", display);
+        hybbx_session_write_line(session, out_line);
+        return;
+    }
+
+    hybbx_session_write_line(session, line);
+}
+
 hybbx_result_t hybbx_mail_read(hybbx_service_t *service,
                                hybbx_session_t *session,
                                unsigned list_index)
@@ -845,6 +915,11 @@ hybbx_result_t hybbx_mail_read(hybbx_service_t *service,
                 continue;
             }
             if (strncmp(line, "read=", 5) == 0) {
+                continue;
+            }
+            if (strncmp(line, "from=", 5) == 0 ||
+                strncmp(line, "to=", 3) == 0) {
+                mail_print_header_line(service, session, line);
                 continue;
             }
         }
@@ -1131,7 +1206,7 @@ hybbx_result_t hybbx_mail_notify_staff_registration(hybbx_service_t *service,
     }
 
     n = snprintf(ctx.subject, sizeof(ctx.subject),
-                 "Registration pending: %s", reg->username);
+                 "Registration pending: %s", reg->nickname);
     if (n < 0 || (size_t)n >= sizeof(ctx.subject)) {
         return HYBBX_ERR_INVALID;
     }
@@ -1144,7 +1219,8 @@ hybbx_result_t hybbx_mail_notify_staff_registration(hybbx_service_t *service,
     n = snprintf(ctx.body, sizeof(ctx.body),
                  "Guest self-registration pending approval.\n"
                  "/register data submitted:\n\n"
-                 "  Username:   %s\n"
+                 "  Nickname:   %s\n"
+                 "  Login:      %s\n"
                  "  Full name:  %s\n"
                  "  Country:    %s\n"
                  "  Location:   %s\n"
@@ -1156,6 +1232,7 @@ hybbx_result_t hybbx_mail_notify_staff_registration(hybbx_service_t *service,
                  "  Created:    %s\n\n"
                  "Review all fields. If correct, activate with:\n"
                  "  /activate %s\n",
+                 reg->nickname,
                  reg->username,
                  reg->full_name,
                  reg->country,
@@ -1222,13 +1299,15 @@ hybbx_result_t hybbx_mail_deliver(hybbx_service_t *service,
         return HYBBX_ERR_INVALID;
     }
 
-    rc = hybbx_storage_find_user(storage, to_norm, &recipient);
+    rc = hybbx_storage_resolve_user(storage, to_user, &recipient);
     if (rc == HYBBX_ERR_NOT_FOUND) {
         return HYBBX_ERR_NOT_FOUND;
     }
     if (rc != HYBBX_OK) {
         return rc;
     }
+
+    hybbx_strlcpy(to_norm, recipient.username, sizeof(to_norm));
 
     if (hybbx_user_level_is_guest(recipient.level) || !recipient.active) {
         return HYBBX_ERR_DENIED;

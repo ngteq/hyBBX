@@ -20,6 +20,7 @@ typedef enum hybbx_storage_backend_kind {
 } hybbx_storage_backend_kind_t;
 
 #define HYBBX_USER_NAME_MAX 64
+#define HYBBX_USER_NICKNAME_MAX 64
 #define HYBBX_USER_FULL_NAME_MAX 128
 #define HYBBX_USER_COUNTRY_MAX 64
 #define HYBBX_USER_LOCATION_MAX 128
@@ -35,6 +36,7 @@ typedef enum hybbx_storage_backend_kind {
 
 typedef struct hybbx_user_registration {
     char username[HYBBX_USER_NAME_MAX];
+    char nickname[HYBBX_USER_NICKNAME_MAX];
     char full_name[HYBBX_USER_FULL_NAME_MAX];
     char country[HYBBX_USER_COUNTRY_MAX];
     char location[HYBBX_USER_LOCATION_MAX];
@@ -52,6 +54,7 @@ int hybbx_registration_valid(const hybbx_user_registration_t *reg,
 typedef struct hybbx_user_record {
     uint64_t id;
     char username[HYBBX_USER_NAME_MAX];
+    char nickname[HYBBX_USER_NICKNAME_MAX];
     hybbx_user_level_t level;
     int active;
     time_t created_at;
@@ -92,10 +95,15 @@ hybbx_result_t hybbx_storage_register_user(hybbx_storage_t *storage,
                                            const hybbx_user_registration_t *reg,
                                            hybbx_user_record_t *out);
 
-/** Look up a user by name (case-insensitive). */
+/** Look up a user by login name (case-insensitive; stored lowercase). */
 hybbx_result_t hybbx_storage_find_user(hybbx_storage_t *storage,
                                        const char *username,
                                        hybbx_user_record_t *out);
+
+/** Resolve by login name or nickname (case-insensitive). */
+hybbx_result_t hybbx_storage_resolve_user(hybbx_storage_t *storage,
+                                          const char *name,
+                                          hybbx_user_record_t *out);
 
 /** Count existing accounts at a given level (e.g. enforce one Sysop). */
 hybbx_result_t hybbx_storage_count_level(hybbx_storage_t *storage,

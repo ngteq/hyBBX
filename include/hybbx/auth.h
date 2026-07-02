@@ -128,6 +128,18 @@ void hybbx_username_normalize(char *username);
 const char *hybbx_username_display(const char *username,
                                    hybbx_user_level_t level);
 
+struct hybbx_user_record;
+
+/** User-facing display name (nickname when set, else username). */
+const char *hybbx_user_display_name(const struct hybbx_user_record *user);
+
+/**
+ * Derive a default nickname from a legacy stored username when none is set.
+ */
+void hybbx_nickname_infer(const char *stored_username,
+                          char *nickname,
+                          size_t nickname_len);
+
 /**
  * Parse @p username as @c <guest_prefix><1-25> (case-insensitive prefix).
  * Writes slot to @p slot_out. Returns 1 on match, else 0.
