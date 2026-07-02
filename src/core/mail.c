@@ -114,13 +114,17 @@ static hybbx_result_t mail_user_inbox_path(const hybbx_mail_config_t *mail,
                                            char *out, size_t out_len)
 {
     char user_dir[HYBBX_PATH_MAX];
+    char user_norm[HYBBX_USER_NAME_MAX];
 
     if (mail == NULL || username == NULL || username[0] == '\0' ||
         out == NULL || out_len == 0) {
         return HYBBX_ERR_INVALID;
     }
 
-    if (hybbx_path_join(user_dir, sizeof(user_dir), mail->root, username) !=
+    hybbx_strlcpy(user_norm, username, sizeof(user_norm));
+    hybbx_username_normalize(user_norm);
+
+    if (hybbx_path_join(user_dir, sizeof(user_dir), mail->root, user_norm) !=
         HYBBX_OK) {
         return HYBBX_ERR_INVALID;
     }
@@ -133,13 +137,17 @@ static hybbx_result_t mail_user_recycle_path(const hybbx_mail_config_t *mail,
                                              char *out, size_t out_len)
 {
     char user_dir[HYBBX_PATH_MAX];
+    char user_norm[HYBBX_USER_NAME_MAX];
 
     if (mail == NULL || username == NULL || username[0] == '\0' ||
         out == NULL || out_len == 0) {
         return HYBBX_ERR_INVALID;
     }
 
-    if (hybbx_path_join(user_dir, sizeof(user_dir), mail->root, username) !=
+    hybbx_strlcpy(user_norm, username, sizeof(user_norm));
+    hybbx_username_normalize(user_norm);
+
+    if (hybbx_path_join(user_dir, sizeof(user_dir), mail->root, user_norm) !=
         HYBBX_OK) {
         return HYBBX_ERR_INVALID;
     }
