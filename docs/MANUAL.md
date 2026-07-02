@@ -637,7 +637,7 @@ path = ./text
 | `motd.txt` | `/motd` (guests); also shown automatically after registered `/login` |
 | `news.txt` | `/news` |
 
-Registered users see `Welcome <username>.` and the MOTD after a successful `/login` (not on guest connect).
+Registered users see `motd.txt` only after a successful `/login` (not on guest connect). Guests see `banner.txt` on connect; use `/motd` on demand.
 
 Banner tokens: `@version@`, `@service@`. MOTD tokens: `@username@`.
 

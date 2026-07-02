@@ -262,7 +262,7 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
         (hybbx_session_login_prompt(session) &&
          !hybbx_session_logged_in(session))) {
         cmd_help_pair(session, "/help", "list or explain",
-                      "/motd", "message of the day");
+                      "/motd", "daily message");
         cmd_help_pair(session, "/news", "system news",
                       "/login", "<user> <pass>");
         cmd_help_pair(session, "/register", "new account",
@@ -341,7 +341,7 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
     }
 
     if (str_ieq(canonical, "motd")) {
-        cmd_help_topic_title(session, "/motd", "show message of the day");
+        cmd_help_topic_title(session, "/motd", "daily message");
         return HYBBX_OK;
     }
 
@@ -1541,14 +1541,7 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
     }
 
     {
-        char welcome[HYBBX_USER_NAME_MAX + 16];
         const hybbx_texts_config_t *texts;
-
-        const char *display_name;
-
-        display_name = hybbx_username_display(user.username, user.level);
-        snprintf(welcome, sizeof(welcome), "Welcome %s.", display_name);
-        hybbx_session_write_line(session, welcome);
 
         texts = hybbx_service_get_texts(service);
         if (texts != NULL) {
