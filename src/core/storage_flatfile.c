@@ -588,8 +588,9 @@ static hybbx_result_t ensure_default_sysop(hybbx_storage_t *storage)
         return rc;
     }
 
-    printf("[storage] created default Sysop account (username %s)\n",
-           HYBBX_DEFAULT_SYSOP_USERNAME);
+    printf("[storage] created default Sysop at %s/users/users.ini (login: %s / %s)\n",
+           storage->path, HYBBX_DEFAULT_SYSOP_USERNAME,
+           HYBBX_DEFAULT_SYSOP_PASSWORD);
     return HYBBX_OK;
 }
 

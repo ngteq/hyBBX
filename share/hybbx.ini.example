@@ -58,8 +58,10 @@ name = hyBBX
 
 [storage]
 backend = flatfile
-; User data (users, mail, sessions) — default under $HOME:
-path = ~/.hybbx
+; Flat-file data root (relative to install prefix when started via hybbx-start):
+path = data
+; User accounts: <path>/users/users.ini (default Sysop created on first start)
+; Per-user mail: <path>/mail/<user>/inbox/
 
 [auth]
 auto_login = yes

@@ -1458,9 +1458,15 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
 
     {
         char welcome[HYBBX_USER_NAME_MAX + 16];
+        const hybbx_texts_config_t *texts;
 
         snprintf(welcome, sizeof(welcome), "Welcome %s.", user.username);
         hybbx_session_write_line(session, welcome);
+
+        texts = hybbx_service_get_texts(service);
+        if (texts != NULL) {
+            (void)hybbx_texts_send_motd(texts, session);
+        }
     }
     if (user.password[0] == '\0') {
         hybbx_session_write_line(session,

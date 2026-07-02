@@ -523,7 +523,7 @@ Default flat-file layout under `$HOME/.hybbx/` (created on first start):
 
 | Path | Purpose |
 |------|---------|
-| `users/users.ini` | User accounts |
+| `users/users.ini` | Registered accounts (default Sysop on first start) |
 | `mail/<user>/inbox/` | Personal mail |
 | `sessions.dat`, `*.next` | Session counters |
 
@@ -622,10 +622,10 @@ path = ./text
 | File | When |
 |------|------|
 | `banner.txt` | At connect (guests and all users) |
-| `motd.txt` | `/motd` |
+| `motd.txt` | `/motd` (guests); also shown automatically after registered `/login` |
 | `news.txt` | `/news` |
 
-Registered users see `Welcome <username>.` only after a successful `/login` (not on guest connect).
+Registered users see `Welcome <username>.` and the MOTD after a successful `/login` (not on guest connect).
 
 Banner tokens: `@version@`, `@service@`. MOTD tokens: `@username@`.
 

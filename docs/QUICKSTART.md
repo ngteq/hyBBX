@@ -44,12 +44,12 @@ Installed layout: `bin/hybbx`, `bin/hybbx-start`, `etc/hybbx.ini`, `text/`, `dat
 
 ## First login
 
-On first run with an empty user database, HyBBX creates a default **Sysop** account:
+On first run with an empty user database, HyBBX creates a default **Sysop** account in `data/users/users.ini` (when `[storage] path = data`):
 
 - Username: `Sysop`
 - Password: `SysopPassword` (8–24 characters required for new passwords via `/changeme`)
 
-Change this after login. User files live under the configured storage path (`[storage] path`); see [MANUAL.md — Storage](MANUAL.md#storage).
+Change this after login. MOTD is shown automatically after a successful registered `/login` (guests use `/motd` only).
 
 ## Configuration
 
