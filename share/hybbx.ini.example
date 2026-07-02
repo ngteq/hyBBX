@@ -106,11 +106,11 @@ channel10 = Channel10
 
 [mail]
 enabled = yes
-; max_messages = 50
-; subject_max = 72
-; body_max = 2048
-; recycle_days = 10
-; path = mail
+max_messages = 50
+subject_max = 72
+body_max = 2048
+recycle_days = 10
+path = mail
 
 ; Connection switches — datacenter Main defaults below.
 ; Telnet and SSH are static-enabled core IP transports (always on when built).

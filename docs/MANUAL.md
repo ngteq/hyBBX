@@ -495,9 +495,11 @@ enabled = yes
 max_messages = 50
 subject_max = 72
 body_max = 2048
+recycle_days = 10
+path = mail
 ```
 
-Messages stored under `data/mail/<username>/inbox/` on **Main** only.
+Messages stored under `<storage>/mail/<username>/inbox/` on **Main** only (`path` is relative to `[storage] path`).
 
 ## Input routing
 
