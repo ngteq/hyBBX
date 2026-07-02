@@ -1,6 +1,6 @@
 # HyBBX
 
-**HyBBX** is a text-only, BBS-like **C99 plugin transport service** — personal mail, chat, and more on one shared session core. Link adapters join **different data networks** (TCP telnet, AX.25 packet radio, HBX over TCP, and planned stacks) so callers on any link reach the same BBS.
+**HyBBX** is a text-only, BBS-like **C99 plugin transport service** — personal mail, chat and more on one shared session core. Link adapters join **different data networks** (TCP telnet, AX.25 packet radio, HBX over TCP, and planned stacks) so callers on any link reach the same HyBBX system.
 
 One `hybbx` binary; **Main** and **Secondary** roles are chosen in INI.
 
@@ -32,11 +32,12 @@ Clients: `build/src/clients/hybbx-telnet`, `hybbx-terminal` — [docs/CLIENTS.md
 
 | Doc | |
 |-----|---|
-| [FEATURES.md](docs/FEATURES.md) | Status |
-| [MANUAL.md](docs/MANUAL.md) | INI, transports, commands |
-| [QUICKSTART.md](docs/QUICKSTART.md) | First run |
-| [ROADMAP.md](docs/ROADMAP.md) | Main + Secondary layout |
-| [PLATFORMS.md](docs/PLATFORMS.md) | GCC/Clang targets |
-| [INDEX.md](docs/INDEX.md) | Full index |
+| [FEATURES.md](docs/FEATURES.md)     | Status                    |
+| [MANUAL.md](docs/MANUAL.md)         | INI, transports, commands |
+| [QUICKSTART.md](docs/QUICKSTART.md) | First run                 |
+| [ROADMAP.md](docs/ROADMAP.md)       | Main + Secondary layout   |
+| [PLATFORMS.md](docs/PLATFORMS.md)   | GCC/Clang targets         |
+| [INDEX.md](docs/INDEX.md)           | Full index                |
+
 
 GPL-3.0 — [LICENSE.txt](LICENSE.txt)
