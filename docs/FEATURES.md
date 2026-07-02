@@ -95,15 +95,15 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 |---------|--------|-------------|
 | Guest auto-login | Done | `Guest1`… prefix; optional timeout disconnect |
 | User registration | Done | `/register` (guests, no password); staff proof mail |
-| Profile / password | Done | `/changeme` (registered users; old + new password) |
+| Profile / password | Done | `/changeme` (own); `/userchange` (staff overwrite, 8–24 char password) |
 | Staff create user | Done | `/createuser` (Sysop, Admin) |
 | Login / logout | Done | `/login`; session level updated |
 | User levels | Done | Sysop, Admin, Mod, User, Guest (privilege rules enforced) |
-| Staff user management | Done | `/activate`, `/promote`, `/demote`, `/delete` (Sysop, Admin) |
+| Staff user management | Done | `/activate`, `/promote`, `/demote`, `/delete`, `/userdelete` (Sysop) |
 | Self-delete | Done | `/deleteme yes` (all boolean true aliases) |
 | Username validation | Done | 4–12 chars, lowercase + limited digits/separators |
 | Password formats | Done | `{sha256}`, legacy `{md5}`, plain auto-upgrade |
-| Default Sysop bootstrap | Done | `Sysop`/`Sysop` created if no users exist |
+| Default Sysop bootstrap | Done | `Sysop` / `SysopPassword` created if no users exist |
 
 ---
 
@@ -133,6 +133,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | `/version` (`/ver`) | Done | HyBBX version string |
 | `/login`, `/register` | Done | Login; guest self-registration (no password) |
 | `/changeme` | Done | Update own profile and password (registered users) |
+| `/userchange` | Done | Staff overwrite profile and password (Sysop/Admin) |
+| `/userdelete` | Done | Sysop delete any account except Sysop (not self) |
 | `/createuser` | Done | Sysop/Admin create pending user accounts |
 | `/chat` | Done | List/join channels (registered users) |
 | `/mail` | Done | Inbox list, read, delete, send (registered users) |

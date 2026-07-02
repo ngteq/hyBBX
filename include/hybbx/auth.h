@@ -23,7 +23,11 @@ extern "C" {
 
 /** Default Sysop account (auto-created when no Sysop exists in the user database). */
 #define HYBBX_DEFAULT_SYSOP_USERNAME "Sysop"
-#define HYBBX_DEFAULT_SYSOP_PASSWORD "Sysop"
+#define HYBBX_DEFAULT_SYSOP_PASSWORD "SysopPassword"
+
+/** Plain-text password length policy for new passwords (/changeme, future set-password). */
+#define HYBBX_PASSWORD_MIN_LEN 8u
+#define HYBBX_PASSWORD_MAX_LEN 24u
 
 /**
  * User privilege levels (highest to lowest).
@@ -64,6 +68,20 @@ int hybbx_auth_may_create_user(hybbx_user_level_t actor);
 int hybbx_auth_may_changeme(hybbx_user_level_t actor);
 
 /**
+ * Non-zero when @p actor may overwrite another account via `/userchange`.
+ * Sysop: Admin, Mod, User. Admin: Mod, User only. Not Sysop or guests.
+ */
+int hybbx_auth_may_userchange(hybbx_user_level_t actor,
+                              hybbx_user_level_t target_level);
+
+/**
+ * Non-zero when @p actor may delete another account via `/userdelete` (Sysop only;
+ * any non-Sysop target).
+ */
+int hybbx_auth_may_userdelete(hybbx_user_level_t actor,
+                              hybbx_user_level_t target_level);
+
+/**
  * Non-zero when @p actor may promote a user at @p target_level to @p new_level.
  * Target must be active and not a guest. Sysop: admin; Sysop or Admin: mod.
  */
@@ -85,6 +103,9 @@ int hybbx_auth_may_delete(hybbx_user_level_t actor,
 
 /** Non-zero when @p level is the protected Sysop account tier. */
 int hybbx_user_level_is_sysop(hybbx_user_level_t level);
+
+/** Non-zero when @p password meets the plain-text password policy (8–24 characters). */
+int hybbx_password_plain_valid(const char *password);
 
 /**
  * Return non-zero when @p username is valid for registration:

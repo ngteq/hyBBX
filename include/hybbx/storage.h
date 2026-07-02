@@ -41,7 +41,10 @@ typedef struct hybbx_user_registration {
     char email[HYBBX_USER_EMAIL_MAX];
 } hybbx_user_registration_t;
 
-/** Validate registration profile fields (full name, country, location, email). */
+/** Validate profile fields only (full name, country, location, email). */
+int hybbx_user_profile_valid(const hybbx_user_registration_t *reg);
+
+/** Validate registration profile fields (username + full name, country, location, email). */
 int hybbx_registration_valid(const hybbx_user_registration_t *reg,
                              const char *guest_prefix);
 

@@ -106,6 +106,38 @@ int hybbx_auth_may_changeme(hybbx_user_level_t actor)
     return !hybbx_user_level_is_guest(actor);
 }
 
+int hybbx_auth_may_userchange(hybbx_user_level_t actor,
+                              hybbx_user_level_t target_level)
+{
+    if (actor != HYBBX_LEVEL_SYSOP && actor != HYBBX_LEVEL_ADMIN) {
+        return 0;
+    }
+
+    if (hybbx_user_level_is_sysop(target_level) ||
+        hybbx_user_level_is_guest(target_level)) {
+        return 0;
+    }
+
+    if (actor == HYBBX_LEVEL_ADMIN) {
+        return target_level == HYBBX_LEVEL_MOD ||
+               target_level == HYBBX_LEVEL_USER;
+    }
+
+    return target_level == HYBBX_LEVEL_ADMIN ||
+           target_level == HYBBX_LEVEL_MOD ||
+           target_level == HYBBX_LEVEL_USER;
+}
+
+int hybbx_auth_may_userdelete(hybbx_user_level_t actor,
+                              hybbx_user_level_t target_level)
+{
+    if (actor != HYBBX_LEVEL_SYSOP) {
+        return 0;
+    }
+
+    return !hybbx_user_level_is_sysop(target_level);
+}
+
 int hybbx_auth_may_promote(hybbx_user_level_t actor,
                            hybbx_user_level_t target_level,
                            int target_active,
@@ -290,6 +322,26 @@ int hybbx_username_valid(const char *username, const char *guest_prefix)
     return 1;
 }
 
+int hybbx_password_plain_valid(const char *password)
+{
+    size_t len;
+
+    if (password == NULL || password[0] == '\0') {
+        return 0;
+    }
+
+    if (str_ieq(password, "-")) {
+        return 0;
+    }
+
+    len = strlen(password);
+    if (len < HYBBX_PASSWORD_MIN_LEN || len > HYBBX_PASSWORD_MAX_LEN) {
+        return 0;
+    }
+
+    return 1;
+}
+
 static int profile_text_char_ok(char ch)
 {
     if (ch == '|') {
@@ -369,14 +421,9 @@ static int email_valid(const char *email)
     return 1;
 }
 
-int hybbx_registration_valid(const hybbx_user_registration_t *reg,
-                             const char *guest_prefix)
+int hybbx_user_profile_valid(const hybbx_user_registration_t *reg)
 {
     if (reg == NULL) {
-        return 0;
-    }
-
-    if (!hybbx_username_valid(reg->username, guest_prefix)) {
         return 0;
     }
 
@@ -397,4 +444,18 @@ int hybbx_registration_valid(const hybbx_user_registration_t *reg,
     }
 
     return 1;
+}
+
+int hybbx_registration_valid(const hybbx_user_registration_t *reg,
+                             const char *guest_prefix)
+{
+    if (reg == NULL) {
+        return 0;
+    }
+
+    if (!hybbx_username_valid(reg->username, guest_prefix)) {
+        return 0;
+    }
+
+    return hybbx_user_profile_valid(reg);
 }

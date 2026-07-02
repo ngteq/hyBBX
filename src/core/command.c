@@ -81,6 +81,14 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
         return hybbx_auth_may_changeme(level);
     }
 
+    if (str_ieq(verb, "userchange")) {
+        return hybbx_user_level_is_sysop_or_admin(level);
+    }
+
+    if (str_ieq(verb, "userdelete")) {
+        return hybbx_user_level_is_sysop(level);
+    }
+
     if (str_ieq(verb, "chat")) {
         return !hybbx_user_level_is_guest(level);
     }
@@ -234,7 +242,12 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
     }
     if (level == HYBBX_LEVEL_SYSOP || level == HYBBX_LEVEL_ADMIN) {
         snprintf(staff + strlen(staff), sizeof(staff) - strlen(staff),
-                 "%s/promote  /demote  /delete",
+                 "%s/userchange  /promote  /demote  /delete",
+                 staff[0] != '\0' ? "  " : "");
+    }
+    if (level == HYBBX_LEVEL_SYSOP) {
+        snprintf(staff + strlen(staff), sizeof(staff) - strlen(staff),
+                 "%s/userdelete",
                  staff[0] != '\0' ? "  " : "");
     }
 
@@ -385,7 +398,7 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         cmd_help_topic_detail(session,
             "  /changeme <old> <new> <name> <country> <location> <email>");
         cmd_help_topic_detail(session,
-            "  use - as <old> when no password is set yet");
+            "  new password: 8-24 characters; use - as <old> when none set");
         cmd_help_topic_detail(session,
             "  username cannot be changed");
         return HYBBX_OK;
@@ -459,6 +472,32 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
                              "permanently remove account (staff)");
         cmd_help_topic_detail(session, "  /delete <username>");
         cmd_help_topic_detail(session, "  sysop account cannot be deleted");
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(canonical, "userchange")) {
+        cmd_help_topic_title(session, "/userchange",
+                             "overwrite user profile and password (staff)");
+        cmd_help_topic_detail(session,
+            "  /userchange <user> <new> <name> <country> <location> <email>");
+        cmd_help_topic_detail(session,
+            "  new password: 8-24 characters");
+        if (level == HYBBX_LEVEL_ADMIN) {
+            cmd_help_topic_detail(session,
+                "  Admin: Mod and User only");
+        } else {
+            cmd_help_topic_detail(session,
+                "  Sysop: Admin, Mod, and User");
+        }
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(canonical, "userdelete")) {
+        cmd_help_topic_title(session, "/userdelete",
+                             "delete any account except Sysop (Sysop only)");
+        cmd_help_topic_detail(session, "  /userdelete <username>");
+        cmd_help_topic_detail(session,
+            "  cannot delete your own account or the Sysop account");
         return HYBBX_OK;
     }
 
@@ -629,24 +668,27 @@ static hybbx_result_t parse_changeme(const hybbx_parsed_command_t *cmd,
     return HYBBX_OK;
 }
 
-static int cmd_password_token_valid(const char *password)
+static hybbx_result_t parse_userchange(const hybbx_parsed_command_t *cmd,
+                                       hybbx_user_registration_t *reg,
+                                       const char **new_password)
 {
-    size_t len;
+    hybbx_result_t rc;
 
-    if (password == NULL || password[0] == '\0') {
-        return 0;
+    if (cmd == NULL || reg == NULL || new_password == NULL || cmd->argc < 7) {
+        return HYBBX_ERR_INVALID;
     }
 
-    if (str_ieq(password, "-")) {
-        return 1;
+    memset(reg, 0, sizeof(*reg));
+    hybbx_strlcpy(reg->username, cmd->argv[0], sizeof(reg->username));
+    hybbx_username_normalize(reg->username);
+    *new_password = cmd->argv[1];
+
+    rc = parse_profile_fields(cmd, 2, reg);
+    if (rc != HYBBX_OK) {
+        return rc;
     }
 
-    len = strlen(password);
-    if (len < 4 || len > 72) {
-        return 0;
-    }
-
-    return 1;
+    return HYBBX_OK;
 }
 
 static hybbx_result_t cmd_lookup_user(hybbx_service_t *service,
@@ -1090,9 +1132,9 @@ static hybbx_result_t cmd_changeme(hybbx_service_t *service,
         return HYBBX_OK;
     }
 
-    if (!cmd_password_token_valid(new_password)) {
+    if (!hybbx_password_plain_valid(new_password)) {
         hybbx_session_write_line(session,
-            "New password must be 4-72 characters (- not allowed).");
+            "New password must be 8-24 characters (- not allowed).");
         return HYBBX_OK;
     }
 
@@ -1112,8 +1154,6 @@ static hybbx_result_t cmd_changeme(hybbx_service_t *service,
 
     {
         const hybbx_session_record_t *rec = hybbx_session_record(session);
-        const hybbx_auth_config_t *auth = hybbx_service_get_auth(service);
-        const char *guest_prefix = auth != NULL ? auth->guest_prefix : NULL;
 
         if (rec == NULL || user.id != rec->user_id) {
             hybbx_session_write_line(session,
@@ -1121,7 +1161,7 @@ static hybbx_result_t cmd_changeme(hybbx_service_t *service,
             return HYBBX_OK;
         }
 
-        if (!hybbx_registration_valid(&reg, guest_prefix)) {
+        if (!hybbx_user_profile_valid(&reg)) {
             hybbx_session_write_line(session,
                 "Invalid profile (check name, country, location, email).");
             return HYBBX_OK;
@@ -1156,6 +1196,156 @@ static hybbx_result_t cmd_changeme(hybbx_service_t *service,
     }
 
     hybbx_session_write_line(session, "Account updated.");
+    return HYBBX_OK;
+}
+
+static hybbx_result_t cmd_userchange(hybbx_service_t *service,
+                                       hybbx_session_t *session,
+                                       const hybbx_parsed_command_t *cmd)
+{
+    hybbx_storage_t *storage;
+    hybbx_user_registration_t reg;
+    hybbx_user_record_t user;
+    const char *new_password;
+    hybbx_user_level_t actor_level;
+    hybbx_result_t rc;
+    char buf[160];
+
+    actor_level = hybbx_session_user_level(session);
+    if (!hybbx_user_level_is_sysop_or_admin(actor_level)) {
+        cmd_deny_privilege(session);
+        return HYBBX_ERR_DENIED;
+    }
+
+    if (cmd->argc < 7) {
+        hybbx_session_write_line(session,
+            "Usage: /userchange <user> <new> <full-name> <country> <location> <email>");
+        return HYBBX_OK;
+    }
+
+    rc = parse_userchange(cmd, &reg, &new_password);
+    if (rc != HYBBX_OK) {
+        hybbx_session_write_line(session, "Profile fields too long.");
+        return HYBBX_OK;
+    }
+
+    if (!hybbx_password_plain_valid(new_password)) {
+        hybbx_session_write_line(session,
+            "New password must be 8-24 characters (- not allowed).");
+        return HYBBX_OK;
+    }
+
+    if (!hybbx_user_profile_valid(&reg)) {
+        hybbx_session_write_line(session,
+            "Invalid profile (check name, country, location, email).");
+        return HYBBX_OK;
+    }
+
+    storage = hybbx_service_get_storage(service);
+    if (storage == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    rc = hybbx_storage_find_user(storage, reg.username, &user);
+    if (rc == HYBBX_ERR_NOT_FOUND) {
+        hybbx_session_write_line(session, "Unknown user.");
+        return HYBBX_OK;
+    }
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    if (str_ieq(user.username, hybbx_session_username(session))) {
+        hybbx_session_write_line(session,
+            "Use /changeme to update your own account.");
+        return HYBBX_OK;
+    }
+
+    if (hybbx_user_level_is_sysop(user.level)) {
+        hybbx_session_write_line(session,
+            "The Sysop account cannot be changed with /userchange.");
+        return HYBBX_OK;
+    }
+
+    if (!hybbx_auth_may_userchange(actor_level, user.level)) {
+        if (actor_level == HYBBX_LEVEL_ADMIN &&
+            user.level == HYBBX_LEVEL_ADMIN) {
+            hybbx_session_write_line(session,
+                "Admins cannot change other Admins. Sysop only.");
+        } else {
+            cmd_deny_privilege(session);
+        }
+        return HYBBX_ERR_DENIED;
+    }
+
+    hybbx_strlcpy(user.full_name, reg.full_name, sizeof(user.full_name));
+    hybbx_strlcpy(user.country, reg.country, sizeof(user.country));
+    hybbx_strlcpy(user.location, reg.location, sizeof(user.location));
+    hybbx_strlcpy(user.email, reg.email, sizeof(user.email));
+
+    rc = hybbx_password_hash(new_password, user.password, sizeof(user.password));
+    if (rc != HYBBX_OK) {
+        hybbx_session_write_line(session, "Could not store new password.");
+        return rc;
+    }
+
+    rc = hybbx_storage_update_user(storage, &user);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    snprintf(buf, sizeof(buf), "Updated account '%s'.", user.username);
+    hybbx_session_write_line(session, buf);
+    return HYBBX_OK;
+}
+
+static hybbx_result_t cmd_userdelete(hybbx_service_t *service,
+                                       hybbx_session_t *session,
+                                       const hybbx_parsed_command_t *cmd)
+{
+    hybbx_user_record_t target;
+    hybbx_user_level_t actor_level;
+    char buf[128];
+    hybbx_result_t rc;
+
+    actor_level = hybbx_session_user_level(session);
+    if (!hybbx_user_level_is_sysop(actor_level)) {
+        cmd_deny_privilege(session);
+        return HYBBX_ERR_DENIED;
+    }
+
+    if (cmd->argc < 1 || cmd->argv[0] == NULL || cmd->argv[0][0] == '\0') {
+        hybbx_session_write_line(session, "Usage: /userdelete <username>");
+        return HYBBX_OK;
+    }
+
+    rc = cmd_lookup_user(service, cmd->argv[0], &target);
+    if (rc == HYBBX_ERR_NOT_FOUND) {
+        hybbx_session_write_line(session, "Unknown user.");
+        return HYBBX_OK;
+    }
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    if (str_ieq(target.username, hybbx_session_username(session))) {
+        hybbx_session_write_line(session, "You cannot delete your own account.");
+        return HYBBX_OK;
+    }
+
+    if (!hybbx_auth_may_userdelete(actor_level, target.level)) {
+        hybbx_session_write_line(session,
+            "The Sysop account is permanent and cannot be deleted.");
+        return HYBBX_OK;
+    }
+
+    rc = hybbx_storage_delete_user(hybbx_service_get_storage(service), target.id);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    snprintf(buf, sizeof(buf), "Deleted account '%s'.", target.username);
+    hybbx_session_write_line(session, buf);
     return HYBBX_OK;
 }
 
@@ -1640,6 +1830,14 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
 
     if (str_ieq(cmd->verb, "changeme")) {
         return cmd_changeme(service, session, cmd);
+    }
+
+    if (str_ieq(cmd->verb, "userchange")) {
+        return cmd_userchange(service, session, cmd);
+    }
+
+    if (str_ieq(cmd->verb, "userdelete")) {
+        return cmd_userdelete(service, session, cmd);
     }
 
     if (str_ieq(cmd->verb, "createuser") || str_ieq(cmd->verb, "create")) {

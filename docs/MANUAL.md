@@ -556,7 +556,7 @@ Legacy `users.dat` (`id|name|level|…`) migrates on first startup. Plain passwo
 | `sessions.dat`, `guest.next`, `user.next`, `session.next` | Counters / session log |
 | `mail/<user>/inbox/*.msg` | Personal mail (Main only) |
 
-**Default Sysop** (if none exists): username `Sysop`, password `Sysop` — change after first login.
+**Default Sysop** (if none exists): username `Sysop`, password `SysopPassword` — change after first login with `/changeme` (new passwords: **8–24 characters**).
 
 **Levels** (high → low): Sysop (one), Admin, Mod, User, Guest. Guests use `/register` (no password; staff mail; inactive until `/activate`). After login, users set profile and password with `/changeme`. Sysop and Admin use `/createuser` and `/activate`.
 
@@ -593,14 +593,15 @@ Registered users (User, Mod, Admin, Sysop) use `/changeme` to update their own p
 |--------|-----|
 | Self-register (`/register`) | Guest only (no password collected) |
 | Update own profile/password (`/changeme`) | Registered users only |
+| Overwrite user profile/password (`/userchange`) | Sysop: Admin, Mod, User; Admin: Mod, User |
 | Create user (`/createuser`) | Sysop, Admin |
 | Activate pending accounts (`/activate`) | Sysop, Admin |
 | Promote → Admin | Sysop only |
 | Promote → Mod | Sysop, Admin |
 | Demote Admin | Sysop only |
 | Demote Mod | Sysop, Admin |
-| Delete Mod/User/Guest | Sysop, Admin |
-| Delete Admin | Sysop only |
+| Delete Mod/User/Guest (`/delete`) | Sysop, Admin |
+| Delete Admin or any non-Sysop (`/userdelete`) | Sysop only |
 | Delete Sysop | Never |
 | Delete self | `/deleteme yes` (not Sysop) |
 
@@ -638,7 +639,9 @@ Banner tokens: `@version@`, `@service@`.
 | `/mail` | Inbox; `/mail list 1-15`, `read`, `delete`, `send` |
 | `/login <user> <pass>` | Login |
 | `/register <user> …>` | Self-registration (guests only; no password) |
-| `/changeme <old> <new> <name> …>` | Update own profile and password |
+| `/changeme <old> <new> <name> …>` | Update own profile and password (new password 8–24 chars) |
+| `/userchange <user> <new> <name> …>` | Staff overwrite profile and password (Sysop/Admin) |
+| `/userdelete <user>` | Sysop delete any account except Sysop (not self) |
 | `/createuser <user> …>` | Create user account (Sysop, Admin) |
 | `/activate`, `/promote`, `/demote`, `/delete` | Staff (Sysop, Admin) |
 | `/deleteme yes` | Delete own account |
