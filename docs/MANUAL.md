@@ -573,7 +573,7 @@ Legacy `users.dat` (`id|name|level|…`) migrates on first startup. Plain passwo
 
 **Default Sysop** (if none exists): username `Sysop`, password `SysopPassword` — change after first login with `/changeme` (new passwords: **8–24 characters**).
 
-**Levels** (high → low): Sysop (one), Admin, Mod, User, Guest. Guests use `/register` (no password; staff mail; inactive until `/activate`). After login, users set profile and password with `/changeme`. Sysop and Admin use `/createuser` and `/activate`.
+**Levels** (high → low): Sysop (one), Admin, Mod, User, Guest. Guests use `/register` (password required; staff mail; inactive until `/activate`). After login, users may update profile and password with `/changeme`. Sysop and Admin use `/createuser` and `/activate`.
 
 ## Cryptography
 
@@ -608,7 +608,7 @@ Registered users (User, Mod, Admin, Sysop) use `/changeme` to update their own p
 
 | Action | Who |
 |--------|-----|
-| Self-register (`/register`) | Guest or login-prompt session (no password collected) |
+| Self-register (`/register`) | Guest or login-prompt session (password required) |
 | Update own profile/password (`/changeme`) | Registered users only |
 | Overwrite user profile/password (`/userchange`) | Sysop: Admin, Mod, User; Admin: Mod, User |
 | Create user (`/createuser`) | Sysop, Admin |
@@ -620,7 +620,7 @@ Registered users (User, Mod, Admin, Sysop) use `/changeme` to update their own p
 | Delete Mod/User/Guest (`/delete`) | Sysop, Admin |
 | Delete Admin or any non-Sysop (`/userdelete`) | Sysop only |
 | Delete Sysop | Never |
-| Delete self | `/deleteme yes` (not Sysop) |
+| Delete self | `/deleteme yes\|no` (not Sysop) |
 
 `/help` is level-aware. Max **35** online sessions by default (`max_online`). Guests disconnect after **30** minutes (`guest_timeout_minutes`).
 
@@ -657,13 +657,13 @@ Banner tokens: `@version@`, `@service@`. MOTD tokens: `@username@`.
 | `/chat` | List/join channels |
 | `/mail` | Inbox; `/mail list 1-15`, `read`, `delete`, `send` |
 | `/login <user> <pass>` | Login |
-| `/register <user> …>` | Self-registration (guests only; no password) |
+| `/register <user> …>` | Self-registration (guests; includes password) |
 | `/changeme <old> <new> <name> …>` | Update own profile and password (new password 8–24 chars) |
 | `/userchange <user> <new> <name> …>` | Staff overwrite profile and password (Sysop/Admin) |
 | `/userdelete <user>` | Sysop delete any account except Sysop (not self) |
 | `/createuser <user> …>` | Create user account (Sysop, Admin) |
 | `/activate`, `/promote`, `/demote`, `/delete` | Staff (Sysop, Admin) |
-| `/deleteme yes` | Delete own account |
+| `/deleteme yes\|no` | Delete own account |
 | `/exit` | Disconnect (`/quit`, `/logout`, `/bye`) |
 
 ### Chat

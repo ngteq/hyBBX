@@ -277,10 +277,11 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
     cmd_help_group(session, "Screen", "/clear  /echo");
     cmd_help_group(session, "Areas",
                    "/leave  /main  /chat  /mail  /exit");
-    cmd_help_group(session, "Account", "/login  /changeme");
-
     if (cmd_help_shows_deleteme(level)) {
-        hybbx_session_write_line(session, "             /deleteme yes");
+        cmd_help_group(session, "Account",
+                       "/login  /changeme  /deleteme");
+    } else {
+        cmd_help_group(session, "Account", "/login  /changeme");
     }
 
     cmd_help_staff(session, level);
@@ -441,7 +442,9 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
     if (str_ieq(canonical, "register")) {
         cmd_help_topic_title(session, "/register", "self-registration (guests)");
         cmd_help_topic_detail(session,
-            "  /register <user> <name> <country> <location> <email>");
+            "  /register <user> <name> <country> <location> <email> <password>");
+        cmd_help_topic_detail(session,
+            "  password: 8-24 characters");
         cmd_help_topic_detail(session,
             "  guests only — pending until Sysop or Admin /activate");
         cmd_help_topic_detail(session,
@@ -497,7 +500,7 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
     if (str_ieq(canonical, "deleteme")) {
         cmd_help_topic_title(session, "/deleteme",
                              "permanently delete your account");
-        cmd_help_topic_detail(session, "  /deleteme yes   (required)");
+        cmd_help_topic_detail(session, "  /deleteme yes|no");
         return HYBBX_OK;
     }
 
@@ -680,22 +683,31 @@ static hybbx_result_t cmd_session(hybbx_session_t *session)
 
 static hybbx_result_t parse_profile_fields(const hybbx_parsed_command_t *cmd,
                                            unsigned name_start,
+                                           unsigned tail_extra,
                                            hybbx_user_registration_t *reg)
 {
     size_t i;
     size_t pos = 0;
+    unsigned suffix;
 
-    if (cmd == NULL || reg == NULL || cmd->argc < name_start + 4) {
+    if (cmd == NULL || reg == NULL) {
         return HYBBX_ERR_INVALID;
     }
 
-    hybbx_strlcpy(reg->email, cmd->argv[cmd->argc - 1], sizeof(reg->email));
-    hybbx_strlcpy(reg->location, cmd->argv[cmd->argc - 2],
+    suffix = 3u + tail_extra;
+    if (cmd->argc < name_start + suffix) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    hybbx_strlcpy(reg->email, cmd->argv[cmd->argc - 1u - tail_extra],
+                  sizeof(reg->email));
+    hybbx_strlcpy(reg->location, cmd->argv[cmd->argc - 2u - tail_extra],
                   sizeof(reg->location));
-    hybbx_strlcpy(reg->country, cmd->argv[cmd->argc - 3], sizeof(reg->country));
+    hybbx_strlcpy(reg->country, cmd->argv[cmd->argc - 3u - tail_extra],
+                  sizeof(reg->country));
 
     reg->full_name[0] = '\0';
-    for (i = name_start; i + 3 < cmd->argc; i++) {
+    for (i = name_start; i + suffix < cmd->argc; i++) {
         size_t part_len;
         const char *part = cmd->argv[i];
 
@@ -724,11 +736,14 @@ static hybbx_result_t parse_profile_fields(const hybbx_parsed_command_t *cmd,
 }
 
 static hybbx_result_t parse_registration(const hybbx_parsed_command_t *cmd,
-                                         hybbx_user_registration_t *reg)
+                                         hybbx_user_registration_t *reg,
+                                         int with_password)
 {
     hybbx_result_t rc;
+    unsigned min_args = with_password ? 6u : 5u;
+    unsigned tail_extra = with_password ? 1u : 0u;
 
-    if (cmd == NULL || reg == NULL || cmd->argc < 5) {
+    if (cmd == NULL || reg == NULL || cmd->argc < min_args) {
         return HYBBX_ERR_INVALID;
     }
 
@@ -736,7 +751,12 @@ static hybbx_result_t parse_registration(const hybbx_parsed_command_t *cmd,
     hybbx_strlcpy(reg->username, cmd->argv[0], sizeof(reg->username));
     hybbx_username_normalize(reg->username);
 
-    rc = parse_profile_fields(cmd, 1, reg);
+    if (with_password) {
+        hybbx_strlcpy(reg->password, cmd->argv[cmd->argc - 1],
+                      sizeof(reg->password));
+    }
+
+    rc = parse_profile_fields(cmd, 1, tail_extra, reg);
     if (rc != HYBBX_OK) {
         return rc;
     }
@@ -763,7 +783,7 @@ static hybbx_result_t parse_changeme(const hybbx_parsed_command_t *cmd,
     *old_password = cmd->argv[0];
     *new_password = cmd->argv[1];
 
-    rc = parse_profile_fields(cmd, 2, reg);
+    rc = parse_profile_fields(cmd, 2, 0, reg);
     if (rc != HYBBX_OK) {
         return rc;
     }
@@ -786,7 +806,7 @@ static hybbx_result_t parse_userchange(const hybbx_parsed_command_t *cmd,
     hybbx_username_normalize(reg->username);
     *new_password = cmd->argv[1];
 
-    rc = parse_profile_fields(cmd, 2, reg);
+    rc = parse_profile_fields(cmd, 2, 0, reg);
     if (rc != HYBBX_OK) {
         return rc;
     }
@@ -1070,6 +1090,7 @@ static hybbx_result_t cmd_deleteme(hybbx_service_t *service,
 {
     const hybbx_session_record_t *rec;
     hybbx_user_level_t level;
+    const char *arg;
     hybbx_result_t rc;
 
     (void)service;
@@ -1081,9 +1102,15 @@ static hybbx_result_t cmd_deleteme(hybbx_service_t *service,
         return HYBBX_OK;
     }
 
-    if (!cmd_deleteme_confirmed(cmd->argc > 0 ? cmd->argv[0] : NULL)) {
+    arg = cmd->argc > 0 ? cmd->argv[0] : NULL;
+    if (arg != NULL && hybbx_bool_is_false(arg)) {
+        hybbx_session_write_line(session, "Account deletion cancelled.");
+        return HYBBX_OK;
+    }
+
+    if (!cmd_deleteme_confirmed(arg)) {
         hybbx_session_write_line(session,
-            "Confirmation required: use /deleteme yes or /deleteme true.");
+            "Usage: /deleteme yes|no");
         return HYBBX_OK;
     }
 
@@ -1117,15 +1144,27 @@ static hybbx_result_t cmd_register_user(hybbx_service_t *service,
     char buf[128];
     hybbx_result_t rc;
 
-    if (cmd->argc < 5) {
+    if (staff_created) {
+        if (cmd->argc < 5) {
+            hybbx_session_write_line(session,
+                "Usage: /createuser <username> <full-name> <country> <location> <email>");
+            return HYBBX_OK;
+        }
+    } else if (cmd->argc < 6) {
         hybbx_session_write_line(session,
-            "Usage: /register <username> <full-name> <country> <location> <email>");
+            "Usage: /register <username> <full-name> <country> <location> <email> <password>");
         return HYBBX_OK;
     }
 
-    rc = parse_registration(cmd, &reg);
+    rc = parse_registration(cmd, &reg, staff_created ? 0 : 1);
     if (rc != HYBBX_OK) {
         hybbx_session_write_line(session, "Registration fields too long.");
+        return HYBBX_OK;
+    }
+
+    if (!staff_created && !hybbx_password_plain_valid(reg.password)) {
+        hybbx_session_write_line(session,
+            "Password must be 8-24 characters (- not allowed).");
         return HYBBX_OK;
     }
 
@@ -1193,12 +1232,6 @@ static hybbx_result_t cmd_createuser(hybbx_service_t *service,
                                      hybbx_session_t *session,
                                      const hybbx_parsed_command_t *cmd)
 {
-    if (cmd->argc < 5) {
-        hybbx_session_write_line(session,
-            "Usage: /createuser <username> <full-name> <country> <location> <email>");
-        return HYBBX_OK;
-    }
-
     return cmd_register_user(service, session, cmd, 1);
 }
 

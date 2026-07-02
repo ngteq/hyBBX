@@ -1021,6 +1021,17 @@ hybbx_result_t hybbx_storage_flatfile_register_user(hybbx_storage_t *storage,
     hybbx_strlcpy(out->location, reg->location, sizeof(out->location));
     hybbx_strlcpy(out->email, reg->email, sizeof(out->email));
 
+    if (reg->password[0] != '\0') {
+        if (!hybbx_password_plain_valid(reg->password)) {
+            return HYBBX_ERR_INVALID;
+        }
+        rc = hybbx_password_hash(reg->password, out->password,
+                                 sizeof(out->password));
+        if (rc != HYBBX_OK) {
+            return rc;
+        }
+    }
+
     return append_user_record(state, out);
 }
 

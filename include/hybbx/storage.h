@@ -39,6 +39,7 @@ typedef struct hybbx_user_registration {
     char country[HYBBX_USER_COUNTRY_MAX];
     char location[HYBBX_USER_LOCATION_MAX];
     char email[HYBBX_USER_EMAIL_MAX];
+    char password[HYBBX_USER_PASSWORD_MAX];
 } hybbx_user_registration_t;
 
 /** Validate profile fields only (full name, country, location, email). */
