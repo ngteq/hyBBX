@@ -94,7 +94,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Feature | Status | Description |
 |---------|--------|-------------|
 | Guest auto-login | Done | `Guest1`… prefix; optional timeout disconnect |
-| User registration | Done | `/register` (guests); staff mail lists all registration fields |
+| User registration | Done | `/register` (guests, no password); staff proof mail |
+| Profile / password | Done | `/changeme` (registered users; old + new password) |
 | Staff create user | Done | `/createuser` (Sysop, Admin) |
 | Login / logout | Done | `/login`; session level updated |
 | User levels | Done | Sysop, Admin, Mod, User, Guest (privilege rules enforced) |
@@ -130,7 +131,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | `/who` | Done | Online users |
 | `/session` (`/info`) | Done | Current session details |
 | `/version` (`/ver`) | Done | HyBBX version string |
-| `/login`, `/register` | Done | Login; guest self-registration |
+| `/login`, `/register` | Done | Login; guest self-registration (no password) |
+| `/changeme` | Done | Update own profile and password (registered users) |
 | `/createuser` | Done | Sysop/Admin create pending user accounts |
 | `/chat` | Done | List/join channels (registered users) |
 | `/mail` | Done | Inbox list, read, delete, send (registered users) |

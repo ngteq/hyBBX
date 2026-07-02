@@ -7,6 +7,7 @@
 #include "hybbx/auth.h"
 #include "hybbx/chat.h"
 #include "hybbx/mail.h"
+#include "hybbx/password.h"
 #include "hybbx/traffic.h"
 #include "hybbx/util.h"
 
@@ -76,6 +77,10 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
         return hybbx_auth_may_create_user(level);
     }
 
+    if (str_ieq(verb, "changeme")) {
+        return hybbx_auth_may_changeme(level);
+    }
+
     if (str_ieq(verb, "chat")) {
         return !hybbx_user_level_is_guest(level);
     }
@@ -131,6 +136,9 @@ static hybbx_result_t cmd_check_access(hybbx_session_t *session,
     } else if (str_ieq(verb, "register")) {
         hybbx_session_write_line(session,
             "Only guests may self-register with /register.");
+    } else if (str_ieq(verb, "changeme")) {
+        hybbx_session_write_line(session,
+            "Only registered users may use /changeme.");
     } else {
         hybbx_session_write_line(session, "Insufficient privileges.");
     }
@@ -209,7 +217,7 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
     cmd_help_group(session, "Screen", "/clear  /echo");
     cmd_help_group(session, "Areas",
                    "/leave  /main  /chat  /mail  /exit");
-    cmd_help_group(session, "Account", "/login");
+    cmd_help_group(session, "Account", "/login  /changeme");
 
     if (cmd_help_shows_deleteme(level)) {
         hybbx_session_write_line(session, "             /deleteme yes");
@@ -372,6 +380,17 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         return HYBBX_OK;
     }
 
+    if (str_ieq(canonical, "changeme")) {
+        cmd_help_topic_title(session, "/changeme", "update own profile and password");
+        cmd_help_topic_detail(session,
+            "  /changeme <old> <new> <name> <country> <location> <email>");
+        cmd_help_topic_detail(session,
+            "  use - as <old> when no password is set yet");
+        cmd_help_topic_detail(session,
+            "  username cannot be changed");
+        return HYBBX_OK;
+    }
+
     if (str_ieq(canonical, "register")) {
         cmd_help_topic_title(session, "/register", "self-registration (guests)");
         cmd_help_topic_detail(session,
@@ -517,25 +536,24 @@ static hybbx_result_t cmd_session(hybbx_session_t *session)
     return HYBBX_OK;
 }
 
-static hybbx_result_t parse_registration(const hybbx_parsed_command_t *cmd,
-                                         hybbx_user_registration_t *reg)
+static hybbx_result_t parse_profile_fields(const hybbx_parsed_command_t *cmd,
+                                           unsigned name_start,
+                                           hybbx_user_registration_t *reg)
 {
     size_t i;
     size_t pos = 0;
 
-    if (cmd == NULL || reg == NULL || cmd->argc < 5) {
+    if (cmd == NULL || reg == NULL || cmd->argc < name_start + 4) {
         return HYBBX_ERR_INVALID;
     }
 
-    memset(reg, 0, sizeof(*reg));
-    hybbx_strlcpy(reg->username, cmd->argv[0], sizeof(reg->username));
-    hybbx_username_normalize(reg->username);
     hybbx_strlcpy(reg->email, cmd->argv[cmd->argc - 1], sizeof(reg->email));
     hybbx_strlcpy(reg->location, cmd->argv[cmd->argc - 2],
                   sizeof(reg->location));
     hybbx_strlcpy(reg->country, cmd->argv[cmd->argc - 3], sizeof(reg->country));
 
-    for (i = 1; i + 3 < cmd->argc; i++) {
+    reg->full_name[0] = '\0';
+    for (i = name_start; i + 3 < cmd->argc; i++) {
         size_t part_len;
         const char *part = cmd->argv[i];
 
@@ -561,6 +579,74 @@ static hybbx_result_t parse_registration(const hybbx_parsed_command_t *cmd,
 
     reg->full_name[pos] = '\0';
     return HYBBX_OK;
+}
+
+static hybbx_result_t parse_registration(const hybbx_parsed_command_t *cmd,
+                                         hybbx_user_registration_t *reg)
+{
+    hybbx_result_t rc;
+
+    if (cmd == NULL || reg == NULL || cmd->argc < 5) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    memset(reg, 0, sizeof(*reg));
+    hybbx_strlcpy(reg->username, cmd->argv[0], sizeof(reg->username));
+    hybbx_username_normalize(reg->username);
+
+    rc = parse_profile_fields(cmd, 1, reg);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    return HYBBX_OK;
+}
+
+static hybbx_result_t parse_changeme(const hybbx_parsed_command_t *cmd,
+                                     const char *username,
+                                     hybbx_user_registration_t *reg,
+                                     const char **old_password,
+                                     const char **new_password)
+{
+    hybbx_result_t rc;
+
+    if (cmd == NULL || username == NULL || reg == NULL ||
+        old_password == NULL || new_password == NULL || cmd->argc < 6) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    memset(reg, 0, sizeof(*reg));
+    hybbx_strlcpy(reg->username, username, sizeof(reg->username));
+    hybbx_username_normalize(reg->username);
+    *old_password = cmd->argv[0];
+    *new_password = cmd->argv[1];
+
+    rc = parse_profile_fields(cmd, 2, reg);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    return HYBBX_OK;
+}
+
+static int cmd_password_token_valid(const char *password)
+{
+    size_t len;
+
+    if (password == NULL || password[0] == '\0') {
+        return 0;
+    }
+
+    if (str_ieq(password, "-")) {
+        return 1;
+    }
+
+    len = strlen(password);
+    if (len < 4 || len > 72) {
+        return 0;
+    }
+
+    return 1;
 }
 
 static hybbx_result_t cmd_lookup_user(hybbx_service_t *service,
@@ -969,6 +1055,110 @@ static hybbx_result_t cmd_createuser(hybbx_service_t *service,
     return cmd_register_user(service, session, cmd, 1);
 }
 
+static hybbx_result_t cmd_changeme(hybbx_service_t *service,
+                                   hybbx_session_t *session,
+                                   const hybbx_parsed_command_t *cmd)
+{
+    hybbx_storage_t *storage;
+    hybbx_user_registration_t reg;
+    hybbx_user_record_t user;
+    const char *old_password;
+    const char *new_password;
+    const char *username;
+    hybbx_result_t rc;
+
+    if (hybbx_session_is_guest(session)) {
+        hybbx_session_write_line(session,
+            "Only registered users may use /changeme.");
+        return HYBBX_ERR_DENIED;
+    }
+
+    if (cmd->argc < 6) {
+        hybbx_session_write_line(session,
+            "Usage: /changeme <old> <new> <full-name> <country> <location> <email>");
+        return HYBBX_OK;
+    }
+
+    username = hybbx_session_username(session);
+    if (username == NULL || username[0] == '\0') {
+        return HYBBX_ERR_INVALID;
+    }
+
+    rc = parse_changeme(cmd, username, &reg, &old_password, &new_password);
+    if (rc != HYBBX_OK) {
+        hybbx_session_write_line(session, "Profile fields too long.");
+        return HYBBX_OK;
+    }
+
+    if (!cmd_password_token_valid(new_password)) {
+        hybbx_session_write_line(session,
+            "New password must be 4-72 characters (- not allowed).");
+        return HYBBX_OK;
+    }
+
+    storage = hybbx_service_get_storage(service);
+    if (storage == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    rc = hybbx_storage_find_user(storage, reg.username, &user);
+    if (rc == HYBBX_ERR_NOT_FOUND) {
+        hybbx_session_write_line(session, "Account not found.");
+        return HYBBX_OK;
+    }
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    {
+        const hybbx_session_record_t *rec = hybbx_session_record(session);
+        const hybbx_auth_config_t *auth = hybbx_service_get_auth(service);
+        const char *guest_prefix = auth != NULL ? auth->guest_prefix : NULL;
+
+        if (rec == NULL || user.id != rec->user_id) {
+            hybbx_session_write_line(session,
+                "You can only change your own account.");
+            return HYBBX_OK;
+        }
+
+        if (!hybbx_registration_valid(&reg, guest_prefix)) {
+            hybbx_session_write_line(session,
+                "Invalid profile (check name, country, location, email).");
+            return HYBBX_OK;
+        }
+    }
+
+    if (user.password[0] == '\0') {
+        if (!str_ieq(old_password, "-")) {
+            hybbx_session_write_line(session,
+                "No password set yet. Use - as the old password.");
+            return HYBBX_OK;
+        }
+    } else if (!hybbx_password_match(user.password, old_password)) {
+        hybbx_session_write_line(session, "Old password incorrect.");
+        return HYBBX_OK;
+    }
+
+    hybbx_strlcpy(user.full_name, reg.full_name, sizeof(user.full_name));
+    hybbx_strlcpy(user.country, reg.country, sizeof(user.country));
+    hybbx_strlcpy(user.location, reg.location, sizeof(user.location));
+    hybbx_strlcpy(user.email, reg.email, sizeof(user.email));
+
+    rc = hybbx_password_hash(new_password, user.password, sizeof(user.password));
+    if (rc != HYBBX_OK) {
+        hybbx_session_write_line(session, "Could not store new password.");
+        return rc;
+    }
+
+    rc = hybbx_storage_update_user(storage, &user);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    hybbx_session_write_line(session, "Account updated.");
+    return HYBBX_OK;
+}
+
 static hybbx_result_t cmd_login(hybbx_service_t *service,
                                 hybbx_session_t *session,
                                 const hybbx_parsed_command_t *cmd)
@@ -1016,7 +1206,13 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
         return HYBBX_OK;
     }
 
-    if (!hybbx_password_match(user.password, cmd->argv[1])) {
+    if (user.password[0] == '\0') {
+        if (cmd->argv[1][0] != '\0' && !str_ieq(cmd->argv[1], "-")) {
+            hybbx_session_write_line(session,
+                "No password set yet. Log in with - as password, then /changeme.");
+            return HYBBX_OK;
+        }
+    } else if (!hybbx_password_match(user.password, cmd->argv[1])) {
         hybbx_session_write_line(session, "Invalid password.");
         return HYBBX_OK;
     }
@@ -1028,6 +1224,10 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
     }
 
     hybbx_session_write_line(session, "Login successful.");
+    if (user.password[0] == '\0') {
+        hybbx_session_write_line(session,
+            "Set your profile and password with /changeme.");
+    }
     hybbx_session_show_prompt(session);
     return HYBBX_OK;
 }
@@ -1436,6 +1636,10 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
 
     if (str_ieq(cmd->verb, "register")) {
         return cmd_register(service, session, cmd);
+    }
+
+    if (str_ieq(cmd->verb, "changeme")) {
+        return cmd_changeme(service, session, cmd);
     }
 
     if (str_ieq(cmd->verb, "createuser") || str_ieq(cmd->verb, "create")) {

@@ -484,7 +484,7 @@ Legacy `users.dat` (`id|name|level|…`) migrates on first startup. Plain passwo
 
 **Default Sysop** (if none exists): username `Sysop`, password `Sysop` — change after first login.
 
-**Levels** (high → low): Sysop (one), Admin, Mod, User, Guest. Guests use `/register` (self-signup; Sysop and Admin receive mail with username, full name, country, location, email, and account metadata; inactive until `/activate`). Sysop and Admin use `/createuser` and `/activate`.
+**Levels** (high → low): Sysop (one), Admin, Mod, User, Guest. Guests use `/register` (no password; staff mail; inactive until `/activate`). After login, users set profile and password with `/changeme`. Sysop and Admin use `/createuser` and `/activate`.
 
 ## Cryptography
 
@@ -511,11 +511,14 @@ Bundled: [Monocypher](third_party/monocypher/), [tiny-AES-c](third_party/tinyaes
 
 Guests (`Guest1` … `Guest111`) may use: `/help`, `/motd`, `/news`, `/login`, `/register`, `/clear`, `/echo`.
 
+Registered users (User, Mod, Admin, Sysop) use `/changeme` to update their own profile and password (not `/register`).
+
 **Username rules:** 4–12 chars, `a`–`z`, ≤4 digits, at most one `_` or `-` (not both).
 
 | Action | Who |
 |--------|-----|
-| Self-register (`/register`) | Guest only; staff mail with all registration data |
+| Self-register (`/register`) | Guest only (no password collected) |
+| Update own profile/password (`/changeme`) | Registered users only |
 | Create user (`/createuser`) | Sysop, Admin |
 | Activate pending accounts (`/activate`) | Sysop, Admin |
 | Promote → Admin | Sysop only |
@@ -560,7 +563,8 @@ Banner tokens: `@version@`, `@service@`.
 | `/chat` | List/join channels |
 | `/mail` | Inbox; `/mail list 1-15`, `read`, `delete`, `send` |
 | `/login <user> <pass>` | Login |
-| `/register <user> …>` | Self-registration (guests only) |
+| `/register <user> …>` | Self-registration (guests only; no password) |
+| `/changeme <old> <new> <name> …>` | Update own profile and password |
 | `/createuser <user> …>` | Create user account (Sysop, Admin) |
 | `/activate`, `/promote`, `/demote`, `/delete` | Staff (Sysop, Admin) |
 | `/deleteme yes` | Delete own account |
