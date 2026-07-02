@@ -24,6 +24,7 @@ if(HYBBX_BUILD_DAEMON)
         core/terminal.c
         core/texts.c
         core/util.c
+        core/log.c
         clients/circuit_client.c
         clients/link_auth.c
         ${CMAKE_SOURCE_DIR}/third_party/tinysha256/tinysha256.c

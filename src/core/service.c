@@ -16,7 +16,7 @@
 #include "hybbx/chat.h"
 #include "hybbx/mail.h"
 #include "hybbx/networks.h"
-#include "hybbx/session.h"
+#include "hybbx/log.h"
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
 
@@ -81,6 +81,8 @@ struct hybbx_service_internal {
     size_t transport_count;
     hybbx_circuit_hub_t *circuit_hub;
     int running;
+    pthread_mutex_t guest_lock;
+    unsigned char guest_in_use[HYBBX_GUEST_NUMBER_MAX + 1];
 };
 
 hybbx_service_t *hybbx_service_create(const char *name)
@@ -102,6 +104,7 @@ hybbx_service_t *hybbx_service_create(const char *name)
     svc->active_nodes = 0;
     pthread_mutex_init(&svc->node_lock, NULL);
     pthread_mutex_init(&svc->session_lock, NULL);
+    pthread_mutex_init(&svc->guest_lock, NULL);
 
     svc->name = hybbx_strdup(name != NULL && name[0] != '\0' ?
                              name : HYBBX_DEFAULT_SERVICE_NAME);
@@ -145,6 +148,8 @@ void hybbx_service_destroy(hybbx_service_t *service)
         svc->storage = NULL;
     }
 
+    hybbx_log_shutdown();
+
     {
         hybbx_attached_session_t *node = svc->sessions;
 
@@ -158,6 +163,7 @@ void hybbx_service_destroy(hybbx_service_t *service)
     }
 
     pthread_mutex_destroy(&svc->session_lock);
+    pthread_mutex_destroy(&svc->guest_lock);
     pthread_mutex_destroy(&svc->node_lock);
     free(svc->name);
     free(svc);
@@ -286,6 +292,49 @@ unsigned hybbx_service_guest_timeout_seconds(const hybbx_service_t *service)
     }
 
     return svc->guest_timeout_minutes * 60u;
+}
+
+hybbx_result_t hybbx_service_guest_assign(hybbx_service_t *service,
+                                          const char *guest_prefix,
+                                          hybbx_user_record_t *out,
+                                          unsigned *slot_out)
+{
+    struct hybbx_service_internal *svc =
+        (struct hybbx_service_internal *)service;
+    unsigned slot;
+
+    if (svc == NULL || out == NULL || slot_out == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    pthread_mutex_lock(&svc->guest_lock);
+    for (slot = 1; slot <= HYBBX_GUEST_NUMBER_MAX; slot++) {
+        if (!svc->guest_in_use[slot]) {
+            svc->guest_in_use[slot] = 1;
+            pthread_mutex_unlock(&svc->guest_lock);
+
+            hybbx_guest_fill_record(guest_prefix, slot, out);
+            *slot_out = slot;
+            return HYBBX_OK;
+        }
+    }
+    pthread_mutex_unlock(&svc->guest_lock);
+
+    return HYBBX_ERR_BUSY;
+}
+
+void hybbx_service_guest_release(hybbx_service_t *service, unsigned slot)
+{
+    struct hybbx_service_internal *svc =
+        (struct hybbx_service_internal *)service;
+
+    if (svc == NULL || slot < 1 || slot > HYBBX_GUEST_NUMBER_MAX) {
+        return;
+    }
+
+    pthread_mutex_lock(&svc->guest_lock);
+    svc->guest_in_use[slot] = 0;
+    pthread_mutex_unlock(&svc->guest_lock);
 }
 
 hybbx_result_t hybbx_service_acquire_node(hybbx_service_t *service)
@@ -872,6 +921,8 @@ hybbx_result_t hybbx_service_apply_config(hybbx_service_t *service,
     }
 
     service_apply_auth(svc, config);
+    hybbx_time_config_apply(config);
+    hybbx_log_config_apply(config);
     service_apply_texts(svc, config);
     hybbx_chat_config_apply(&svc->chat, config);
     service_apply_service(svc, config);

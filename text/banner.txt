@@ -1,3 +1,4 @@
 HyBBX @version@
 Online at @service@
 Type /help for commands.
+Use /login or /register for an account.

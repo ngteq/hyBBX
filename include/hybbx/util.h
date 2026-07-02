@@ -5,6 +5,10 @@
 
 #include <stddef.h>
 
+struct tm;
+
+struct hybbx_config;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -61,6 +65,27 @@ const char *hybbx_bool_to_string(int value);
 
 /** Short name for @p rc (logging / tests). */
 const char *hybbx_result_name(hybbx_result_t rc);
+
+/**
+ * HyBBX system-local date/time stamp (yyyymmdd + time).
+ * Default: 24-hour clock, minutes only (no seconds).
+ */
+typedef struct hybbx_time_format {
+    int clock_12h;
+    int seconds;
+} hybbx_time_format_t;
+
+void hybbx_time_format_defaults(hybbx_time_format_t *fmt);
+const hybbx_time_format_t *hybbx_time_format_get(void);
+void hybbx_time_config_apply(const struct hybbx_config *config);
+
+/**
+ * Format @p tm as @c yyyymmdd HH:MM per @p fmt.
+ * @return HYBBX_OK on success.
+ */
+hybbx_result_t hybbx_time_format_stamp(char *out, size_t out_len,
+                                       const struct tm *tm,
+                                       const hybbx_time_format_t *fmt);
 
 #ifdef __cplusplus
 }

@@ -85,7 +85,8 @@ void hybbx_storage_close(hybbx_storage_t *storage);
 hybbx_storage_backend_kind_t hybbx_storage_backend(const hybbx_storage_t *storage);
 
 /**
- * Allocate the next guest account (Guest1, Guest2, … up to Guest111).
+ * Deprecated: guests are ephemeral (@ref hybbx_service_guest_assign).
+ * Always returns @ref HYBBX_ERR_INVALID.
  */
 hybbx_result_t hybbx_storage_create_guest(hybbx_storage_t *storage,
                                           hybbx_user_record_t *out);

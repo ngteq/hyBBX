@@ -23,6 +23,7 @@ backend = flatfile
 path = ~/.hybbx-secondary
 
 [auth]
+; Login prompt: registered /login and /register only (no guest auto-login).
 auto_login = no
 
 [traffic]

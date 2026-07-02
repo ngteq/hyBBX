@@ -466,6 +466,9 @@ max_online = 35
 auto_login = yes
 guest_prefix = Guest
 guest_timeout_minutes = 30
+; Guests are ephemeral (Guest1 … Guest25 in memory only — not stored in user files).
+; auto_login=yes (default): next free guest on connect (max 25 simultaneous).
+; auto_login=no: login prompt — /login and /register for registered accounts only.
 
 [chat]
 channels = 10
@@ -583,7 +586,9 @@ Bundled: [Monocypher](third_party/monocypher/), [tiny-AES-c](third_party/tinyaes
 
 ## Authentication & privileges
 
-Guests (`Guest1` … `Guest111`) may use: `/help`, `/motd`, `/news`, `/login`, `/register`, `/clear`, `/echo`.
+**Guests** (`Guest1` … `Guest25`) are **ephemeral** — up to 25 simultaneous slots in memory only, not written to user files. With `auto_login=yes` (default), the next free slot is assigned on connect. `/login` is for **registered accounts only**; guests cannot log in with `/login GuestN`.
+
+With `auto_login=no`, new connections see the banner and a login prompt; use `/login` or `/register` for registered accounts (no guest slots). Guests may use: `/help`, `/motd`, `/news`, `/login`, `/register`, `/clear`, `/echo`.
 
 Registered users (User, Mod, Admin, Sysop) use `/changeme` to update their own profile and password (not `/register`).
 
@@ -591,7 +596,7 @@ Registered users (User, Mod, Admin, Sysop) use `/changeme` to update their own p
 
 | Action | Who |
 |--------|-----|
-| Self-register (`/register`) | Guest only (no password collected) |
+| Self-register (`/register`) | Guest or login-prompt session (no password collected) |
 | Update own profile/password (`/changeme`) | Registered users only |
 | Overwrite user profile/password (`/userchange`) | Sysop: Admin, Mod, User; Admin: Mod, User |
 | Create user (`/createuser`) | Sysop, Admin |
@@ -616,9 +621,11 @@ path = ./text
 
 | File | When |
 |------|------|
-| `banner.txt` | At connect |
-| `motd.txt` | After guest login |
+| `banner.txt` | At connect (guests and all users) |
+| `motd.txt` | `/motd` |
 | `news.txt` | `/news` |
+
+Registered users see `Welcome <username>.` only after a successful `/login` (not on guest connect).
 
 Banner tokens: `@version@`, `@service@`.
 

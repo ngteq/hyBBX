@@ -14,6 +14,8 @@
 ;
 ; Sections:
 ;   [service]            daemon name, max_online, prompt
+;   [time]               system-local timestamps (yyyymmdd, 24h default)
+;   [log]                optional file logging (disabled by default)
 ;   [storage]            flatfile path (sql planned)
 ;   [auth]               guests, registration
 ;   [crypto]             backends (bundled default; optional OpenSSL/libsodium via CMake)
@@ -40,6 +42,20 @@ name = hyBBX
 ; prompt =              ; default: empty (no visible prompt before input)
 ; prompt = hybbx>
 
+; HyBBX timestamps use system local time: yyyymmdd + 24-hour HH:MM (no seconds).
+[time]
+; clock = 24h            ; 24h (default) | 12h | am_pm
+; clock_12h = no         ; alias: yes enables 12-hour am/pm display
+; am_pm = no             ; alias for clock_12h
+; seconds = no           ; append :SS when yes
+
+; File logging — disabled unless enabled=yes and dir is set.
+; New log file on the first day of each calendar month: yyyymmdd-hybbx.log
+; [log]
+; enabled = no
+; dir = ~/.hybbx/logs
+; level = info           ; debug | info | stats | warn
+
 [storage]
 backend = flatfile
 ; User data (users, mail, sessions) — default under $HOME:
@@ -49,6 +65,7 @@ path = ~/.hybbx
 auto_login = yes
 guest_prefix = Guest
 ; guest_timeout_minutes = 30   ; auto-disconnect guests after this many minutes
+; auto_login=no: login prompt for registered /login and /register (no guest slots)
 
 ; System-wide cryptography (bundled sources are defaults; no external libs required).
 ; Optional OpenSSL/libsodium backends: cmake -DHYBBX_CRYPTO_OPENSSL=ON / -DHYBBX_CRYPTO_LIBSODIUM=ON

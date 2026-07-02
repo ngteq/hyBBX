@@ -8,6 +8,7 @@
 #include "hybbx/mail.h"
 #include "hybbx/terminal.h"
 #include "hybbx/traffic.h"
+#include "hybbx/log.h"
 #include "hybbx/hybbx.h"
 #include "hybbx/limits.h"
 #include "hybbx/util.h"
@@ -47,6 +48,8 @@ typedef struct hybbx_session_core {
     size_t line_len;
     int expect_lf;
     int logged_in;
+    int login_prompt;
+    unsigned guest_slot;
     time_t guest_expires_at;
     hybbx_session_area_t area;
     hybbx_session_area_t area_stack[HYBBX_AREA_STACK_MAX];
@@ -130,6 +133,16 @@ static hybbx_result_t session_area_push(hybbx_session_core_t *core,
     return HYBBX_OK;
 }
 
+static void session_release_guest_slot(hybbx_session_core_t *core)
+{
+    if (core == NULL || core->guest_slot == 0 || core->service == NULL) {
+        return;
+    }
+
+    hybbx_service_guest_release(core->service, core->guest_slot);
+    core->guest_slot = 0;
+}
+
 static void session_arm_guest_timer(hybbx_session_core_t *core)
 {
     unsigned timeout_sec;
@@ -148,6 +161,50 @@ static void session_arm_guest_timer(hybbx_session_core_t *core)
     }
 
     core->guest_expires_at = time(NULL) + (time_t)timeout_sec;
+}
+
+static hybbx_result_t session_activate_guest(hybbx_session_core_t *core,
+                                             const hybbx_user_record_t *guest,
+                                             unsigned guest_slot)
+{
+    hybbx_storage_t *storage;
+    const char *transport_name;
+    hybbx_result_t rc;
+
+    if (core == NULL || guest == NULL || guest_slot < 1) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    storage = hybbx_service_get_storage(core->service);
+    if (storage == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (core->guest_slot != 0 && core->guest_slot != guest_slot) {
+        session_release_guest_slot(core);
+    }
+
+    transport_name = core->pub.transport != NULL ?
+                     core->pub.transport->name : "unknown";
+
+    if (core->record.session_id != 0) {
+        hybbx_storage_session_end(storage, core->record.session_id);
+        memset(&core->record, 0, sizeof(core->record));
+    }
+
+    rc = hybbx_storage_session_begin(storage, guest, transport_name,
+                                     &core->record);
+    if (rc != HYBBX_OK) {
+        hybbx_service_guest_release(core->service, guest_slot);
+        return rc;
+    }
+
+    core->user = *guest;
+    core->guest_slot = guest_slot;
+    core->logged_in = 1;
+    core->login_prompt = 0;
+    session_arm_guest_timer(core);
+    return HYBBX_OK;
 }
 
 static hybbx_result_t session_check_guest_expiry(hybbx_session_core_t *core)
@@ -208,7 +265,11 @@ hybbx_result_t hybbx_session_show_prompt(hybbx_session_t *session)
     }
 
     core = (hybbx_session_core_t *)session->core_data;
-    if (core == NULL || !core->logged_in) {
+    if (core == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (!core->logged_in && !core->login_prompt) {
         return HYBBX_ERR_INVALID;
     }
 
@@ -285,7 +346,8 @@ static void session_submit_line(hybbx_session_core_t *core)
     core->line_buf[core->line_len] = '\0';
     session_process_line(core, core->line_buf);
     core->line_len = 0;
-    if (core->logged_in && core->area != HYBBX_AREA_CHAT &&
+    if ((core->logged_in || core->login_prompt) &&
+        core->area != HYBBX_AREA_CHAT &&
         !(core->area == HYBBX_AREA_MAIL && core->mail_composing)) {
         hybbx_session_show_prompt(&core->pub);
     }
@@ -377,7 +439,7 @@ static hybbx_result_t session_handle_user_byte(hybbx_session_core_t *core,
             }
         }
         session_submit_line(core);
-        if (!core->logged_in) {
+        if (!core->logged_in && !core->login_prompt) {
             return HYBBX_SESSION_END;
         }
         core->expect_lf = 1;
@@ -399,7 +461,7 @@ static hybbx_result_t session_handle_user_byte(hybbx_session_core_t *core,
         }
 
         session_submit_line(core);
-        if (!core->logged_in) {
+        if (!core->logged_in && !core->login_prompt) {
             return HYBBX_SESSION_END;
         }
         return HYBBX_OK;
@@ -443,24 +505,6 @@ static void session_send_banner(hybbx_session_core_t *core)
 
     service_name = hybbx_service_get_name(core->service);
     hybbx_texts_send_banner(texts, &core->pub, HYBBX_VERSION_STRING, service_name);
-}
-
-static void session_send_motd(hybbx_session_core_t *core)
-{
-    const hybbx_texts_config_t *texts;
-    char welcome[HYBBX_USER_NAME_MAX + 16];
-
-    texts = hybbx_service_get_texts(core->service);
-    if (texts == NULL) {
-        return;
-    }
-
-    if (hybbx_texts_send_file(texts, &core->pub, HYBBX_TEXT_MOTD) != HYBBX_OK) {
-        hybbx_session_write_line(&core->pub, "(no motd available)");
-    }
-
-    snprintf(welcome, sizeof(welcome), "Welcome %s.", core->record.username);
-    hybbx_session_write_line(&core->pub, welcome);
 }
 
 static void session_process_line(hybbx_session_core_t *core, const char *line)
@@ -595,28 +639,33 @@ hybbx_result_t hybbx_session_open(hybbx_service_t *service,
     session_send_banner(core);
 
     if (auth->auto_login) {
-        rc = hybbx_storage_create_guest(storage, &core->user);
+        unsigned guest_slot = 0;
+
+        rc = hybbx_service_guest_assign(service, auth->guest_prefix,
+                                        &core->user, &guest_slot);
         if (rc != HYBBX_OK) {
             free(core);
             hybbx_service_release_node(service);
             return rc;
         }
 
-        rc = hybbx_storage_session_begin(storage, &core->user,
-                                         transport->name, &core->record);
+        rc = session_activate_guest(core, &core->user, guest_slot);
         if (rc != HYBBX_OK) {
             free(core);
             hybbx_service_release_node(service);
             return rc;
         }
 
-        core->logged_in = 1;
-        session_arm_guest_timer(core);
         printf("[session] auto-login %s on %s (session %llu)\n",
                core->record.username, transport->name,
                (unsigned long long)core->record.session_id);
+        hybbx_log_info("auto-login %s on %s (session %llu)",
+                       core->record.username, transport->name,
+                       (unsigned long long)core->record.session_id);
 
-        session_send_motd(core);
+        hybbx_session_show_prompt(&core->pub);
+    } else {
+        core->login_prompt = 1;
         hybbx_session_show_prompt(&core->pub);
     }
 
@@ -626,6 +675,7 @@ hybbx_result_t hybbx_session_open(hybbx_service_t *service,
         if (core->record.session_id != 0) {
             hybbx_storage_session_end(storage, core->record.session_id);
         }
+        session_release_guest_slot(core);
         free(core);
         hybbx_service_release_node(service);
         return HYBBX_ERR_NOMEM;
@@ -654,7 +704,12 @@ void hybbx_session_close(hybbx_session_t *session)
         printf("[session] %s disconnected (session %llu)\n",
                core->record.username,
                (unsigned long long)core->record.session_id);
+        hybbx_log_info("%s disconnected (session %llu)",
+                       core->record.username,
+                       (unsigned long long)core->record.session_id);
     }
+
+    session_release_guest_slot(core);
 
     if (core->service != NULL) {
         hybbx_service_detach_session(core->service, session);
@@ -686,6 +741,8 @@ hybbx_result_t hybbx_session_switch_user(hybbx_session_t *session,
         return HYBBX_ERR_INVALID;
     }
 
+    session_release_guest_slot(core);
+
     storage = hybbx_service_get_storage(core->service);
     if (storage == NULL) {
         return HYBBX_ERR_INVALID;
@@ -712,10 +769,14 @@ hybbx_result_t hybbx_session_switch_user(hybbx_session_t *session,
     core->record = new_record;
     core->guest_expires_at = 0;
     core->logged_in = 1;
+    core->login_prompt = 0;
 
     printf("[session] switched to %s on %s (session %llu)\n",
            core->record.username, transport_name,
            (unsigned long long)core->record.session_id);
+    hybbx_log_info("switched to %s on %s (session %llu)",
+                   core->record.username, transport_name,
+                   (unsigned long long)core->record.session_id);
 
     return HYBBX_OK;
 }
@@ -838,6 +899,38 @@ hybbx_user_level_t hybbx_session_user_level(const hybbx_session_t *session)
 int hybbx_session_is_guest(const hybbx_session_t *session)
 {
     return hybbx_user_level_is_guest(hybbx_session_user_level(session));
+}
+
+int hybbx_session_logged_in(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return 0;
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return 0;
+    }
+
+    return core->logged_in != 0;
+}
+
+int hybbx_session_login_prompt(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return 0;
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return 0;
+    }
+
+    return core->login_prompt != 0;
 }
 
 hybbx_session_area_t hybbx_session_area(const hybbx_session_t *session)

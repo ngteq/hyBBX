@@ -93,7 +93,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| Guest auto-login | Done | `Guest1`… prefix; optional timeout disconnect |
+| Guest auto-login | Done | `Guest1`…`Guest25`; max 25 simultaneous; optional timeout disconnect |
+| Guest sessions | Done | Ephemeral; auto-login on connect only (not via `/login`) |
 | User registration | Done | `/register` (guests, no password); staff proof mail |
 | Profile / password | Done | `/changeme` (own); `/userchange` (staff overwrite, 8–24 char password) |
 | Staff create user | Done | `/createuser` (Sysop, Admin) |
@@ -177,8 +178,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Feature | Status | Description |
 |---------|--------|-------------|
 | `banner.txt` | Done | Shown at connect; tokens `@version@`, `@service@` |
-| `motd.txt` | Done | After guest login; `/motd` |
-| `news.txt` | Done | `/news` |
+| `motd.txt` | Done | `/motd` only |
+| `news.txt` | Done | `/news` only |
 
 ---
 

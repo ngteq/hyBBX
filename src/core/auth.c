@@ -3,7 +3,10 @@
 #include "hybbx/util.h"
 
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 static int str_ieq(const char *a, const char *b)
 {
@@ -264,6 +267,71 @@ void hybbx_username_normalize(char *username)
             username[i] = (char)(username[i] + 32);
         }
     }
+}
+
+int hybbx_guest_slot_from_username(const char *guest_prefix,
+                                   const char *username,
+                                   unsigned *slot_out)
+{
+    const char *prefix;
+    size_t plen;
+    size_t i;
+    unsigned long slot;
+    char *end;
+
+    if (username == NULL || slot_out == NULL) {
+        return 0;
+    }
+
+    prefix = guest_prefix != NULL && guest_prefix[0] != '\0' ?
+             guest_prefix : HYBBX_AUTH_DEFAULT_GUEST_PREFIX;
+    plen = strlen(prefix);
+    if (plen == 0 || strlen(username) <= plen) {
+        return 0;
+    }
+
+    for (i = 0; i < plen; i++) {
+        char a = (char)(prefix[i] >= 'A' && prefix[i] <= 'Z' ?
+                        prefix[i] + 32 : prefix[i]);
+        char b = (char)(username[i] >= 'A' && username[i] <= 'Z' ?
+                        username[i] + 32 : username[i]);
+
+        if (a != b) {
+            return 0;
+        }
+    }
+
+    slot = strtoul(username + plen, &end, 10);
+    if (end == username + plen || *end != '\0' || slot < 1 ||
+        slot > HYBBX_GUEST_NUMBER_MAX) {
+        return 0;
+    }
+
+    *slot_out = (unsigned)slot;
+    return 1;
+}
+
+void hybbx_guest_fill_record(const char *guest_prefix,
+                             unsigned slot,
+                             hybbx_user_record_t *out)
+{
+    const char *prefix;
+    time_t now;
+
+    if (out == NULL || slot < 1 || slot > HYBBX_GUEST_NUMBER_MAX) {
+        return;
+    }
+
+    prefix = guest_prefix != NULL && guest_prefix[0] != '\0' ?
+             guest_prefix : HYBBX_AUTH_DEFAULT_GUEST_PREFIX;
+    now = time(NULL);
+
+    memset(out, 0, sizeof(*out));
+    out->id = HYBBX_GUEST_USER_ID(slot);
+    snprintf(out->username, sizeof(out->username), "%s%u", prefix, slot);
+    out->level = HYBBX_LEVEL_GUEST;
+    out->active = 1;
+    out->created_at = now;
 }
 
 int hybbx_username_valid(const char *username, const char *guest_prefix)

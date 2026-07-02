@@ -122,11 +122,27 @@ static int cmd_help_shows_deleteme(hybbx_user_level_t level)
 
 static const char *cmd_help_unknown(hybbx_session_t *session)
 {
-    if (hybbx_session_user_level(session) == HYBBX_LEVEL_GUEST) {
+    if (hybbx_session_is_guest(session) ||
+        (hybbx_session_login_prompt(session) &&
+         !hybbx_session_logged_in(session))) {
         return "Unknown command. Try /help.";
     }
 
     return "Unknown command. /help for list.";
+}
+
+static int cmd_verb_allowed_login_prompt(const char *verb)
+{
+    if (verb == NULL || verb[0] == '\0') {
+        return 1;
+    }
+
+    if (cmd_verb_allowed(HYBBX_LEVEL_GUEST, verb)) {
+        return 1;
+    }
+
+    return str_ieq(verb, "exit") || str_ieq(verb, "logout") ||
+           str_ieq(verb, "bye") || str_ieq(verb, "quit");
 }
 
 static hybbx_result_t cmd_check_access(hybbx_session_t *session,
@@ -135,6 +151,12 @@ static hybbx_result_t cmd_check_access(hybbx_session_t *session,
     hybbx_user_level_t level = hybbx_session_user_level(session);
 
     if (cmd_verb_allowed(level, verb)) {
+        return HYBBX_OK;
+    }
+
+    if (!hybbx_session_logged_in(session) &&
+        hybbx_session_login_prompt(session) &&
+        cmd_verb_allowed_login_prompt(verb)) {
         return HYBBX_OK;
     }
 
@@ -387,9 +409,11 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
     }
 
     if (str_ieq(canonical, "login")) {
-        cmd_help_topic_title(session, "/login", "log in as registered user");
+        cmd_help_topic_title(session, "/login", "log in (registered accounts)");
         cmd_help_topic_detail(session,
-            "  /login <username> <password>   account must be activated");
+            "  /login <username> <password>");
+        cmd_help_topic_detail(session,
+            "  guests use auto-login on connect; not available via /login");
         return HYBBX_OK;
     }
 
@@ -1075,9 +1099,11 @@ static hybbx_result_t cmd_register(hybbx_service_t *service,
                                    hybbx_session_t *session,
                                    const hybbx_parsed_command_t *cmd)
 {
-    if (!hybbx_auth_may_register(hybbx_session_user_level(session))) {
+    if (!hybbx_auth_may_register(hybbx_session_user_level(session)) &&
+        !(hybbx_session_login_prompt(session) &&
+          !hybbx_session_logged_in(session))) {
         hybbx_session_write_line(session,
-            "Only guests may self-register with /register.");
+            "Only guests or login-prompt sessions may self-register with /register.");
         return HYBBX_ERR_DENIED;
     }
 
@@ -1355,11 +1381,34 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
 {
     hybbx_storage_t *storage;
     hybbx_user_record_t user;
+    const hybbx_auth_config_t *auth;
+    const char *guest_prefix;
+    char username[HYBBX_USER_NAME_MAX];
+    unsigned guest_slot;
     hybbx_result_t rc;
 
-    if (cmd->argc < 2 || cmd->argv[0] == NULL || cmd->argv[0][0] == '\0' ||
-        cmd->argv[1] == NULL || cmd->argv[1][0] == '\0') {
-        hybbx_session_write_line(session, "Usage: /login <username> <password>");
+    if (cmd->argc < 1 || cmd->argv[0] == NULL || cmd->argv[0][0] == '\0') {
+        hybbx_session_write_line(session,
+            "Usage: /login <username> <password>");
+        return HYBBX_OK;
+    }
+
+    auth = hybbx_service_get_auth(service);
+    guest_prefix = auth != NULL ? auth->guest_prefix : HYBBX_AUTH_DEFAULT_GUEST_PREFIX;
+
+    hybbx_strlcpy(username, cmd->argv[0], sizeof(username));
+    hybbx_username_normalize(username);
+
+    if (hybbx_guest_slot_from_username(guest_prefix, username, &guest_slot)) {
+        hybbx_session_write_line(session,
+            "Guest access is automatic on connect (auto_login). "
+            "/login is for registered accounts only.");
+        return HYBBX_OK;
+    }
+
+    if (cmd->argc < 2 || cmd->argv[1] == NULL || cmd->argv[1][0] == '\0') {
+        hybbx_session_write_line(session,
+            "Usage: /login <username> <password>");
         return HYBBX_OK;
     }
 
@@ -1368,14 +1417,7 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
         return HYBBX_ERR_INVALID;
     }
 
-    {
-        char username[HYBBX_USER_NAME_MAX];
-
-        hybbx_strlcpy(username, cmd->argv[0], sizeof(username));
-        hybbx_username_normalize(username);
-
-        rc = hybbx_storage_find_user(storage, username, &user);
-    }
+    rc = hybbx_storage_find_user(storage, username, &user);
 
     if (rc == HYBBX_ERR_NOT_FOUND) {
         hybbx_session_write_line(session, "Unknown user.");
@@ -1386,7 +1428,8 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
     }
 
     if (hybbx_user_level_is_guest(user.level)) {
-        hybbx_session_write_line(session, "Use your guest session as-is.");
+        hybbx_session_write_line(session,
+            "Guests are ephemeral and use auto-login on connect.");
         return HYBBX_OK;
     }
 
@@ -1413,7 +1456,12 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
         return rc;
     }
 
-    hybbx_session_write_line(session, "Login successful.");
+    {
+        char welcome[HYBBX_USER_NAME_MAX + 16];
+
+        snprintf(welcome, sizeof(welcome), "Welcome %s.", user.username);
+        hybbx_session_write_line(session, welcome);
+    }
     if (user.password[0] == '\0') {
         hybbx_session_write_line(session,
             "Set your profile and password with /changeme.");

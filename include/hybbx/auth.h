@@ -4,6 +4,7 @@
 #include "hybbx/password.h"
 
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,8 +15,14 @@ extern "C" {
 /** Default guest name prefix: Guest1, Guest2, … */
 #define HYBBX_AUTH_DEFAULT_GUEST_PREFIX "Guest"
 
-/** Highest guest number issued (Guest1 … Guest111). */
-#define HYBBX_GUEST_NUMBER_MAX 111u
+/** Highest guest number issued (Guest1 … Guest25); max simultaneous guests. */
+#define HYBBX_GUEST_NUMBER_MAX 25u
+
+/**
+ * Synthetic user IDs for ephemeral guest sessions (not stored in user files).
+ * Slot @p n is 1 … @ref HYBBX_GUEST_NUMBER_MAX.
+ */
+#define HYBBX_GUEST_USER_ID(n) (0xffffffffffffff00ULL + (uint64_t)(n))
 
 #define HYBBX_USERNAME_MIN_LEN 4u
 #define HYBBX_USERNAME_MAX_LEN 12u
@@ -116,6 +123,21 @@ int hybbx_username_valid(const char *username, const char *guest_prefix);
 
 /** Fold @p username to lowercase in place (for case-insensitive storage). */
 void hybbx_username_normalize(char *username);
+
+/**
+ * Parse @p username as @c <guest_prefix><1-25> (case-insensitive prefix).
+ * Writes slot to @p slot_out. Returns 1 on match, else 0.
+ */
+int hybbx_guest_slot_from_username(const char *guest_prefix,
+                                   const char *username,
+                                   unsigned *slot_out);
+
+struct hybbx_user_record;
+
+/** Fill @p out with an ephemeral guest record for @p slot (1 … 25). */
+void hybbx_guest_fill_record(const char *guest_prefix,
+                             unsigned slot,
+                             struct hybbx_user_record *out);
 
 #ifdef __cplusplus
 }

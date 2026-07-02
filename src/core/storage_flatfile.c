@@ -905,46 +905,11 @@ void hybbx_storage_flatfile_close(hybbx_storage_t *storage)
 hybbx_result_t hybbx_storage_flatfile_create_guest(hybbx_storage_t *storage,
                                                    hybbx_user_record_t *out)
 {
-    struct flatfile_state *state = storage->backend_data;
-    uint64_t guest_index;
-    uint64_t guest_number;
-    uint64_t user_id;
-    time_t now = time(NULL);
-    hybbx_result_t rc;
+    (void)storage;
+    (void)out;
 
-    if (state == NULL || out == NULL) {
-        return HYBBX_ERR_INVALID;
-    }
-
-    rc = read_counter(state->guest_next_path, &guest_index);
-    if (rc != HYBBX_OK) {
-        return rc;
-    }
-
-    guest_number = guest_index + 1;
-    if (guest_number > HYBBX_GUEST_NUMBER_MAX) {
-        return HYBBX_ERR_BUSY;
-    }
-
-    rc = bump_counter(state->user_next_path, &user_id);
-    if (rc != HYBBX_OK) {
-        return rc;
-    }
-
-    memset(out, 0, sizeof(*out));
-    out->id = user_id;
-    snprintf(out->username, sizeof(out->username), "%s%llu",
-             storage->guest_prefix, (unsigned long long)guest_number);
-    out->level = HYBBX_LEVEL_GUEST;
-    out->active = 1;
-    out->created_at = now;
-
-    rc = append_user_record(state, out);
-    if (rc != HYBBX_OK) {
-        return rc;
-    }
-
-    return write_counter(state->guest_next_path, guest_number);
+    /* Guests are ephemeral (service-layer slots); not stored in user files. */
+    return HYBBX_ERR_INVALID;
 }
 
 hybbx_result_t hybbx_storage_flatfile_find_user(hybbx_storage_t *storage,

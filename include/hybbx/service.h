@@ -84,6 +84,20 @@ unsigned hybbx_service_active_nodes(const hybbx_service_t *service);
 /** Guest auto-disconnect timeout in seconds (from INI minutes setting). */
 unsigned hybbx_service_guest_timeout_seconds(const hybbx_service_t *service);
 
+struct hybbx_user_record;
+
+/**
+ * Assign the lowest free ephemeral guest slot (Guest1 … Guest25).
+ * Guests are not written to user files.
+ */
+hybbx_result_t hybbx_service_guest_assign(hybbx_service_t *service,
+                                          const char *guest_prefix,
+                                          struct hybbx_user_record *out,
+                                          unsigned *slot_out);
+
+/** Release a guest slot when the session ends or leaves guest mode. */
+void hybbx_service_guest_release(hybbx_service_t *service, unsigned slot);
+
 /**
  * Reserve one node slot for a new connection.
  * @return HYBBX_ERR_BUSY when @ref hybbx_service_max_online is reached.

@@ -21,7 +21,10 @@ typedef enum hybbx_session_area {
 
 /**
  * Open a new connection session.
- * When auto-login is enabled (default), assigns Guest1, Guest2, … Guest111.
+ * When auto-login is enabled (default), assigns the next free Guest1 … Guest25
+ * slot in memory (not written to user files).
+ * When auto-login is disabled, the session stays at a login prompt for
+ * registered `/login` and `/register` only (no guest slots).
  */
 hybbx_result_t hybbx_session_open(struct hybbx_service *service,
                                   const hybbx_transport_plugin_t *transport,
@@ -38,6 +41,10 @@ uint64_t hybbx_session_id(const hybbx_session_t *session);
 const hybbx_session_record_t *hybbx_session_record(const hybbx_session_t *session);
 hybbx_user_level_t hybbx_session_user_level(const hybbx_session_t *session);
 int hybbx_session_is_guest(const hybbx_session_t *session);
+/** Non-zero when the session has completed login (guest or registered). */
+int hybbx_session_logged_in(const hybbx_session_t *session);
+/** Non-zero when auto_login is off: banner + prompt, registered login only. */
+int hybbx_session_login_prompt(const hybbx_session_t *session);
 
 /** Write raw text to the connected client (no line ending, no prompt). */
 hybbx_result_t hybbx_session_write(hybbx_session_t *session, const char *text);

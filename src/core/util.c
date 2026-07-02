@@ -6,7 +6,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
+
+#if !defined(HYBBX_CLIENT_BUILD)
+#include "hybbx/config.h"
+#endif
 
 static int bool_token_ieq(const char *value, const char *token)
 {
@@ -261,6 +266,140 @@ hybbx_result_t hybbx_path_join(char *out, size_t out_len,
     need_slash = base_len > 0 && base[base_len - 1] != '/';
     written = snprintf(out, out_len, "%s%s%s", base, need_slash ? "/" : "", name);
     if (written < 0 || (size_t)written >= out_len) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    return HYBBX_OK;
+}
+
+static hybbx_time_format_t g_time_format;
+static int g_time_format_ready;
+
+void hybbx_time_format_defaults(hybbx_time_format_t *fmt)
+{
+    if (fmt == NULL) {
+        return;
+    }
+
+    fmt->clock_12h = 0;
+    fmt->seconds = 0;
+}
+
+const hybbx_time_format_t *hybbx_time_format_get(void)
+{
+    if (!g_time_format_ready) {
+        hybbx_time_format_defaults(&g_time_format);
+        g_time_format_ready = 1;
+    }
+
+    return &g_time_format;
+}
+
+#if !defined(HYBBX_CLIENT_BUILD)
+void hybbx_time_config_apply(const struct hybbx_config *config)
+{
+    const char *clock;
+    int clock_12h;
+
+    hybbx_time_format_defaults(&g_time_format);
+
+    if (config != NULL) {
+        clock_12h = hybbx_config_get_bool(config, "time", "clock_12h", 0);
+        if (!clock_12h) {
+            clock_12h = hybbx_config_get_bool(config, "time", "am_pm", 0);
+        }
+
+        clock = hybbx_config_get(config, "time", "clock", NULL);
+        if (clock != NULL && clock[0] != '\0') {
+            if (bool_token_ieq(clock, "12h") || bool_token_ieq(clock, "12") ||
+                bool_token_ieq(clock, "am_pm") || bool_token_ieq(clock, "am/pm")) {
+                clock_12h = 1;
+            } else if (bool_token_ieq(clock, "24h") || bool_token_ieq(clock, "24")) {
+                clock_12h = 0;
+            }
+        }
+
+        g_time_format.clock_12h = clock_12h;
+        g_time_format.seconds =
+            hybbx_config_get_bool(config, "time", "seconds", 0);
+    }
+
+    g_time_format_ready = 1;
+
+    printf("[time] clock=%s seconds=%s\n",
+           g_time_format.clock_12h ? "12h" : "24h",
+           hybbx_bool_to_string(g_time_format.seconds));
+}
+#else
+void hybbx_time_config_apply(const struct hybbx_config *config)
+{
+    (void)config;
+    hybbx_time_format_defaults(&g_time_format);
+    g_time_format_ready = 1;
+}
+#endif
+
+hybbx_result_t hybbx_time_format_stamp(char *out, size_t out_len,
+                                       const struct tm *tm,
+                                       const hybbx_time_format_t *fmt)
+{
+    int year;
+    int month;
+    int day;
+    int hour;
+    int minute;
+    int second;
+    const char *suffix;
+    int n;
+
+    if (out == NULL || out_len == 0 || tm == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (fmt == NULL) {
+        fmt = hybbx_time_format_get();
+    }
+
+    year = tm->tm_year + 1900;
+    month = tm->tm_mon + 1;
+    day = tm->tm_mday;
+    hour = tm->tm_hour;
+    minute = tm->tm_min;
+    second = tm->tm_sec;
+    suffix = "";
+
+    if (fmt->clock_12h) {
+        if (hour >= 12) {
+            suffix = "pm";
+            if (hour > 12) {
+                hour -= 12;
+            }
+        } else {
+            suffix = "am";
+            if (hour == 0) {
+                hour = 12;
+            }
+        }
+    }
+
+    if (fmt->clock_12h) {
+        if (fmt->seconds) {
+            n = snprintf(out, out_len, "%04d%02d%02d %02d:%02d:%02d %s",
+                         year, month, day, hour, minute, second, suffix);
+        } else {
+            n = snprintf(out, out_len, "%04d%02d%02d %02d:%02d %s",
+                         year, month, day, hour, minute, suffix);
+        }
+    } else if (fmt->seconds) {
+        n = snprintf(out, out_len, "%04d%02d%02d %02d:%02d:%02d",
+                     year, month, day, hour, minute, second);
+    } else {
+        n = snprintf(out, out_len, "%04d%02d%02d %02d:%02d",
+                     year, month, day, hour, minute);
+    }
+
+    if (n < 0 || (size_t)n >= out_len) {
+        out[0] = '\0';
         return HYBBX_ERR_INVALID;
     }
 
