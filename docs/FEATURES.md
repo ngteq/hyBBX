@@ -21,6 +21,9 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | INI configuration | Done | `-c` / `--config`; sections for service, storage, auth, traffic, transports |
 | `[networks]` switches | Done | `ax25`, `websocket`, `circuit`; datacenter Main defaults: TCP/IP + HBX only |
 | Service lifecycle | Done | Load config, start circuit hub and enabled transports, run until shutdown |
+| Sysop `/shutdown` / `/restart` | Done | Stop daemon or re-exec with same `-c` config |
+| `security.log` | Done | Fail2ban-friendly audit log in `[log] dir` (login/link auth failures, Sysop actions) |
+| fail2ban examples | Done | `share/fail2ban/` — telnet, circuit; SSH/WebSocket stubs for after v1.0.0 |
 | Session model | Done | Per-connection BBS-inspired session; node limit (`max_online` / `nodes`) |
 | 2400 baud traffic layer | Done | 80-column wrap, paced 8N1 output, optional ANSI; tuned for slow links |
 | Boolean config standard | Done | Canonical `yes`/`no`; aliases `true`/`false`, `enable`/`disable`, `on`/`off`, `1`/`0` |
@@ -61,8 +64,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Auto-generated link codes | Done | Issued on successful Secondary→Main `LINK_AUTH` |
 | Telnet dual-stack bind | Done | `ipv4`/`ipv6` toggles; `bind` / `bind6`; `IPV6_V6ONLY` |
 | Packet radio | Done | AX.25 link adapter; `[networks] ax25 = yes` + `[transport.packet_radio]` |
-| SSH | Planned | Same session core as telnet |
-| WebSocket | Planned | Local endpoint behind reverse-proxy only |
+| SSH | After v1.0.0 | Same session core as telnet |
+| WebSocket | After v1.0.0 | Local endpoint behind reverse-proxy only |
 
 ---
 
@@ -142,6 +145,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | `/leave` (`/back`) | Done | One level up in the area stack |
 | `/main` (`/menu`) | Done | Return to main from any depth |
 | `/activate`, `/promote`, `/demote`, `/delete` | Done | Staff administration |
+| `/shutdown`, `/restart` | Done | Sysop stop or re-exec the daemon |
 | `/deleteme` | Done | Delete own account (confirmed) |
 | `/exit` (`/quit`, `/bye`, `/logout`) | Done | Disconnect |
 
@@ -221,8 +225,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Main/secondary bridge | Done | HBX/TCP `LINK_AUTH`; templates in `share/` |
 | Multi-link hub | Planned | Several secondaries → one main; `[transport.packet_radioN]` bridge registry on Main |
 | Secondary modes | Partial | Secondary INI + `link_role` metadata; role routing planned |
-| SSH transport | Planned | Same session core as telnet |
-| WebSocket transport | Planned | Reverse-proxy only |
+| SSH transport | After v1.0.0 | Same session core as telnet |
+| WebSocket transport | After v1.0.0 | Reverse-proxy only |
 | SQL storage | Planned | SQLite, MySQL/MariaDB on core |
 | HBX APRS / NETROM | Planned | Reserved protocol IDs on internal circuit |
 | BayCom `ser12` path | Planned | Use `kissattach` + KISS until documented |

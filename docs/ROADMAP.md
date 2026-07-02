@@ -1,6 +1,8 @@
 # HyBBX roadmap
 
-Planned work on the **0.7.x** line. Per-version `docs/RELEASE-*` freeze/scope files are introduced at **v1.0.0** (generated then, not maintained before).
+Planned work on the **0.7.x** line toward **v1.0.0** — the **first GitHub release**. Per-version `docs/RELEASE-*` freeze/scope files are introduced at **v1.0.0** (generated then, not maintained before).
+
+**Out of v1.0.0 scope:** SSH and WebSocket session transports — planned **after v1.0.0** ships.
 
 ## Architecture
 
@@ -148,15 +150,20 @@ Short token after successful Secondary→Main `LINK_AUTH` handshake (`LINK_AUTH_
 
 ---
 
-## Other planned items
+## Other planned items (v1.0.0 and earlier)
 
 | Item | Notes |
 |------|-------|
 | Multi-link hub | See table above |
-| SSH transport | Secondary or Main session access |
-| WebSocket | Behind reverse-proxy |
 | SQL storage | On **Main** only |
 | HBX protocols | APRS, NETROM reserved IDs |
 | BayCom `ser12` | Use `kissattach` + KISS until documented |
+
+## After v1.0.0 (first GitHub release)
+
+| Item | Notes |
+|------|-------|
+| SSH transport | Secondary or Main session access; same session core as telnet |
+| WebSocket transport | Local endpoint behind reverse-proxy (Apache/nginx) |
 
 See also [FEATURES.md — Roadmap](FEATURES.md#roadmap-not-yet-implemented).

@@ -27,7 +27,7 @@ typedef enum hybbx_transport_kind {
     HYBBX_TRANSPORT_TELNET = 1,
     HYBBX_TRANSPORT_PACKET_RADIO = 2,
     HYBBX_TRANSPORT_CIRCUIT = 3,
-    /* HYBBX_TRANSPORT_SSH = 4,  -- planned */
+    /* HYBBX_TRANSPORT_SSH = 4,  -- after v1.0.0 */
 } hybbx_transport_kind_t;
 
 #ifdef __cplusplus

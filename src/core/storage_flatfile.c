@@ -440,6 +440,11 @@ static int parse_user_section(const hybbx_config_t *cfg, const char *section,
         hybbx_strlcpy(out->password, value, sizeof(out->password));
     }
 
+    value = hybbx_config_get(cfg, section, "last_login", NULL);
+    if (value != NULL && value[0] != '\0') {
+        out->last_login_at = (time_t)strtoll(value, NULL, 10);
+    }
+
     return 1;
 }
 
@@ -562,7 +567,8 @@ static hybbx_result_t save_user_shard(const struct flatfile_state *state,
         fprintf(fp, "country = %s\n", user->country);
         fprintf(fp, "location = %s\n", user->location);
         fprintf(fp, "email = %s\n", user->email);
-        fprintf(fp, "password = %s\n\n", user->password);
+        fprintf(fp, "password = %s\n", user->password);
+        fprintf(fp, "last_login = %lld\n", (long long)user->last_login_at);
 
         if (user->nickname[0] != '\0') {
             (void)write_nickname_file(state, user->username, user->nickname);

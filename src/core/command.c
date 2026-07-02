@@ -7,6 +7,8 @@
 #include "hybbx/auth.h"
 #include "hybbx/chat.h"
 #include "hybbx/mail.h"
+#include "hybbx/security.h"
+#include "hybbx/service.h"
 #include "hybbx/password.h"
 #include "hybbx/traffic.h"
 #include "hybbx/util.h"
@@ -104,6 +106,10 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
     if (str_ieq(verb, "promote") || str_ieq(verb, "demote") ||
         str_ieq(verb, "delete") || str_ieq(verb, "del")) {
         return level == HYBBX_LEVEL_SYSOP || level == HYBBX_LEVEL_ADMIN;
+    }
+
+    if (str_ieq(verb, "shutdown") || str_ieq(verb, "restart")) {
+        return hybbx_user_level_is_sysop(level);
     }
 
     return 0;
@@ -229,6 +235,7 @@ static void cmd_help_staff(hybbx_session_t *session, hybbx_user_level_t level)
         if (level == HYBBX_LEVEL_SYSOP) {
             cmd_help_continuation(session,
                 "/promote  /demote  /delete  /userdelete");
+            cmd_help_continuation(session, "/shutdown  /restart");
         } else {
             cmd_help_continuation(session, "/promote  /demote  /delete");
         }
@@ -535,6 +542,27 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         cmd_help_topic_detail(session, "  /userdelete <username>");
         cmd_help_topic_detail(session,
             "  cannot delete your own account or the Sysop account");
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(canonical, "shutdown")) {
+        if (!hybbx_user_level_is_sysop(level)) {
+            cmd_deny_privilege(session);
+            return HYBBX_OK;
+        }
+        cmd_help_topic_title(session, "/shutdown", "stop the HyBBX daemon (Sysop)");
+        cmd_help_topic_detail(session, "  /shutdown");
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(canonical, "restart")) {
+        if (!hybbx_user_level_is_sysop(level)) {
+            cmd_deny_privilege(session);
+            return HYBBX_OK;
+        }
+        cmd_help_topic_title(session, "/restart",
+                             "restart the HyBBX daemon (Sysop)");
+        cmd_help_topic_detail(session, "  /restart");
         return HYBBX_OK;
     }
 
@@ -1567,6 +1595,14 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
     }
 
     if (!hybbx_password_match(user.password, cmd->argv[1])) {
+        const hybbx_session_record_t *rec = hybbx_session_record(session);
+
+        hybbx_security_log_write("login_fail ip=%s user=%s transport=%s",
+                                 rec != NULL && rec->remote[0] != '\0' ?
+                                 rec->remote : "?",
+                                 username,
+                                 rec != NULL && rec->transport[0] != '\0' ?
+                                 rec->transport : "?");
         hybbx_session_write_line(session, "Invalid password.");
         return HYBBX_OK;
     }
@@ -1578,12 +1614,18 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
     }
 
     {
+        time_t since_login = user.last_login_at;
         const hybbx_texts_config_t *texts;
 
         texts = hybbx_service_get_texts(service);
         if (texts != NULL) {
             (void)hybbx_texts_send_motd(texts, session);
         }
+
+        hybbx_mail_announce_since_last_login(service, session, since_login);
+
+        user.last_login_at = time(NULL);
+        (void)hybbx_storage_update_user(storage, &user);
     }
     hybbx_session_show_prompt(session);
     return HYBBX_OK;
@@ -1877,6 +1919,46 @@ static hybbx_result_t cmd_exit(hybbx_session_t *session)
     return HYBBX_SESSION_END;
 }
 
+static hybbx_result_t cmd_shutdown(hybbx_service_t *service,
+                                   hybbx_session_t *session)
+{
+    if (!hybbx_user_level_is_sysop(hybbx_session_user_level(session))) {
+        cmd_deny_privilege(session);
+        return HYBBX_ERR_DENIED;
+    }
+
+    hybbx_security_log_write("shutdown ip=%s user=%s transport=%s",
+                             hybbx_session_record(session) != NULL &&
+                             hybbx_session_record(session)->remote[0] != '\0' ?
+                             hybbx_session_record(session)->remote : "?",
+                             hybbx_session_display_name(session),
+                             hybbx_session_record(session) != NULL ?
+                             hybbx_session_record(session)->transport : "?");
+    hybbx_session_write_line(session, "Shutting down HyBBX.");
+    hybbx_service_request_shutdown(service, 0);
+    return HYBBX_OK;
+}
+
+static hybbx_result_t cmd_restart(hybbx_service_t *service,
+                                  hybbx_session_t *session)
+{
+    if (!hybbx_user_level_is_sysop(hybbx_session_user_level(session))) {
+        cmd_deny_privilege(session);
+        return HYBBX_ERR_DENIED;
+    }
+
+    hybbx_security_log_write("restart ip=%s user=%s transport=%s",
+                             hybbx_session_record(session) != NULL &&
+                             hybbx_session_record(session)->remote[0] != '\0' ?
+                             hybbx_session_record(session)->remote : "?",
+                             hybbx_session_display_name(session),
+                             hybbx_session_record(session) != NULL ?
+                             hybbx_session_record(session)->transport : "?");
+    hybbx_session_write_line(session, "Restarting HyBBX.");
+    hybbx_service_request_shutdown(service, 1);
+    return HYBBX_OK;
+}
+
 static hybbx_result_t cmd_version(hybbx_session_t *session)
 {
     char buf[128];
@@ -2036,6 +2118,14 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
 
     if (str_ieq(cmd->verb, "deleteme")) {
         return cmd_deleteme(service, session, cmd);
+    }
+
+    if (str_ieq(cmd->verb, "shutdown")) {
+        return cmd_shutdown(service, session);
+    }
+
+    if (str_ieq(cmd->verb, "restart")) {
+        return cmd_restart(service, session);
     }
 
     if (str_ieq(cmd->verb, "exit") || str_ieq(cmd->verb, "logout") ||

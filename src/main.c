@@ -241,7 +241,13 @@ int main(int argc, char *argv[])
         fprintf(stderr, "No transports will listen without a config file.\n");
     }
 
+    hybbx_service_set_launch_binary(service, argv[0]);
+
     hybbx_service_run(service);
+
+    if (hybbx_service_shutdown_mode(service) == HYBBX_SHUTDOWN_RESTART) {
+        hybbx_service_restart_exec(service);
+    }
 
     if (have_config) {
         hybbx_config_free(&config);

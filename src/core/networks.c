@@ -82,7 +82,7 @@ void hybbx_networks_config_apply(hybbx_networks_config_t *networks,
                                                   1);
     }
 
-    printf("[networks] telnet=static ssh=static ax25=%s websocket=%s circuit=%s\n",
+    printf("[networks] telnet=static ax25=%s websocket=%s circuit=%s\n",
            hybbx_bool_to_string(networks->ax25),
            hybbx_bool_to_string(networks->websocket),
            hybbx_bool_to_string(networks->circuit));
@@ -94,7 +94,7 @@ int hybbx_networks_is_static_transport(const char *plugin_name)
         return 0;
     }
 
-    return str_ieq(plugin_name, "telnet") || str_ieq(plugin_name, "ssh");
+    return str_ieq(plugin_name, "telnet");
 }
 
 int hybbx_networks_transport_wanted(const char *plugin_name,

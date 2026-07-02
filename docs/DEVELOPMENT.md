@@ -42,7 +42,7 @@ Application (session, commands, storage)
         ↕ byte stream
 Internal TCP (IPv4/IPv6) + HBX v1 framing ([circuit])
         ↕
-Link adapters: telnet | packet_radio | (future ssh, ws)
+Link adapters: telnet | packet_radio | (ssh, ws after v1.0.0)
 ```
 
 - **Do not** add KISS, AX.25, or telnet protocol parsing to `src/core/`.

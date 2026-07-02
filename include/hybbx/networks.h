@@ -11,14 +11,14 @@ extern "C" {
 /**
  * Connection / link adapter switches from INI `[networks]`.
  *
- * Telnet and SSH are static-enabled core IP session transports (always on
- * when the plugin is built). AX.25 and other optional adapters are toggled
- * here; see @ref hybbx_networks_transport_wanted.
+ * Telnet is the static-enabled core IP session transport (always on when built).
+ * AX.25, WebSocket, and other optional adapters are toggled here; SSH and
+ * WebSocket transports are planned after v1.0.0 — see docs/ROADMAP.md.
  */
 typedef struct hybbx_networks_config {
     /** AX.25 / packet radio link adapter (`transport.packet_radio`). */
     int ax25;
-    /** WebSocket transport (planned). */
+    /** WebSocket transport (after v1.0.0). */
     int websocket;
     /** Internal HBX circuit hub for edge link/repeater daemons. */
     int circuit;
@@ -31,8 +31,8 @@ void hybbx_networks_config_apply(hybbx_networks_config_t *networks,
                                  const hybbx_config_t *config);
 
 /**
- * Non-zero when @p plugin_name is a static core transport (telnet, ssh).
- * These ignore `[transport.*] enabled` and are started when built.
+ * Non-zero when @p plugin_name is the static core transport (telnet).
+ * Ignores `[transport.*] enabled` and is started when built.
  */
 int hybbx_networks_is_static_transport(const char *plugin_name);
 

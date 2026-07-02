@@ -66,6 +66,15 @@ void hybbx_mail_list_inbox_range(struct hybbx_service *service,
                                  unsigned from, unsigned to);
 
 /**
+ * After login: if mail arrived since @p since_login, announce the count.
+ * No output when mail is disabled, the user is a guest, or the count is zero.
+ * @p since_login 0 means first login (all inbox messages count as new).
+ */
+void hybbx_mail_announce_since_last_login(struct hybbx_service *service,
+                                          struct hybbx_session *session,
+                                          time_t since_login);
+
+/**
  * Parse @p spec as @c from-to (e.g. @c 1-15 , @c 5-20 ) or a single index.
  * Returns 0 on invalid input.
  */

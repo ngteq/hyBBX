@@ -903,6 +903,24 @@ const hybbx_session_record_t *hybbx_session_record(const hybbx_session_t *sessio
     return &core->record;
 }
 
+hybbx_result_t hybbx_session_set_remote(hybbx_session_t *session,
+                                        const char *remote)
+{
+    hybbx_session_core_t *core;
+
+    if (session == NULL || remote == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    hybbx_strlcpy(core->record.remote, remote, sizeof(core->record.remote));
+    return HYBBX_OK;
+}
+
 hybbx_user_level_t hybbx_session_user_level(const hybbx_session_t *session)
 {
     const hybbx_session_core_t *core;

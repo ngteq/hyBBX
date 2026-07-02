@@ -17,6 +17,7 @@
 #include "hybbx/mail.h"
 #include "hybbx/networks.h"
 #include "hybbx/log.h"
+#include "hybbx/security.h"
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
 
@@ -24,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #if defined(_WIN32)
 #include <windows.h>
 #else
@@ -81,6 +83,8 @@ struct hybbx_service_internal {
     size_t transport_count;
     hybbx_circuit_hub_t *circuit_hub;
     int running;
+    hybbx_shutdown_mode_t shutdown_mode;
+    char launch_binary[HYBBX_PATH_MAX];
     pthread_mutex_t guest_lock;
     unsigned char guest_in_use[HYBBX_GUEST_NUMBER_MAX + 1];
 };
@@ -149,6 +153,7 @@ void hybbx_service_destroy(hybbx_service_t *service)
     }
 
     hybbx_log_shutdown();
+    hybbx_security_log_shutdown();
 
     {
         hybbx_attached_session_t *node = svc->sessions;
@@ -840,6 +845,85 @@ void hybbx_service_stop(hybbx_service_t *service)
     }
 }
 
+void hybbx_service_set_launch_binary(hybbx_service_t *service, const char *argv0)
+{
+    struct hybbx_service_internal *svc =
+        (struct hybbx_service_internal *)service;
+
+    if (svc == NULL) {
+        return;
+    }
+
+    svc->launch_binary[0] = '\0';
+    if (argv0 != NULL && argv0[0] != '\0') {
+        hybbx_strlcpy(svc->launch_binary, argv0, sizeof(svc->launch_binary));
+    }
+}
+
+void hybbx_service_request_shutdown(hybbx_service_t *service, int restart)
+{
+    struct hybbx_service_internal *svc =
+        (struct hybbx_service_internal *)service;
+
+    if (svc == NULL) {
+        return;
+    }
+
+    svc->shutdown_mode = restart ? HYBBX_SHUTDOWN_RESTART : HYBBX_SHUTDOWN_STOP;
+    hybbx_service_stop(service);
+}
+
+hybbx_shutdown_mode_t hybbx_service_shutdown_mode(const hybbx_service_t *service)
+{
+    const struct hybbx_service_internal *svc =
+        (const struct hybbx_service_internal *)service;
+
+    if (svc == NULL) {
+        return HYBBX_SHUTDOWN_NONE;
+    }
+
+    return svc->shutdown_mode;
+}
+
+const char *hybbx_service_config_path(const hybbx_service_t *service)
+{
+    const struct hybbx_service_internal *svc =
+        (const struct hybbx_service_internal *)service;
+
+    if (svc == NULL || svc->config_path[0] == '\0') {
+        return NULL;
+    }
+
+    return svc->config_path;
+}
+
+void hybbx_service_restart_exec(const hybbx_service_t *service)
+{
+    const struct hybbx_service_internal *svc =
+        (const struct hybbx_service_internal *)service;
+    const char *binary;
+    const char *config_path;
+    char *argv[4];
+    char opt_c[] = "-c";
+
+    if (svc == NULL) {
+        return;
+    }
+
+    binary = svc->launch_binary[0] != '\0' ? svc->launch_binary : "hybbx";
+    config_path = svc->config_path[0] != '\0' ? svc->config_path : NULL;
+
+    argv[0] = (char *)binary;
+    if (config_path != NULL) {
+        argv[1] = opt_c;
+        argv[2] = (char *)config_path;
+        argv[3] = NULL;
+    } else {
+        argv[1] = NULL;
+    }
+    perror("hybbx restart failed");
+}
+
 typedef struct apply_transport_ctx {
     hybbx_service_t *service;
     const hybbx_config_t *config;
@@ -926,6 +1010,7 @@ hybbx_result_t hybbx_service_apply_config(hybbx_service_t *service,
     service_apply_auth(svc, config);
     hybbx_time_config_apply(config);
     hybbx_log_config_apply(config);
+    hybbx_security_log_config_apply(config);
     service_apply_texts(svc, config);
     hybbx_chat_config_apply(&svc->chat, config);
     service_apply_service(svc, config);

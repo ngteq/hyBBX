@@ -6,6 +6,8 @@
 #include "hybbx/circuit.h"
 #include "hybbx/session.h"
 #include "hybbx/service.h"
+#include "hybbx/security.h"
+#include "hybbx/storage.h"
 #include "hybbx/traffic.h"
 #include "hybbx/link.h"
 #include "hybbx/password.h"
@@ -274,6 +276,33 @@ typedef struct circuit_auth_ctx {
     hybbx_link_auth_t auth;
 } circuit_auth_ctx_t;
 
+static void circuit_log_auth_fail(const hybbx_circuit_hub_t *hub,
+                                  const char *reason, const char *id)
+{
+    char ip[HYBBX_REMOTE_ADDR_MAX];
+    int fd;
+
+    if (hub == NULL || reason == NULL) {
+        return;
+    }
+
+    fd = hub->link_fd;
+    if (fd >= 0 && hybbx_socket_peer_name(fd, ip, sizeof(ip)) == HYBBX_OK) {
+        if (id != NULL && id[0] != '\0') {
+            hybbx_security_log_write(
+                "link_auth_fail ip=%s id=%s reason=%s transport=circuit",
+                ip, id, reason);
+        } else {
+            hybbx_security_log_write(
+                "link_auth_fail ip=%s reason=%s transport=circuit",
+                ip, reason);
+        }
+    } else {
+        hybbx_security_log_write(
+            "link_auth_fail ip=? reason=%s transport=circuit", reason);
+    }
+}
+
 static void circuit_on_auth_frame(hybbx_circuit_proto_t proto, uint16_t flags,
                                   const uint8_t *payload, size_t len,
                                   void *userdata)
@@ -295,6 +324,7 @@ static void circuit_on_auth_frame(hybbx_circuit_proto_t proto, uint16_t flags,
     }
 
     if (hybbx_link_auth_parse((const char *)payload, len, &ctx->auth) != HYBBX_OK) {
+        circuit_log_auth_fail(ctx->hub, "invalid", NULL);
         ctx->done = 1;
         ctx->ok = 0;
         return;
@@ -304,6 +334,7 @@ static void circuit_on_auth_frame(hybbx_circuit_proto_t proto, uint16_t flags,
         ctx->hub->link_password[0] != '\0' &&
         !hybbx_password_match(ctx->hub->link_password, ctx->auth.password)) {
         fprintf(stderr, "[circuit] link auth failed for id=%s\n", ctx->auth.id);
+        circuit_log_auth_fail(ctx->hub, "password", ctx->auth.id);
         ctx->done = 1;
         ctx->ok = 0;
         return;
@@ -311,6 +342,7 @@ static void circuit_on_auth_frame(hybbx_circuit_proto_t proto, uint16_t flags,
 
     if (ctx->hub->link_auth && ctx->hub->link_password[0] == '\0') {
         fprintf(stderr, "[circuit] link auth rejected: link_password not set\n");
+        circuit_log_auth_fail(ctx->hub, "no_password", ctx->auth.id);
         ctx->done = 1;
         ctx->ok = 0;
         return;
@@ -393,6 +425,10 @@ static int circuit_wait_link_auth(hybbx_circuit_hub_t *hub)
                                    circuit_on_auth_frame, &ctx);
     }
 
+    if (!ctx.done) {
+        circuit_log_auth_fail(hub, "timeout", NULL);
+    }
+
     return ctx.ok;
 }
 
@@ -420,6 +456,16 @@ static void *circuit_link_thread(void *arg)
         fprintf(stderr, "[circuit] session open failed\n");
         circuit_close_link(hub);
         return NULL;
+    }
+
+    {
+        char remote[HYBBX_REMOTE_ADDR_MAX];
+        int fd = hub->link_fd;
+
+        if (fd >= 0 &&
+            hybbx_socket_peer_name(fd, remote, sizeof(remote)) == HYBBX_OK) {
+            (void)hybbx_session_set_remote(hub->session, remote);
+        }
     }
 
     printf("[circuit] link adapter attached (HBX bridge active)\n");

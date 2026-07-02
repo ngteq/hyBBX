@@ -734,6 +734,72 @@ void hybbx_mail_list_inbox_range(hybbx_service_t *service,
     mail_list_print(service, session, entries, count, from, to);
 }
 
+void hybbx_mail_announce_since_last_login(hybbx_service_t *service,
+                                            hybbx_session_t *session,
+                                            time_t since_login)
+{
+    const hybbx_mail_config_t *mail;
+    hybbx_mail_entry_t entries[HYBBX_MAIL_MAX_MESSAGES];
+    char inbox[HYBBX_PATH_MAX];
+    char line[96];
+    size_t count;
+    size_t i;
+    size_t new_count = 0;
+    hybbx_result_t rc;
+
+    if (service == NULL || session == NULL) {
+        return;
+    }
+
+    if (hybbx_session_is_guest(session)) {
+        return;
+    }
+
+    mail = hybbx_service_get_mail(service);
+    if (mail == NULL || !mail->enabled) {
+        return;
+    }
+
+    rc = mail_ensure_root(mail);
+    if (rc != HYBBX_OK) {
+        return;
+    }
+
+    rc = mail_user_inbox_path(mail, hybbx_session_username(session),
+                              inbox, sizeof(inbox));
+    if (rc != HYBBX_OK) {
+        return;
+    }
+
+    (void)mail_purge_user_recycle(mail, hybbx_session_username(session));
+
+    rc = load_inbox(inbox, entries, HYBBX_MAIL_MAX_MESSAGES, &count);
+    if (rc != HYBBX_OK || count == 0) {
+        return;
+    }
+
+    for (i = 0; i < count; i++) {
+        if (since_login == 0 || entries[i].received_at > since_login) {
+            new_count++;
+        }
+    }
+
+    if (new_count == 0) {
+        return;
+    }
+
+    if (new_count == 1) {
+        snprintf(line, sizeof(line),
+                 "You have 1 new message since your last login. (/mail)");
+    } else {
+        snprintf(line, sizeof(line),
+                 "You have %zu new messages since your last login. (/mail)",
+                 new_count);
+    }
+
+    hybbx_session_write_line(session, line);
+}
+
 int hybbx_mail_parse_list_range(const char *spec,
                                 unsigned *from, unsigned *to)
 {

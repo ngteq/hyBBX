@@ -27,6 +27,8 @@ typedef enum hybbx_storage_backend_kind {
 #define HYBBX_USER_EMAIL_MAX 128
 #define HYBBX_USER_PASSWORD_MAX HYBBX_PASSWORD_STORED_MAX
 #define HYBBX_TRANSPORT_NAME_MAX 32
+/** Peer address string (IPv4 or bracketed IPv6). */
+#define HYBBX_REMOTE_ADDR_MAX 64
 
 /** Maximum registered user records per INI user-file shard. */
 #define HYBBX_USERS_PER_FILE 50u
@@ -63,6 +65,7 @@ typedef struct hybbx_user_record {
     char location[HYBBX_USER_LOCATION_MAX];
     char email[HYBBX_USER_EMAIL_MAX];
     char password[HYBBX_USER_PASSWORD_MAX];
+    time_t last_login_at;
 } hybbx_user_record_t;
 
 typedef struct hybbx_session_record {
@@ -70,6 +73,7 @@ typedef struct hybbx_session_record {
     uint64_t user_id;
     char username[HYBBX_USER_NAME_MAX];
     char transport[HYBBX_TRANSPORT_NAME_MAX];
+    char remote[HYBBX_REMOTE_ADDR_MAX];
     time_t connected_at;
     time_t disconnected_at;
     int active;

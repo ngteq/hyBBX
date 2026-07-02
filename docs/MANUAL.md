@@ -9,12 +9,12 @@ INI, transports, commands. Config: `share/hybbx.ini.example` (Main), `share/hybb
 | Transport       | Status   | `[networks]` switch | Description |
 |-----------------|----------|---------------------|-------------|
 | TCP/IP Telnet   | Started  | **static** (always on) | BBS-inspired terminal access over TCP |
-| SSH             | Planned  | **static** (always on) | Secure shell (transport plugin) |
+| SSH             | After v1.0.0 | — | Secure shell transport plugin (post–first GitHub release) |
 | AX.25 / Packet Radio | Started | `ax25 = yes\|no` | TNC2C (KISS/AX.25); USB/RS232 |
-| WebSocket       | Planned  | `websocket = yes\|no` | Forward-proxy behind Apache/nginx only |
+| WebSocket       | After v1.0.0 | `websocket = yes\|no` | Forward-proxy behind Apache/nginx only |
 | HBX circuit hub | Started  | `circuit = yes\|no` | Internal TCP hub for Secondary adapters |
 
-Telnet and SSH ignore `enabled` in their `[transport.*]` sections — they start whenever the plugin is built. All other adapters are off unless `[networks]` enables them.
+Telnet ignores `enabled` in `[transport.telnet]` — it starts whenever built. Optional adapters are off unless `[networks]` enables them. **SSH and WebSocket are not in v1.0.0 scope** — see [ROADMAP.md](ROADMAP.md).
 
 ## Architecture
 
@@ -35,12 +35,12 @@ AX.25 and other non-core adapters are **off on Main by default** — they run on
 
 Full bridge layout: [ROADMAP.md](ROADMAP.md). Circuit INI: `[circuit]` in `share/hybbx.ini.example`.
 
-### Planned transports
+### Transports after v1.0.0
 
 | Plugin | INI section | Notes |
 |--------|-------------|-------|
-| `ssh` | `[transport.ssh]` | Same session core as telnet |
-| `websocket` | `[transport.websocket]` | Local endpoint behind reverse-proxy; no public HTTP/TLS in HyBBX |
+| `ssh` | `[transport.ssh]` | Same session core as telnet; not in v1.0.0 scope |
+| `websocket` | `[transport.websocket]` | Local endpoint behind reverse-proxy; not in v1.0.0 scope |
 
 ## Configuration (INI)
 
@@ -68,7 +68,7 @@ Master switches for optional connection adapters. Core IP transports are static-
 ```ini
 [networks]
 ax25 = no          ; off on Main — run on Secondary(s) by default
-websocket = no     ; planned
+websocket = no     ; after v1.0.0
 circuit = yes      ; HBX TCP hub on Main; Secondaries connect here
 ```
 
@@ -79,10 +79,10 @@ circuit = yes      ; HBX TCP hub on Main; Secondaries connect here
 | Key | Main default | Secondary default | Controls |
 |-----|--------------|-------------------|----------|
 | `ax25` | `no` | `yes` | `[transport.packet_radio]` / `[transport.packet_radioN]` |
-| `websocket` | `no` | `no` | `[transport.websocket]` when implemented |
+| `websocket` | `no` | `no` | `[transport.websocket]` after v1.0.0 |
 | `circuit` | `yes` (loopback hub) | `no` | `[circuit]` HBX hub on Main; Secondary uses `circuit_host` instead |
 
-Telnet and SSH are **not** listed here — they are static-enabled when compiled in.
+Telnet is **not** listed here — it is static-enabled when compiled in.
 
 ### Internal circuit (HBX over TCP/IPv4+IPv6)
 
@@ -126,6 +126,8 @@ HyBBX defaults to a **datacenter Main**: **TCP/IP only** on the central host (te
 Secondaries connect to the Main **circuit hub** over plain **TCP/IP** (`circuit_host` on the Secondary). HyBBX does **not** ship a link proxy before **v1.0** — use Main directly or your own proxy. HyBBX/HBX ships **`link_id`** and **`link_password`** for link setup on both sides — nothing else for link auth.
 
 **Advanced security** (not in HyBBX): **system firewall** (restrict TCP 7323 / 2323), **system VPN** (WireGuard, OpenVPN — point `circuit_host` at the VPN address), **SSH tunnels** (`ssh -L`), stunnel, reverse proxies. HBX stays plain TCP on the address you expose.
+
+**`security.log`** — always written under the `[log] dir` (default `logs/`), even when monthly `hybbx.log` is disabled. One line per event: `YYYY-MM-DD HH:MM:SS event key=value …`. Events include `startup`, `login_fail`, `link_auth_fail` (HBX circuit), Sysop `shutdown` / `restart`. Example fail2ban filters and jails: `share/fail2ban/` (telnet port 2323, circuit 7323; SSH and WebSocket stubs for after v1.0.0).
 
 | Role | Template |
 |------|----------|
@@ -663,6 +665,8 @@ Banner tokens: `@version@`, `@service@`. MOTD tokens: `@username@`.
 | `/userdelete <user>` | Sysop delete any account except Sysop (not self) |
 | `/createuser <user> …>` | Create user account (Sysop, Admin) |
 | `/activate`, `/promote`, `/demote`, `/delete` | Staff (Sysop, Admin) |
+| `/shutdown` | Stop the HyBBX daemon (Sysop only) |
+| `/restart` | Stop and re-exec HyBBX (Sysop only) |
 | `/deleteme yes\|no` | Delete own account |
 | `/exit` | Disconnect (`/quit`, `/logout`, `/bye`) |
 

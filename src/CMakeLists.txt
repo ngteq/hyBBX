@@ -25,6 +25,7 @@ if(HYBBX_BUILD_DAEMON)
         core/texts.c
         core/util.c
         core/log.c
+        core/security.c
         clients/circuit_client.c
         clients/link_auth.c
         ${CMAKE_SOURCE_DIR}/third_party/tinysha256/tinysha256.c
@@ -115,6 +116,10 @@ if(HYBBX_BUILD_DAEMON)
     install(FILES ${CMAKE_SOURCE_DIR}/share/logs.gitkeep
         DESTINATION ${HYBBX_INSTALL_HOME}/logs
         RENAME .gitkeep
+    )
+
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/fail2ban/
+        DESTINATION ${HYBBX_INSTALL_HOME}/fail2ban
     )
 
     install(PROGRAMS ${CMAKE_SOURCE_DIR}/scripts/hybbx.sh

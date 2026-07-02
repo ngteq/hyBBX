@@ -18,6 +18,12 @@ extern "C" {
 /** Suppress SIGPIPE on send() (SO_NOSIGPIPE on BSD/macOS; noop on Linux). */
 void hybbx_socket_nosigpipe(int fd);
 
+/**
+ * Format the peer IP address of a connected socket into @p buf.
+ * IPv4 dotted-quad or IPv6 colon form (no brackets).
+ */
+hybbx_result_t hybbx_socket_peer_name(int fd, char *buf, size_t buf_len);
+
 #ifdef __cplusplus
 }
 #endif

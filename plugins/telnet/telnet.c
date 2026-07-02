@@ -241,6 +241,14 @@ static void *telnet_client_thread(void *arg)
         return NULL;
     }
 
+    {
+        char remote[64];
+
+        if (hybbx_socket_peer_name(client->fd, remote, sizeof(remote)) == HYBBX_OK) {
+            (void)hybbx_session_set_remote(session, remote);
+        }
+    }
+
     hybbx_telnet_parser_init(&client->parser);
     tctx.session = session;
     tctx.last_rc = HYBBX_OK;

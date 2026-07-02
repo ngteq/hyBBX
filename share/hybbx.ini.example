@@ -51,6 +51,7 @@ name = hyBBX
 
 ; File logging — disabled unless enabled=yes and dir is set.
 ; New log file on the first day of each calendar month: yyyymmdd-hybbx.log
+; security.log in the same directory (fail2ban, login failures, Sysop actions).
 ; [log]
 ; enabled = no
 ; dir = logs
@@ -114,9 +115,10 @@ recycle_days = 10
 path = mail
 
 ; Connection switches — datacenter Main defaults below.
-; Telnet and SSH are static-enabled core IP transports (always on when built).
+; Telnet is static-enabled (always started when built).
 ; Optional adapters (ax25, websocket) are off here; enable them on Secondary INI
 ; or override on Main for standalone operation (all types local, no remote HBX).
+; SSH and WebSocket transports are planned after v1.0.0 (first GitHub release).
 [networks]
 ax25 = no
 websocket = no
@@ -130,9 +132,9 @@ port = 2323
 ipv4 = yes
 ipv6 = yes
 
-; Planned later (not implemented):
+; After v1.0.0 (first GitHub release) — not in v1.0.0 scope:
 ; [transport.ssh]
-; Static-enabled when built (port/bind only, like telnet).
+; Same session core as telnet; static-enabled when built (port/bind only).
 ;
 ; WebSocket: forward-proxy only — place Apache/nginx/httpd in front as reverse-proxy.
 ; HyBBX accepts proxied upgrades locally; TLS and public HTTP stay on the web server.

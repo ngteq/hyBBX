@@ -62,6 +62,30 @@ hybbx_result_t hybbx_service_run(hybbx_service_t *service);
 /** Request the main loop to exit. */
 void hybbx_service_stop(hybbx_service_t *service);
 
+typedef enum hybbx_shutdown_mode {
+    HYBBX_SHUTDOWN_NONE = 0,
+    HYBBX_SHUTDOWN_STOP = 1,
+    HYBBX_SHUTDOWN_RESTART = 2
+} hybbx_shutdown_mode_t;
+
+/** Store the daemon binary path used for /restart (typically argv[0]). */
+void hybbx_service_set_launch_binary(hybbx_service_t *service, const char *argv0);
+
+/** Sysop /shutdown or /restart — stops the main loop; restart re-execs after exit. */
+void hybbx_service_request_shutdown(hybbx_service_t *service, int restart);
+
+/** Shutdown mode requested while the service is still running. */
+hybbx_shutdown_mode_t hybbx_service_shutdown_mode(const hybbx_service_t *service);
+
+/**
+ * Re-exec the daemon when @ref hybbx_service_shutdown_mode is
+ * @ref HYBBX_SHUTDOWN_RESTART. Call before @ref hybbx_service_destroy.
+ * Does not return on success.
+ */
+void hybbx_service_restart_exec(const hybbx_service_t *service);
+
+const char *hybbx_service_config_path(const hybbx_service_t *service);
+
 hybbx_storage_t *hybbx_service_get_storage(hybbx_service_t *service);
 const hybbx_auth_config_t *hybbx_service_get_auth(hybbx_service_t *service);
 const hybbx_texts_config_t *hybbx_service_get_texts(hybbx_service_t *service);

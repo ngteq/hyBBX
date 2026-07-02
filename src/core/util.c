@@ -10,6 +10,12 @@
 #include <unistd.h>
 
 #if !defined(_WIN32) && !defined(__AMIGA__)
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#endif
+
+#if !defined(_WIN32) && !defined(__AMIGA__)
 #include <sys/utsname.h>
 #endif
 
@@ -556,5 +562,53 @@ void hybbx_socket_nosigpipe(int fd)
     }
 #else
     (void)fd;
+#endif
+}
+
+hybbx_result_t hybbx_socket_peer_name(int fd, char *buf, size_t buf_len)
+{
+#if defined(_WIN32) || defined(__AMIGA__)
+    (void)fd;
+    (void)buf;
+    (void)buf_len;
+    return HYBBX_ERR_UNSUPPORTED;
+#else
+    struct sockaddr_storage addr;
+    socklen_t addr_len = sizeof(addr);
+    const void *ip;
+    char ip_buf[INET6_ADDRSTRLEN];
+
+    if (buf == NULL || buf_len == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    buf[0] = '\0';
+
+    if (fd < 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (getpeername(fd, (struct sockaddr *)&addr, &addr_len) != 0) {
+        return HYBBX_ERR_IO;
+    }
+
+    if (addr.ss_family == AF_INET) {
+        const struct sockaddr_in *in4 = (const struct sockaddr_in *)&addr;
+
+        ip = &in4->sin_addr;
+    } else if (addr.ss_family == AF_INET6) {
+        const struct sockaddr_in6 *in6 = (const struct sockaddr_in6 *)&addr;
+
+        ip = &in6->sin6_addr;
+    } else {
+        return HYBBX_ERR_UNSUPPORTED;
+    }
+
+    if (inet_ntop(addr.ss_family, ip, ip_buf, sizeof(ip_buf)) == NULL) {
+        return HYBBX_ERR_IO;
+    }
+
+    hybbx_strlcpy(buf, ip_buf, buf_len);
+    return HYBBX_OK;
 #endif
 }
