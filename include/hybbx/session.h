@@ -13,7 +13,8 @@ struct hybbx_service;
 typedef enum hybbx_session_area {
     HYBBX_AREA_MAIN = 1,
     HYBBX_AREA_MAIL = 2,
-    HYBBX_AREA_CHAT = 3
+    HYBBX_AREA_CHAT = 3,
+    HYBBX_AREA_CONFERENCE = 4
 } hybbx_session_area_t;
 
 /** Maximum nested area depth (main + sub-areas). */
@@ -108,6 +109,27 @@ hybbx_result_t hybbx_session_join_chat_channel(hybbx_session_t *session,
 
 /** Current chat channel (1-based), or 0 when not in chat. */
 unsigned hybbx_session_chat_channel(const hybbx_session_t *session);
+
+struct hybbx_service *hybbx_session_service(hybbx_session_t *session);
+
+/** Join a private conference (conference area). Internal — use hybbx_conference_start. */
+hybbx_result_t hybbx_session_join_conference(hybbx_session_t *session,
+                                             const char *topic,
+                                             const char *partner_username);
+
+void hybbx_session_clear_conference(hybbx_session_t *session);
+
+int hybbx_session_conference_may_invite(hybbx_session_t *session,
+                                        const char *target);
+void hybbx_session_conference_invite_sent(hybbx_session_t *session,
+                                          const char *target);
+void hybbx_session_set_conference_invite(hybbx_session_t *session,
+                                         const char *from_username,
+                                         const char *topic);
+void hybbx_session_clear_conference_invite(hybbx_session_t *session);
+const char *hybbx_session_conference_invite_from(const hybbx_session_t *session);
+const char *hybbx_session_conference_invite_topic(const hybbx_session_t *session);
+const char *hybbx_session_conference_partner(const hybbx_session_t *session);
 
 /** Non-zero when composing an outbound mail message. */
 int hybbx_session_mail_composing(const hybbx_session_t *session);

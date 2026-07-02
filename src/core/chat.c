@@ -3,7 +3,7 @@
 #include "hybbx/session.h"
 #include "hybbx/config.h"
 #include "hybbx/util.h"
-#include "hybbx/limits.h"
+#include "hybbx/traffic.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -255,4 +255,200 @@ hybbx_result_t hybbx_chat_post(hybbx_service_t *service,
 
     hybbx_service_visit_sessions(service, chat_broadcast_visitor, &ctx);
     return HYBBX_OK;
+}
+
+#define CHAT_SHOWALL_MAX 128u
+
+typedef struct chat_show_entry {
+    unsigned channel;
+    char label[HYBBX_USER_NAME_MAX + HYBBX_CHAT_CHANNEL_NAME_MAX + 4];
+} chat_show_entry_t;
+
+typedef struct chat_show_ctx {
+    hybbx_session_t *requester;
+    unsigned channel;
+    unsigned count;
+    chat_show_entry_t entries[CHAT_SHOWALL_MAX];
+    const hybbx_chat_config_t *chat;
+} chat_show_ctx_t;
+
+static void chat_show_channel_visitor(hybbx_session_t *session, void *userdata)
+{
+    chat_show_ctx_t *ctx = (chat_show_ctx_t *)userdata;
+
+    if (session == NULL || ctx == NULL || session == ctx->requester) {
+        return;
+    }
+
+    if (hybbx_session_area(session) != HYBBX_AREA_CHAT) {
+        return;
+    }
+
+    if (hybbx_session_chat_channel(session) != ctx->channel) {
+        return;
+    }
+
+    if (hybbx_session_is_guest(session)) {
+        return;
+    }
+
+    hybbx_session_write_line(ctx->requester, hybbx_session_display_name(session));
+}
+
+void hybbx_chat_show_channel(hybbx_service_t *service, hybbx_session_t *session)
+{
+    chat_show_ctx_t ctx;
+    unsigned channel;
+
+    if (service == NULL || session == NULL) {
+        return;
+    }
+
+    if (hybbx_session_area(session) != HYBBX_AREA_CHAT) {
+        hybbx_session_write_line(session, "Not in a chat channel.");
+        return;
+    }
+
+    channel = hybbx_session_chat_channel(session);
+    if (channel == 0) {
+        hybbx_session_write_line(session, "Not in a chat channel.");
+        return;
+    }
+
+    ctx.requester = session;
+    ctx.channel = channel;
+    ctx.count = 0;
+    ctx.chat = NULL;
+
+    hybbx_service_visit_sessions(service, chat_show_channel_visitor, &ctx);
+}
+
+static void chat_show_all_collect(hybbx_session_t *session, void *userdata)
+{
+    chat_show_ctx_t *ctx = (chat_show_ctx_t *)userdata;
+    unsigned channel;
+    const char *ch_name;
+    chat_show_entry_t *entry;
+
+    if (session == NULL || ctx == NULL || ctx->chat == NULL) {
+        return;
+    }
+
+    if (hybbx_session_area(session) != HYBBX_AREA_CHAT) {
+        return;
+    }
+
+    if (hybbx_session_is_guest(session)) {
+        return;
+    }
+
+    channel = hybbx_session_chat_channel(session);
+    if (channel == 0 || channel > ctx->chat->channel_count) {
+        return;
+    }
+
+    if (ctx->count >= CHAT_SHOWALL_MAX) {
+        return;
+    }
+
+    ch_name = hybbx_chat_channel_name(ctx->chat, channel);
+    if (ch_name == NULL) {
+        return;
+    }
+
+    entry = &ctx->entries[ctx->count++];
+    entry->channel = channel;
+    snprintf(entry->label, sizeof(entry->label), "%s@%s",
+             hybbx_session_display_name(session), ch_name);
+}
+
+static int chat_show_entry_cmp(const void *a, const void *b)
+{
+    const chat_show_entry_t *ea = (const chat_show_entry_t *)a;
+    const chat_show_entry_t *eb = (const chat_show_entry_t *)b;
+
+    if (ea->channel != eb->channel) {
+        return (ea->channel < eb->channel) ? -1 : 1;
+    }
+
+    return strcmp(ea->label, eb->label);
+}
+
+static void chat_showall_flush(hybbx_session_t *session, char *line, size_t *pos)
+{
+    if (session == NULL || line == NULL || pos == NULL || *pos == 0) {
+        return;
+    }
+
+    line[*pos] = '\0';
+    hybbx_session_write_line(session, line);
+    line[0] = '\0';
+    *pos = 0;
+}
+
+static void chat_showall_append(hybbx_session_t *session, char *line,
+                                size_t line_size, size_t *pos,
+                                const char *entry)
+{
+    size_t entry_len;
+    size_t need;
+
+    if (session == NULL || line == NULL || pos == NULL || entry == NULL) {
+        return;
+    }
+
+    entry_len = strlen(entry);
+    need = (*pos > 0) ? (*pos + 1 + entry_len) : entry_len;
+
+    if (*pos > 0 && need > HYBBX_LINE_WIDTH) {
+        chat_showall_flush(session, line, pos);
+        need = entry_len;
+    }
+
+    if (entry_len >= line_size) {
+        return;
+    }
+
+    if (*pos > 0) {
+        line[(*pos)++] = ' ';
+    }
+
+    memcpy(line + *pos, entry, entry_len);
+    *pos += entry_len;
+    line[*pos] = '\0';
+}
+
+void hybbx_chat_show_all(hybbx_service_t *service, hybbx_session_t *session)
+{
+    chat_show_ctx_t ctx;
+    char line[HYBBX_LINE_WIDTH + 1];
+    size_t pos = 0;
+    unsigned i;
+
+    if (service == NULL || session == NULL) {
+        return;
+    }
+
+    ctx.requester = session;
+    ctx.channel = 0;
+    ctx.count = 0;
+    ctx.chat = hybbx_service_get_chat(service);
+    if (ctx.chat == NULL) {
+        return;
+    }
+
+    hybbx_service_visit_sessions(service, chat_show_all_collect, &ctx);
+
+    if (ctx.count == 0) {
+        return;
+    }
+
+    qsort(ctx.entries, ctx.count, sizeof(ctx.entries[0]), chat_show_entry_cmp);
+
+    line[0] = '\0';
+    for (i = 0; i < ctx.count; i++) {
+        chat_showall_append(session, line, sizeof(line), &pos, ctx.entries[i].label);
+    }
+
+    chat_showall_flush(session, line, &pos);
 }

@@ -1,12 +1,18 @@
 # HyBBX manual
 
-Operator and developer reference: INI, transports, commands. Config: `share/hybbx.ini.example` (Main), `share/hybbx-secondary.ini.example` (Secondary). Arch: [ROADMAP.md](ROADMAP.md).
+Operator reference: INI, transports, commands. Templates: `share/hybbx.ini.example` (Main), `share/hybbx-secondary.ini.example` (Secondary). Index: [INDEX.md](INDEX.md) · Features: [FEATURES.md](FEATURES.md) · Build: [BUILD.md](BUILD.md).
 
-- [FEATURES.md](FEATURES.md) · [QUICKSTART.md](QUICKSTART.md) · [INDEX.md](INDEX.md)
+## Overview
 
-## Platform overview
+HyBBX is a C99 **multi-transport session daemon** for low-bandwidth links. One session core (mail, chat, `/` commands) serves all connections. **Link adapters** (telnet, packet radio, HBX circuit client) terminate wire protocols and attach byte streams to the core on **Main**. **Secondary** nodes run RF/TNC locally and bridge to Main over HBX v1 on TCP (port **7323**).
 
-HyBBX is a **multi-transport session daemon** for bandwidth-constrained links. The session layer exposes mail, chat, and slash-commands; link adapters (telnet, packet radio, HBX circuit, others planned) terminate on a shared session core on **Main**. **Secondary** instances bridge AX.25/RF or limited-throughput TCP uplinks to the Main HBX hub, extending geographic and RF coverage beyond a single host.
+| Role | Default | Hosts |
+|------|---------|-------|
+| **Main** | `ax25=no`, `circuit=yes` | Users, storage, telnet :2323, HBX hub |
+| **Secondary** | `ax25=yes`, `circuit=no` | TNC/RF; uplink via `circuit_host` |
+| **Standalone Main** | `ax25=yes` on same host | All adapters local; no remote Secondary |
+
+Override any default in INI. Topology details: [ROADMAP.md](ROADMAP.md). Firewall, VPN, TLS: **system layer** — not built into HyBBX.
 
 ## Connection types
 
@@ -18,33 +24,11 @@ HyBBX is a **multi-transport session daemon** for bandwidth-constrained links. T
 | WebSocket       | After v1.0.0 | `websocket = yes\|no` | Forward-proxy behind Apache/nginx only |
 | HBX circuit hub | Started  | `circuit = yes\|no` | Internal TCP hub for Secondary adapters |
 
-Telnet ignores `enabled` in `[transport.telnet]` — it starts whenever built. Optional adapters are off unless `[networks]` enables them. **SSH and WebSocket are not in v1.0.0 scope** — see [ROADMAP.md](ROADMAP.md).
+Telnet starts when built (ignores `enabled`). Optional adapters need `[networks]` switches. **SSH**, **WebSocket**, **user-files**, **public-files**: post–v1.0.0 ([ROADMAP.md](ROADMAP.md)).
 
 ## Architecture
 
-Plugins: `hybbx_transport_plugin_t` in `include/hybbx/plugin.h`. Core = TCP/IPv4+IPv6 + HBX only.
-
-### Default deployment model (datacenter Main)
-
-HyBBX ships a **datacenter-oriented standard configuration** in `share/hybbx.ini.example`. It is **fully overrideable**.
-
-| Instance | Default connections on this host |
-|----------|----------------------------------|
-| **Main** | **TCP/IP only** — telnet (users) + HBX circuit hub on loopback (Secondaries after bind change). `ax25=no`, `websocket=no`, `circuit=yes`. |
-| **Secondary** | **AX.25 / TNC / RF** (and future adapters). `ax25=yes`, `circuit=no`; uplink via `circuit_host` to Main. |
-
-AX.25 and other non-core adapters are **off on Main by default** — they run on one or more **Secondary** instances. Each Secondary bridges over HBX/TCP to the Main circuit hub.
-
-**Standalone Main (override):** enable `ax25=yes`, add `[transport.packet_radio]` with local device settings, and run TNC on the same host. Main then manages **all connection types directly** with **no remote HBX** — single-box, lab, or legacy site.
-
-Full bridge layout: [ROADMAP.md](ROADMAP.md). Circuit INI: `[circuit]` in `share/hybbx.ini.example`.
-
-### Transports after v1.0.0
-
-| Plugin | INI section | Notes |
-|--------|-------------|-------|
-| `ssh` | `[transport.ssh]` | Same session core as telnet; not in v1.0.0 scope |
-| `websocket` | `[transport.websocket]` | Local endpoint behind reverse-proxy; not in v1.0.0 scope |
+Plugin API: `hybbx_transport_plugin_t` ([include/hybbx/plugin.h](../include/hybbx/plugin.h)). Core handles TCP/IPv4+IPv6 and HBX only — no KISS/AX.25 parsing in `src/core/`.
 
 ## Configuration (INI)
 
@@ -123,39 +107,27 @@ to `hybbx_session` — the application never parses KISS or AX.25 directly.
 
 Telnet remains native TCP to the session (no HBX wrapper on the wire).
 
-### Main and secondary deployment (TCP/IP bridge)
+### Main ↔ Secondary bridge
 
-HyBBX defaults to a **datacenter Main**: **TCP/IP only** on the central host (telnet + HBX circuit). **AX.25 and other adapters default to Secondary instance(s)**. The INI is fully overrideable — Main can run every connection type locally without remote HBX (see [Default deployment model](#default-deployment-model-datacenter-main)).
+Secondaries connect to Main `circuit_host:circuit_port` (plain TCP). Link auth: matching `link_id` + `link_password` on Main `[transport.packet_radioN]` and Secondary. No HyBBX link proxy before v1.0 — use Main directly or your own proxy.
 
-Secondaries connect to the Main **circuit hub** over plain **TCP/IP** (`circuit_host` on the Secondary). HyBBX does **not** ship a link proxy before **v1.0** — use Main directly or your own proxy. HyBBX/HBX ships **`link_id`** and **`link_password`** for link setup on both sides — nothing else for link auth.
+**External security:** firewall (TCP 2323/7323), VPN (`circuit_host` = tunnel IP), `ssh -L`, stunnel, reverse proxy.
 
-**Advanced security** (not in HyBBX): **system firewall** (restrict TCP 7323 / 2323), **system VPN** (WireGuard, OpenVPN — point `circuit_host` at the VPN address), **SSH tunnels** (`ssh -L`), stunnel, reverse proxies. HBX stays plain TCP on the address you expose.
-
-**`security.log`** — always written under the `[log] dir` (default `logs/`), even when monthly `hybbx.log` is disabled. One line per event: `YYYY-MM-DD HH:MM:SS event key=value …`. Events include `startup`, `login_fail`, `link_auth_fail` (HBX circuit), Sysop `shutdown` / `restart`. Example fail2ban filters and jails: `share/fail2ban/` (telnet port 2323, circuit 7323; SSH and WebSocket stubs for after v1.0.0).
-
-| Role | Template |
-|------|----------|
-| **Main** | `share/hybbx.ini.example` |
-| **Secondary** | `share/hybbx-secondary.ini.example` |
+**`security.log`** — under `[log] dir` (default `logs/`), even when `hybbx.log` is off. Format: `YYYY-MM-DD HH:MM:SS event key=value …`. fail2ban examples: `share/fail2ban/`.
 
 ```
-  Secondary                         Main
-  RF ←→ TNC ←→ packet_radio1 ──TCP:7323──►  [circuit] hub → session
-                                              [transport.packet_radio1]  (registry)
-                                              telnet :2323 → users
-                                              mail, storage, chat
+  Secondary: RF → TNC → packet_radio ──TCP:7323──► Main [circuit] → session
+                                              telnet :2323, mail, storage, chat
 ```
 
-#### Bridge sections (`transport.<plugin>N`)
+Bridge sections — same name on both sides; increment **N** per Secondary:
 
-Each Secondary gets its **own bridge section** on Main. Use the **same section name** on both sides; increment **N** for each additional Secondary:
-
-| Instance | Section | Keys HyBBX provides |
-|----------|---------|---------------------|
+| Side | Section | Keys |
+|------|---------|------|
 | Main | `[transport.packet_radio1]` | `link_id`, `link_password`, `link_role` |
-| Secondary | `[transport.packet_radio1]` | same `link_id`, `link_password`, `link_role` + TNC/RF/device settings |
+| Secondary | `[transport.packet_radio1]` | same link keys + TNC/device settings |
 
-A second shack box uses `[transport.packet_radio2]` on Main and on that Secondary, with a **unique** `link_id` and `link_password` pair.
+**Limit today:** one active circuit link per Main ([ROADMAP.md](ROADMAP.md#multi-link-several-secondaries--one-main--planned)).
 
 **Main** — circuit hub on loopback by default; register bridges:
 
@@ -216,22 +188,11 @@ tnc = tnc2c
 protocol = kiss
 ```
 
-Do not add `[circuit]` on Secondary — the hub runs on Main only. Point `circuit_host` at Main or a custom proxy you operate (HyBBX ships no proxy before v1.0).
+Run Secondary: `hybbx -c /path/to/hybbx-secondary.ini`.
 
-Run: `hybbx -c /path/to/hybbx-secondary.ini` (or copy to `hybbx.ini`).
+**Link flow:** TCP connect → `LINK_AUTH` (`link_password`, `link_id`, `link_role`) → registry → circuit session. RF uplink: HBX `ax25`; downlink: HBX `terminal`.
 
-**Connection flow:**
-
-1. Secondary opens TCP to `circuit_host:7323` (use VPN/tunnel endpoint if you run system VPN)
-2. `LINK_AUTH` with `link_password`, `link_id`, `link_role` (must match Main bridge section)
-3. Main validates → link registry → opens one circuit session
-4. RF frames uplink as HBX `ax25`; session output downlink as HBX `terminal`
-
-**Today:** one active circuit link per Main (one Secondary RF path → one session). Bridge sections `[transport.packet_radioN]` document the multi-link registry; runtime multi-link: [ROADMAP.md — Multi-link](ROADMAP.md#multi-link-several-secondaries--one-main--planned).
-
-**System security (external):** firewall allow-lists, VPN (`circuit_host` = tunnel IP), `ssh -L 7323:127.0.0.1:7323` — HyBBX does not configure these.
-
-#### Standalone Main (all connections local)
+#### Standalone Main
 
 To run **without Secondary nodes** — Main owns telnet, circuit hub, and AX.25 on one machine:
 
@@ -254,13 +215,12 @@ tnc = tnc2c
 protocol = kiss
 ```
 
-No remote HBX path is required beyond loopback attach to the local circuit hub. Use this for development, labs, or sites that do not split Main and Secondary roles.
+No remote Secondary required — loopback circuit attach only.
 
 ### Telnet
 
 ```ini
 [transport.telnet]
-enabled = yes
 bind = 0.0.0.0
 bind6 = ::
 port = 2323
@@ -268,35 +228,15 @@ ipv4 = yes
 ipv6 = yes
 ```
 
-Listens on IPv4 and IPv6 (`IPV6_V6ONLY` so both can share the same port). Set `ipv6 = no` to disable the v6 socket.
+Dual-stack (`IPV6_V6ONLY`). Set `ipv6 = no` to disable v6 socket.
 
-### hybbx-telnet (HyBBX client)
+**Wire behaviour:** `WONT ECHO` (input echo via `/echo yes` at session layer); `WILL SGA`; declines linemode/NAWS/ttype. Accepts CR/LF/CRLF; output LF→CRLF; backspace/delete edit line.
 
-`hybbx-telnet` is the **official HyBBX telnet client** — pure CLI (parameters and environment variables only). No INI files, no GUI. Use it for testing and operator sessions against any HyBBX telnet transport.
-
-```bash
-hybbx-telnet -H 127.0.0.1 -p 2323
-hybbx-telnet --baud 2400 --line-width 80
-hybbx-telnet -u myuser -P secret
-```
-
-Environment: `HYBBX_HOST`, `HYBBX_PORT`. See [CLIENTS.md](CLIENTS.md).
-
-### hybbx-terminal (AX.25 / circuit client)
-
-`hybbx-terminal` is the **official HyBBX circuit terminal client** — pure CLI for AX.25 and HBX testing over the internal circuit hub.
-
-```bash
-hybbx-terminal -H 127.0.0.1 -p 7323
-hybbx-terminal --link-id secondary-1 --link-password changeme
-hybbx-terminal --mycall DL1ABC-0 --dest DL9XYZ-0 --ax25-ui
-```
-
-Environment: `HYBBX_CIRCUIT_HOST`, `HYBBX_CIRCUIT_PORT`. See [CLIENTS.md](CLIENTS.md).
+CLI clients: [CLIENTS.md](CLIENTS.md) (`hybbx-telnet`, `hybbx-terminal`).
 
 ### Circuit link authentication
 
-Secondary adapters (packet radio and future stacks) authenticate to Main `[circuit]` with **`link_id`** and **`link_password`**. Configure the same pair on the Main bridge section `[transport.packet_radioN]` and on the Secondary. HyBBX does **not** use TCP/IP-style ping/pong or heartbeat health checks across links or protocols.
+Match `link_id` + `link_password` on Main bridge section and Secondary. No link heartbeat/ping in HyBBX.
 
 ```ini
 [circuit]
@@ -310,15 +250,7 @@ link_password = changeme
 link_role = repeater
 ```
 
-Successful auth records the link under `data/links/` and `[link.<id>]` in hybbx.ini. Links with no successful password auth for more than `link_stale_days` are **auto-removed** from config and storage.
-
-Server telnet behaviour:
-
-- **WILL ECHO**, **WILL SGA**; declines linemode/NAWS/terminal-type
-- Accepts **CR**, **LF**, or **CRLF**
-- Output: bare **LF** → **CRLF**
-- **Backspace** / **Delete** edit the current line
-- Ignores **IAC** and **NUL**
+Successful auth → `data/links/` + `[link.<id>]`. Stale links (no auth within `link_stale_days`) auto-removed.
 
 ### Traffic (2400 baud profile)
 
@@ -328,10 +260,10 @@ baud = 2400
 line_width = 80
 pace_output = yes
 ansi = no
-input_echo = yes
+input_echo = no
 ```
 
-Default: plain ASCII, **80-column** wrap, paced 8N1 output. `input_echo = yes` echoes typed/pasted characters to the client. Set `ansi = yes` for telnet gray-on-black (`ANSI 37;40`) and ANSI screen clear (`/clear`). Keep `text/*.txt` lines within **80 characters** when possible.
+Default: 80-column ASCII, paced 8N1. Echo off (`input_echo = no`); per-session `/echo yes`. `ansi = yes` for gray-on-black and `/clear`. Keep `text/*.txt` lines ≤80 chars when possible.
 
 ### Packet radio / AX.25 TNC stack
 
@@ -526,6 +458,9 @@ Messages stored under `<storage>/mail/<username>/inbox/` on **Main** only (`path
 | `main` | Default at connect | `/main` or `/menu` from anywhere |
 | `mail` | `/mail send …` | Compose body; `/mail done` sends |
 | `chat` | `/chat` | Registered users only |
+| `conference` | `/conference` / `/meeting` | Private 2-user channel (invite flow) |
+
+**Planned (not in v1.0.0):** **user-files** (per-user documentation/uploads) and **public-files** (shared site library) — after **SSH** and **WebSocket** transports ship. See [ROADMAP.md](ROADMAP.md).
 
 `/leave` (`/back`) goes up **one** level (parent area). `/main` (`/menu`) returns to **main** directly and clears all sub-areas.
 
@@ -574,12 +509,12 @@ Legacy `users.dat` (`id|name|level|…`) migrates on first startup. Plain passwo
 | `{md5}<hex>` | Verify-only legacy |
 | plain text | Auto-upgraded to `{sha256}` |
 
-| `sessions.dat`, `user.next`, `session.next` | Counters / session log |
+| `sessions.dat`, `user.next`, `session.next` | Session counters / log |
 | `mail/<user>/inbox/*.msg` | Personal mail (Main only) |
 
-**Default Sysop** (if none exists): username `Sysop`, password `SysopPassword` — change after first login with `/changeme` (new passwords: **8–24 characters**).
+**Default Sysop** (empty DB): `Sysop` / `SysopPassword` — change via `/changeme` (passwords 8–24 chars).
 
-**Levels** (high → low): Sysop (one), Admin, Mod, User, Guest. Guests use `/register` (password required; staff mail; inactive until `/activate`). Registered accounts always require a password to log in (guest auto-login only). After login, users may update profile and password with `/changeme`. Sysop and Admin use `/createuser` and `/activate`; use `/userchange` to set a password on staff-created accounts before first login.
+**Levels** (high → low): Sysop, Admin, Mod, User, Guest. Guests ephemeral (memory only). `/register` → inactive until `/activate`.
 
 ## Cryptography
 
@@ -604,31 +539,26 @@ Bundled: [Monocypher](third_party/monocypher/), [tiny-AES-c](third_party/tinyaes
 
 ## Authentication & privileges
 
-**Guests** (`Guest1` … `Guest25`) are **ephemeral** — up to 25 simultaneous slots in memory only, not written to user files. With `auto_login=yes` (default), the next free slot is assigned on connect. `/login` is for **registered accounts only**; guests cannot log in with `/login GuestN`.
+**Guests** (`Guest1`…`Guest25`): ephemeral, max 25 concurrent, not in user DB. `auto_login=yes` → slot on connect. `auto_login=no` → login prompt; `/login` and `/register` for registered accounts only.
 
-With `auto_login=no`, new connections see the banner and a login prompt (not logged in). Use `/login` or `/register` for registered accounts — no guest slots. Allowed before login: `/help`, `/motd`, `/news`, `/rules`, `/login`, `/register`, `/clear`, `/echo`, `/exit`.
+Pre-login commands: `/help`, `/motd`, `/news`, `/rules`, `/login`, `/register`, `/clear`, `/echo`, `/exit`.
 
-Registered users (User, Mod, Admin, Sysop) use `/changeme` to update their own profile and password (not `/register`).
-
-**Username rules:** 4–12 chars, `a`–`z`, ≤4 digits, at most one `_` or `-` (not both).
+**Username:** 4–12 chars, `a`–`z`, ≤4 digits, one `_` or `-` max.
 
 | Action | Who |
 |--------|-----|
-| Self-register (`/register`) | Guest or login-prompt session (password required) |
-| Update own profile/password (`/changeme`) | Registered users only |
-| Overwrite user profile/password (`/userchange`) | Sysop: Admin, Mod, User; Admin: Mod, User |
-| Create user (`/createuser`) | Sysop, Admin |
-| Activate pending accounts (`/activate`) | Sysop, Admin |
-| Promote → Admin | Sysop only |
+| `/register` | Guest or login-prompt |
+| `/changeme` | Registered users |
+| `/userchange` | Sysop: Admin/Mod/User; Admin: Mod/User |
+| `/createuser`, `/activate` | Sysop, Admin |
+| Promote → Admin | Sysop |
 | Promote → Mod | Sysop, Admin |
-| Demote Admin | Sysop only |
-| Demote Mod | Sysop, Admin |
-| Delete Mod/User/Guest (`/delete`) | Sysop, Admin |
-| Delete Admin or any non-Sysop (`/userdelete`) | Sysop only |
-| Delete Sysop | Never |
-| Delete self | `/deleteme yes\|no` (not Sysop) |
+| Demote | Sysop (Admin), Sysop/Admin (Mod) |
+| `/delete` | Sysop, Admin (not Sysop) |
+| `/userdelete` | Sysop (not self, not Sysop target) |
+| `/deleteme` | Registered (not Sysop) |
 
-`/help` is level-aware. Max **35** online sessions by default (`max_online`). Guests disconnect after **30** minutes (`guest_timeout_minutes`).
+`max_online` default 35. Guest timeout: `guest_timeout_minutes` (default 30).
 
 ## Text files
 
@@ -655,14 +585,16 @@ Banner tokens: `@version@`, `@service@`. MOTD tokens: `@username@`.
 | `/help` | List or explain commands |
 | `/news`, `/motd` | News / MOTD |
 | `/rules` | Legal notice and acceptable use (`/legal`, `rules.txt`) |
-| `/who` | Online users and connection type (telnet, ax25, …) |
+| `/who` | Online users and connection type (telnet, ax25, …); alias `/online` |
+| `/users` | Registered user levels as percentages (sum 100%); total count |
 | `/session` | Session info (`/info`) |
 | `/version` | HyBBX version and host OS name (`/ver`) |
 | `/leave` | Up one area (`/back`) |
 | `/main` | Main area (`/menu`) |
 | `/clear` | Clear screen and input (`/cls`, `/reset`) |
 | `/echo` | Show or toggle input echo (`/echo yes\|no`) |
-| `/chat` | List/join channels |
+| `/chat` | List/join channels; `show`, `showall` |
+| `/conference` | Private two-user channel (`/meeting`) |
 | `/mail` | Inbox; `/mail list 1-15`, `read`, `delete`, `send` |
 | `/login <user> <pass>` | Login |
 | `/register <user> …>` | Self-registration (guests; includes password) |
@@ -680,55 +612,17 @@ Banner tokens: `@version@`, `@service@`. MOTD tokens: `@username@`.
 
 `/chat <number>` or `/chat <name>`. Channel name = topic. Messages: `ME: …` / `<user>: …`. Max length: `message_max` (default 72). Output wraps at 80 columns.
 
+`/chat show` — display names in your current channel only. `/chat showall` — all chat users as `nick@ChannelN`, sorted by channel, wrapped at 80 columns (conference sessions excluded).
+
+**Conference** — `/conference <topic> <user>` (alias `/meeting`): sends an invite; partner accepts with `y`/`n` or `yes`/`no`. Maximum **2 invites per user per 30 minutes**. Private two-user channel after acceptance. `/leave` or `/main` ends the conference for both parties.
+
 **Mail** (registered users): `/mail` or `/mail list` shows inbox (`*` = unread). `/mail list 1-15` shows messages 1–15; `/mail list 5-20` shows 5–20 only. `/mail read <n>`, `/mail delete <n>` or `/mail delete <from-to>` (moves to recycle bin). `/mail recycle` permanently empties the recycle bin. Deleted mail is auto-purged after `recycle_days` (default 10, `[mail]` in INI). `/mail send <user> <subject>` then body lines; `/mail done` sends. `/mail cancel`, `/leave`, or `/main` aborts compose.
 
 **Navigation:** `/leave` (`/back`) = one menu level up. `/main` (`/menu`) = main area from anywhere.
 
-## Building & installing
+## Build and install
 
-CMake 3.16+, C99. GCC primary; Clang supported.
-
-```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-CC=clang cmake -B build-clang -DCMAKE_BUILD_TYPE=Release
-cmake -B build -DHYBBX_CRYPTO_OPENSSL=ON
-```
-
-Install layout: `<prefix>/hybbx/hybbx`, `hybbx-start`, `hybbx.ini`, `hybbx-secondary.ini.example`, `text/`, `data/`, `logs/`, `lib/`.
-
-**Run installed:** `hybbx-start` (set `HYBBX_CONFIG`, `HYBBX_ROOT` to override).
-
-**Dev:** `./scripts/hybbx.sh` → `local/hybbx.ini`, telnet `127.0.0.1:2323`.
-
-### CMake options
-
-| Option | Default |
-|--------|---------|
-| `HYBBX_BUILD_PLUGINS` | ON | Build transport plugins |
-| `HYBBX_PLUGIN_TELNET` | ON | Telnet plugin |
-| `HYBBX_PLUGIN_PACKET_RADIO` | ON | Packet radio plugin |
-| `HYBBX_BUILD_TESTS` | OFF | Test targets |
-| `HYBBX_HARDENING` | ON | Compiler security flags |
-| `HYBBX_WARNINGS_AS_ERRORS` | OFF | Treat warnings as errors |
-| `HYBBX_CRYPTO_OPENSSL` | OFF | OpenSSL crypto backends |
-| `HYBBX_CRYPTO_LIBSODIUM` | OFF | libsodium ChaCha/X25519 backends |
-
-**Platforms:** GCC and LLVM/Clang on Linux, BSD, macOS 10+, Windows 10+ (MinGW), AmigaOS 3.9+ (cross). See [PLATFORMS.md](PLATFORMS.md) and [BUILD.md](BUILD.md).
-
-### Hardening
-
-With `HYBBX_HARDENING=ON`: probed warnings, stack protector, `_FORTIFY_SOURCE=2` (Release), RELRO/NOW + PIE on Linux. Bounded buffers in `include/hybbx/limits.h`, safe `hybbx_path_join`.
-
-### AmigaOS (3.9+, cross-GCC)
-
-See [PLATFORMS.md](PLATFORMS.md) and [BUILD.md](BUILD.md).
-
-```bash
-cmake -B build-amiga \
-  -DCMAKE_TOOLCHAIN_FILE=cmake/Toolchain-AmigaOS.cmake \
-  -DAMIGA_SDK_PATH=/path/to/amiga-sdk
-```
+See [QUICKSTART.md](QUICKSTART.md) and [BUILD.md](BUILD.md). Install prefix: `<prefix>/hybbx/` (`hybbx`, `hybbx-start`, `hybbx.ini`, `text/`, `data/`, `logs/`).
 
 ## Licensing
 

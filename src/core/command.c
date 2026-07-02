@@ -6,6 +6,7 @@
 #include "hybbx/storage.h"
 #include "hybbx/auth.h"
 #include "hybbx/chat.h"
+#include "hybbx/conference.h"
 #include "hybbx/mail.h"
 #include "hybbx/security.h"
 #include "hybbx/service.h"
@@ -60,7 +61,8 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
 
     if (str_ieq(verb, "news") || str_ieq(verb, "motd") ||
         str_ieq(verb, "rules") || str_ieq(verb, "legal") ||
-        str_ieq(verb, "who") || str_ieq(verb, "session") || str_ieq(verb, "info") ||
+        str_ieq(verb, "who") || str_ieq(verb, "online") || str_ieq(verb, "users") ||
+        str_ieq(verb, "session") || str_ieq(verb, "info") ||
         str_ieq(verb, "version") || str_ieq(verb, "ver") ||
         str_ieq(verb, "leave") || str_ieq(verb, "back") ||
         str_ieq(verb, "main") || str_ieq(verb, "menu") ||
@@ -94,6 +96,10 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
     }
 
     if (str_ieq(verb, "chat")) {
+        return !hybbx_user_level_is_guest(level);
+    }
+
+    if (str_ieq(verb, "conference") || str_ieq(verb, "meeting")) {
         return !hybbx_user_level_is_guest(level);
     }
 
@@ -283,10 +289,10 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
     }
 
     cmd_help_group(session, "General",
-                   "/help  /news  /motd  /rules  /who  /session  /version");
+                   "/help  /news  /motd  /rules  /who  /users  /session  /version");
     cmd_help_group(session, "Screen", "/clear  /echo");
     cmd_help_group(session, "Areas",
-                   "/leave  /main  /chat  /mail  /exit");
+                   "/leave  /main  /chat  /conference  /mail  /exit");
     if (cmd_help_shows_deleteme(level)) {
         cmd_help_group(session, "Account",
                        "/login  /changeme  /deleteme");
@@ -309,6 +315,8 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
 
     if (str_ieq(topic, "info")) {
         canonical = "session";
+    } else if (str_ieq(topic, "online")) {
+        canonical = "who";
     } else if (str_ieq(topic, "ver")) {
         canonical = "version";
     } else if (str_ieq(topic, "logout") || str_ieq(topic, "bye") ||
@@ -328,6 +336,8 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         canonical = "clear";
     } else if (str_ieq(topic, "legal")) {
         canonical = "rules";
+    } else if (str_ieq(topic, "meeting")) {
+        canonical = "conference";
     }
 
     if (!cmd_verb_allowed(level, canonical) ||
@@ -368,6 +378,13 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
     if (str_ieq(canonical, "who")) {
         cmd_help_topic_title(session, "/who",
                              "online users and connection type");
+        cmd_help_topic_detail(session, "  alias: /online");
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(canonical, "users")) {
+        cmd_help_topic_title(session, "/users",
+                             "registered user levels as percentages");
         return HYBBX_OK;
     }
 
@@ -416,6 +433,21 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         cmd_help_topic_title(session, "/chat", "chat channels");
         cmd_help_topic_detail(session,
             "  /chat              list    /chat <n|name>  join");
+        cmd_help_topic_detail(session,
+            "  /chat show         users in current channel");
+        cmd_help_topic_detail(session,
+            "  /chat showall      all users@ChannelN (80 columns)");
+        cmd_help_topic_detail(session,
+            "  registered users only — /leave or /main to exit");
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(canonical, "conference")) {
+        cmd_help_topic_title(session, "/conference",
+                             "private two-user channel");
+        cmd_help_topic_detail(session, "  alias: /meeting");
+        cmd_help_topic_detail(session,
+            "  /conference <topic> <user>  (invite; partner accepts y/n)");
         cmd_help_topic_detail(session,
             "  registered users only — /leave or /main to exit");
         return HYBBX_OK;
@@ -709,6 +741,104 @@ static hybbx_result_t cmd_who(hybbx_service_t *service, hybbx_session_t *session
     }
 
     snprintf(total, sizeof(total), "Total: %u", ctx.count);
+    hybbx_session_write_line(session, total);
+    return HYBBX_OK;
+}
+
+typedef struct users_stats_ctx {
+    size_t by_level[6];
+    size_t total;
+} users_stats_ctx_t;
+
+static hybbx_result_t users_stats_cb(const hybbx_user_record_t *user, void *ctx)
+{
+    users_stats_ctx_t *stats = (users_stats_ctx_t *)ctx;
+
+    if (user == NULL || stats == NULL) {
+        return HYBBX_OK;
+    }
+
+    if (user->level < HYBBX_LEVEL_SYSOP || user->level > HYBBX_LEVEL_USER) {
+        return HYBBX_OK;
+    }
+
+    stats->by_level[user->level]++;
+    stats->total++;
+    return HYBBX_OK;
+}
+
+static void users_compute_percents(const size_t *counts, size_t total,
+                                   unsigned *percents)
+{
+    hybbx_user_level_t level;
+    hybbx_user_level_t adjust_level = HYBBX_LEVEL_SYSOP;
+    unsigned sum = 0;
+    unsigned max_remainder = 0;
+
+    if (total == 0) {
+        return;
+    }
+
+    for (level = HYBBX_LEVEL_SYSOP; level <= HYBBX_LEVEL_USER; level++) {
+        unsigned scaled = (unsigned)((counts[level] * 1000u) / total);
+        unsigned rem = scaled % 10u;
+
+        percents[level] = scaled / 10u;
+        sum += percents[level];
+        if (rem > max_remainder) {
+            max_remainder = rem;
+            adjust_level = level;
+        }
+    }
+
+    if (sum < 100u) {
+        percents[adjust_level] += 100u - sum;
+    }
+}
+
+static hybbx_result_t cmd_users(hybbx_service_t *service, hybbx_session_t *session)
+{
+    hybbx_storage_t *storage;
+    users_stats_ctx_t stats;
+    unsigned percents[6];
+    hybbx_user_level_t level;
+    char line[48];
+    char total[40];
+    hybbx_result_t rc;
+
+    storage = hybbx_service_get_storage(service);
+    if (storage == NULL) {
+        hybbx_session_write_line(session, "User storage unavailable.");
+        return HYBBX_ERR_INVALID;
+    }
+
+    memset(&stats, 0, sizeof(stats));
+    memset(percents, 0, sizeof(percents));
+
+    rc = hybbx_storage_foreach_user(storage, users_stats_cb, &stats);
+    if (rc != HYBBX_OK) {
+        hybbx_session_write_line(session, "Could not read user database.");
+        return rc;
+    }
+
+    hybbx_session_write_line(session, "Registered users:");
+
+    if (stats.total == 0) {
+        hybbx_session_write_line(session, "  (none)");
+    } else {
+        users_compute_percents(stats.by_level, stats.total, percents);
+        for (level = HYBBX_LEVEL_SYSOP; level <= HYBBX_LEVEL_USER; level++) {
+            if (stats.by_level[level] == 0) {
+                continue;
+            }
+
+            snprintf(line, sizeof(line), "  %-8s %3u%%",
+                     hybbx_user_level_name(level), percents[level]);
+            hybbx_session_write_line(session, line);
+        }
+    }
+
+    snprintf(total, sizeof(total), "Total users: %zu", stats.total);
     hybbx_session_write_line(session, total);
     return HYBBX_OK;
 }
@@ -1684,6 +1814,24 @@ static hybbx_result_t cmd_chat(hybbx_service_t *service,
         return HYBBX_OK;
     }
 
+    if (str_ieq(cmd->argv[0], "show")) {
+        if (cmd->argc != 1) {
+            hybbx_session_write_line(session, "Usage: /chat show");
+            return HYBBX_OK;
+        }
+        hybbx_chat_show_channel(service, session);
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(cmd->argv[0], "showall")) {
+        if (cmd->argc != 1) {
+            hybbx_session_write_line(session, "Usage: /chat showall");
+            return HYBBX_OK;
+        }
+        hybbx_chat_show_all(service, session);
+        return HYBBX_OK;
+    }
+
     rc = hybbx_chat_resolve_channel(chat, cmd->argv[0], &channel_index);
     if (rc == HYBBX_ERR_NOT_FOUND) {
         hybbx_session_write_line(session, "Unknown chat channel.");
@@ -1713,6 +1861,54 @@ static hybbx_result_t cmd_chat(hybbx_service_t *service,
     hybbx_session_write_line(session,
         "Each line is a message; /leave or /main to exit.");
     return HYBBX_OK;
+}
+
+static hybbx_result_t cmd_conference(hybbx_service_t *service,
+                                     hybbx_session_t *session,
+                                     const hybbx_parsed_command_t *cmd)
+{
+    char topic[HYBBX_CONFERENCE_TOPIC_MAX];
+    const char *user;
+    size_t i;
+    size_t pos = 0;
+
+    if (hybbx_session_is_guest(session)) {
+        hybbx_session_write_line(session, "Guests cannot use conference.");
+        return HYBBX_ERR_DENIED;
+    }
+
+    if (cmd->argc < 2) {
+        hybbx_session_write_line(session,
+            "Usage: /conference <topic> <user>");
+        return HYBBX_OK;
+    }
+
+    user = cmd->argv[cmd->argc - 1];
+    topic[0] = '\0';
+
+    for (i = 0; i + 1 < cmd->argc; i++) {
+        size_t part_len = strlen(cmd->argv[i]);
+
+        if (i > 0) {
+            if (pos + 1 >= sizeof(topic)) {
+                hybbx_session_write_line(session, "Topic too long.");
+                return HYBBX_OK;
+            }
+            topic[pos++] = ' ';
+            topic[pos] = '\0';
+        }
+
+        if (pos + part_len >= sizeof(topic)) {
+            hybbx_session_write_line(session, "Topic too long.");
+            return HYBBX_OK;
+        }
+
+        memcpy(topic + pos, cmd->argv[i], part_len);
+        pos += part_len;
+        topic[pos] = '\0';
+    }
+
+    return hybbx_conference_start(service, session, topic, user);
 }
 
 static void mail_join_subject(const hybbx_parsed_command_t *cmd,
@@ -2070,8 +2266,12 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
         return cmd_rules(service, session);
     }
 
-    if (str_ieq(cmd->verb, "who")) {
+    if (str_ieq(cmd->verb, "who") || str_ieq(cmd->verb, "online")) {
         return cmd_who(service, session);
+    }
+
+    if (str_ieq(cmd->verb, "users")) {
+        return cmd_users(service, session);
     }
 
     if (str_ieq(cmd->verb, "session") || str_ieq(cmd->verb, "info")) {
@@ -2101,6 +2301,10 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
 
     if (str_ieq(cmd->verb, "chat")) {
         return cmd_chat(service, session, cmd);
+    }
+
+    if (str_ieq(cmd->verb, "conference") || str_ieq(cmd->verb, "meeting")) {
+        return cmd_conference(service, session, cmd);
     }
 
     if (str_ieq(cmd->verb, "mail")) {

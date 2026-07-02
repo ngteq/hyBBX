@@ -5,29 +5,23 @@ alwaysApply: true
 
 # HyBBX project rules
 
-Read [AGENTS.md](../../AGENTS.md) and [docs/DEVELOPMENT.md](../../docs/DEVELOPMENT.md) for full context.
+Read [AGENTS.md](../../AGENTS.md) and [docs/DEVELOPMENT.md](../../docs/DEVELOPMENT.md).
 
 ## Product
 
-- **Purpose** — multi-transport session daemon for bandwidth-constrained links; Main + Secondary HBX topology.
-- Arch: centralized daemon + link/repeater edge ([docs/ROADMAP.md](../../docs/ROADMAP.md), `share/hybbx.ini.example`).
-- **0.7.x** line — no `docs/RELEASE-*` files until v1.0.0; use [docs/FEATURES.md](../../docs/FEATURES.md) and [docs/ROADMAP.md](../../docs/ROADMAP.md).
-- **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features** ([docs/ROADMAP.md](../../docs/ROADMAP.md)).
+Multi-transport session daemon; Main + Secondary HBX topology ([ROADMAP.md](../../docs/ROADMAP.md)). **0.7.x** — no `RELEASE-*` until v1.0.0; track [FEATURES.md](../../docs/FEATURES.md).
 
 ## Code
 
-- C99, `hybbx_` prefix, `hybbx_result_t` for errors.
-- Core (`src/core/`) = sessions + HBX/TCP circuit only — **no KISS/AX.25/telnet parsing** in core.
-- Link adapters live in `plugins/`.
-- Booleans: `hybbx_parse_bool()` — yes/no + standard aliases ([include/hybbx/util.h](../../include/hybbx/util.h)).
-- Minimal scope; match existing style; respect [include/hybbx/limits.h](../../include/hybbx/limits.h).
+- C99, `hybbx_` prefix, `hybbx_result_t` errors
+- Core = sessions + HBX/TCP only — no wire-protocol parsing in `src/core/`
+- Plugins in `plugins/`; booleans via `hybbx_parse_bool()`
+- Minimal scope; [limits.h](../../include/hybbx/limits.h)
 
 ## Docs
 
-- Update [docs/FEATURES.md](../../docs/FEATURES.md) when changing functionality.
-- Config changes → [docs/MANUAL.md](../../docs/MANUAL.md) + `share/hybbx.ini.example`.
+Feature changes → FEATURES.md. Config → MANUAL.md + `share/hybbx.ini.example`.
 
 ## Git
 
-- Public commits: `user.name=ngteq`, empty `user.email`, **no** `Co-authored-by` agent lines.
-- Do not commit or push unless the user asks.
+Public: `user.name=ngteq`, empty email; no agent `Co-authored-by`. No commit/push unless user asks.

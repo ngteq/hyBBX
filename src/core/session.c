@@ -5,12 +5,12 @@
 #include "hybbx/texts.h"
 #include "hybbx/auth.h"
 #include "hybbx/chat.h"
+#include "hybbx/conference.h"
 #include "hybbx/mail.h"
 #include "hybbx/terminal.h"
 #include "hybbx/traffic.h"
 #include "hybbx/log.h"
 #include "hybbx/hybbx.h"
-#include "hybbx/limits.h"
 #include "hybbx/util.h"
 
 #include <stdio.h>
@@ -56,6 +56,15 @@ typedef struct hybbx_session_core {
     unsigned area_depth;
     unsigned chat_channel;
     int chat_max_notice_shown;
+    char conference_topic[HYBBX_CONFERENCE_TOPIC_MAX];
+    char conference_partner[HYBBX_USER_NAME_MAX];
+    int conference_invite_pending;
+    char conference_invite_from[HYBBX_USER_NAME_MAX];
+    char conference_invite_topic[HYBBX_CONFERENCE_TOPIC_MAX];
+    struct {
+        char target[HYBBX_USER_NAME_MAX];
+        time_t sent_at[HYBBX_CONFERENCE_INVITE_MAX_PER_TARGET];
+    } conference_invite_rates[8];
     int mail_composing;
     char mail_compose_to[HYBBX_USER_NAME_MAX];
     char mail_compose_subject[HYBBX_MAIL_SUBJECT_MAX + 1];
@@ -90,6 +99,10 @@ static void session_area_clear_state(hybbx_session_core_t *core,
 
     if (area == HYBBX_AREA_CHAT) {
         core->chat_channel = 0;
+    }
+
+    if (area == HYBBX_AREA_CONFERENCE) {
+        hybbx_conference_area_leaving(&core->pub);
     }
 
     if (area == HYBBX_AREA_MAIL) {
@@ -353,6 +366,7 @@ static void session_submit_line(hybbx_session_core_t *core)
     core->line_len = 0;
     if ((core->logged_in || core->login_prompt) &&
         core->area != HYBBX_AREA_CHAT &&
+        core->area != HYBBX_AREA_CONFERENCE &&
         !(core->area == HYBBX_AREA_MAIL && core->mail_composing)) {
         hybbx_session_show_prompt(&core->pub);
     }
@@ -477,7 +491,8 @@ static hybbx_result_t session_handle_user_byte(hybbx_session_core_t *core,
     {
         size_t line_max = sizeof(core->line_buf) - 1;
 
-        if (core->area == HYBBX_AREA_CHAT) {
+        if (core->area == HYBBX_AREA_CHAT ||
+            core->area == HYBBX_AREA_CONFERENCE) {
             line_max = session_chat_message_max(core);
         } else if (core->area == HYBBX_AREA_MAIL && core->mail_composing) {
             line_max = HYBBX_LINE_MAX - 1;
@@ -527,6 +542,16 @@ static void session_process_line(hybbx_session_core_t *core, const char *line)
         return;
     }
 
+    if (hybbx_conference_invite_pending(&core->pub) &&
+        scope == HYBBX_CMD_SCOPE_LOCAL) {
+        if (hybbx_conference_reply_invite(core->service, &core->pub, line) ==
+            HYBBX_OK) {
+            return;
+        }
+        hybbx_session_write_line(&core->pub, "Reply y/n or yes/no.");
+        return;
+    }
+
     if (core->area == HYBBX_AREA_MAIL && core->mail_composing &&
         scope == HYBBX_CMD_SCOPE_LOCAL) {
         const hybbx_mail_config_t *mail;
@@ -563,6 +588,21 @@ static void session_process_line(hybbx_session_core_t *core, const char *line)
         }
 
         (void)hybbx_chat_post(core->service, &core->pub, line);
+        return;
+    }
+
+    if (core->area == HYBBX_AREA_CONFERENCE && scope == HYBBX_CMD_SCOPE_LOCAL) {
+        if (hybbx_session_is_guest(&core->pub)) {
+            hybbx_session_write_line(&core->pub, "Guests cannot use conference.");
+            return;
+        }
+
+        if (strlen(line) > session_chat_message_max(core)) {
+            hybbx_session_write_line(&core->pub, "Message too long.");
+            return;
+        }
+
+        (void)hybbx_conference_post(core->service, &core->pub, line);
         return;
     }
 
@@ -701,6 +741,11 @@ void hybbx_session_close(hybbx_session_t *session)
     core = (hybbx_session_core_t *)session->core_data;
     if (core == NULL) {
         return;
+    }
+
+    if (hybbx_conference_invite_pending(session) ||
+        hybbx_session_area(session) == HYBBX_AREA_CONFERENCE) {
+        hybbx_conference_session_closed(session);
     }
 
     storage = hybbx_service_get_storage(core->service);
@@ -999,6 +1044,8 @@ const char *hybbx_session_area_name(hybbx_session_area_t area)
         return "mail";
     case HYBBX_AREA_CHAT:
         return "chat";
+    case HYBBX_AREA_CONFERENCE:
+        return "conference";
     default:
         return "main";
     }
@@ -1020,6 +1067,10 @@ hybbx_session_area_t hybbx_session_area_parse(const char *name)
 
     if (session_str_ieq(name, "chat")) {
         return HYBBX_AREA_CHAT;
+    }
+
+    if (session_str_ieq(name, "conference")) {
+        return HYBBX_AREA_CONFERENCE;
     }
 
     return HYBBX_AREA_MAIN;
@@ -1151,6 +1202,306 @@ unsigned hybbx_session_chat_channel(const hybbx_session_t *session)
     }
 
     return core->chat_channel;
+}
+
+hybbx_service_t *hybbx_session_service(hybbx_session_t *session)
+{
+    hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return NULL;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return NULL;
+    }
+
+    return core->service;
+}
+
+static int session_str_ieq_local(const char *a, const char *b)
+{
+    if (a == NULL || b == NULL) {
+        return 0;
+    }
+
+    while (*a != '\0' && *b != '\0') {
+        char ca = (char)(*a >= 'A' && *a <= 'Z' ? *a + 32 : *a);
+        char cb = (char)(*b >= 'A' && *b <= 'Z' ? *b + 32 : *b);
+
+        if (ca != cb) {
+            return 0;
+        }
+        a++;
+        b++;
+    }
+
+    return *a == '\0' && *b == '\0';
+}
+
+int hybbx_session_conference_may_invite(hybbx_session_t *session,
+                                        const char *target)
+{
+    hybbx_session_core_t *core;
+    size_t s;
+    size_t k;
+    time_t now;
+    unsigned count;
+
+    if (session == NULL || target == NULL || target[0] == '\0') {
+        return 0;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return 0;
+    }
+
+    now = time(NULL);
+    for (s = 0; s < sizeof(core->conference_invite_rates) /
+                    sizeof(core->conference_invite_rates[0]); s++) {
+        if (!session_str_ieq_local(core->conference_invite_rates[s].target,
+                                   target)) {
+            continue;
+        }
+
+        count = 0;
+        for (k = 0; k < HYBBX_CONFERENCE_INVITE_MAX_PER_TARGET; k++) {
+            time_t sent = core->conference_invite_rates[s].sent_at[k];
+
+            if (sent != 0 &&
+                (now - sent) < (time_t)HYBBX_CONFERENCE_INVITE_WINDOW_SEC) {
+                count++;
+            }
+        }
+
+        return count < HYBBX_CONFERENCE_INVITE_MAX_PER_TARGET;
+    }
+
+    return 1;
+}
+
+void hybbx_session_conference_invite_sent(hybbx_session_t *session,
+                                          const char *target)
+{
+    hybbx_session_core_t *core;
+    size_t s;
+    size_t slot = (size_t)-1;
+    size_t empty = (size_t)-1;
+    size_t k;
+    time_t now;
+
+    if (session == NULL || target == NULL || target[0] == '\0') {
+        return;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return;
+    }
+
+    now = time(NULL);
+
+    for (s = 0; s < sizeof(core->conference_invite_rates) /
+                    sizeof(core->conference_invite_rates[0]); s++) {
+        if (core->conference_invite_rates[s].target[0] == '\0') {
+            if (empty == (size_t)-1) {
+                empty = s;
+            }
+            continue;
+        }
+
+        if (session_str_ieq_local(core->conference_invite_rates[s].target,
+                                  target)) {
+            slot = s;
+            break;
+        }
+    }
+
+    if (slot == (size_t)-1) {
+        slot = empty;
+    }
+
+    if (slot == (size_t)-1) {
+        slot = 0;
+    }
+
+    if (core->conference_invite_rates[slot].target[0] == '\0') {
+        hybbx_strlcpy(core->conference_invite_rates[slot].target, target,
+                      sizeof(core->conference_invite_rates[slot].target));
+    }
+
+    for (k = 0; k < HYBBX_CONFERENCE_INVITE_MAX_PER_TARGET - 1u; k++) {
+        core->conference_invite_rates[slot].sent_at[k] =
+            core->conference_invite_rates[slot].sent_at[k + 1];
+    }
+
+    core->conference_invite_rates[slot].sent_at[
+        HYBBX_CONFERENCE_INVITE_MAX_PER_TARGET - 1u] = now;
+}
+
+void hybbx_session_set_conference_invite(hybbx_session_t *session,
+                                         const char *from_username,
+                                         const char *topic)
+{
+    hybbx_session_core_t *core;
+
+    if (session == NULL || from_username == NULL || topic == NULL) {
+        return;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return;
+    }
+
+    core->conference_invite_pending = 1;
+    hybbx_strlcpy(core->conference_invite_from, from_username,
+                  sizeof(core->conference_invite_from));
+    hybbx_strlcpy(core->conference_invite_topic, topic,
+                  sizeof(core->conference_invite_topic));
+}
+
+void hybbx_session_clear_conference_invite(hybbx_session_t *session)
+{
+    hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return;
+    }
+
+    core->conference_invite_pending = 0;
+    core->conference_invite_from[0] = '\0';
+    core->conference_invite_topic[0] = '\0';
+}
+
+int hybbx_conference_invite_pending(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return 0;
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return 0;
+    }
+
+    return core->conference_invite_pending != 0;
+}
+
+const char *hybbx_session_conference_invite_from(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return NULL;
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL || !core->conference_invite_pending) {
+        return NULL;
+    }
+
+    return core->conference_invite_from;
+}
+
+const char *hybbx_session_conference_invite_topic(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return NULL;
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL || !core->conference_invite_pending) {
+        return NULL;
+    }
+
+    return core->conference_invite_topic;
+}
+
+hybbx_result_t hybbx_session_join_conference(hybbx_session_t *session,
+                                             const char *topic,
+                                             const char *partner_username)
+{
+    hybbx_session_core_t *core;
+    const hybbx_chat_config_t *chat;
+
+    if (session == NULL || topic == NULL || partner_username == NULL ||
+        topic[0] == '\0' || partner_username[0] == '\0') {
+        return HYBBX_ERR_INVALID;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL || core->service == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (core->area != HYBBX_AREA_CONFERENCE) {
+        hybbx_result_t push_rc = session_area_push(core, HYBBX_AREA_CONFERENCE);
+
+        if (push_rc != HYBBX_OK) {
+            return push_rc;
+        }
+    }
+
+    hybbx_strlcpy(core->conference_topic, topic, sizeof(core->conference_topic));
+    hybbx_strlcpy(core->conference_partner, partner_username,
+                  sizeof(core->conference_partner));
+
+    chat = hybbx_service_get_chat(core->service);
+    if (chat != NULL && !core->chat_max_notice_shown) {
+        char notice[96];
+
+        snprintf(notice, sizeof(notice), "Max %u chars per message.",
+                 chat->message_max);
+        hybbx_session_write_line(session, notice);
+        core->chat_max_notice_shown = 1;
+    }
+
+    return HYBBX_OK;
+}
+
+void hybbx_session_clear_conference(hybbx_session_t *session)
+{
+    hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return;
+    }
+
+    core->conference_topic[0] = '\0';
+    core->conference_partner[0] = '\0';
+}
+
+const char *hybbx_session_conference_partner(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return NULL;
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL || core->conference_partner[0] == '\0') {
+        return NULL;
+    }
+
+    return core->conference_partner;
 }
 
 int hybbx_session_mail_composing(const hybbx_session_t *session)

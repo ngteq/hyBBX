@@ -87,7 +87,7 @@ baud = 2400
 line_width = 80
 pace_output = yes
 ansi = no
-input_echo = yes
+input_echo = no
 
 [texts]
 path = text
@@ -145,6 +145,9 @@ ipv6 = yes
 ; bind = 127.0.0.1
 ; port = 8080
 ; upstream = reverse-proxy   ; informational; real TLS/HTTP termination on Apache/nginx
+;
+; User-files and public-files (documentation/file areas on Main) are planned after
+; SSH and WebSocket — also post–v1.0.0. See docs/ROADMAP.md.
 
 ; HBX circuit hub — Main only. Default: loopback (127.0.0.1 / ::1) for security.
 ; Remote Secondaries: set bind = 0.0.0.0 and bind6 = :: (or a VPN/firewall address).

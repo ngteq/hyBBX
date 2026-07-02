@@ -76,6 +76,7 @@ static hybbx_result_t telnet_reply_do(int fd, uint8_t option)
 {
     switch (option) {
     case TELNET_OPT_ECHO:
+        return telnet_send_option(fd, TELNET_WONT, option);
     case TELNET_OPT_SGA:
         return telnet_send_option(fd, TELNET_WILL, option);
     case TELNET_OPT_TTYPE:
@@ -120,7 +121,7 @@ void hybbx_telnet_parser_init(hybbx_telnet_parser_t *parser)
 hybbx_result_t hybbx_telnet_send_greeting(int fd)
 {
     static const uint8_t greeting[] = {
-        TELNET_IAC, TELNET_WILL, TELNET_OPT_ECHO,
+        TELNET_IAC, TELNET_WONT, TELNET_OPT_ECHO,
         TELNET_IAC, TELNET_WILL, TELNET_OPT_SGA,
         TELNET_IAC, TELNET_DONT, TELNET_OPT_LINEMODE,
     };

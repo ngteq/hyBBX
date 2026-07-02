@@ -1,41 +1,38 @@
 # HyBBX documentation
 
-Doc index. Short intro: [README.md](../README.md). Config reference: `share/hybbx.ini.example`.
+Index. Intro: [README.md](../README.md). Main INI: `share/hybbx.ini.example`.
 
-## For contributors
+## Contributors
 
 | Document | Audience | Contents |
 |----------|----------|----------|
-| **[CONTRIBUTING.md](../CONTRIBUTING.md)** | Humans | How to contribute, PR checklist, git policy |
-| **[AGENTS.md](../AGENTS.md)** | AI agents | Architecture rules, doc map, build, git policy |
-| **[DEVELOPMENT.md](DEVELOPMENT.md)** | Developers | C99 style, plugins, common tasks, testing |
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | Humans | PR checklist, git policy |
+| [AGENTS.md](../AGENTS.md) | AI agents | Architecture rules, doc map |
+| [DEVELOPMENT.md](DEVELOPMENT.md) | Developers | C99 style, plugins, tasks |
 
 ## Reference
 
 | Document | Audience | Contents |
 |----------|----------|----------|
-| **[FEATURES.md](FEATURES.md)** | Everyone | **Start here** for what HyBBX does — maintained feature list (Done / Planned) |
-| **[QUICKSTART.md](QUICKSTART.md)** | Operators | Clone, build, run, install, first telnet session |
-| **[MANUAL.md](MANUAL.md)** | Operators & developers | Full reference: config, transports, packet radio, auth, commands, crypto |
-| **[CLIENTS.md](CLIENTS.md)** | Operators | Standalone `hybbx-telnet` / `hybbx-terminal` (no server build) |
-| **[ROADMAP.md](ROADMAP.md)** | Everyone | Planned work (`RELEASE-*` docs from v1.0.0) |
-| **[REPOSITORY.md](REPOSITORY.md)** | Developers | Source tree layout and main directories |
-| **[BUILD.md](BUILD.md)** | Developers | CMake options, toolchains, hardening |
-| **[PLATFORMS.md](PLATFORMS.md)** | Developers | GCC/Clang on Windows 10+, macOS X+, AmigaOS 3.9+, Linux/BSD |
+| [FEATURES.md](FEATURES.md) | Everyone | Feature status (update on code changes) |
+| [QUICKSTART.md](QUICKSTART.md) | Operators | Build, run, first telnet session |
+| [MANUAL.md](MANUAL.md) | Operators | INI, transports, auth, commands |
+| [CLIENTS.md](CLIENTS.md) | Operators | `hybbx-telnet`, `hybbx-terminal` CLI |
+| [ROADMAP.md](ROADMAP.md) | Everyone | Planned work (`RELEASE-*` from v1.0.0) |
+| [REPOSITORY.md](REPOSITORY.md) | Developers | Source tree |
+| [BUILD.md](BUILD.md) | Developers | CMake options, toolchains |
+| [PLATFORMS.md](PLATFORMS.md) | Developers | GCC/Clang targets |
 
-## Additional reference
+## Config and tooling
 
-- Main config: [share/hybbx.ini.example](../share/hybbx.ini.example)
-- Secondary config: [share/hybbx-secondary.ini.example](../share/hybbx-secondary.ini.example)
-- Dev config: [local/hybbx.ini](../local/hybbx.ini)
-- License: [LICENSE.txt](../LICENSE.txt)
-- PR template: [.github/pull_request_template.md](../.github/pull_request_template.md)
-- CI workflow: [.github/workflows/ci.yml](../.github/workflows/ci.yml)
+- Main: [share/hybbx.ini.example](../share/hybbx.ini.example)
+- Secondary: [share/hybbx-secondary.ini.example](../share/hybbx-secondary.ini.example)
+- Dev: [local/hybbx.ini](../local/hybbx.ini)
+- CI: [.github/workflows/ci.yml](../.github/workflows/ci.yml)
 - Cursor rules: [.cursor/rules/](../.cursor/rules/)
-- Editor defaults: [.editorconfig](../.editorconfig)
 
 ## Maintainers
 
-- Update [FEATURES.md](FEATURES.md) when changing shipped functionality.
-- Update [ROADMAP.md](ROADMAP.md) for planned work. Per-version `docs/RELEASE-*` files begin at **v1.0.0**.
-- **Git / public pushes:** `user.name=ngteq`, `user.email` empty. No `Co-authored-by` or agent attribution in commit messages.
+- Functional changes → [FEATURES.md](FEATURES.md) + [MANUAL.md](MANUAL.md) / INI examples
+- Planned work → [ROADMAP.md](ROADMAP.md)
+- Public git: `user.name=ngteq`, empty `user.email`; no agent `Co-authored-by` trailers

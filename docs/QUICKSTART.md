@@ -1,79 +1,52 @@
 # HyBBX quick start
 
-Build, run, and first telnet session. Reference: [MANUAL.md](MANUAL.md), [FEATURES.md](FEATURES.md).
+Build, run, first telnet session. Reference: [MANUAL.md](MANUAL.md), [FEATURES.md](FEATURES.md).
 
 ## Requirements
 
-- CMake 3.16+
-- **GCC** or **LLVM/Clang**
-- **Linux**, **BSD**, **macOS 10+**, **Windows 10+** (MinGW), or **AmigaOS 3.9+** cross-GCC — [docs/PLATFORMS.md](docs/PLATFORMS.md)
+CMake 3.16+, GCC or Clang. Linux, BSD, macOS 10+, Windows 10+ (MinGW), AmigaOS 3.9+ cross — [PLATFORMS.md](PLATFORMS.md).
 
-## Build and run (development)
+## Build and run
 
 ```bash
 git clone <your-repo-url>
 cd hyBBX
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
-./scripts/hybbx.sh          # uses local/hybbx.ini
+./scripts/hybbx.sh          # local/hybbx.ini → 127.0.0.1:2323
 ```
-
-Connect:
 
 ```bash
 telnet 127.0.0.1 2323
 # or: ./build/src/clients/hybbx-telnet -H 127.0.0.1 -p 2323
 ```
 
-The dev script starts HyBBX with telnet on **127.0.0.1:2323** and the internal circuit on loopback (see `[circuit]` in `local/hybbx.ini`).
-
-## Install (prefix layout)
+## Install
 
 ```bash
 cmake --install build --prefix "$HOME"
 "$HOME/hybbx/hybbx-start"
 ```
 
-System-wide example:
-
-```bash
-sudo cmake --install build --prefix /usr/local
-```
-
-Installed layout under `<prefix>/hybbx/`: `hybbx`, `hybbx-start`, `hybbx.ini`, `text/`, `data/`, `logs/`, `lib/`. Override with `HYBBX_CONFIG` and `HYBBX_ROOT`.
+Layout: `<prefix>/hybbx/` — `hybbx`, `hybbx-start`, `hybbx.ini`, `text/`, `data/`, `logs/`. Override: `HYBBX_CONFIG`, `HYBBX_ROOT`.
 
 ## First login
 
-On first run with an empty user database, HyBBX creates a default **Sysop** account in `data/users/users.ini` (when `[storage] path = data`):
+Empty DB → default Sysop in `data/users/users.ini` (`[storage] path = data`):
 
-- Username: `Sysop`
-- Password: `SysopPassword` (8–24 characters required for new passwords via `/changeme`)
-
-Change this after login. MOTD is shown automatically after a successful registered `/login` (guests use `/motd` only).
+- User: `Sysop` · Pass: `SysopPassword` (change via `/changeme`; new passwords 8–24 chars)
+- MOTD auto-shown after registered `/login` (guests: `/motd` only)
 
 ## Configuration
 
-Copy or edit `share/hybbx.ini.example` (datacenter **Main** — TCP/IP + HBX by default) or `local/hybbx.ini` (loopback dev). Boolean keys use the HyBBX standard (`yes`/`no` and aliases — see [MANUAL.md — Boolean values](MANUAL.md#boolean-values-hybbx-standard)).
+Templates: `share/hybbx.ini.example` (Main), `local/hybbx.ini` (dev). Booleans: `yes`/`no` + aliases — [MANUAL.md](MANUAL.md#boolean-values-hybbx-standard).
 
-**Main default:** telnet + HBX circuit on; AX.25 off (runs on Secondary). **Override:** `ax25=yes` on Main for standalone/local TNC — see [MANUAL.md — Standalone Main](MANUAL.md#standalone-main-all-connections-local).
+Main default: telnet + HBX on, AX.25 off (Secondary). Standalone: `ax25=yes` on Main — [MANUAL.md](MANUAL.md).
 
-Minimal telnet-only example:
+## Commands
 
-```ini
-[transport.telnet]
-enabled = yes
-bind = 127.0.0.1
-port = 2323
-```
+`/help` after connect. Full list: [MANUAL.md — Commands](MANUAL.md#commands).
 
-Packet radio, circuit hub, chat, and traffic profile are documented in [MANUAL.md](MANUAL.md).
+## Next
 
-## Commands at the prompt
-
-HyBBX commands start with `/`. Type `/help` after connecting. Guest and staff command lists: [MANUAL.md — Commands](MANUAL.md#commands).
-
-## Next steps
-
-- [FEATURES.md](FEATURES.md) — what is implemented and planned
-- [MANUAL.md](MANUAL.md) — operators’ full reference
-- [BUILD.md](BUILD.md) — CMake options and cross-build
+[FEATURES.md](FEATURES.md) · [MANUAL.md](MANUAL.md) · [BUILD.md](BUILD.md)

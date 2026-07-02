@@ -1,16 +1,14 @@
 # HyBBX feature list
 
-**Version:** 0.7.0 — see [FEATURES.md](FEATURES.md).
+**Version:** 0.7.0 · Config: `share/hybbx.ini.example` · Operator: [MANUAL.md](MANUAL.md) · Plan: [ROADMAP.md](ROADMAP.md)
 
-HyBBX is a **multi-transport session daemon** for bandwidth-constrained networks: one session core over plugin link adapters (telnet, AX.25/HBX bridge, others planned), with mail and chat as standard session facilities.
-
-Feature inventory — update when behavior changes. Operator INI: `share/hybbx.ini.example`, [MANUAL.md](MANUAL.md). Arch: [ROADMAP.md](ROADMAP.md).
+C99 multi-transport session daemon: mail, chat, `/` commands over plugin link adapters (telnet, AX.25/HBX bridge).
 
 | Status | Meaning |
 |--------|---------|
-| **Done** | Implemented and usable |
+| **Done** | Shipped and usable |
 | **Partial** | Works with known limits |
-| **Planned** | Designed or documented, not implemented |
+| **Planned** | Documented, not implemented |
 
 ---
 
@@ -31,8 +29,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Low-bandwidth session design | Done | Text-only wire format; multi-transport binding; minimal payload overhead |
 | Boolean config standard | Done | Canonical `yes`/`no`; aliases `true`/`false`, `enable`/`disable`, `on`/`off`, `1`/`0` |
 | Command routing | Done | `/` HyBBX commands; `;`/`#` comments ignored; other input local/mailbox (silent) |
-| Input echo | Done | `[traffic] input_echo`; `/echo yes\|no` per session |
-| Areas | Done | `main` (default), `mail` (personal inbox), `chat` (registered users) |
+| Input echo | Done | Off by default; `[traffic] input_echo` or `/echo yes\|no` per session |
+| Areas | Done | `main` (default), `mail` (personal inbox), `chat` (registered users), `conference` (2-user invite) |
 | Hardening | Done | Optional stack protector, FORTIFY, RELRO/PIE; bounded buffers in `limits.h` |
 
 ---
@@ -136,7 +134,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | `/echo` | Done | Toggle typed-character echo |
 | `/motd`, `/news` | Done | Text files from `[texts]` path |
 | `/rules` (`/legal`) | Done | Legal notice and acceptable use (`rules.txt`; all users) |
-| `/who` | Done | Online users and connection type (no private data) |
+| `/who` | Done | Online users and connection type; alias `/online` |
+| `/users` | Done | Registered user level breakdown (percentages sum to 100%) |
 | `/session` (`/info`) | Done | Current session details |
 | `/version` (`/ver`) | Done | HyBBX version and host OS name |
 | `/login`, `/register` | Done | Login; guest self-registration (password required) |
@@ -144,7 +143,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | `/userchange` | Done | Staff overwrite profile and password (Sysop/Admin) |
 | `/userdelete` | Done | Sysop delete any account except Sysop (not self) |
 | `/createuser` | Done | Sysop/Admin create pending user accounts |
-| `/chat` | Done | List/join channels (registered users) |
+| `/chat` | Done | List/join; `/chat show`, `/chat showall` (registered users) |
+| `/conference` (`/meeting`) | Done | Invite: `/conference <topic> <user>`; accept y/n; 2/30 min limit |
 | `/mail` | Done | Inbox list, read, delete, send (registered users) |
 | `/leave` (`/back`) | Done | One level up in the area stack |
 | `/main` (`/menu`) | Done | Return to main from any depth |
@@ -161,6 +161,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 |---------|--------|-------------|
 | Multi-channel chat | Done | Configurable channel count and names |
 | Join by number or name | Done | `/chat <n>` or `/chat <name>` |
+| `/chat show` / `showall` | Done | Current channel / all channels (80-col wrap) |
+| Conference (`/meeting`) | Done | 2-user invite channel; y/n accept; 2/30 min rate limit |
 | Message length limit | Done | `message_max` (default 72) |
 | 80-column output | Done | Wraps with `[traffic] line_width` (default 80) |
 
@@ -222,7 +224,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 ## Roadmap (not yet implemented)
 
-**Architecture:** HyBBX uses a **datacenter-oriented Main** (TCP/IP + HBX by default) and **Secondary** instances for AX.25 and other adapters. Fully overrideable — Main can run all connection types locally. Details: [ROADMAP.md](ROADMAP.md).
+See [ROADMAP.md](ROADMAP.md). Summary:
 
 | Feature | Status | Description |
 |---------|--------|-------------|
@@ -232,6 +234,8 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Secondary modes | Partial | Secondary INI + `link_role` metadata; role routing planned |
 | SSH transport | After v1.0.0 | Same session core as telnet |
 | WebSocket transport | After v1.0.0 | Reverse-proxy only |
+| User-files area | After SSH/WebSocket | Per-user documentation/file area on Main (post–v1.0.0) |
+| Public-files area | After SSH/WebSocket | Shared public documentation library on Main (post–v1.0.0) |
 | SQL storage | Planned | SQLite, MySQL/MariaDB on core |
 | HBX APRS / NETROM | Planned | Reserved protocol IDs on internal circuit |
 | BayCom `ser12` path | Planned | Use `kissattach` + KISS until documented |

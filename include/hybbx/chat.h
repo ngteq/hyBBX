@@ -57,13 +57,23 @@ hybbx_result_t hybbx_chat_resolve_channel(const hybbx_chat_config_t *chat,
 void hybbx_chat_list_channels(struct hybbx_session *session,
                               const hybbx_chat_config_t *chat);
 
-/**
- * Broadcast a chat line within the sender's channel.
+/** Broadcast a chat line within the sender's channel.
  * Sender sees "ME: …"; others see "<username>: …".
  */
 hybbx_result_t hybbx_chat_post(struct hybbx_service *service,
                                struct hybbx_session *from,
                                const char *message);
+
+/** List display names in the requester's current chat channel only. */
+void hybbx_chat_show_channel(struct hybbx_service *service,
+                             struct hybbx_session *session);
+
+/**
+ * List all users in public chat channels as nick@ChannelN, sorted by channel,
+ * wrapped at 80 columns (conference sessions excluded).
+ */
+void hybbx_chat_show_all(struct hybbx_service *service,
+                         struct hybbx_session *session);
 
 #ifdef __cplusplus
 }
