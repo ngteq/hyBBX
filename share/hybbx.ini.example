@@ -53,7 +53,8 @@ name = hyBBX
 ; New log file on the first day of each calendar month: yyyymmdd-hybbx.log
 ; [log]
 ; enabled = no
-; dir = logs             ; relative to install root (HYBBX_ROOT); default when enabled
+; dir = logs
+; Relative to install root (HYBBX_ROOT) when enabled=yes and dir is omitted.
 ; level = info           ; debug | info | stats | warn
 
 [storage]

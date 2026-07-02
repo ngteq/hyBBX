@@ -51,6 +51,40 @@ static char *trim_inplace(char *s)
     return s;
 }
 
+static void strip_inline_comment_inplace(char *value)
+{
+    size_t i;
+    int in_single = 0;
+    int in_double = 0;
+
+    if (value == NULL) {
+        return;
+    }
+
+    for (i = 0; value[i] != '\0'; i++) {
+        char c = value[i];
+
+        if (!in_single && !in_double && (c == ';' || c == '#')) {
+            value[i] = '\0';
+            break;
+        }
+
+        if (!in_double && c == '\'') {
+            in_single = !in_single;
+        } else if (!in_single && c == '"') {
+            in_double = !in_double;
+        }
+    }
+
+    {
+        char *end = value + strlen(value);
+
+        while (end > value && isspace((unsigned char)*(end - 1))) {
+            *--end = '\0';
+        }
+    }
+}
+
 static int is_comment_line(const char *line)
 {
     const char *p = line;
@@ -181,6 +215,7 @@ hybbx_result_t hybbx_config_load(hybbx_config_t *config, const char *path)
         *eq = '\0';
         key = trim_inplace(content);
         value = trim_inplace(eq + 1);
+        strip_inline_comment_inplace(value);
 
         len = strlen(value);
         if (len >= 2 &&
