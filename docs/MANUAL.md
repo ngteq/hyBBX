@@ -573,7 +573,7 @@ Legacy `users.dat` (`id|name|level|…`) migrates on first startup. Plain passwo
 
 **Default Sysop** (if none exists): username `Sysop`, password `SysopPassword` — change after first login with `/changeme` (new passwords: **8–24 characters**).
 
-**Levels** (high → low): Sysop (one), Admin, Mod, User, Guest. Guests use `/register` (password required; staff mail; inactive until `/activate`). After login, users may update profile and password with `/changeme`. Sysop and Admin use `/createuser` and `/activate`.
+**Levels** (high → low): Sysop (one), Admin, Mod, User, Guest. Guests use `/register` (password required; staff mail; inactive until `/activate`). Registered accounts always require a password to log in (guest auto-login only). After login, users may update profile and password with `/changeme`. Sysop and Admin use `/createuser` and `/activate`; use `/userchange` to set a password on staff-created accounts before first login.
 
 ## Cryptography
 
@@ -658,8 +658,8 @@ Banner tokens: `@version@`, `@service@`. MOTD tokens: `@username@`.
 | `/mail` | Inbox; `/mail list 1-15`, `read`, `delete`, `send` |
 | `/login <user> <pass>` | Login |
 | `/register <user> …>` | Self-registration (guests; includes password) |
-| `/changeme <old> <new> <name> …>` | Update own profile and password (new password 8–24 chars) |
-| `/userchange <user> <new> <name> …>` | Staff overwrite profile and password (Sysop/Admin) |
+| `/changeme <oldpass> <newpass> <name> …>` | Update own profile and password (newpass 8–24 chars) |
+| `/userchange <user> <newpass> <name> …>` | Staff overwrite profile and password (Sysop/Admin) |
 | `/userdelete <user>` | Sysop delete any account except Sysop (not self) |
 | `/createuser <user> …>` | Create user account (Sysop, Admin) |
 | `/activate`, `/promote`, `/demote`, `/delete` | Staff (Sysop, Admin) |

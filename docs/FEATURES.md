@@ -1,6 +1,6 @@
 # HyBBX feature list
 
-**Version:** 0.6.0 — see [FEATURES.md](FEATURES.md).
+**Version:** 0.7.0 — see [FEATURES.md](FEATURES.md).
 
 Feature inventory — update when behavior changes. Operator INI: `share/hybbx.ini.example`, [MANUAL.md](MANUAL.md). Arch: [ROADMAP.md](ROADMAP.md).
 
@@ -229,4 +229,4 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 ---
 
-*Last aligned with codebase: HyBBX 0.6.0.*
+*Last aligned with codebase: HyBBX 0.7.0.*

@@ -1,6 +1,6 @@
 # HyBBX roadmap
 
-Planned work on the **0.6.x** line. Per-version `docs/RELEASE-*` freeze/scope files are introduced at **v1.0.0** (generated then, not maintained before).
+Planned work on the **0.7.x** line. Per-version `docs/RELEASE-*` freeze/scope files are introduced at **v1.0.0** (generated then, not maintained before).
 
 ## Architecture
 
@@ -136,7 +136,7 @@ Mailbox on **Main** only (`data/mail/<user>/inbox/`). Secondaries forward RF ses
 
 ## Secondary modes — **partial**
 
-Relay HBX/AX.25 to Main `[circuit]`. INI: `link_role`, `circuit_host`, `link_*`. Secondary template ships in 0.6.x.
+Relay HBX/AX.25 to Main `[circuit]`. INI: `link_role`, `circuit_host`, `link_*`. Secondary template ships in 0.7.x.
 
 Optional future: minimal Secondary-only process layout; today the same `hybbx` binary with secondary INI is enough.
 

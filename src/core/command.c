@@ -431,9 +431,9 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
     if (str_ieq(canonical, "changeme")) {
         cmd_help_topic_title(session, "/changeme", "update own profile and password");
         cmd_help_topic_detail(session,
-            "  /changeme <old> <new> <name> <country> <location> <email>");
+            "  /changeme <oldpass> <newpass> <name> <country> <location> <email>");
         cmd_help_topic_detail(session,
-            "  new password: 8-24 characters; use - as <old> when none set");
+            "  newpass: 8-24 characters");
         cmd_help_topic_detail(session,
             "  username cannot be changed");
         return HYBBX_OK;
@@ -516,9 +516,9 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         cmd_help_topic_title(session, "/userchange",
                              "overwrite user profile and password (staff)");
         cmd_help_topic_detail(session,
-            "  /userchange <user> <new> <name> <country> <location> <email>");
+            "  /userchange <user> <newpass> <name> <country> <location> <email>");
         cmd_help_topic_detail(session,
-            "  new password: 8-24 characters");
+            "  newpass: 8-24 characters");
         if (level == HYBBX_LEVEL_ADMIN) {
             cmd_help_topic_detail(session,
                 "  Admin: Mod and User only");
@@ -1255,7 +1255,7 @@ static hybbx_result_t cmd_changeme(hybbx_service_t *service,
 
     if (cmd->argc < 6) {
         hybbx_session_write_line(session,
-            "Usage: /changeme <old> <new> <full-name> <country> <location> <email>");
+            "Usage: /changeme <oldpass> <newpass> <full-name> <country> <location> <email>");
         return HYBBX_OK;
     }
 
@@ -1307,12 +1307,12 @@ static hybbx_result_t cmd_changeme(hybbx_service_t *service,
     }
 
     if (user.password[0] == '\0') {
-        if (!str_ieq(old_password, "-")) {
-            hybbx_session_write_line(session,
-                "No password set yet. Use - as the old password.");
-            return HYBBX_OK;
-        }
-    } else if (!hybbx_password_match(user.password, old_password)) {
+        hybbx_session_write_line(session,
+            "Account has no password. Ask Sysop or Admin to set one.");
+        return HYBBX_OK;
+    }
+
+    if (!hybbx_password_match(user.password, old_password)) {
         hybbx_session_write_line(session, "Old password incorrect.");
         return HYBBX_OK;
     }
@@ -1357,7 +1357,7 @@ static hybbx_result_t cmd_userchange(hybbx_service_t *service,
 
     if (cmd->argc < 7) {
         hybbx_session_write_line(session,
-            "Usage: /userchange <user> <new> <full-name> <country> <location> <email>");
+            "Usage: /userchange <user> <newpass> <full-name> <country> <location> <email>");
         return HYBBX_OK;
     }
 
@@ -1557,12 +1557,12 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
     }
 
     if (user.password[0] == '\0') {
-        if (cmd->argv[1][0] != '\0' && !str_ieq(cmd->argv[1], "-")) {
-            hybbx_session_write_line(session,
-                "No password set yet. Log in with - as password, then /changeme.");
-            return HYBBX_OK;
-        }
-    } else if (!hybbx_password_match(user.password, cmd->argv[1])) {
+        hybbx_session_write_line(session,
+            "Account has no password. Contact Sysop or Admin.");
+        return HYBBX_OK;
+    }
+
+    if (!hybbx_password_match(user.password, cmd->argv[1])) {
         hybbx_session_write_line(session, "Invalid password.");
         return HYBBX_OK;
     }
@@ -1580,10 +1580,6 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
         if (texts != NULL) {
             (void)hybbx_texts_send_motd(texts, session);
         }
-    }
-    if (user.password[0] == '\0') {
-        hybbx_session_write_line(session,
-            "Set your profile and password with /changeme.");
     }
     hybbx_session_show_prompt(session);
     return HYBBX_OK;

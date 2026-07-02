@@ -16,7 +16,7 @@ HyBBX ships a **datacenter-oriented standard configuration** that remains **full
 
 Firewall, VPN, and tunnels are **system-level** — not built into HyBBX.
 
-Config: [`share/hybbx.ini.example`](share/hybbx.ini.example) (Main) · [`share/hybbx-secondary.ini.example`](share/hybbx-secondary.ini.example) (Secondary) · **0.6.0**  
+Config: [`share/hybbx.ini.example`](share/hybbx.ini.example) (Main) · [`share/hybbx-secondary.ini.example`](share/hybbx-secondary.ini.example) (Secondary) · **0.7.0**  
 Architecture: [`docs/ROADMAP.md`](docs/ROADMAP.md)
 
 ## Build
