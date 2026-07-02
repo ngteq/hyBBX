@@ -346,7 +346,8 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
     }
 
     if (str_ieq(canonical, "who")) {
-        cmd_help_topic_title(session, "/who", "users online on this node");
+        cmd_help_topic_title(session, "/who",
+                             "online users and connection type");
         return HYBBX_OK;
     }
 
@@ -358,7 +359,8 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
     }
 
     if (str_ieq(canonical, "version")) {
-        cmd_help_topic_title(session, "/version", "running HyBBX version");
+        cmd_help_topic_title(session, "/version",
+                             "HyBBX version and host OS name");
         cmd_help_topic_detail(session, "  alias: /ver");
         return HYBBX_OK;
     }
@@ -578,14 +580,79 @@ static hybbx_result_t cmd_motd(hybbx_service_t *service, hybbx_session_t *sessio
     return HYBBX_OK;
 }
 
-static hybbx_result_t cmd_who(hybbx_session_t *session)
+static const char *who_transport_label(const char *transport)
 {
+    if (transport == NULL || transport[0] == '\0') {
+        return "unknown";
+    }
+
+    if (str_ieq(transport, "packet_radio")) {
+        return "ax25";
+    }
+    if (str_ieq(transport, "telnet")) {
+        return "telnet";
+    }
+    if (str_ieq(transport, "circuit")) {
+        return "circuit";
+    }
+    if (str_ieq(transport, "ssh")) {
+        return "ssh";
+    }
+    if (str_ieq(transport, "websocket")) {
+        return "websocket";
+    }
+
+    return transport;
+}
+
+typedef struct who_ctx {
+    hybbx_session_t *requester;
+    unsigned count;
+} who_ctx_t;
+
+static void who_list_visitor(hybbx_session_t *session, void *userdata)
+{
+    who_ctx_t *ctx = (who_ctx_t *)userdata;
+    const hybbx_session_record_t *rec;
     const char *name;
+    const char *transport;
+    char line[96];
+
+    if (ctx == NULL || session == NULL || !hybbx_session_logged_in(session)) {
+        return;
+    }
 
     name = hybbx_username_display(hybbx_session_username(session),
                                   hybbx_session_user_level(session));
+    rec = hybbx_session_record(session);
+    transport = who_transport_label(rec != NULL ? rec->transport : NULL);
+    if (rec == NULL || rec->transport[0] == '\0') {
+        transport = who_transport_label(session->transport != NULL ?
+                                        session->transport->name : NULL);
+    }
+
+    snprintf(line, sizeof(line), "  %-16s  %s", name, transport);
+    hybbx_session_write_line(ctx->requester, line);
+    ctx->count++;
+}
+
+static hybbx_result_t cmd_who(hybbx_service_t *service, hybbx_session_t *session)
+{
+    who_ctx_t ctx;
+    char total[32];
+
+    ctx.requester = session;
+    ctx.count = 0;
+
     hybbx_session_write_line(session, "Online users:");
-    hybbx_session_write_line(session, name);
+    hybbx_service_visit_sessions(service, who_list_visitor, &ctx);
+
+    if (ctx.count == 0) {
+        hybbx_session_write_line(session, "  (none)");
+    }
+
+    snprintf(total, sizeof(total), "Total: %u", ctx.count);
+    hybbx_session_write_line(session, total);
     return HYBBX_OK;
 }
 
@@ -1786,9 +1853,16 @@ static hybbx_result_t cmd_exit(hybbx_session_t *session)
 
 static hybbx_result_t cmd_version(hybbx_session_t *session)
 {
-    char buf[64];
+    char buf[128];
+    char os_name[64];
+
+    if (hybbx_platform_os_name(os_name, sizeof(os_name)) != HYBBX_OK) {
+        hybbx_strlcpy(os_name, "unknown", sizeof(os_name));
+    }
 
     snprintf(buf, sizeof(buf), "HyBBX %s", HYBBX_VERSION_STRING);
+    hybbx_session_write_line(session, buf);
+    snprintf(buf, sizeof(buf), "Operating system: %s", os_name);
     hybbx_session_write_line(session, buf);
     return HYBBX_OK;
 }
@@ -1858,7 +1932,7 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
     }
 
     if (str_ieq(cmd->verb, "who")) {
-        return cmd_who(session);
+        return cmd_who(service, session);
     }
 
     if (str_ieq(cmd->verb, "session") || str_ieq(cmd->verb, "info")) {

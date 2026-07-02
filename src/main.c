@@ -76,7 +76,7 @@ static int path_is_readable(const char *path)
 }
 
 /**
- * When -c is omitted: HYBBX_CONFIG, then <binary>/../etc/hybbx.ini (install layout).
+ * When -c is omitted: HYBBX_CONFIG, then <binary>/hybbx.ini (install layout).
  */
 static const char *discover_config_path(char *buf, size_t buflen,
                                         const char *argv0)
@@ -114,7 +114,7 @@ static const char *discover_config_path(char *buf, size_t buflen,
                 if (dir_len + 1 < sizeof(etc)) {
                     memcpy(etc, exe, dir_len);
                     etc[dir_len] = '\0';
-                    snprintf(buf, buflen, "%s/../etc/hybbx.ini", etc);
+                    snprintf(buf, buflen, "%s/" HYBBX_FILE_CONFIG, etc);
                     if (path_is_readable(buf)) {
                         return buf;
                     }
@@ -132,7 +132,7 @@ static const char *discover_config_path(char *buf, size_t buflen,
 
         snprintf(path_copy, sizeof(path_copy), "%s", argv0);
         dir = dirname(path_copy);
-        snprintf(candidate, sizeof(candidate), "%s/../etc/hybbx.ini", dir);
+        snprintf(candidate, sizeof(candidate), "%s/" HYBBX_FILE_CONFIG, dir);
         if (path_is_readable(candidate)) {
             snprintf(buf, buflen, "%s", candidate);
             return buf;
@@ -140,6 +140,25 @@ static const char *discover_config_path(char *buf, size_t buflen,
     }
 
     return NULL;
+}
+
+static void setup_install_root(const char *config_path)
+{
+    const char *env;
+
+    env = getenv(HYBBX_ENV_ROOT);
+    if (env != NULL && env[0] != '\0') {
+        hybbx_install_root_set(env);
+        return;
+    }
+
+    if (config_path != NULL && config_path[0] != '\0') {
+        char dir[HYBBX_PATH_MAX];
+
+        if (hybbx_path_dirname(config_path, dir, sizeof(dir)) == HYBBX_OK) {
+            hybbx_install_root_set(dir);
+        }
+    }
 }
 
 int main(int argc, char *argv[])
@@ -202,6 +221,8 @@ int main(int argc, char *argv[])
 
         have_config = 1;
         printf("Loaded configuration: %s\n", config_path);
+
+        setup_install_root(config_path);
 
         rc = hybbx_service_apply_config(service, &config, config_path);
         if (rc != HYBBX_OK) {

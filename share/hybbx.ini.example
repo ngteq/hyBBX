@@ -1,7 +1,7 @@
 ; HyBBX Main instance configuration — version target: 0.6.0
 ; Default profile: datacenter Main — TCP/IP on this host only.
 ;
-;   ON by default:  telnet (user sessions), HBX circuit hub (Secondaries attach)
+;   ON by default:  telnet (user sessions), HBX circuit hub on loopback (Secondaries via bind change)
 ;   OFF by default: ax25, websocket — run on Secondary instance(s) instead
 ;
 ; AX.25 and other non-core adapters normally live on one or more Secondaries that
@@ -10,7 +10,7 @@
 ; locally on Main without remote HBX (single-box, lab, or legacy site).
 ;
 ; Release scope docs (RELEASE-*) begin at v1.0.0 — see docs/ROADMAP.md
-; Arch: docs/ROADMAP.md  |  API: include/hybbx/*.h  |  Install: <prefix>/etc/hybbx.ini
+; Arch: docs/ROADMAP.md  |  API: include/hybbx/*.h  |  Install: <prefix>/hybbx/hybbx.ini
 ;
 ; Sections:
 ;   [service]            daemon name, max_online, prompt
@@ -53,7 +53,7 @@ name = hyBBX
 ; New log file on the first day of each calendar month: yyyymmdd-hybbx.log
 ; [log]
 ; enabled = no
-; dir = ~/.hybbx/logs
+; dir = logs             ; relative to install root (HYBBX_ROOT); default when enabled
 ; level = info           ; debug | info | stats | warn
 
 [storage]
@@ -87,7 +87,7 @@ ansi = no
 input_echo = yes
 
 [texts]
-path = ./text
+path = text
 
 [chat]
 channels = 10
@@ -140,14 +140,14 @@ ipv6 = yes
 ; port = 8080
 ; upstream = reverse-proxy   ; informational; real TLS/HTTP termination on Apache/nginx
 
-; HBX circuit hub — datacenter Main listens on all interfaces for Secondary links.
+; HBX circuit hub — Main only. Default: loopback (127.0.0.1 / ::1) for security.
+; Remote Secondaries: set bind = 0.0.0.0 and bind6 = :: (or a VPN/firewall address).
 ; HyBBX auth: link_id + link_password only. Firewall/VPN/tunnels: system-level.
-; Local dev / single-box: bind = 127.0.0.1 / bind6 = ::1 instead.
 ; Master switch: [networks] circuit = yes|no
 [circuit]
 enabled = yes
-bind = 0.0.0.0
-bind6 = ::
+bind = 127.0.0.1
+bind6 = ::1
 port = 7323
 ipv4 = yes
 ipv6 = yes

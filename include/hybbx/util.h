@@ -26,14 +26,35 @@ size_t hybbx_strlcpy(char *dst, const char *src, size_t dst_size);
 hybbx_result_t hybbx_path_join(char *out, size_t out_len,
                                const char *base, const char *name);
 
-/** Expand `~` / `~/…` and return the default user data directory `$HOME/.hybbx`. */
+/** Default relative storage path (@ref HYBBX_DIR_DATA). */
 hybbx_result_t hybbx_default_user_data_path(char *out, size_t out_len);
 
 /**
  * Expand a config path: `~` → $HOME, `~/foo` → $HOME/foo.
- * Other paths are copied unchanged.
+ * Empty or NULL @p path → @ref HYBBX_DIR_DATA. Other paths copied unchanged.
  */
 hybbx_result_t hybbx_path_expand(char *out, size_t out_len, const char *path);
+
+/** Set the HyBBX install root used by @ref hybbx_path_resolve. */
+void hybbx_install_root_set(const char *root);
+
+/** Install root set by @ref hybbx_install_root_set, or NULL when unset. */
+const char *hybbx_install_root_get(void);
+
+/**
+ * Resolve a config path: @ref hybbx_path_expand, then prefix relative paths
+ * with the install root when set.
+ */
+hybbx_result_t hybbx_path_resolve(char *out, size_t out_len, const char *path);
+
+/** Parent directory of @p path (POSIX `/` rules). */
+hybbx_result_t hybbx_path_dirname(const char *path, char *out, size_t out_len);
+
+/**
+ * Host operating system name for display (e.g. Linux, FreeBSD, Windows).
+ * Does not include OS version or kernel release.
+ */
+hybbx_result_t hybbx_platform_os_name(char *out, size_t out_len);
 
 /** Return non-zero when @p len is safe for HyBBX allocations. */
 int hybbx_size_ok(size_t len);

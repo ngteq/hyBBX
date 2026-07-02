@@ -37,7 +37,7 @@ if(HYBBX_BUILD_CLIENT_TELNET)
     )
     target_link_libraries(hybbx-telnet PRIVATE hybbx_client)
     hybbx_apply_hardening_executable(hybbx-telnet)
-    install(TARGETS hybbx-telnet RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS hybbx-telnet RUNTIME DESTINATION ${HYBBX_INSTALL_HOME})
 endif()
 
 if(HYBBX_BUILD_CLIENT_TERMINAL)
@@ -49,10 +49,10 @@ if(HYBBX_BUILD_CLIENT_TERMINAL)
     )
     target_link_libraries(hybbx-terminal PRIVATE hybbx_client)
     hybbx_apply_hardening_executable(hybbx-terminal)
-    install(TARGETS hybbx-terminal RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS hybbx-terminal RUNTIME DESTINATION ${HYBBX_INSTALL_HOME})
 endif()
 
 install(TARGETS hybbx_client
     EXPORT HyBBXTargets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${HYBBX_INSTALL_HOME}/lib
 )

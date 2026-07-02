@@ -15,7 +15,7 @@ HyBBX ships a **datacenter-oriented standard configuration**. Every switch below
 | **Purpose** | Users, storage, mail, chat, TCP/IP services | TNC, modem, RF, other link hardware |
 | **`[networks] ax25`** | `no` | `yes` |
 | **`[networks] websocket`** | `no` | `no` (until used) |
-| **`[networks] circuit`** | `yes` (HBX hub) | `no` (HBX client via `circuit_host`) |
+| **`[networks] circuit`** | `yes` (HBX hub, loopback bind) | `no` (HBX client via `circuit_host`) |
 | **Telnet** | static-enabled (user access) | loopback maintenance only in template |
 | **Typical wire** | TCP telnet + HBX TCP :7323 | AX.25/RF → HBX/TCP → Main |
 
@@ -26,7 +26,7 @@ On the default path, **Main exposes TCP/IP only** (telnet + circuit hub). **AX.2
 | **Main** | Users, storage, mail, chat, telnet, HBX circuit hub (TCP/IP default) |
 | **Secondary** | TNC/modem/RF locally; bridges non-TCP adapters to Main via HBX/TCP |
 
-HyBBX does **not** integrate VPNs, firewalls, or tunnels. Links use plain TCP/IP (`circuit_host`:`circuit_port`). HyBBX/HBX auth ships **`link_id`** and **`link_password`** only — configure the same keys on Main bridge sections and on each Secondary. Use **system firewall**, **system VPN**, **SSH tunnels**, reverse proxies, or TLS wrappers externally for advanced security.
+HyBBX does **not** integrate VPNs, firewalls, tunnels, or link proxies. Secondaries connect to a **Main** `circuit_host`:`circuit_port` or a **custom proxy** you operate — no HyBBX proxy is shipped before **v1.0**. Links use plain TCP/IP. HyBBX/HBX auth ships **`link_id`** and **`link_password`** only — configure the same keys on Main bridge sections and on each Secondary. Use **system firewall**, **system VPN**, **SSH tunnels**, reverse proxies, or TLS wrappers externally for advanced security.
 
 Config templates:
 
@@ -50,7 +50,7 @@ Config templates:
 **Done today:**
 
 - HBX v1 framing on TCP (`src/core/circuit.c`, `circuit_tcp.c`)
-- Main circuit hub IPv4+IPv6 (`[circuit]`, default port **7323**)
+- Main circuit hub IPv4+IPv6 (`[circuit]`, default port **7323**, loopback **127.0.0.1** / **::1**)
 - Secondary `packet_radio` client (`circuit_host`, `link_password`, `link_id`)
 - `LINK_AUTH` + link registry + stale prune (`src/core/link.c`)
 - AX.25 uplink → session; session output → terminal downlink

@@ -8,7 +8,7 @@ One `hybbx` binary; **Main** and **Secondary** roles are chosen in INI.
 
 HyBBX ships a **datacenter-oriented standard configuration** that remains **fully overrideable**.
 
-**Main** — users, storage, mail, chat, telnet, and the HBX circuit hub. TCP/IP on the host by default (`ax25=no`, `circuit=yes`).
+**Main** — users, storage, mail, chat, telnet, and the HBX circuit hub (loopback by default; widen `bind` in `hybbx.ini` for remote Secondaries). TCP/IP on the host (`ax25=no`, `circuit=yes`).
 
 **Secondary** — AX.25, TNC, and RF (and future adapters). Bridges to Main over HBX/TCP (port 7323) with `link_id` and `link_password`.
 

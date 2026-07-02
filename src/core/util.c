@@ -9,6 +9,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#if !defined(_WIN32) && !defined(__AMIGA__)
+#include <sys/utsname.h>
+#endif
+
 #if !defined(HYBBX_CLIENT_BUILD)
 #include "hybbx/config.h"
 #endif
@@ -152,21 +156,157 @@ size_t hybbx_strlcpy(char *dst, const char *src, size_t dst_size)
 
 hybbx_result_t hybbx_default_user_data_path(char *out, size_t out_len)
 {
-    const char *home;
+    if (out == NULL || out_len == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (hybbx_strlcpy(out, HYBBX_DIR_DATA, out_len) >= out_len) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    return HYBBX_OK;
+}
+
+static char g_install_root[HYBBX_PATH_MAX];
+
+void hybbx_install_root_set(const char *root)
+{
+    if (root == NULL || root[0] == '\0') {
+        g_install_root[0] = '\0';
+        return;
+    }
+
+    hybbx_strlcpy(g_install_root, root, sizeof(g_install_root));
+}
+
+const char *hybbx_install_root_get(void)
+{
+    return g_install_root[0] != '\0' ? g_install_root : NULL;
+}
+
+static int path_is_absolute(const char *path)
+{
+    if (path == NULL || path[0] == '\0') {
+        return 0;
+    }
+
+    if (path[0] == '/') {
+        return 1;
+    }
+
+#if defined(_WIN32) || defined(__CYGWIN__)
+    if (((path[0] >= 'A' && path[0] <= 'Z') ||
+         (path[0] >= 'a' && path[0] <= 'z')) &&
+        path[1] == ':') {
+        return 1;
+    }
+#endif
+
+    return 0;
+}
+
+hybbx_result_t hybbx_path_resolve(char *out, size_t out_len, const char *path)
+{
+    char expanded[HYBBX_PATH_MAX];
+    const char *root;
+    hybbx_result_t rc;
 
     if (out == NULL || out_len == 0) {
         return HYBBX_ERR_INVALID;
     }
 
-    home = getenv("HOME");
-    if (home != NULL && home[0] != '\0') {
-        if (snprintf(out, out_len, "%s/.hybbx", home) >= (int)out_len) {
+    rc = hybbx_path_expand(expanded, sizeof(expanded), path);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    if (path_is_absolute(expanded)) {
+        if (hybbx_strlcpy(out, expanded, out_len) >= out_len) {
             return HYBBX_ERR_INVALID;
         }
         return HYBBX_OK;
     }
 
-    if (hybbx_strlcpy(out, ".hybbx", out_len) >= out_len) {
+    root = hybbx_install_root_get();
+    if (root != NULL && root[0] != '\0') {
+        return hybbx_path_join(out, out_len, root, expanded);
+    }
+
+    if (hybbx_strlcpy(out, expanded, out_len) >= out_len) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    return HYBBX_OK;
+}
+
+hybbx_result_t hybbx_path_dirname(const char *path, char *out, size_t out_len)
+{
+    char copy[HYBBX_PATH_MAX];
+    char *slash;
+
+    if (path == NULL || out == NULL || out_len == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (hybbx_strlcpy(copy, path, sizeof(copy)) >= sizeof(copy)) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    slash = strrchr(copy, '/');
+    if (slash == NULL) {
+        if (hybbx_strlcpy(out, ".", out_len) >= out_len) {
+            return HYBBX_ERR_INVALID;
+        }
+        return HYBBX_OK;
+    }
+
+    if (slash == copy) {
+        if (hybbx_strlcpy(out, "/", out_len) >= out_len) {
+            return HYBBX_ERR_INVALID;
+        }
+        return HYBBX_OK;
+    }
+
+    *slash = '\0';
+    if (hybbx_strlcpy(out, copy, out_len) >= out_len) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    return HYBBX_OK;
+}
+
+hybbx_result_t hybbx_platform_os_name(char *out, size_t out_len)
+{
+    const char *name;
+
+    if (out == NULL || out_len == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+#if defined(_WIN32)
+    name = "Windows";
+#elif defined(__AMIGA__)
+    name = "AmigaOS";
+#else
+    {
+        struct utsname u;
+
+        if (uname(&u) != 0) {
+            return HYBBX_ERR_IO;
+        }
+
+        name = u.sysname;
+        if (name == NULL || name[0] == '\0') {
+            return HYBBX_ERR_IO;
+        }
+
+        if (strcmp(name, "Darwin") == 0) {
+            name = "macOS";
+        }
+    }
+#endif
+
+    if (hybbx_strlcpy(out, name, out_len) >= out_len) {
         return HYBBX_ERR_INVALID;
     }
 

@@ -134,7 +134,7 @@ static int log_build_path(char *out, size_t out_len, const struct tm *tm)
 
     snprintf(name, sizeof(name), "%04d%02d%02d-hybbx.log",
              tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
-    return hybbx_path_join(out, out_len, g_log_config.dir, name) == HYBBX_OK;
+    return hybbx_path_join(out, out_len, g_log_config.dir, name) == HYBBX_OK ? 0 : -1;
 }
 
 static int log_open_for_time(const struct tm *tm)
@@ -212,14 +212,17 @@ void hybbx_log_config_apply(const struct hybbx_config *config)
         g_log_config.level = log_parse_level(level_raw);
 
         if (dir_raw != NULL && dir_raw[0] != '\0') {
-            if (hybbx_path_expand(g_log_config.dir, sizeof(g_log_config.dir),
-                                  dir_raw) != HYBBX_OK) {
+            if (hybbx_path_resolve(g_log_config.dir, sizeof(g_log_config.dir),
+                                   dir_raw) != HYBBX_OK) {
                 fprintf(stderr, "[log] invalid dir path\n");
                 g_log_config.enabled = 0;
             }
         } else if (g_log_config.enabled) {
-            fprintf(stderr, "[log] enabled but dir is not set — logging disabled\n");
-            g_log_config.enabled = 0;
+            if (hybbx_path_resolve(g_log_config.dir, sizeof(g_log_config.dir),
+                                   HYBBX_DIR_LOGS) != HYBBX_OK) {
+                fprintf(stderr, "[log] cannot resolve default log directory\n");
+                g_log_config.enabled = 0;
+            }
         }
     }
 

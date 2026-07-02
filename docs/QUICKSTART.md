@@ -30,17 +30,17 @@ The dev script starts HyBBX with telnet on **127.0.0.1:2323** and the internal c
 ## Install (prefix layout)
 
 ```bash
-cmake --install build --prefix "$HOME/hybbx"
-"$HOME/hybbx/bin/hybbx-start"
+cmake --install build --prefix "$HOME"
+"$HOME/hybbx/hybbx-start"
 ```
 
 System-wide example:
 
 ```bash
-sudo cmake --install build --prefix /usr/local/hybbx
+sudo cmake --install build --prefix /usr/local
 ```
 
-Installed layout: `bin/hybbx`, `bin/hybbx-start`, `etc/hybbx.ini`, `text/`, `data/`, `lib/`. Override with `HYBBX_CONFIG` and `HYBBX_ROOT`.
+Installed layout under `<prefix>/hybbx/`: `hybbx`, `hybbx-start`, `hybbx.ini`, `text/`, `data/`, `logs/`, `lib/`. Override with `HYBBX_CONFIG` and `HYBBX_ROOT`.
 
 ## First login
 

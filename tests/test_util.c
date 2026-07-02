@@ -47,19 +47,53 @@ int main(void)
         char path[HYBBX_PATH_MAX];
         const char *home = getenv("HOME");
 
+        if (hybbx_path_expand(path, sizeof(path), NULL) == HYBBX_OK) {
+            check_str("path expand null", path, HYBBX_DIR_DATA);
+        }
         if (home != NULL && home[0] != '\0') {
             char want[HYBBX_PATH_MAX];
 
-            snprintf(want, sizeof(want), "%s/.hybbx", home);
-            if (hybbx_path_expand(path, sizeof(path), NULL) == HYBBX_OK) {
-                check_str("path expand null", path, want);
-            }
-            if (hybbx_path_expand(path, sizeof(path), "~/.hybbx") == HYBBX_OK) {
+            snprintf(want, sizeof(want), "%s/custom", home);
+            if (hybbx_path_expand(path, sizeof(path), "~/custom") == HYBBX_OK) {
                 check_str("path expand tilde", path, want);
             }
             if (hybbx_path_expand(path, sizeof(path), "~") == HYBBX_OK) {
                 check_str("path expand home only", path, home);
             }
+        }
+    }
+
+    {
+        char path[HYBBX_PATH_MAX];
+        char want[HYBBX_PATH_MAX];
+
+        hybbx_install_root_set("/opt/hybbx");
+        if (hybbx_path_resolve(path, sizeof(path), HYBBX_DIR_DATA) == HYBBX_OK) {
+            snprintf(want, sizeof(want), "/opt/hybbx/%s", HYBBX_DIR_DATA);
+            check_str("path resolve data", path, want);
+        }
+        if (hybbx_path_resolve(path, sizeof(path), HYBBX_DIR_LOGS) == HYBBX_OK) {
+            snprintf(want, sizeof(want), "/opt/hybbx/%s", HYBBX_DIR_LOGS);
+            check_str("path resolve logs", path, want);
+        }
+        hybbx_install_root_set(NULL);
+    }
+
+    {
+        char os_name[HYBBX_PATH_MAX];
+
+        if (hybbx_platform_os_name(os_name, sizeof(os_name)) != HYBBX_OK) {
+            fprintf(stderr, "FAIL platform os name: lookup failed\n");
+            g_failures++;
+        } else if (os_name[0] == '\0') {
+            fprintf(stderr, "FAIL platform os name: empty\n");
+            g_failures++;
+#if defined(__linux__)
+        } else if (strcmp(os_name, "Linux") != 0) {
+            fprintf(stderr, "FAIL platform os name: got '%s' want 'Linux'\n",
+                    os_name);
+            g_failures++;
+#endif
         }
     }
 

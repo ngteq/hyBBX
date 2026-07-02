@@ -100,4 +100,4 @@ Toolchain file: `cmake/Toolchain-AmigaOS.cmake`.
 cmake --install build --prefix /path/to/prefix
 ```
 
-Produces `bin/hybbx`, `bin/hybbx-start`, `etc/hybbx.ini`, `text/`, `data/`, `lib/` under the prefix.
+Produces `hybbx/`, `hybbx-start`, `hybbx.ini`, `text/`, `data/`, `logs/`, `lib/` under `<prefix>/hybbx/`.

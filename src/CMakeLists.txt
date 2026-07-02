@@ -83,44 +83,49 @@ if(HYBBX_BUILD_DAEMON)
 
     install(TARGETS hybbx hybbx_core
         EXPORT HyBBXTargets
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${HYBBX_INSTALL_HOME}
+        LIBRARY DESTINATION ${HYBBX_INSTALL_HOME}/lib
+        ARCHIVE DESTINATION ${HYBBX_INSTALL_HOME}/lib
     )
 
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/hybbx
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        DESTINATION ${HYBBX_INSTALL_HOME}/include
         FILES_MATCHING PATTERN "*.h"
     )
 
     install(FILES ${CMAKE_SOURCE_DIR}/share/hybbx.ini.example
-        DESTINATION ${HYBBX_INSTALL_ETCDIR}
+        DESTINATION ${HYBBX_INSTALL_HOME}
         RENAME hybbx.ini
     )
 
     install(FILES ${CMAKE_SOURCE_DIR}/share/hybbx-secondary.ini.example
-        DESTINATION ${HYBBX_INSTALL_ETCDIR}
+        DESTINATION ${HYBBX_INSTALL_HOME}
     )
 
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/text/
-        DESTINATION ${HYBBX_INSTALL_TEXTDIR}
+        DESTINATION ${HYBBX_INSTALL_HOME}/text
         FILES_MATCHING PATTERN "*.txt"
     )
 
     install(FILES ${CMAKE_SOURCE_DIR}/share/data.gitkeep
-        DESTINATION ${HYBBX_INSTALL_STORAGEDIR}
+        DESTINATION ${HYBBX_INSTALL_HOME}/data
+        RENAME .gitkeep
+    )
+
+    install(FILES ${CMAKE_SOURCE_DIR}/share/logs.gitkeep
+        DESTINATION ${HYBBX_INSTALL_HOME}/logs
         RENAME .gitkeep
     )
 
     install(PROGRAMS ${CMAKE_SOURCE_DIR}/scripts/hybbx.sh
-        DESTINATION ${CMAKE_INSTALL_BINDIR}
+        DESTINATION ${HYBBX_INSTALL_HOME}
         RENAME hybbx-start
     )
 
     install(EXPORT HyBBXTargets
         FILE HyBBXTargets.cmake
         NAMESPACE HyBBX::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/HyBBX
+        DESTINATION ${HYBBX_INSTALL_HOME}/lib/cmake/HyBBX
     )
 endif()
 

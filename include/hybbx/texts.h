@@ -2,6 +2,7 @@
 #define HYBBX_TEXTS_H
 
 #include "hybbx/types.h"
+#include "hybbx/limits.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -9,7 +10,7 @@ extern "C" {
 
 struct hybbx_session;
 
-#define HYBBX_DEFAULT_TEXTS_PATH "./text"
+#define HYBBX_DEFAULT_TEXTS_PATH HYBBX_DIR_TEXT
 
 #define HYBBX_TEXT_BANNER "banner.txt"
 #define HYBBX_TEXT_MOTD   "motd.txt"

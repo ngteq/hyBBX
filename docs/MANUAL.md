@@ -26,7 +26,7 @@ HyBBX ships a **datacenter-oriented standard configuration** in `share/hybbx.ini
 
 | Instance | Default connections on this host |
 |----------|----------------------------------|
-| **Main** | **TCP/IP only** — telnet (users) + HBX circuit hub (Secondaries). `ax25=no`, `websocket=no`, `circuit=yes`. |
+| **Main** | **TCP/IP only** — telnet (users) + HBX circuit hub on loopback (Secondaries after bind change). `ax25=no`, `websocket=no`, `circuit=yes`. |
 | **Secondary** | **AX.25 / TNC / RF** (and future adapters). `ax25=yes`, `circuit=no`; uplink via `circuit_host` to Main. |
 
 AX.25 and other non-core adapters are **off on Main by default** — they run on one or more **Secondary** instances. Each Secondary bridges over HBX/TCP to the Main circuit hub.
@@ -80,7 +80,7 @@ circuit = yes      ; HBX TCP hub on Main; Secondaries connect here
 |-----|--------------|-------------------|----------|
 | `ax25` | `no` | `yes` | `[transport.packet_radio]` / `[transport.packet_radioN]` |
 | `websocket` | `no` | `no` | `[transport.websocket]` when implemented |
-| `circuit` | `yes` | `no` | `[circuit]` HBX hub on Main; Secondary uses `circuit_host` instead |
+| `circuit` | `yes` (loopback hub) | `no` | `[circuit]` HBX hub on Main; Secondary uses `circuit_host` instead |
 
 Telnet and SSH are **not** listed here — they are static-enabled when compiled in.
 
@@ -123,7 +123,7 @@ Telnet remains native TCP to the session (no HBX wrapper on the wire).
 
 HyBBX defaults to a **datacenter Main**: **TCP/IP only** on the central host (telnet + HBX circuit). **AX.25 and other adapters default to Secondary instance(s)**. The INI is fully overrideable — Main can run every connection type locally without remote HBX (see [Default deployment model](#default-deployment-model-datacenter-main)).
 
-Secondaries connect to the Main **circuit hub** over plain **TCP/IP**. HyBBX/HBX ships **`link_id`** and **`link_password`** for link setup on both sides — nothing else for link auth.
+Secondaries connect to the Main **circuit hub** over plain **TCP/IP** (`circuit_host` on the Secondary). HyBBX does **not** ship a link proxy before **v1.0** — use Main directly or your own proxy. HyBBX/HBX ships **`link_id`** and **`link_password`** for link setup on both sides — nothing else for link auth.
 
 **Advanced security** (not in HyBBX): **system firewall** (restrict TCP 7323 / 2323), **system VPN** (WireGuard, OpenVPN — point `circuit_host` at the VPN address), **SSH tunnels** (`ssh -L`), stunnel, reverse proxies. HBX stays plain TCP on the address you expose.
 
@@ -151,7 +151,7 @@ Each Secondary gets its **own bridge section** on Main. Use the **same section n
 
 A second shack box uses `[transport.packet_radio2]` on Main and on that Secondary, with a **unique** `link_id` and `link_password` pair.
 
-**Main** — expose the circuit hub and register bridges:
+**Main** — circuit hub on loopback by default; register bridges:
 
 ```ini
 [networks]
@@ -161,8 +161,8 @@ circuit = yes
 
 [circuit]
 enabled = yes
-bind = 0.0.0.0
-bind6 = ::
+bind = 127.0.0.1
+bind6 = ::1
 port = 7323
 link_auth = yes
 link_password = <shared-secret>
@@ -179,9 +179,17 @@ link_role = link
 ; link_role = link
 ```
 
-Open **TCP 7323** on the **system firewall** for Secondary reachability (and **2323** for telnet users). Restart HyBBX; boot log should show `circuit hub 0.0.0.0:7323`, not loopback only.
+**Remote Secondaries** — widen the hub bind in `hybbx.ini` (and firewall accordingly):
 
-**Secondary** — bridge RF to Main (section name must match Main):
+```ini
+[circuit]
+bind = 0.0.0.0
+bind6 = ::
+```
+
+Open **TCP 7323** on the **system firewall** when exposing the hub (and **2323** for telnet users). Boot log should show the configured circuit bind, e.g. `127.0.0.1:7323` (default) or `0.0.0.0:7323` after you change it.
+
+**Secondary** — no local circuit hub (`circuit = no`); bridge RF to Main (section name must match Main):
 
 ```ini
 [networks]
@@ -201,6 +209,8 @@ device = /dev/ttyUSB0
 tnc = tnc2c
 protocol = kiss
 ```
+
+Do not add `[circuit]` on Secondary — the hub runs on Main only. Point `circuit_host` at Main or a custom proxy you operate (HyBBX ships no proxy before v1.0).
 
 Run: `hybbx -c /path/to/hybbx-secondary.ini` (or copy to `hybbx.ini`).
 
@@ -527,7 +537,7 @@ Default flat-file layout under the install prefix `data/` directory (created on 
 | `mail/<user>/inbox/` | Personal mail |
 | `sessions.dat`, `user.next`, `session.next` | Session counters |
 
-`~` in `path` expands to `$HOME`. Dev configs may use `path = ~/.hybbx` instead.
+Relative paths (`data`, `text`, `logs`) resolve against the install root (`HYBBX_ROOT`, or the directory containing the loaded `hybbx.ini`). `~` in `path` still expands to `$HOME` for absolute overrides.
 
 | Backend | Status |
 |---------|--------|
@@ -635,9 +645,9 @@ Banner tokens: `@version@`, `@service@`. MOTD tokens: `@username@`.
 |---------|-------------|
 | `/help` | List or explain commands |
 | `/news`, `/motd` | News / MOTD |
-| `/who` | Online users |
+| `/who` | Online users and connection type (telnet, ax25, …) |
 | `/session` | Session info (`/info`) |
-| `/version` | Version (`/ver`) |
+| `/version` | HyBBX version and host OS name (`/ver`) |
 | `/leave` | Up one area (`/back`) |
 | `/main` | Main area (`/menu`) |
 | `/clear` | Clear screen and input (`/cls`, `/reset`) |
@@ -673,7 +683,7 @@ CC=clang cmake -B build-clang -DCMAKE_BUILD_TYPE=Release
 cmake -B build -DHYBBX_CRYPTO_OPENSSL=ON
 ```
 
-Install layout under prefix: `bin/hybbx`, `bin/hybbx-start`, `etc/hybbx.ini`, `etc/hybbx-secondary.ini.example`, `text/`, `data/`, `lib/`.
+Install layout: `<prefix>/hybbx/hybbx`, `hybbx-start`, `hybbx.ini`, `hybbx-secondary.ini.example`, `text/`, `data/`, `logs/`, `lib/`.
 
 **Run installed:** `hybbx-start` (set `HYBBX_CONFIG`, `HYBBX_ROOT` to override).
 

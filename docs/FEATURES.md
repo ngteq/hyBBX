@@ -36,7 +36,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | Feature | Status | Description |
 |---------|--------|-------------|
 | TCP-only core semantics | Done | Application never parses KISS/AX.25 on-air formats directly |
-| Circuit hub | Done | `[circuit]` TCP hub IPv4+IPv6 (default port 7323) |
+| Circuit hub | Done | `[circuit]` TCP hub IPv4+IPv6 (default port 7323, loopback bind) |
 | HBX v1 framing | Done | Magic `HBX\x01`, proto, flags, length, payload |
 | Protocol `ax25` | Done | Raw AX.25 frame (incl. FCS) RF ↔ core |
 | Protocol `ax25_ui` | Done | UI payload with optional path metadata |
@@ -129,9 +129,9 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | `/clear` | Done | Clear screen and input line (`/cls`, `/reset`) |
 | `/echo` | Done | Toggle typed-character echo |
 | `/motd`, `/news` | Done | Text files from `[texts]` path |
-| `/who` | Done | Online users |
+| `/who` | Done | Online users and connection type (no private data) |
 | `/session` (`/info`) | Done | Current session details |
-| `/version` (`/ver`) | Done | HyBBX version string |
+| `/version` (`/ver`) | Done | HyBBX version and host OS name |
 | `/login`, `/register` | Done | Login; guest self-registration (no password) |
 | `/changeme` | Done | Update own profile and password (registered users) |
 | `/userchange` | Done | Staff overwrite profile and password (Sysop/Admin) |
@@ -200,7 +200,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| CMake install layout | Done | `bin/hybbx`, `bin/hybbx-start`, `etc/hybbx.ini`, `text/`, `data/` |
+| CMake install layout | Done | `<prefix>/hybbx/` — `hybbx`, `hybbx-start`, `hybbx.ini`, `text/`, `data/`, `logs/` |
 | Dev helper script | Done | `scripts/hybbx.sh` → `local/hybbx.ini` |
 | Optional OpenSSL | Done | `-DHYBBX_CRYPTO_OPENSSL=ON` |
 | Optional libsodium | Done | `-DHYBBX_CRYPTO_LIBSODIUM=ON` |

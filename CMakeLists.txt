@@ -127,29 +127,29 @@ endif()
 # ---------------------------------------------------------------------------
 # Install layout
 #
-# Self-contained tree under CMAKE_INSTALL_PREFIX:
+# Self-contained tree under CMAKE_INSTALL_PREFIX/hybbx:
 #
-#   bin/hybbx            executable
-#   bin/hybbx-start      start script (CMake install only)
-#   etc/hybbx.ini        configuration
-#   text/                banner, motd, news
-#   data/                runtime flat-file storage (created at install)
-#   lib/…                libraries, plugins, CMake package files
+#   hybbx/               install root (HYBBX_INSTALL_HOME)
+#     hybbx              executable
+#     hybbx-start        start script (CMake install only)
+#     hybbx.ini          configuration
+#     text/              banner, motd, news
+#     data/              runtime flat-file storage
+#     logs/              optional file logging
+#     lib/               libraries, plugins, CMake package files
 #
-# Recommended prefixes:
-#   system:  sudo cmake --install build --prefix /usr/local/hybbx
-#   user:         cmake --install build --prefix "$HOME/hybbx"
+# Recommended:
+#   system:  sudo cmake --install build --prefix /usr/local
+#            → /usr/local/hybbx/
+#   user:         cmake --install build --prefix "$HOME"
+#            → $HOME/hybbx/
 # ---------------------------------------------------------------------------
 include(GNUInstallDirs)
 
-set(HYBBX_INSTALL_ETCDIR "etc"
-    CACHE PATH "Config directory under CMAKE_INSTALL_PREFIX")
-set(HYBBX_INSTALL_TEXTDIR "text"
-    CACHE PATH "Text files directory under CMAKE_INSTALL_PREFIX")
-set(HYBBX_INSTALL_STORAGEDIR "data"
-    CACHE PATH "Default flat-file data directory under CMAKE_INSTALL_PREFIX")
+set(HYBBX_INSTALL_HOME "hybbx"
+    CACHE PATH "HyBBX self-contained directory under CMAKE_INSTALL_PREFIX")
 
-set(HYBBX_PLUGIN_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/hybbx/plugins"
+set(HYBBX_PLUGIN_INSTALL_DIR "${HYBBX_INSTALL_HOME}/lib/plugins"
     CACHE PATH "Directory for HyBBX transport plugins"
 )
 
@@ -178,7 +178,7 @@ include(CMakePackageConfigHelpers)
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/HyBBXConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/HyBBXConfig.cmake"
-    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/HyBBX"
+    INSTALL_DESTINATION "${HYBBX_INSTALL_HOME}/lib/cmake/HyBBX"
 )
 
 write_basic_package_version_file(
@@ -191,5 +191,5 @@ install(
     FILES
         "${CMAKE_CURRENT_BINARY_DIR}/HyBBXConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/HyBBXConfigVersion.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/HyBBX"
+    DESTINATION "${HYBBX_INSTALL_HOME}/lib/cmake/HyBBX"
 )

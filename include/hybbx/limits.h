@@ -9,6 +9,15 @@
 /** Maximum path length for files and directories. */
 #define HYBBX_PATH_MAX 512
 
+/** Relative paths under the HyBBX install root (see @ref HYBBX_ENV_ROOT). */
+#define HYBBX_DIR_DATA "data"
+#define HYBBX_DIR_TEXT "text"
+#define HYBBX_DIR_LOGS "logs"
+#define HYBBX_FILE_CONFIG "hybbx.ini"
+
+/** Environment variable: absolute path to the HyBBX install directory. */
+#define HYBBX_ENV_ROOT "HYBBX_ROOT"
+
 #define HYBBX_CONFIG_SECTION_MAX 128
 #define HYBBX_CONFIG_KEY_MAX 128
 #define HYBBX_CONFIG_VALUE_MAX 256

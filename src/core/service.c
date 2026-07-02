@@ -506,10 +506,13 @@ static void service_apply_texts(struct hybbx_service_internal *svc,
                                 const hybbx_config_t *config)
 {
     const char *path;
+    char resolved[HYBBX_PATH_MAX];
 
     hybbx_texts_config_defaults(&svc->texts);
-    path = hybbx_config_get(config, "texts", "path", NULL);
-    if (path != NULL && path[0] != '\0') {
+    path = hybbx_config_get(config, "texts", "path", HYBBX_DIR_TEXT);
+    if (hybbx_path_resolve(resolved, sizeof(resolved), path) == HYBBX_OK) {
+        hybbx_strlcpy(svc->texts.path, resolved, sizeof(svc->texts.path));
+    } else if (path != NULL && path[0] != '\0') {
         hybbx_strlcpy(svc->texts.path, path, sizeof(svc->texts.path));
     }
 }
@@ -542,7 +545,7 @@ static hybbx_result_t service_open_storage(struct hybbx_service_internal *svc,
     hybbx_storage_options_t options;
     const char *backend_str;
     const char *path_raw;
-    char path_expanded[HYBBX_PATH_MAX];
+    char path_resolved[HYBBX_PATH_MAX];
     const char *guest_prefix;
     hybbx_result_t rc;
 
@@ -554,7 +557,7 @@ static hybbx_result_t service_open_storage(struct hybbx_service_internal *svc,
     backend_str = hybbx_config_get(config, "storage", "backend", "flatfile");
     path_raw = hybbx_config_get(config, "storage", "path", HYBBX_DEFAULT_DATA_PATH);
 
-    rc = hybbx_path_expand(path_expanded, sizeof(path_expanded), path_raw);
+    rc = hybbx_path_resolve(path_resolved, sizeof(path_resolved), path_raw);
     if (rc != HYBBX_OK) {
         fprintf(stderr, "[storage] invalid path '%s'\n",
                 path_raw != NULL ? path_raw : "");
@@ -564,18 +567,18 @@ static hybbx_result_t service_open_storage(struct hybbx_service_internal *svc,
     guest_prefix = hybbx_config_get(config, "auth", "guest_prefix", NULL);
 
     options.backend = parse_storage_backend(backend_str);
-    options.path = path_expanded;
+    options.path = path_resolved;
     options.guest_prefix = guest_prefix != NULL ? guest_prefix :
                                                   svc->auth.guest_prefix;
 
     svc->storage = hybbx_storage_open(&options);
     if (svc->storage == NULL) {
         fprintf(stderr, "[storage] cannot open '%s' (writable?)\n",
-                path_expanded);
+                path_resolved);
         return HYBBX_ERR_IO;
     }
 
-    printf("[storage] backend=%s path=%s\n", backend_str, path_expanded);
+    printf("[storage] backend=%s path=%s\n", backend_str, path_resolved);
     return HYBBX_OK;
 }
 
@@ -651,13 +654,13 @@ static hybbx_result_t service_apply_circuit(struct hybbx_service_internal *svc,
             svc->storage->path[0] != '\0') {
             hybbx_strlcpy(cfg.data_path, svc->storage->path, sizeof(cfg.data_path));
         } else {
-            char data_expanded[HYBBX_PATH_MAX];
+            char data_resolved[HYBBX_PATH_MAX];
             const char *path_raw = hybbx_config_get(config, "storage", "path",
                                                     HYBBX_DEFAULT_DATA_PATH);
 
-            if (hybbx_path_expand(data_expanded, sizeof(data_expanded),
-                                  path_raw) == HYBBX_OK) {
-                hybbx_strlcpy(cfg.data_path, data_expanded, sizeof(cfg.data_path));
+            if (hybbx_path_resolve(data_resolved, sizeof(data_resolved),
+                                   path_raw) == HYBBX_OK) {
+                hybbx_strlcpy(cfg.data_path, data_resolved, sizeof(cfg.data_path));
             }
         }
         if (svc->config_path[0] != '\0') {
@@ -936,14 +939,14 @@ hybbx_result_t hybbx_service_apply_config(hybbx_service_t *service,
 
     {
         const char *storage_path = HYBBX_DEFAULT_DATA_PATH;
-        char storage_expanded[HYBBX_PATH_MAX];
+        char storage_resolved[HYBBX_PATH_MAX];
 
         if (svc->storage != NULL && svc->storage->path != NULL &&
             svc->storage->path[0] != '\0') {
             storage_path = svc->storage->path;
-        } else if (hybbx_path_expand(storage_expanded, sizeof(storage_expanded),
-                                     storage_path) == HYBBX_OK) {
-            storage_path = storage_expanded;
+        } else if (hybbx_path_resolve(storage_resolved, sizeof(storage_resolved),
+                                      storage_path) == HYBBX_OK) {
+            storage_path = storage_resolved;
         }
         hybbx_mail_config_apply(&svc->mail, config, storage_path);
     }

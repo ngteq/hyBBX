@@ -1,15 +1,18 @@
 ; HyBBX Secondary — RF/TNC and other link adapters; bridges to Main over TCP/IP
 ;
-; Default role: run AX.25 and hardware adapters here; Main stays TCP/IP + HBX only.
+; Default role: run AX.25 and hardware adapters here; connect outbound to Main HBX hub.
 ; One Secondary per RF site (or more); each registers on Main as [transport.<plugin>N].
 ;
-;   cp share/hybbx-secondary.ini.example ~/.hybbx-secondary.ini
-;   hybbx -c ~/.hybbx-secondary.ini
+;   cp share/hybbx-secondary.ini.example <install>/hybbx/hybbx-secondary.ini
+;   hybbx -c /path/to/secondary.ini
 ;
-; Main template (datacenter defaults): share/hybbx.ini.example
-;   [networks] ax25=no circuit=yes  — telnet + HBX hub only on Main
-;   [circuit] bind = 0.0.0.0  +  link_password
+; Main template: share/hybbx.ini.example
+;   [networks] circuit = yes  — HBX hub on Main (loopback by default; widen bind there)
 ;   [transport.packet_radio1]  link_id + link_password (same section name here)
+;
+; Secondary has no local [circuit] hub — [networks] circuit = no (default below).
+; Secondaries connect only to a Main instance or a custom proxy you operate.
+; HyBBX does not ship a link proxy before v1.0.
 ;
 ; HyBBX auth: link_id and link_password only (on Main bridge section and here).
 ; Advanced security: system firewall, system VPN, SSH tunnels, stunnel, etc.
@@ -20,7 +23,7 @@ name = hyBBX-secondary
 
 [storage]
 backend = flatfile
-path = ~/.hybbx-secondary
+path = data-secondary
 
 [auth]
 ; Login prompt: registered /login and /register only (no guest auto-login).
@@ -37,9 +40,11 @@ input_echo = yes
 enabled = no
 
 [networks]
-; Secondary defaults: AX.25 on, HBX circuit hub off (client to Main only).
+; Secondary defaults: AX.25 on, no local HBX hub (outbound client to Main only).
 ax25 = yes
 circuit = no
+
+; No [circuit] section on Secondary — hub runs on Main. Do not set circuit = yes here.
 
 [transport.telnet]
 ; Local maintenance only
