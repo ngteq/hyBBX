@@ -47,10 +47,11 @@ static size_t append_token_expanded(char *out, size_t out_len, size_t pos,
     return pos + value_len;
 }
 
-static void expand_banner_line(char *out, size_t out_len,
-                               const char *line,
-                               const char *version,
-                               const char *service_name)
+static void expand_text_line(char *out, size_t out_len,
+                             const char *line,
+                             const char *version,
+                             const char *service_name,
+                             const char *username)
 {
     size_t pos = 0;
     size_t i = 0;
@@ -66,6 +67,9 @@ static void expand_banner_line(char *out, size_t out_len,
     }
     if (service_name == NULL || service_name[0] == '\0') {
         service_name = HYBBX_DEFAULT_SERVICE_NAME;
+    }
+    if (username == NULL) {
+        username = "";
     }
 
     while (line[i] != '\0' && pos + 1 < out_len) {
@@ -83,10 +87,25 @@ static void expand_banner_line(char *out, size_t out_len,
             continue;
         }
 
+        if (strncmp(line + i, HYBBX_TEXT_TOKEN_USERNAME,
+                    strlen(HYBBX_TEXT_TOKEN_USERNAME)) == 0) {
+            pos = append_token_expanded(out, out_len, pos, username);
+            i += strlen(HYBBX_TEXT_TOKEN_USERNAME);
+            continue;
+        }
+
         out[pos++] = line[i++];
     }
 
     out[pos] = '\0';
+}
+
+static void expand_banner_line(char *out, size_t out_len,
+                               const char *line,
+                               const char *version,
+                               const char *service_name)
+{
+    expand_text_line(out, out_len, line, version, service_name, NULL);
 }
 
 static hybbx_result_t send_banner_fallback(hybbx_session_t *session,
@@ -139,6 +158,55 @@ hybbx_result_t hybbx_texts_send_banner(const hybbx_texts_config_t *texts,
 
         expand_banner_line(expanded, sizeof(expanded), line, version,
                           service_name);
+        n = strlen(expanded);
+        while (n > 0 && (expanded[n - 1] == '\n' || expanded[n - 1] == '\r')) {
+            expanded[--n] = '\0';
+        }
+
+        if (expanded[0] != '\0') {
+            hybbx_session_write_line(session, expanded);
+        } else {
+            hybbx_session_write(session, "\n");
+        }
+    }
+
+    fclose(fp);
+    return HYBBX_OK;
+}
+
+hybbx_result_t hybbx_texts_send_motd(const hybbx_texts_config_t *texts,
+                                     hybbx_session_t *session)
+{
+    char path[HYBBX_PATH_MAX];
+    char expanded[HYBBX_LINE_MAX];
+    FILE *fp;
+    char line[HYBBX_LINE_MAX];
+    const char *username;
+    hybbx_result_t rc;
+
+    if (texts == NULL || session == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    username = hybbx_session_username(session);
+    if (username == NULL || username[0] == '\0') {
+        username = "visitor";
+    }
+
+    rc = hybbx_texts_resolve(texts, HYBBX_TEXT_MOTD, path, sizeof(path));
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    fp = fopen(path, "r");
+    if (fp == NULL) {
+        return HYBBX_ERR_NOT_FOUND;
+    }
+
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        size_t n;
+
+        expand_text_line(expanded, sizeof(expanded), line, NULL, NULL, username);
         n = strlen(expanded);
         while (n > 0 && (expanded[n - 1] == '\n' || expanded[n - 1] == '\r')) {
             expanded[--n] = '\0';

@@ -19,6 +19,8 @@ struct hybbx_session;
 #define HYBBX_BANNER_TOKEN_VERSION "@version@"
 /** Substituted in banner.txt line 2. */
 #define HYBBX_BANNER_TOKEN_SERVICE "@service@"
+/** Substituted in motd.txt (current session username). */
+#define HYBBX_TEXT_TOKEN_USERNAME "@username@"
 
 #define HYBBX_TEXTS_PATH_MAX 512
 
@@ -51,6 +53,12 @@ hybbx_result_t hybbx_texts_send_banner(const hybbx_texts_config_t *texts,
                                        struct hybbx_session *session,
                                        const char *version,
                                        const char *service_name);
+
+/**
+ * Send motd.txt with @username@ expanded from @p session.
+ */
+hybbx_result_t hybbx_texts_send_motd(const hybbx_texts_config_t *texts,
+                                    struct hybbx_session *session);
 
 #ifdef __cplusplus
 }

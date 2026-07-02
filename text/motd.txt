@@ -1,4 +1,2 @@
 Message of the Day
-Welcome. You are connected as a guest.
-Type /help for commands.
-Use /login or /register for an account.
+Welcome. You are connected as a @username@.

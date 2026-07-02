@@ -563,7 +563,7 @@ static hybbx_result_t cmd_motd(hybbx_service_t *service, hybbx_session_t *sessio
         return HYBBX_ERR_INVALID;
     }
 
-    if (hybbx_texts_send_file(texts, session, HYBBX_TEXT_MOTD) != HYBBX_OK) {
+    if (hybbx_texts_send_motd(texts, session) != HYBBX_OK) {
         hybbx_session_write_line(session, "(no motd available)");
     }
 

@@ -627,7 +627,7 @@ path = ./text
 
 Registered users see `Welcome <username>.` only after a successful `/login` (not on guest connect).
 
-Banner tokens: `@version@`, `@service@`.
+Banner tokens: `@version@`, `@service@`. MOTD tokens: `@username@`.
 
 ## Commands
 
