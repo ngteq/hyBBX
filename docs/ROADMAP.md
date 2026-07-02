@@ -4,6 +4,10 @@ Planned work on the **0.7.x** line toward **v1.0.0** — the **first GitHub rele
 
 **Out of v1.0.0 scope:** SSH and WebSocket session transports — planned **after v1.0.0** ships.
 
+## Platform scope
+
+HyBBX implements a **low-bandwidth multi-transport session architecture**: one session core (mail, chat, commands) over plugin link adapters. **Main** hosts the HBX/TCP circuit hub, user storage, and telnet; **Secondary** nodes bridge AX.25/RF and other non-TCP adapters. Topology supports geographic and RF network extension without requiring high-throughput internet at every site.
+
 ## Architecture
 
 **Main** and **Secondary** instances over **TCP/IP**. Same `hybbx` binary; role is defined by INI.
@@ -58,7 +62,7 @@ Config templates:
 - AX.25 uplink → session; session output → terminal downlink
 - Standalone test client: `hybbx-terminal`
 
-**Current limit:** the Main hub accepts **one active circuit link** at a time (one Secondary RF path → one BBS session on Main). Multi-secondary fan-in is planned below.
+**Current limit:** the Main hub accepts **one active circuit link** at a time (one Secondary RF path → one session on Main). Multi-secondary fan-in is planned below.
 
 ### Bridge sections (`transport.<plugin>N`)
 

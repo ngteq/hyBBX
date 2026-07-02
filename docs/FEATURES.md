@@ -2,6 +2,8 @@
 
 **Version:** 0.7.0 — see [FEATURES.md](FEATURES.md).
 
+HyBBX is a **multi-transport session daemon** for bandwidth-constrained networks: one session core over plugin link adapters (telnet, AX.25/HBX bridge, others planned), with mail and chat as standard session facilities.
+
 Feature inventory — update when behavior changes. Operator INI: `share/hybbx.ini.example`, [MANUAL.md](MANUAL.md). Arch: [ROADMAP.md](ROADMAP.md).
 
 | Status | Meaning |
@@ -22,10 +24,11 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | `[networks]` switches | Done | `ax25`, `websocket`, `circuit`; datacenter Main defaults: TCP/IP + HBX only |
 | Service lifecycle | Done | Load config, start circuit hub and enabled transports, run until shutdown |
 | Sysop `/shutdown` / `/restart` | Done | Stop daemon or re-exec with same `-c` config |
-| `security.log` | Done | Fail2ban-friendly audit log in `[log] dir` (login/link auth failures, Sysop actions) |
+| `security.log` | Done | fail2ban-compatible audit log in `[log] dir` (login/link auth failures, Sysop actions) |
 | fail2ban examples | Done | `share/fail2ban/` — telnet, circuit; SSH/WebSocket stubs for after v1.0.0 |
-| Session model | Done | Per-connection BBS-inspired session; node limit (`max_online` / `nodes`) |
+| Session model | Done | Per-connection line-oriented session; node limit (`max_online` / `nodes`) |
 | 2400 baud traffic layer | Done | 80-column wrap, paced 8N1 output, optional ANSI; tuned for slow links |
+| Low-bandwidth session design | Done | Text-only wire format; multi-transport binding; minimal payload overhead |
 | Boolean config standard | Done | Canonical `yes`/`no`; aliases `true`/`false`, `enable`/`disable`, `on`/`off`, `1`/`0` |
 | Command routing | Done | `/` HyBBX commands; `;`/`#` comments ignored; other input local/mailbox (silent) |
 | Input echo | Done | `[traffic] input_echo`; `/echo yes\|no` per session |
@@ -43,7 +46,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | HBX v1 framing | Done | Magic `HBX\x01`, proto, flags, length, payload |
 | Protocol `ax25` | Done | Raw AX.25 frame (incl. FCS) RF ↔ core |
 | Protocol `ax25_ui` | Done | UI payload with optional path metadata |
-| Protocol `terminal` | Done | BBS byte stream for host-mode / UI traffic |
+| Protocol `terminal` | Done | Terminal byte stream for host-mode / UI traffic |
 | G3RUH flag on uplink | Done | `HYBBX_CIRCUIT_FLAG_G3RUH_FSK` when 9600 FSK active |
 | Reserved protos | Planned | `0x20` APRS, `0x21` NETROM, … |
 | Packet radio link client | Done | Secondary connects via `circuit_host` / `circuit_port` |
@@ -132,6 +135,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | `/clear` | Done | Clear screen and input line (`/cls`, `/reset`) |
 | `/echo` | Done | Toggle typed-character echo |
 | `/motd`, `/news` | Done | Text files from `[texts]` path |
+| `/rules` (`/legal`) | Done | Legal notice and acceptable use (`rules.txt`; all users) |
 | `/who` | Done | Online users and connection type (no private data) |
 | `/session` (`/info`) | Done | Current session details |
 | `/version` (`/ver`) | Done | HyBBX version and host OS name |
@@ -177,13 +181,14 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 ---
 
-## Text files & BBS-inspired content
+## Text files
 
 | Feature | Status | Description |
 |---------|--------|-------------|
 | `banner.txt` | Done | Shown at connect; tokens `@version@`, `@service@` |
 | `motd.txt` | Done | `/motd` only |
 | `news.txt` | Done | `/news` only |
+| `rules.txt` | Done | `/rules` / `/legal` — legal notice and acceptable use |
 
 ---
 

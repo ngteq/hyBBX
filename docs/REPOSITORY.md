@@ -13,7 +13,7 @@ hyBBX/
     telnet/               TCP/IPv4+IPv6 telnet link adapter
     packet_radio/         Secondary: AX.25 + TNC stack; HBX client to Main circuit
   third_party/            Bundled crypto (tinysha256, Monocypher, tiny-AES-c)
-  text/                   banner.txt, motd.txt, news.txt (BBS texts)
+  text/                   banner.txt, motd.txt, news.txt, rules.txt
   share/                  hybbx.ini.example (Main), hybbx-secondary.ini.example (Secondary)
   local/                  Local dev config and data (not required for install)
   scripts/                hybbx.sh, dev-setup.sh
@@ -32,7 +32,7 @@ hyBBX/
 |------|------|
 | `src/core/service.c` | Config apply, transport plugins, circuit hub, session attachment |
 | `src/core/circuit*.c` | HBX framing and internal TCP hub (IPv4/IPv6) |
-| `src/core/session.c` | Per-connection BBS-inspired session, areas, I/O |
+| `src/core/session.c` | Per-connection line-oriented session, areas, I/O |
 | `src/core/command.c` | `/` command dispatch and privileges |
 | `src/core/storage_flatfile.c` | INI user shards, legacy migration |
 | `plugins/packet_radio/` | KISS, 6PACK, TNC2 host mode, AX.25, TNC profiles |

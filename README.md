@@ -1,8 +1,10 @@
 # HyBBX
 
-**HyBBX** is a text-only, BBS-like **C99 plugin transport service** — personal mail, chat and more on one shared session core. Link adapters join **different data networks** (TCP telnet, AX.25 packet radio, HBX over TCP, and planned stacks) so callers on any link reach the same HyBBX system.
+**HyBBX** is a C99 multi-transport session daemon for **bandwidth-constrained networks**. A unified session core (mail, chat, command interface) runs over heterogeneous link adapters: TCP telnet, AX.25 packet radio, and HBX/TCP circuit bridging.
 
-One `hybbx` binary; **Main** and **Secondary** roles are chosen in INI.
+**Main** and **Secondary** topology extends RF and limited-throughput TCP coverage: the Main hosts users, storage, and the HBX circuit hub; Secondary nodes attach local TNC/RF paths and bridge to Main over HBX v1 on TCP (default port 7323).
+
+Output uses the configurable traffic profile (default **2400 baud**, 8N1 pacing, 80-column plain ASCII). One `hybbx` binary; instance role is defined in INI.
 
 ## Default deployment (datacenter Main)
 
@@ -10,7 +12,7 @@ HyBBX ships a **datacenter-oriented standard configuration** that remains **full
 
 **Main** — users, storage, mail, chat, telnet, and the HBX circuit hub (loopback by default; widen `bind` in `hybbx.ini` for remote Secondaries). TCP/IP on the host (`ax25=no`, `circuit=yes`).
 
-**Secondary** — AX.25, TNC, and RF (and future adapters). Bridges to Main over HBX/TCP (port 7323) with `link_id` and `link_password`.
+**Secondary** — AX.25, TNC, and RF (and future adapters). Bridges to Main over HBX/TCP with `link_id` and `link_password`.
 
 **Standalone Main** — set `ax25=yes` and local `[transport.packet_radio]` to run every connection type on one machine without remote HBX (lab or single-box).
 

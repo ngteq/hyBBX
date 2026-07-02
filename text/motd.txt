@@ -1,2 +1,3 @@
 Message of the Day
-Welcome. You are connected as a @username@.
+User @username@ — mail, chat, commands over telnet, RF, or HBX bridge.
+/rules  legal notice.  /help  command reference.

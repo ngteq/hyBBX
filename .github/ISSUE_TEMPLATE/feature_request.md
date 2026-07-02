@@ -15,8 +15,8 @@ labels: enhancement
 
 ## Fits HyBBX model?
 
-- [ ] Centralized daemon + link/repeater daemon technologies ([docs/ROADMAP.md](../../docs/ROADMAP.md))
-- [ ] Plugin-based transport service; mailbox/BBS-like text commands ([README.md](../../README.md))
+- [ ] Multi-transport session daemon; Main + Secondary HBX topology ([docs/ROADMAP.md](../../docs/ROADMAP.md))
+- [ ] Plugin link adapters; line-oriented session commands ([README.md](../../README.md))
 - [ ] Link adapter or HBX/circuit extension (not core wire-protocol parsing)
 
 ## Documentation

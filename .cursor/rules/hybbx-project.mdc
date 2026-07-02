@@ -9,6 +9,7 @@ Read [AGENTS.md](../../AGENTS.md) and [docs/DEVELOPMENT.md](../../docs/DEVELOPME
 
 ## Product
 
+- **Purpose** — multi-transport session daemon for bandwidth-constrained links; Main + Secondary HBX topology.
 - Arch: centralized daemon + link/repeater edge ([docs/ROADMAP.md](../../docs/ROADMAP.md), `share/hybbx.ini.example`).
 - **0.7.x** line — no `docs/RELEASE-*` files until v1.0.0; use [docs/FEATURES.md](../../docs/FEATURES.md) and [docs/ROADMAP.md](../../docs/ROADMAP.md).
 - **HyBBX uses a centralized daemon and link/repeater daemon technologies to expand networks, range, and features** ([docs/ROADMAP.md](../../docs/ROADMAP.md)).

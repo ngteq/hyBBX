@@ -1,0 +1,43 @@
+HyBBX — Legal notice and acceptable use
+
+System description
+HyBBX is a multi-transport session daemon for bandwidth-constrained networks.
+It binds TCP telnet, AX.25 packet radio, and HBX/TCP circuit adapters to one
+session core. Secondary instances bridge RF or limited-throughput uplinks to
+a Main HBX hub. Sessions use a text-only traffic profile (default 2400 baud
+8N1 pacing). Commands: /help.
+
+1. Your responsibility
+By connecting you use HyBBX at your own risk and under your own
+responsibility. You are solely liable for everything you do, write, send,
+or cause through your session — in every case and in every matter. The
+operator does not assume responsibility for your actions, content, or
+decisions.
+
+2. No legal-name requirement
+There is no obligation to use your real name (legal name) on this system.
+You may use a nickname or callsign for display, chat, and mail. Profile and
+account details stored in the user record (name, address, and similar fields)
+are visible only to Sysop and Admin staff for account management — not to
+other users.
+
+3. No sale or sharing of your data
+This service does not sell, rent, or hand over user data to third parties
+for marketing or profiling. Mail, chat, and account files remain on this
+installation unless law or a binding court order requires disclosure.
+
+4. Operation, debugging, and security
+HyBBX may log connections, commands, and security events (for example
+security.log) to keep the service running, to debug faults, to analyse
+abuse, and to protect the system against brute-force and other attacks.
+By using the service you accept this technical processing for operation and
+security.
+
+5. Acceptable use
+Do not use this system for unlawful activity, harassment, or attempts to
+harm the service or other users. Staff may restrict or end access when
+rules are violated.
+
+6. Changes
+The operator may update these rules in text/rules.txt. Use /rules or
+/legal at any time to read the current text.

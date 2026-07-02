@@ -52,12 +52,14 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
 
     if (level == HYBBX_LEVEL_GUEST) {
         return str_ieq(verb, "motd") || str_ieq(verb, "news") ||
+               str_ieq(verb, "rules") || str_ieq(verb, "legal") ||
                str_ieq(verb, "login") || str_ieq(verb, "register") ||
                str_ieq(verb, "clear") || str_ieq(verb, "cls") ||
                str_ieq(verb, "reset") || str_ieq(verb, "echo");
     }
 
     if (str_ieq(verb, "news") || str_ieq(verb, "motd") ||
+        str_ieq(verb, "rules") || str_ieq(verb, "legal") ||
         str_ieq(verb, "who") || str_ieq(verb, "session") || str_ieq(verb, "info") ||
         str_ieq(verb, "version") || str_ieq(verb, "ver") ||
         str_ieq(verb, "leave") || str_ieq(verb, "back") ||
@@ -271,16 +273,17 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
         cmd_help_pair(session, "/help", "list or explain",
                       "/motd", "daily message");
         cmd_help_pair(session, "/news", "system news",
-                      "/login", "<user> <pass>");
-        cmd_help_pair(session, "/register", "new account",
-                      "/clear", "clear screen");
-        cmd_help_line(session, "/echo", "input echo on/off");
+                      "/rules", "legal notice");
+        cmd_help_pair(session, "/login", "<user> <pass>",
+                      "/register", "new account");
+        cmd_help_pair(session, "/clear", "clear screen",
+                      "/echo", "input echo on/off");
         cmd_help_line(session, "/exit", "close connection");
         return;
     }
 
     cmd_help_group(session, "General",
-                   "/help  /news  /motd  /who  /session  /version");
+                   "/help  /news  /motd  /rules  /who  /session  /version");
     cmd_help_group(session, "Screen", "/clear  /echo");
     cmd_help_group(session, "Areas",
                    "/leave  /main  /chat  /mail  /exit");
@@ -323,6 +326,8 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         canonical = "main";
     } else if (str_ieq(topic, "cls") || str_ieq(topic, "reset")) {
         canonical = "clear";
+    } else if (str_ieq(topic, "legal")) {
+        canonical = "rules";
     }
 
     if (!cmd_verb_allowed(level, canonical) ||
@@ -350,6 +355,13 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
 
     if (str_ieq(canonical, "motd")) {
         cmd_help_topic_title(session, "/motd", "daily message");
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(canonical, "rules")) {
+        cmd_help_topic_title(session, "/rules",
+                             "legal notice and acceptable use (rules.txt)");
+        cmd_help_topic_detail(session, "  alias: /legal");
         return HYBBX_OK;
     }
 
@@ -606,6 +618,21 @@ static hybbx_result_t cmd_motd(hybbx_service_t *service, hybbx_session_t *sessio
 
     if (hybbx_texts_send_motd(texts, session) != HYBBX_OK) {
         hybbx_session_write_line(session, "(no motd available)");
+    }
+
+    return HYBBX_OK;
+}
+
+static hybbx_result_t cmd_rules(hybbx_service_t *service, hybbx_session_t *session)
+{
+    const hybbx_texts_config_t *texts = hybbx_service_get_texts(service);
+
+    if (texts == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (hybbx_texts_send_file(texts, session, HYBBX_TEXT_RULES) != HYBBX_OK) {
+        hybbx_session_write_line(session, "(no rules available)");
     }
 
     return HYBBX_OK;
@@ -2037,6 +2064,10 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
 
     if (str_ieq(cmd->verb, "motd")) {
         return cmd_motd(service, session);
+    }
+
+    if (str_ieq(cmd->verb, "rules") || str_ieq(cmd->verb, "legal")) {
+        return cmd_rules(service, session);
     }
 
     if (str_ieq(cmd->verb, "who")) {

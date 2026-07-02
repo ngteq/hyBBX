@@ -1,6 +1,6 @@
 # Contributing to HyBBX
 
-Thank you for helping improve HyBBX. This project welcomes **human and AI-assisted** contributions when they follow the same standards.
+Thank you for contributing to HyBBX. This project accepts **human and AI-assisted** contributions that follow the same standards.
 
 ## Start here
 
@@ -57,4 +57,4 @@ user.email=
 
 ## Code of conduct
 
-Be constructive and respectful. HyBBX serves amateur radio and retro-terminal communities — keep discourse technical and welcoming.
+Be constructive and respectful. Keep discussion technical and factual.

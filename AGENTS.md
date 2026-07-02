@@ -4,7 +4,7 @@ Instructions for **AI coding agents** and human developers working in this repos
 
 ## Project
 
-C99 plugin transport service: **Main** and **Secondary** instances. Default **Main** profile is datacenter-oriented: TCP/IP + HBX only (`ax25=no`); AX.25 runs on Secondary(s) unless overridden. **0.7.x** development line (per-version `RELEASE-*` docs start at **v1.0.0**). Config: `share/hybbx.ini.example` (Main), `share/hybbx-secondary.ini.example` (Secondary).
+C99 **multi-transport session daemon** for bandwidth-constrained networks (mail/chat/command core + plugin link adapters): **Main** and **Secondary** instances. Default **Main** profile: TCP/IP + HBX only (`ax25=no`); AX.25 on Secondary(s) unless overridden — RF and limited-throughput TCP extension via HBX bridge. **0.7.x** line (per-version `RELEASE-*` docs from **v1.0.0**). Config: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
 
 ## Documentation map (read first)
 

@@ -15,6 +15,7 @@ struct hybbx_session;
 #define HYBBX_TEXT_BANNER "banner.txt"
 #define HYBBX_TEXT_MOTD   "motd.txt"
 #define HYBBX_TEXT_NEWS   "news.txt"
+#define HYBBX_TEXT_RULES  "rules.txt"
 
 /** Substituted in banner.txt line 1. */
 #define HYBBX_BANNER_TOKEN_VERSION "@version@"

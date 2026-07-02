@@ -35,8 +35,8 @@ CC=clang cmake -B build ...
 | Other POSIX | Solaris, etc.                       | often       | GCC, Clang                      | **Best effort** — same POSIX code paths as Linux/BSD          |
 
 
-**Full** = core BBS session, telnet, circuit hub, flat-file storage, crypto bundles build and run.  
-**Partial** = known gaps (documented below); contributions welcome.
+**Full** = core session, telnet, circuit hub, flat-file storage, crypto bundles build and run.  
+**Partial** = known gaps (documented below); contributions accepted.
 
 ## Build by platform
 

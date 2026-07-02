@@ -1,14 +1,18 @@
 # HyBBX manual
 
-INI, transports, commands. Config: `share/hybbx.ini.example` (Main), `share/hybbx-secondary.ini.example` (Secondary). Arch: [ROADMAP.md](ROADMAP.md).
+Operator and developer reference: INI, transports, commands. Config: `share/hybbx.ini.example` (Main), `share/hybbx-secondary.ini.example` (Secondary). Arch: [ROADMAP.md](ROADMAP.md).
 
 - [FEATURES.md](FEATURES.md) · [QUICKSTART.md](QUICKSTART.md) · [INDEX.md](INDEX.md)
+
+## Platform overview
+
+HyBBX is a **multi-transport session daemon** for bandwidth-constrained links. The session layer exposes mail, chat, and slash-commands; link adapters (telnet, packet radio, HBX circuit, others planned) terminate on a shared session core on **Main**. **Secondary** instances bridge AX.25/RF or limited-throughput TCP uplinks to the Main HBX hub, extending geographic and RF coverage beyond a single host.
 
 ## Connection types
 
 | Transport       | Status   | `[networks]` switch | Description |
 |-----------------|----------|---------------------|-------------|
-| TCP/IP Telnet   | Started  | **static** (always on) | BBS-inspired terminal access over TCP |
+| TCP/IP Telnet   | Started  | **static** (always on) | Line-oriented terminal access over TCP |
 | SSH             | After v1.0.0 | — | Secure shell transport plugin (post–first GitHub release) |
 | AX.25 / Packet Radio | Started | `ax25 = yes\|no` | TNC2C (KISS/AX.25); USB/RS232 |
 | WebSocket       | After v1.0.0 | `websocket = yes\|no` | Forward-proxy behind Apache/nginx only |
@@ -93,7 +97,7 @@ internal circuit hub on loopback. Payloads are wrapped in **HBX v1** frames:
 |-------------|---------|-----------|
 | `ax25` (0x01) | Raw AX.25 frame incl. FCS | RF → core |
 | `ax25_ui` (0x02) | Masked path + UI bytes | Optional metadata |
-| `terminal` (0x10) | BBS byte stream | Core ↔ RF TX |
+| `terminal` (0x10) | Terminal byte stream | Core ↔ RF TX |
 
 Reserved protocol IDs (`0x20` APRS, `0x21` NETROM, …) are allocated for future stacks.
 
@@ -221,7 +225,7 @@ Run: `hybbx -c /path/to/hybbx-secondary.ini` (or copy to `hybbx.ini`).
 1. Secondary opens TCP to `circuit_host:7323` (use VPN/tunnel endpoint if you run system VPN)
 2. `LINK_AUTH` with `link_password`, `link_id`, `link_role` (must match Main bridge section)
 3. Main validates → link registry → opens one circuit session
-4. RF frames uplink as HBX `ax25`; BBS output downlink as HBX `terminal`
+4. RF frames uplink as HBX `ax25`; session output downlink as HBX `terminal`
 
 **Today:** one active circuit link per Main (one Secondary RF path → one session). Bridge sections `[transport.packet_radioN]` document the multi-link registry; runtime multi-link: [ROADMAP.md — Multi-link](ROADMAP.md#multi-link-several-secondaries--one-main--planned).
 
@@ -602,7 +606,7 @@ Bundled: [Monocypher](third_party/monocypher/), [tiny-AES-c](third_party/tinyaes
 
 **Guests** (`Guest1` … `Guest25`) are **ephemeral** — up to 25 simultaneous slots in memory only, not written to user files. With `auto_login=yes` (default), the next free slot is assigned on connect. `/login` is for **registered accounts only**; guests cannot log in with `/login GuestN`.
 
-With `auto_login=no`, new connections see the banner and a login prompt (not logged in). Use `/login` or `/register` for registered accounts — no guest slots. Allowed before login: `/help`, `/motd`, `/news`, `/login`, `/register`, `/clear`, `/echo`, `/exit`.
+With `auto_login=no`, new connections see the banner and a login prompt (not logged in). Use `/login` or `/register` for registered accounts — no guest slots. Allowed before login: `/help`, `/motd`, `/news`, `/rules`, `/login`, `/register`, `/clear`, `/echo`, `/exit`.
 
 Registered users (User, Mod, Admin, Sysop) use `/changeme` to update their own profile and password (not `/register`).
 
@@ -638,6 +642,7 @@ path = ./text
 | `banner.txt` | At connect (guests and all users) |
 | `motd.txt` | `/motd` (guests); also shown automatically after registered `/login` |
 | `news.txt` | `/news` |
+| `rules.txt` | `/rules` (`/legal`) — legal notice and acceptable use (`text/rules.txt`) |
 
 Registered users see `motd.txt` only after a successful `/login` (not on guest connect). Guests see `banner.txt` on connect; use `/motd` on demand.
 
@@ -649,6 +654,7 @@ Banner tokens: `@version@`, `@service@`. MOTD tokens: `@username@`.
 |---------|-------------|
 | `/help` | List or explain commands |
 | `/news`, `/motd` | News / MOTD |
+| `/rules` | Legal notice and acceptable use (`/legal`, `rules.txt`) |
 | `/who` | Online users and connection type (telnet, ax25, …) |
 | `/session` | Session info (`/info`) |
 | `/version` | HyBBX version and host OS name (`/ver`) |

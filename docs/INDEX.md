@@ -23,7 +23,7 @@ Doc index. Short intro: [README.md](../README.md). Config reference: `share/hybb
 | **[BUILD.md](BUILD.md)** | Developers | CMake options, toolchains, hardening |
 | **[PLATFORMS.md](PLATFORMS.md)** | Developers | GCC/Clang on Windows 10+, macOS X+, AmigaOS 3.9+, Linux/BSD |
 
-## Also useful
+## Additional reference
 
 - Main config: [share/hybbx.ini.example](../share/hybbx.ini.example)
 - Secondary config: [share/hybbx-secondary.ini.example](../share/hybbx-secondary.ini.example)

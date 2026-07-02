@@ -1,4 +1,5 @@
 ; HyBBX Main instance configuration — version target: 0.7.0
+; Multi-transport session daemon for bandwidth-constrained networks.
 ; Default profile: datacenter Main — TCP/IP on this host only.
 ;
 ;   ON by default:  telnet (user sessions), HBX circuit hub on loopback (Secondaries via bind change)
@@ -90,6 +91,8 @@ input_echo = yes
 
 [texts]
 path = text
+; banner.txt  connect banner   motd.txt  /motd   news.txt  /news
+; rules.txt   /rules and /legal — legal notice (editable by operator)
 
 [chat]
 channels = 10

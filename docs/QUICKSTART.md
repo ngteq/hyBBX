@@ -1,6 +1,6 @@
 # HyBBX quick start
 
-Build, run, first telnet session. Reference: [MANUAL.md](MANUAL.md), [FEATURES.md](FEATURES.md).
+Build, run, and first telnet session. Reference: [MANUAL.md](MANUAL.md), [FEATURES.md](FEATURES.md).
 
 ## Requirements
 
