@@ -6,12 +6,27 @@ Planned work on the **0.5.x** line. Per-version `docs/RELEASE-*` freeze/scope fi
 
 **Main** and **Secondary** instances over **TCP/IP**. Same `hybbx` binary; role is defined by INI.
 
+### Default deployment model (datacenter Main)
+
+HyBBX ships a **datacenter-oriented standard configuration**. Every switch below is **overrideable** — Main can run AX.25 and all adapters locally without remote HBX when desired.
+
+| | **Main** (default) | **Secondary** (default) |
+|---|-------------------|-------------------------|
+| **Purpose** | Users, storage, mail, chat, TCP/IP services | TNC, modem, RF, other link hardware |
+| **`[networks] ax25`** | `no` | `yes` |
+| **`[networks] websocket`** | `no` | `no` (until used) |
+| **`[networks] circuit`** | `yes` (HBX hub) | `no` (HBX client via `circuit_host`) |
+| **Telnet** | static-enabled (user access) | loopback maintenance only in template |
+| **Typical wire** | TCP telnet + HBX TCP :7323 | AX.25/RF → HBX/TCP → Main |
+
+On the default path, **Main exposes TCP/IP only** (telnet + circuit hub). **AX.25 and further connection types run on Secondary instance(s)** that bridge to Main. For a **standalone Main**, set `ax25=yes`, configure `[transport.packet_radio]` with local TNC settings, and omit Secondary nodes — all connection types are then managed on one host with no remote HBX link.
+
 | Role | Purpose |
 |------|---------|
-| **Main** | Users, storage, mail, chat, telnet, HBX circuit hub |
-| **Secondary** | TNC/modem/RF locally; bridges to Main via HBX/TCP |
+| **Main** | Users, storage, mail, chat, telnet, HBX circuit hub (TCP/IP default) |
+| **Secondary** | TNC/modem/RF locally; bridges non-TCP adapters to Main via HBX/TCP |
 
-HyBBX does **not** integrate VPNs. Links use plain TCP/IP (`circuit_host`:`circuit_port`). Admins and sysops may add VPN, SSH tunnels, or reverse proxies externally.
+HyBBX does **not** integrate VPNs, firewalls, or tunnels. Links use plain TCP/IP (`circuit_host`:`circuit_port`). HyBBX/HBX auth ships **`link_id`** and **`link_password`** only — configure the same keys on Main bridge sections and on each Secondary. Use **system firewall**, **system VPN**, **SSH tunnels**, reverse proxies, or TLS wrappers externally for advanced security.
 
 Config templates:
 
@@ -42,6 +57,21 @@ Config templates:
 - Standalone test client: `hybbx-terminal`
 
 **Current limit:** the Main hub accepts **one active circuit link** at a time (one Secondary RF path → one BBS session on Main). Multi-secondary fan-in is planned below.
+
+### Bridge sections (`transport.<plugin>N`)
+
+Each Secondary with its own RF path or link adapter gets a **matching bridge section** on Main. Increment **N** per Secondary:
+
+| Side | Example section | HyBBX keys (same on both) |
+|------|-----------------|---------------------------|
+| **Main** | `[transport.packet_radio1]` | `link_id`, `link_password`, `link_role` |
+| **Secondary** | `[transport.packet_radio1]` | same `link_id`, `link_password`, `link_role` + TNC/RF tuning |
+
+Second Secondary on Main: `[transport.packet_radio2]` with its own `link_id` / `link_password`; Secondary INI uses the same section name and credentials.
+
+HyBBX does **not** configure firewall rules, VPN endpoints, or tunnels — operators handle those at the OS/network layer (e.g. restrict TCP **7323** to known Secondary IPs, WireGuard/OpenVPN to a private `circuit_host`, `ssh -L` port forward). HBX stays plain TCP on the chosen address/port.
+
+**Today:** bridge sections document the registry convention; runtime still uses one `[circuit]` hub and one active link. Multi-link code will read numbered bridge sections — see below.
 
 ### Secondary `link_role` (INI)
 
@@ -81,7 +111,7 @@ Goal: multiple Secondary nodes connected to one Main instance simultaneously, ea
 | Phase | Scope | Status |
 |-------|--------|--------|
 | **0** | Single link, single session (today) | **Done** |
-| **1** | Hub accepts **N** concurrent TCP links; one session per `link_id` | Planned |
+| **1** | Hub accepts **N** concurrent TCP links; one session per `link_id`; bridge registry from `[transport.<plugin>N]` on Main | Planned |
 | **2** | Link registry drives routing; `link_role` affects hub behavior | Planned |
 | **3** | Optional fan-out (broadcast/maintenance to all links) | Planned |
 | **4** | Resilience: reconnect policy, optional link heartbeat (operator choice) | Planned |
@@ -89,9 +119,10 @@ Goal: multiple Secondary nodes connected to one Main instance simultaneously, ea
 **Implementation notes (draft):**
 
 - Replace single `link_fd` in `circuit_tcp.c` with a per-link table keyed by `link_id`
+- Main `[transport.packet_radio1]`, `[transport.packet_radio2]`, … register expected links (`link_id`, `link_password`)
 - Cap concurrent links (`max_links` in `[circuit]`, default TBD)
 - Main storage remains authoritative; Secondaries do not host mail/user DB
-- No VPN/TLS inside HyBBX — external wrapping only
+- No VPN/TLS/firewall inside HyBBX — system-level only
 
 Operator doc: [MANUAL.md — Main and secondary deployment](MANUAL.md#main-and-secondary-deployment-tcpip-bridge).
 

@@ -4,7 +4,7 @@ Instructions for **AI coding agents** and human developers working in this repos
 
 ## Project
 
-C99 plugin transport service: **Main** and **Secondary** instances. **0.5.x** development line (per-version `RELEASE-*` docs start at **v1.0.0**). Config: `share/hybbx.ini.example` (Main), `share/hybbx-secondary.ini.example` (Secondary).
+C99 plugin transport service: **Main** and **Secondary** instances. Default **Main** profile is datacenter-oriented: TCP/IP + HBX only (`ax25=no`); AX.25 runs on Secondary(s) unless overridden. **0.5.x** development line (per-version `RELEASE-*` docs start at **v1.0.0**). Config: `share/hybbx.ini.example` (Main), `share/hybbx-secondary.ini.example` (Secondary).
 
 ## Documentation map (read first)
 

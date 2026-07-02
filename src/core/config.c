@@ -286,6 +286,91 @@ unsigned hybbx_config_get_uint(const hybbx_config_t *config,
     return (unsigned)parsed;
 }
 
+static int config_section_has_keys(const hybbx_config_t *config,
+                                   const char *section)
+{
+    size_t i;
+
+    if (config == NULL || section == NULL) {
+        return 0;
+    }
+
+    for (i = 0; i < config->count; i++) {
+        const hybbx_config_entry_t *entry = &config->entries[i];
+
+        if (strcmp(entry->section, section) != 0) {
+            continue;
+        }
+        if (strcmp(entry->key, "enabled") == 0) {
+            continue;
+        }
+        return 1;
+    }
+
+    return 0;
+}
+
+static int config_suffix_is_digits(const char *suffix)
+{
+    if (suffix == NULL || suffix[0] == '\0') {
+        return 0;
+    }
+
+    while (*suffix != '\0') {
+        if (!isdigit((unsigned char)*suffix)) {
+            return 0;
+        }
+        suffix++;
+    }
+
+    return 1;
+}
+
+int hybbx_config_resolve_transport_section(const hybbx_config_t *config,
+                                           const char *plugin_name,
+                                           char *out_section,
+                                           size_t out_size)
+{
+    char prefix[128];
+    size_t prefix_len;
+    size_t i;
+
+    if (config == NULL || plugin_name == NULL || out_section == NULL ||
+        out_size == 0) {
+        return 0;
+    }
+
+    snprintf(prefix, sizeof(prefix), "transport.%s", plugin_name);
+    if (config_section_has_keys(config, prefix)) {
+        hybbx_strlcpy(out_section, prefix, out_size);
+        return 1;
+    }
+
+    prefix_len = strlen(prefix);
+    for (i = 0; i < config->count; i++) {
+        const char *sec = config->entries[i].section;
+        const char *suffix;
+
+        if (sec == NULL || strncmp(sec, prefix, prefix_len) != 0) {
+            continue;
+        }
+
+        suffix = sec + prefix_len;
+        if (!config_suffix_is_digits(suffix)) {
+            continue;
+        }
+        if (!config_section_has_keys(config, sec)) {
+            continue;
+        }
+
+        hybbx_strlcpy(out_section, sec, out_size);
+        return 1;
+    }
+
+    hybbx_strlcpy(out_section, prefix, out_size);
+    return 0;
+}
+
 char *hybbx_config_format_section(const hybbx_config_t *config,
                                   const char *section)
 {

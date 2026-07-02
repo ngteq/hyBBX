@@ -809,7 +809,10 @@ static void apply_transport_cb(const hybbx_transport_plugin_t *plugin,
         return;
     }
 
-    snprintf(section, sizeof(section), "transport.%s", plugin->name);
+    if (!hybbx_config_resolve_transport_section(ctx->config, plugin->name,
+                                                section, sizeof(section))) {
+        snprintf(section, sizeof(section), "transport.%s", plugin->name);
+    }
 
     if (hybbx_networks_is_static_transport(plugin->name)) {
         transport_enabled = 1;

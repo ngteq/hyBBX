@@ -20,7 +20,20 @@ Telnet and SSH ignore `enabled` in their `[transport.*]` sections — they start
 
 Plugins: `hybbx_transport_plugin_t` in `include/hybbx/plugin.h`. Core = TCP/IPv4+IPv6 + HBX only.
 
-Arch (Main + Secondary): [ROADMAP.md](ROADMAP.md). Circuit INI: `[circuit]` in `share/hybbx.ini.example`.
+### Default deployment model (datacenter Main)
+
+HyBBX ships a **datacenter-oriented standard configuration** in `share/hybbx.ini.example`. It is **fully overrideable**.
+
+| Instance | Default connections on this host |
+|----------|----------------------------------|
+| **Main** | **TCP/IP only** — telnet (users) + HBX circuit hub (Secondaries). `ax25=no`, `websocket=no`, `circuit=yes`. |
+| **Secondary** | **AX.25 / TNC / RF** (and future adapters). `ax25=yes`, `circuit=no`; uplink via `circuit_host` to Main. |
+
+AX.25 and other non-core adapters are **off on Main by default** — they run on one or more **Secondary** instances. Each Secondary bridges over HBX/TCP to the Main circuit hub.
+
+**Standalone Main (override):** enable `ax25=yes`, add `[transport.packet_radio]` with local device settings, and run TNC on the same host. Main then manages **all connection types directly** with **no remote HBX** — single-box, lab, or legacy site.
+
+Full bridge layout: [ROADMAP.md](ROADMAP.md). Circuit INI: `[circuit]` in `share/hybbx.ini.example`.
 
 ### Planned transports
 
@@ -50,18 +63,24 @@ Examples: `enabled = yes`, `pace_output = enable`, `ansi = false`,
 
 Master switches for optional connection adapters. Core IP transports are static-enabled.
 
+**Datacenter defaults** (Main template `share/hybbx.ini.example`):
+
 ```ini
 [networks]
-ax25 = no          ; packet_radio plugin (AX.25 / KISS / TNC)
+ax25 = no          ; off on Main — run on Secondary(s) by default
 websocket = no     ; planned
-circuit = yes      ; HBX TCP hub (Main); Secondaries connect here
+circuit = yes      ; HBX TCP hub on Main; Secondaries connect here
 ```
 
-| Key | Default | Controls |
-|-----|---------|----------|
-| `ax25` | `no` | `[transport.packet_radio]` (alias: `packet_radio`) |
-| `websocket` | `no` | `[transport.websocket]` when implemented |
-| `circuit` | `yes` | `[circuit]` HBX hub (also respects `[circuit] enabled`) |
+**Secondary defaults** (`share/hybbx-secondary.ini.example`): `ax25=yes`, `circuit=no`.
+
+**Standalone Main:** set `ax25=yes` and configure `[transport.packet_radio]` locally — all connection types on one host, no remote HBX.
+
+| Key | Main default | Secondary default | Controls |
+|-----|--------------|-------------------|----------|
+| `ax25` | `no` | `yes` | `[transport.packet_radio]` / `[transport.packet_radioN]` |
+| `websocket` | `no` | `no` | `[transport.websocket]` when implemented |
+| `circuit` | `yes` | `no` | `[circuit]` HBX hub on Main; Secondary uses `circuit_host` instead |
 
 Telnet and SSH are **not** listed here — they are static-enabled when compiled in.
 
@@ -89,7 +108,8 @@ ipv6 = yes
 ```
 
 Packet radio connects as a **link client** (`circuit_host` / `circuit_port` in
-`[transport.packet_radio]`). The hub opens a `circuit` session and bridges HBX frames
+`[transport.packet_radioN]` on Secondary; Main holds matching bridge section with
+`link_id` / `link_password` only). The hub opens a `circuit` session and bridges HBX frames
 to `hybbx_session` — the application never parses KISS or AX.25 directly.
 
 ```
@@ -101,7 +121,11 @@ Telnet remains native TCP to the session (no HBX wrapper on the wire).
 
 ### Main and secondary deployment (TCP/IP bridge)
 
-HyBBX uses a **Main** instance and **Secondary** instances with TNC/modem hardware. Secondaries connect to the Main **circuit hub** over plain **TCP/IP** — no VPN inside HyBBX. Admins may add VPN, SSH tunnels, or firewalls externally.
+HyBBX defaults to a **datacenter Main**: **TCP/IP only** on the central host (telnet + HBX circuit). **AX.25 and other adapters default to Secondary instance(s)**. The INI is fully overrideable — Main can run every connection type locally without remote HBX (see [Default deployment model](#default-deployment-model-datacenter-main)).
+
+Secondaries connect to the Main **circuit hub** over plain **TCP/IP**. HyBBX/HBX ships **`link_id`** and **`link_password`** for link setup on both sides — nothing else for link auth.
+
+**Advanced security** (not in HyBBX): **system firewall** (restrict TCP 7323 / 2323), **system VPN** (WireGuard, OpenVPN — point `circuit_host` at the VPN address), **SSH tunnels** (`ssh -L`), stunnel, reverse proxies. HBX stays plain TCP on the address you expose.
 
 | Role | Template |
 |------|----------|
@@ -110,16 +134,29 @@ HyBBX uses a **Main** instance and **Secondary** instances with TNC/modem hardwa
 
 ```
   Secondary                         Main
-  RF ←→ TNC ←→ packet_radio  ──TCP:7323──►  [circuit] hub → session
+  RF ←→ TNC ←→ packet_radio1 ──TCP:7323──►  [circuit] hub → session
+                                              [transport.packet_radio1]  (registry)
                                               telnet :2323 → users
                                               mail, storage, chat
 ```
 
-**Main** — expose the circuit hub to Secondaries:
+#### Bridge sections (`transport.<plugin>N`)
+
+Each Secondary gets its **own bridge section** on Main. Use the **same section name** on both sides; increment **N** for each additional Secondary:
+
+| Instance | Section | Keys HyBBX provides |
+|----------|---------|---------------------|
+| Main | `[transport.packet_radio1]` | `link_id`, `link_password`, `link_role` |
+| Secondary | `[transport.packet_radio1]` | same `link_id`, `link_password`, `link_role` + TNC/RF/device settings |
+
+A second shack box uses `[transport.packet_radio2]` on Main and on that Secondary, with a **unique** `link_id` and `link_password` pair.
+
+**Main** — expose the circuit hub and register bridges:
 
 ```ini
 [networks]
 ax25 = no
+websocket = no
 circuit = yes
 
 [circuit]
@@ -129,11 +166,22 @@ bind6 = ::
 port = 7323
 link_auth = yes
 link_password = <shared-secret>
+link_stale_days = 10
+
+[transport.packet_radio1]
+link_id = secondary-1
+link_password = <shared-secret>
+link_role = link
+
+; [transport.packet_radio2]
+; link_id = secondary-2
+; link_password = <other-secret>
+; link_role = link
 ```
 
-Open **TCP 7323** on the firewall (and **2323** for telnet users). Restart HyBBX; boot log should show `circuit hub 0.0.0.0:7323`, not loopback only.
+Open **TCP 7323** on the **system firewall** for Secondary reachability (and **2323** for telnet users). Restart HyBBX; boot log should show `circuit hub 0.0.0.0:7323`, not loopback only.
 
-**Secondary** — bridge RF to Main:
+**Secondary** — bridge RF to Main (section name must match Main):
 
 ```ini
 [networks]
@@ -143,11 +191,11 @@ circuit = no
 [mail]
 enabled = no
 
-[transport.packet_radio]
-circuit_host = <main-host>
+[transport.packet_radio1]
+circuit_host = <main-host-or-vpn-ip>
 circuit_port = 7323
 link_id = secondary-1
-link_password = <same-as-main>
+link_password = <same-as-main-bridge-section>
 link_role = link
 device = /dev/ttyUSB0
 tnc = tnc2c
@@ -158,14 +206,39 @@ Run: `hybbx -c /path/to/hybbx-secondary.ini` (or copy to `hybbx.ini`).
 
 **Connection flow:**
 
-1. Secondary `packet_radio` opens TCP to `circuit_host:7323`
-2. `LINK_AUTH` with `link_password`, `link_id`, `link_role`
+1. Secondary opens TCP to `circuit_host:7323` (use VPN/tunnel endpoint if you run system VPN)
+2. `LINK_AUTH` with `link_password`, `link_id`, `link_role` (must match Main bridge section)
 3. Main validates → link registry → opens one circuit session
 4. RF frames uplink as HBX `ax25`; BBS output downlink as HBX `terminal`
 
-**Today:** one active circuit link per Main (one Secondary RF path → one session). Multiple simultaneous Secondaries: [ROADMAP.md — Multi-link](ROADMAP.md#multi-link-several-secondaries--one-main--planned).
+**Today:** one active circuit link per Main (one Secondary RF path → one session). Bridge sections `[transport.packet_radioN]` document the multi-link registry; runtime multi-link: [ROADMAP.md — Multi-link](ROADMAP.md#multi-link-several-secondaries--one-main--planned).
 
-**VPN:** not built into HyBBX. Point `circuit_host` at the main's reachable IP, or at a VPN endpoint you configure outside HyBBX.
+**System security (external):** firewall allow-lists, VPN (`circuit_host` = tunnel IP), `ssh -L 7323:127.0.0.1:7323` — HyBBX does not configure these.
+
+#### Standalone Main (all connections local)
+
+To run **without Secondary nodes** — Main owns telnet, circuit hub, and AX.25 on one machine:
+
+```ini
+[networks]
+ax25 = yes
+circuit = yes
+
+[circuit]
+bind = 127.0.0.1
+bind6 = ::1
+
+[transport.packet_radio]
+circuit_host = 127.0.0.1
+circuit_port = 7323
+link_id = local-1
+link_password = changeme
+device = /dev/ttyUSB0
+tnc = tnc2c
+protocol = kiss
+```
+
+No remote HBX path is required beyond loopback attach to the local circuit hub. Use this for development, labs, or sites that do not split Main and Secondary roles.
 
 ### Telnet
 
@@ -207,7 +280,7 @@ Environment: `HYBBX_CIRCUIT_HOST`, `HYBBX_CIRCUIT_PORT`. See [CLIENTS.md](CLIENT
 
 ### Circuit link authentication
 
-Secondary adapters (packet radio and future stacks) authenticate to Main `[circuit]` with **password only**. HyBBX does **not** use TCP/IP-style ping/pong or heartbeat health checks across links or protocols.
+Secondary adapters (packet radio and future stacks) authenticate to Main `[circuit]` with **`link_id`** and **`link_password`**. Configure the same pair on the Main bridge section `[transport.packet_radioN]` and on the Secondary. HyBBX does **not** use TCP/IP-style ping/pong or heartbeat health checks across links or protocols.
 
 ```ini
 [circuit]
@@ -215,7 +288,7 @@ link_auth = yes
 link_password = changeme
 link_stale_days = 10
 
-[transport.packet_radio]
+[transport.packet_radio1]
 link_id = secondary-1
 link_password = changeme
 link_role = repeater
@@ -287,7 +360,8 @@ HyBBX implements an **AX.25 UI frame layer** and a unified TNC driver with three
 When `g3ruh_fsk=yes`, HyBBX sets `modem=9600`, `radio_baud=9600`, TNC2C `clock_mhz=9.8` (if unset), G3RUH-oriented `txdelay`/`slot`, sends `MODEM 9600` / `HB 9600` to the TNC before KISS or host mode, and tags HBX uplink frames with `G3RUH_FSK`. CB remains half-duplex only.
 
 ```ini
-[transport.packet_radio]
+; Secondary — full TNC block; Main bridge section uses link_id/link_password only
+[transport.packet_radio1]
 enabled = no
 tnc = tnc2c
 protocol = kiss

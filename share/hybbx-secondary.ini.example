@@ -1,13 +1,19 @@
-; HyBBX Secondary — RF/TNC bridge to a Main instance over TCP/IP
+; HyBBX Secondary — RF/TNC and other link adapters; bridges to Main over TCP/IP
+;
+; Default role: run AX.25 and hardware adapters here; Main stays TCP/IP + HBX only.
+; One Secondary per RF site (or more); each registers on Main as [transport.<plugin>N].
 ;
 ;   cp share/hybbx-secondary.ini.example ~/.hybbx-secondary.ini
 ;   hybbx -c ~/.hybbx-secondary.ini
 ;
-; Main template: share/hybbx.ini.example
-;   [circuit] bind = 0.0.0.0  +  link_password  +  firewall TCP 7323
+; Main template (datacenter defaults): share/hybbx.ini.example
+;   [networks] ax25=no circuit=yes  — telnet + HBX hub only on Main
+;   [circuit] bind = 0.0.0.0  +  link_password
+;   [transport.packet_radio1]  link_id + link_password (same section name here)
 ;
-; HyBBX does not integrate VPNs — use plain TCP/IP. Admins may add VPN or
-; TLS wrappers externally; the HBX protocol stays on TCP port 7323.
+; HyBBX auth: link_id and link_password only (on Main bridge section and here).
+; Advanced security: system firewall, system VPN, SSH tunnels, stunnel, etc.
+; HyBBX does not integrate those — point circuit_host at the reachable Main address.
 
 [service]
 name = hyBBX-secondary
@@ -30,6 +36,7 @@ input_echo = yes
 enabled = no
 
 [networks]
+; Secondary defaults: AX.25 on, HBX circuit hub off (client to Main only).
 ax25 = yes
 circuit = no
 
@@ -41,7 +48,8 @@ port = 2323
 ipv4 = yes
 ipv6 = yes
 
-[transport.packet_radio]
+; Section name must match Main [transport.packet_radio1] (increment N per Secondary).
+[transport.packet_radio1]
 ; TCP/IP bridge to Main (HBX v1 on [circuit])
 circuit_host = main.example.com
 circuit_port = 7323

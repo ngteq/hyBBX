@@ -19,7 +19,7 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 | C99 core | Done | GCC + LLVM/Clang; Windows 10+, macOS X+, Linux/BSD, AmigaOS 3.9+ — see [PLATFORMS.md](PLATFORMS.md) |
 | Plugin transports | Done | `hybbx_transport_plugin_t` registry; telnet and packet radio built in |
 | INI configuration | Done | `-c` / `--config`; sections for service, storage, auth, traffic, transports |
-| `[networks]` switches | Done | `ax25`, `websocket`, `circuit`; telnet/ssh static-enabled |
+| `[networks]` switches | Done | `ax25`, `websocket`, `circuit`; datacenter Main defaults: TCP/IP + HBX only |
 | Service lifecycle | Done | Load config, start circuit hub and enabled transports, run until shutdown |
 | Session model | Done | Per-connection BBS-inspired session; node limit (`max_online` / `nodes`) |
 | 2400 baud traffic layer | Done | 80-column wrap, paced 8N1 output, optional ANSI; tuned for slow links |
@@ -210,13 +210,13 @@ Feature inventory — update when behavior changes. Operator INI: `share/hybbx.i
 
 ## Roadmap (not yet implemented)
 
-**Architecture:** HyBBX uses a **Main** instance and **Secondary** instances over TCP/IP. Details: [ROADMAP.md](ROADMAP.md).
+**Architecture:** HyBBX uses a **datacenter-oriented Main** (TCP/IP + HBX by default) and **Secondary** instances for AX.25 and other adapters. Fully overrideable — Main can run all connection types locally. Details: [ROADMAP.md](ROADMAP.md).
 
 | Feature | Status | Description |
 |---------|--------|-------------|
 | Mail-Area | Done | Mailbox on **main** only (not chat) |
 | Main/secondary bridge | Done | HBX/TCP `LINK_AUTH`; templates in `share/` |
-| Multi-link hub | Planned | Several secondaries → one main concurrently |
+| Multi-link hub | Planned | Several secondaries → one main; `[transport.packet_radioN]` bridge registry on Main |
 | Secondary modes | Partial | Secondary INI + `link_role` metadata; role routing planned |
 | SSH transport | Planned | Same session core as telnet |
 | WebSocket transport | Planned | Reverse-proxy only |

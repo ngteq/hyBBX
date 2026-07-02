@@ -53,7 +53,9 @@ Change this after login. User files live under the configured storage path (`[st
 
 ## Configuration
 
-Copy or edit `share/hybbx.ini.example` or `local/hybbx.ini`. Boolean keys use the HyBBX standard (`yes`/`no` and aliases — see [MANUAL.md — Boolean values](MANUAL.md#boolean-values-hybbx-standard)).
+Copy or edit `share/hybbx.ini.example` (datacenter **Main** — TCP/IP + HBX by default) or `local/hybbx.ini` (loopback dev). Boolean keys use the HyBBX standard (`yes`/`no` and aliases — see [MANUAL.md — Boolean values](MANUAL.md#boolean-values-hybbx-standard)).
+
+**Main default:** telnet + HBX circuit on; AX.25 off (runs on Secondary). **Override:** `ax25=yes` on Main for standalone/local TNC — see [MANUAL.md — Standalone Main](MANUAL.md#standalone-main-all-connections-local).
 
 Minimal telnet-only example:
 

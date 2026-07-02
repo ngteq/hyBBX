@@ -57,6 +57,17 @@ unsigned hybbx_config_get_uint(const hybbx_config_t *config,
 char *hybbx_config_format_section(const hybbx_config_t *config,
                                   const char *section);
 
+/**
+ * Resolve INI section for a transport plugin: @c transport.&lt;plugin&gt; first,
+ * else the first @c transport.&lt;plugin&gt;&lt;digits&gt; section with keys
+ * (e.g. @c transport.packet_radio1). Writes the chosen name to @p out_section.
+ * Returns 1 when a numbered (or legacy) section with keys was found, else 0.
+ */
+int hybbx_config_resolve_transport_section(const hybbx_config_t *config,
+                                           const char *plugin_name,
+                                           char *out_section,
+                                           size_t out_size);
+
 typedef void (*hybbx_config_iter_fn)(const char *section, const char *key,
                                      const char *value, void *ctx);
 
