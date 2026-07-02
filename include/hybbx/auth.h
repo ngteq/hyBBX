@@ -121,8 +121,12 @@ int hybbx_password_plain_valid(const char *password);
  */
 int hybbx_username_valid(const char *username, const char *guest_prefix);
 
-/** Fold @p username to lowercase in place (for case-insensitive storage). */
+/** Fold @p username to lowercase in place (for case-insensitive lookup). */
 void hybbx_username_normalize(char *username);
+
+/** Presentation form for output (e.g. Sysop instead of stored sysop). */
+const char *hybbx_username_display(const char *username,
+                                   hybbx_user_level_t level);
 
 /**
  * Parse @p username as @c <guest_prefix><1-25> (case-insensitive prefix).

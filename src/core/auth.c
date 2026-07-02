@@ -269,6 +269,21 @@ void hybbx_username_normalize(char *username)
     }
 }
 
+const char *hybbx_username_display(const char *username,
+                                   hybbx_user_level_t level)
+{
+    if (username == NULL || username[0] == '\0') {
+        return "";
+    }
+
+    if (hybbx_user_level_is_sysop(level) &&
+        str_ieq(username, HYBBX_DEFAULT_SYSOP_USERNAME)) {
+        return HYBBX_DEFAULT_SYSOP_USERNAME;
+    }
+
+    return username;
+}
+
 int hybbx_guest_slot_from_username(const char *guest_prefix,
                                    const char *username,
                                    unsigned *slot_out)

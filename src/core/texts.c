@@ -1,6 +1,7 @@
 #include "hybbx/texts.h"
 #include "hybbx/session.h"
 #include "hybbx/service.h"
+#include "hybbx/auth.h"
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
 #include "hybbx/hybbx.h"
@@ -188,8 +189,9 @@ hybbx_result_t hybbx_texts_send_motd(const hybbx_texts_config_t *texts,
         return HYBBX_ERR_INVALID;
     }
 
-    username = hybbx_session_username(session);
-    if (username == NULL || username[0] == '\0') {
+    username = hybbx_username_display(hybbx_session_username(session),
+                                      hybbx_session_user_level(session));
+    if (username[0] == '\0') {
         username = "visitor";
     }
 

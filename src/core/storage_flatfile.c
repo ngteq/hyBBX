@@ -572,7 +572,6 @@ static hybbx_result_t ensure_default_sysop(hybbx_storage_t *storage)
     sysop.id = user_id;
     hybbx_strlcpy(sysop.username, HYBBX_DEFAULT_SYSOP_USERNAME,
                   sizeof(sysop.username));
-    hybbx_username_normalize(sysop.username);
     sysop.level = HYBBX_LEVEL_SYSOP;
     sysop.active = 1;
     sysop.created_at = now;

@@ -213,6 +213,30 @@ static void cmd_help_group(hybbx_session_t *session,
     hybbx_session_write_line(session, buf);
 }
 
+static void cmd_help_continuation(hybbx_session_t *session, const char *cmds)
+{
+    char buf[HYBBX_LINE_MAX];
+
+    snprintf(buf, sizeof(buf), "             %s", cmds);
+    hybbx_session_write_line(session, buf);
+}
+
+static void cmd_help_staff(hybbx_session_t *session, hybbx_user_level_t level)
+{
+    if (hybbx_auth_may_create_user(level)) {
+        cmd_help_group(session, "Staff",
+                       "/createuser  /activate  /userchange");
+        if (level == HYBBX_LEVEL_SYSOP) {
+            cmd_help_continuation(session,
+                "/promote  /demote  /delete  /userdelete");
+        } else {
+            cmd_help_continuation(session, "/promote  /demote  /delete");
+        }
+    } else if (hybbx_auth_may_activate(level)) {
+        cmd_help_group(session, "Staff", "/activate");
+    }
+}
+
 static void cmd_help_topic_title(hybbx_session_t *session,
                                  const char *cmd, const char *summary)
 {
@@ -230,7 +254,6 @@ static void cmd_help_topic_detail(hybbx_session_t *session, const char *line)
 static void cmd_help_list_for_level(hybbx_session_t *session)
 {
     hybbx_user_level_t level = hybbx_session_user_level(session);
-    char staff[HYBBX_LINE_MAX];
 
     hybbx_session_write_line(session,
         "HyBBX commands (/ required)  —  /help <cmd> for details");
@@ -260,29 +283,7 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
         hybbx_session_write_line(session, "             /deleteme yes");
     }
 
-    staff[0] = '\0';
-    if (hybbx_auth_may_create_user(level)) {
-        hybbx_strlcpy(staff, "/createuser", sizeof(staff));
-    }
-    if (hybbx_auth_may_activate(level)) {
-        snprintf(staff + strlen(staff), sizeof(staff) - strlen(staff),
-                 "%s/activate",
-                 staff[0] != '\0' ? "  " : "");
-    }
-    if (level == HYBBX_LEVEL_SYSOP || level == HYBBX_LEVEL_ADMIN) {
-        snprintf(staff + strlen(staff), sizeof(staff) - strlen(staff),
-                 "%s/userchange  /promote  /demote  /delete",
-                 staff[0] != '\0' ? "  " : "");
-    }
-    if (level == HYBBX_LEVEL_SYSOP) {
-        snprintf(staff + strlen(staff), sizeof(staff) - strlen(staff),
-                 "%s/userdelete",
-                 staff[0] != '\0' ? "  " : "");
-    }
-
-    if (staff[0] != '\0') {
-        cmd_help_group(session, "Staff", staff);
-    }
+    cmd_help_staff(session, level);
 }
 
 static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic)
@@ -579,8 +580,12 @@ static hybbx_result_t cmd_motd(hybbx_service_t *service, hybbx_session_t *sessio
 
 static hybbx_result_t cmd_who(hybbx_session_t *session)
 {
+    const char *name;
+
+    name = hybbx_username_display(hybbx_session_username(session),
+                                  hybbx_session_user_level(session));
     hybbx_session_write_line(session, "Online users:");
-    hybbx_session_write_line(session, hybbx_session_username(session));
+    hybbx_session_write_line(session, name);
     return HYBBX_OK;
 }
 
@@ -1472,7 +1477,10 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
         char welcome[HYBBX_USER_NAME_MAX + 16];
         const hybbx_texts_config_t *texts;
 
-        snprintf(welcome, sizeof(welcome), "Welcome %s.", user.username);
+        const char *display_name;
+
+        display_name = hybbx_username_display(user.username, user.level);
+        snprintf(welcome, sizeof(welcome), "Welcome %s.", display_name);
         hybbx_session_write_line(session, welcome);
 
         texts = hybbx_service_get_texts(service);
