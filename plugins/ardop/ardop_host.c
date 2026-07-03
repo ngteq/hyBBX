@@ -1,6 +1,7 @@
 #include "ardop_host.h"
 #include "ardop_crc.h"
 
+#include "hybbx/socket.h"
 #include "hybbx/util.h"
 
 #include <arpa/inet.h>
