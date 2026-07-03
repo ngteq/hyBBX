@@ -57,6 +57,8 @@ Start ARDOPC or ardopcf before HyBBX, e.g.:
 ardopc 8515 127.0.0.1
 ```
 
+**Testing:** mock host-TCP smoke only before v1.0.0; live CB/modem RF verification after v1.0.0 (after AX.25 integration tests). See [ROADMAP.md](ROADMAP.md#verification).
+
 ## Docs
 
 - [MANUAL.md](MANUAL.md) — operator reference

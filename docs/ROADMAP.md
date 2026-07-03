@@ -57,6 +57,7 @@ Per-link table in `circuit_tcp.c`; `max_links` in `[circuit]`; bridge registry f
 | ARQ host subset | Done | Init, listen, connect, `d:ARQ` data, CRC + RDY |
 | HBX bridge | Done | `terminal` proto on circuit; parallel `link_id` to AX.25 Secondary |
 | `radio_profile=cb` | Preview | CRDOP Level 2 INI hint; half-duplex QoS — see [CRDOP.md](CRDOP.md) |
+| Live RF verification | **After v1.0.0** | Mock smoke scripts only until post-release integration |
 | FEC / OFDM / CAT | Planned | Not required for first bridge |
 
 ## CRDOP (Level 2 — after v1.0.0, experimental)
@@ -69,6 +70,7 @@ Per-link table in `circuit_tcp.c`; `max_links` in `[circuit]`; bridge registry f
 | Embedded modem | **Not in HyBBX** | External **ARDOPC/ardopcf** (sound-card / serial); HyBBX plugin only |
 | HyBBX `transport.crdop` | Partial | CB host-client plugin; external ARDOPC/ardopcf |
 | Global CB profiles | Done | `crdop` plugin; `modem_host` / `500MAX` defaults |
+| Live RF verification | **After v1.0.0** | After AX.25 integration tests; mock smoke only until then |
 
 ## v1.0.0 scope
 
@@ -80,6 +82,12 @@ Per-link table in `circuit_tcp.c`; `max_links` in `[circuit]`; bridge registry f
 | BayCom `ser12` | Via `kissattach` + KISS until documented |
 
 Mail on Main only (`data/mail/<user>/inbox/`). Link codes: issued on `LINK_AUTH_ACK` → `data/links/`.
+
+## Verification
+
+**Pre–v1.0.0:** CI runs **build + unit tests** only (`ctest`). No automated **AX.25** RF integration tests and no **ARDOP/CRDOP** end-to-end tests against live modems in CI. Local mock smoke scripts (`scripts/test-ardop-plugin.sh`, `scripts/test-crdop-plugin.sh`) exercise host-TCP wiring only.
+
+**After v1.0.0 (first integration push):** **AX.25** tests (TNC, Secondary→Main HBX, packet_radio) take priority. **ARDOP/CRDOP** live-modem verification follows in a later milestone.
 
 ## After v1.0.0
 

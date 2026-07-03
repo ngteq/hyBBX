@@ -72,14 +72,16 @@ C99 multi-transport session daemon: mail, chat, `/` commands over **plugin-only*
 | Auto-generated link codes | Done | Issued on successful Secondary→Main `LINK_AUTH` |
 | Telnet dual-stack bind | Done | `ipv4`/`ipv6` toggles; `bind` / `bind6`; `IPV6_V6ONLY` |
 | Packet radio | Done | AX.25 link adapter; `[networks] ax25 = yes` + `[transport.packet_radio]` |
-| ARDOP host client | Partial | `[networks] ardop` + `[transport.ardopN]` → external ARDOPC |
-| CRDOP host client | Partial | `[networks] crdop` + `[transport.crdopN]` → external ARDOPC (CB defaults) |
+| ARDOP host client | Partial | `[networks] ardop` + `[transport.ardopN]` → external ARDOPC; **not RF-tested pre–v1.0.0** |
+| CRDOP host client | Partial | `[networks] crdop` + `[transport.crdopN]` → external ARDOPC (CB defaults); **not RF-tested pre–v1.0.0** |
 | SSH | After v1.0.0 | Same session core as telnet |
 | WebSocket | After v1.0.0 | Local endpoint behind reverse-proxy only |
 
 ---
 
 ## Packet radio & AX.25
+
+**Verification:** code complete for 0.8.x; automated **AX.25 RF integration tests** planned **after v1.0.0** (first post-release push). See [ROADMAP.md](ROADMAP.md#verification).
 
 | Feature | Status | Description |
 |---------|--------|-------------|
@@ -224,9 +226,11 @@ C99 multi-transport session daemon: mail, chat, `/` commands over **plugin-only*
 | Dev helper script | Done | `scripts/hybbx.sh` → `local/hybbx.ini` |
 | Optional OpenSSL | Done | `-DHYBBX_CRYPTO_OPENSSL=ON` |
 | Optional libsodium | Done | `-DHYBBX_CRYPTO_LIBSODIUM=ON` |
-| Plugin build toggles | Done | Telnet / packet_radio on by default |
+| Plugin build toggles | Done | Telnet / packet_radio / ardop / crdop on by default |
 | `hybbx_result_name()` | Done | Short `hybbx_result_t` name for logs/tests ([util.h](include/hybbx/util.h)) |
 | Unit tests (`HYBBX_BUILD_TESTS`) | Done | `tests/test_util.c` — boolean parser + result names; CI on push/PR |
+| Integration tests (AX.25 / ARDOP / CRDOP) | **Not yet** | No RF or live-modem CI before **v1.0.0**; see [ROADMAP.md](ROADMAP.md#verification) |
+| ARDOP/CRDOP mock smoke scripts | Done | `scripts/test-ardop-plugin.sh`, `scripts/test-crdop-plugin.sh` (local mock ARDOPC; not CI) |
 | `scripts/dev-setup.sh` | Done | Configure, build, `compile_commands.json` symlink |
 | GPL-3.0 license | Done | See `LICENSE.txt`; [LICENSING.md](LICENSING.md) (ARDOP/CRDOP third-party) |
 | GitHub CI | Done | `.github/workflows/ci.yml` — build + tests on push/PR |

@@ -53,6 +53,8 @@ ctest --test-dir build --output-on-failure
 
 Also: `./scripts/hybbx.sh` + telnet smoke test.
 
+**Scope before v1.0.0:** unit tests and build only in CI. **AX.25** RF integration and **ARDOP/CRDOP** live-modem tests are **out of scope** until after the v1.0.0 release; first post-release integration work targets **AX.25** ([ROADMAP.md](ROADMAP.md#verification)). Optional local checks: `scripts/test-ardop-plugin.sh`, `scripts/test-crdop-plugin.sh` (mock ARDOPC, not RF).
+
 ## Doc duty
 
 | Change | Update |
