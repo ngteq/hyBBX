@@ -47,7 +47,29 @@ Bridge registry: `[transport.packet_radioN]` on Main matches each remote Seconda
 | 3 | Fan-out to all links (broadcast AX.25 by MHz + QoS) — **Done** |
 | 4 | Reconnect policy, optional heartbeat — planned |
 
-Per-link table in `circuit_tcp.c`; `max_links` in `[circuit]`; bridge registry from `[transport.packet_radioN]`; Main storage authoritative.
+Per-link table in `circuit_tcp.c`; `max_links` in `[circuit]`; bridge registry from `[transport.packet_radioN]` and `[transport.ardopN]`; Main storage authoritative.
+
+## ARDOP (experimental, 0.8.x+)
+
+| Item | Status | Notes |
+|------|--------|-------|
+| External ARDOPC | Done | Operator runs g8bpq/ardop or MIT ardopcf separately; HyBBX plugin = Host-Client TCP only |
+| ARQ host subset | Done | Init, listen, connect, `d:ARQ` data, CRC + RDY |
+| HBX bridge | Done | `terminal` proto on circuit; parallel `link_id` to AX.25 Secondary |
+| `radio_profile=cb` | Preview | CRDOP Level 2 INI hint; half-duplex QoS — see [CRDOP.md](CRDOP.md) |
+| FEC / OFDM / CAT | Planned | Not required for first bridge |
+
+## CRDOP (Level 2 — after v1.0.0, experimental)
+
+**CRDOP** (CB Radio Digital Open Protocol): configurable CB-oriented fork/merge of ARDOP-applicable elements — **not** 1:1. See [CRDOP.md](CRDOP.md), [LICENSING.md](LICENSING.md).
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Spec & licensing path | Done (doc) | MIT ardopcf vs GPL ARDOPC vs clean-room |
+| Embedded modem | **Not in HyBBX** | Standalone external **CRDOPC** (sound-card / serial); HyBBX plugin only |
+| HyBBX `transport.crdop` | Planned | Host-client plugin only; pairs with **external** CRDOPC |
+| Global CB profiles | Preview | `radio_profile`, `arq_bandwidth`, MHz in INI |
+| CRDOPC sound-modem binary | **Not in HyBBX** | Standalone external service (Level 2, post–v1.0.0) |
 
 ## v1.0.0 scope
 

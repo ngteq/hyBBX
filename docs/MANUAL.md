@@ -23,6 +23,7 @@ Override any default in INI. Topology details: [ROADMAP.md](ROADMAP.md). Firewal
 | TCP/IP Telnet   | Started  | **static** (always on) | Line-oriented terminal access over TCP |
 | SSH             | After v1.0.0 | — | Secure shell transport plugin (post–first GitHub release) |
 | AX.25 / Packet Radio | Started | `ax25 = yes\|no` | TNC2C (KISS/AX.25); USB/RS232 |
+| ARDOP (host client) | Partial | `ardop = yes\|no` | External **ARDOPC** modem; HyBBX speaks TNC Host Interface over TCP |
 | WebSocket       | After v1.0.0 | `websocket = yes\|no` | Forward-proxy behind Apache/nginx only |
 | HBX circuit hub | Started  | `circuit = yes\|no` | Main TCP hub — remote Secondary processes connect here |
 
@@ -31,6 +32,8 @@ Telnet starts when built (ignores `enabled`). Optional adapters need `[networks]
 ## Architecture
 
 Plugin API: `hybbx_transport_plugin_t` ([include/hybbx/plugin.h](../include/hybbx/plugin.h)). Core handles TCP/IPv4+IPv6 and HBX only — no KISS/AX.25 parsing in `src/core/`.
+
+**Project default:** HyBBX is **plugin-only** (host-client bridges). Modems, TNCs, and sound-card services stay **external** — standard HyBBX, not an optional mode. Embedded modem DSP = different project, not HyBBX. ARDOP/CRDOP via plugins to external ARDOPC/CRDOPC only.
 
 ## Configuration (INI)
 
@@ -58,17 +61,19 @@ Master switches for optional connection adapters. Core IP transports are static-
 ```ini
 [networks]
 ax25 = no          ; off on Main — run on Secondary(s) by default
+ardop = no         ; external ARDOPC on Secondary (parallel to ax25)
 websocket = no     ; after v1.0.0
 circuit = yes      ; HBX TCP hub on Main; Secondaries connect here
 ```
 
-**Secondary defaults** (`share/hybbx-secondary.ini.example`): `ax25=yes`, `circuit=no`.
+**Secondary defaults** (`share/hybbx-secondary.ini.example`): `ax25=yes`, `ardop=no`, `circuit=no`.
 
 **Standalone Main:** set `ax25=yes` and configure `[transport.packet_radio]` locally — all connection types on one host, no remote HBX.
 
 | Key | Main default | Secondary default | Controls |
 |-----|--------------|-------------------|----------|
 | `ax25` | `no` | `yes` | `[transport.packet_radio]` / `[transport.packet_radioN]` |
+| `ardop` | `no` | `no` | `[transport.ardop]` / `[transport.ardopN]` — requires external ARDOPC |
 | `websocket` | `no` | `no` | `[transport.websocket]` after v1.0.0 |
 | `circuit` | `yes` (loopback hub) | `no` | `[circuit]` HBX hub on Main; Secondary uses `circuit_host` instead |
 
@@ -279,6 +284,61 @@ input_echo = no
 ```
 
 Default: 80-column ASCII, paced 8N1. Echo off (`input_echo = no`); per-session `/echo yes`. `ansi = yes` for gray-on-black and `/clear`. Keep `text/*.txt` lines ≤80 chars when possible.
+
+### ARDOP (external ARDOPC + HyBBX host client)
+
+HyBBX is **not** a sound-modem service and does **not** embed ARDOP DSP or audio I/O. The operator runs **[ARDOPC](https://github.com/g8bpq/ardop)** (or MIT **ardopcf**, or future **CRDOPC**) as a **separate external process** — same model as a USB TNC for `packet_radio`. The `ardop` plugin is a **Host-Client** over TCP (control port + data port+1), parallel to AX.25 on a Secondary.
+
+**Implemented subset** (enough for HBX bridge traffic):
+
+| Direction | Items |
+|-----------|--------|
+| Host → TNC | `INITIALIZE`, `MYCALL`, `PROTOCOLMODE ARQ`, `ARQBW`, `LISTEN`, `ARQCALL`, `DISCONNECT`, `RDY` |
+| TNC → Host | `CONNECTED` / `DISCONNECTED`, `BUFFER`, `FAULT`, `d:ARQ` data frames |
+| Wire | CRC-16 (poly 0x8810), binary `D:`/`d:` payloads |
+
+Not in scope for HyBBX (stay in external ARDOPC/CRDOPC): FEC/OFDM modes, PTC emulation, radio CAT, sound-card capture/playback, modem DSP. **CRDOP** (CB profile, Level 2 after v1.0.0): [CRDOP.md](CRDOP.md) — external **CRDOPC** daemon + same host-client plugin model.
+
+**CRC:** host frames use CRC-16 for **error detection**; **ARQ** provides retransmission-based recovery.
+
+**Operator flow (Secondary):**
+
+1. Start ARDOPC, e.g. `ardo1pofdm TCPIP 8515 127.0.0.1` (control **8515**, data **8516**).
+2. Enable `[networks] ardop = yes` and configure `[transport.ardop1]` (section name must match Main bridge).
+3. HyBBX connects to ARDOPC, bridges `d:ARQ` ↔ HBX `terminal` proto on the circuit uplink.
+
+```ini
+[networks]
+ax25 = yes
+ardop = yes
+circuit = no
+
+; Parallel to [transport.packet_radio1] — separate link_id on Main
+[transport.ardop1]
+enabled = yes
+ardop_host = 127.0.0.1
+ardop_port = 8515
+mycall = CALL-0
+arq_bandwidth = 500MAX
+listen = yes
+; peer_call = REMOTE-0   ; optional outbound ARQ
+circuit_host = main.example.com
+circuit_port = 7323
+link_id = secondary-1-ardop
+link_password = changeme
+link_role = link
+frequency_mhz = 7.100
+```
+
+Main bridge registry (`share/hybbx.ini.example`):
+
+```ini
+[transport.ardop1]
+link_id = secondary-1-ardop
+link_password = changeme
+link_role = link
+frequency_mhz = 7.100
+```
 
 ### Packet radio / AX.25 TNC stack
 
@@ -659,7 +719,7 @@ See [QUICKSTART.md](QUICKSTART.md) and [BUILD.md](BUILD.md). Install prefix: `<p
 
 ## Licensing
 
-HyBBX is licensed under **GNU GPL v3** — see [LICENSE.txt](../LICENSE.txt).
+HyBBX is licensed under **GNU GPL v3** — see [LICENSE.txt](../LICENSE.txt). **ARDOP** integration and planned **CRDOP** (Level 2, post–v1.0.0): [LICENSING.md](LICENSING.md), [CRDOP.md](CRDOP.md).
 
 Bundled third-party code under `third_party/` is compiled into `hybbx_core` (or plugins) and retains its own license. When you distribute binaries, include attribution for these components as required by their licenses:
 

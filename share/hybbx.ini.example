@@ -130,6 +130,7 @@ path = mail
 ; SSH and WebSocket transports are planned after v1.0.0 (first GitHub release).
 [networks]
 ax25 = no
+ardop = no
 websocket = no
 circuit = yes
 
@@ -219,3 +220,10 @@ frequency_mhz = 27.205
 
 ; Full TNC/RF tuning lives on the Secondary only — see hybbx-secondary.ini.example.
 ; Dev/local single-box test with ax25=yes may use [transport.packet_radio] (unnumbered).
+
+; Optional ARDOP Secondary bridge (metadata only on Main — RF via external ARDOPC):
+; [transport.ardop1]
+; link_id = secondary-1-ardop
+; link_password = changeme
+; link_role = link
+; frequency_mhz = 7.100

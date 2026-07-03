@@ -44,6 +44,7 @@ void hybbx_networks_config_defaults(hybbx_networks_config_t *networks)
     }
 
     networks->ax25 = 0;
+    networks->ardop = 0;
     networks->websocket = 0;
     networks->circuit = 1;
 }
@@ -71,6 +72,10 @@ void hybbx_networks_config_apply(hybbx_networks_config_t *networks,
                                                "enabled", 0);
     }
 
+    if (networks_has_key(config, "ardop")) {
+        networks->ardop = hybbx_config_get_bool(config, "networks", "ardop", 0);
+    }
+
     networks->websocket = hybbx_config_get_bool(config, "networks",
                                                 "websocket", 0);
 
@@ -82,8 +87,9 @@ void hybbx_networks_config_apply(hybbx_networks_config_t *networks,
                                                   1);
     }
 
-    printf("[networks] telnet=static ax25=%s websocket=%s circuit=%s\n",
+    printf("[networks] telnet=static ax25=%s ardop=%s websocket=%s circuit=%s\n",
            hybbx_bool_to_string(networks->ax25),
+           hybbx_bool_to_string(networks->ardop),
            hybbx_bool_to_string(networks->websocket),
            hybbx_bool_to_string(networks->circuit));
 }
@@ -114,6 +120,10 @@ int hybbx_networks_transport_wanted(const char *plugin_name,
 
     if (str_ieq(plugin_name, "packet_radio")) {
         return networks->ax25;
+    }
+
+    if (str_ieq(plugin_name, "ardop")) {
+        return networks->ardop;
     }
 
     if (str_ieq(plugin_name, "websocket")) {

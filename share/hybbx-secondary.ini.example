@@ -17,6 +17,7 @@
 ; Main template: share/hybbx.ini.example
 ;   [networks] circuit = yes  — HBX hub on Main (loopback by default; widen bind there)
 ;   [transport.packet_radio1]  link_id + link_password (same section name here)
+;   [transport.ardop1]         optional ARDOP bridge (external ARDOPC on Secondary)
 ;
 ; Secondary has no local [circuit] hub — [networks] circuit = no (default below).
 ; Secondaries connect only to a Main instance or a custom proxy you operate.
@@ -50,6 +51,7 @@ enabled = no
 [networks]
 ; Secondary defaults: AX.25 on, no local HBX hub (outbound client to Main only).
 ax25 = yes
+ardop = no
 circuit = no
 
 ; No [circuit] section on Secondary — hub runs on Main. Do not set circuit = yes here.
@@ -100,3 +102,21 @@ g3ruh_fsk = no
 [ax25]
 frequency1 = 27.205
 frequency2 = 27.215
+
+; --- Optional: ARDOP parallel to AX.25 (external ARDOPC/CRDOPC — not inside HyBBX) ---
+; HyBBX is never a sound-modem service. Run ARDOPC or future CRDOPC separately.
+; Start ARDOPC first, e.g.: ardo1pofdm TCPIP 8515 127.0.0.1
+; [networks] ardop = yes
+; [transport.ardop1]
+; enabled = yes
+; ardop_host = 127.0.0.1
+; ardop_port = 8515
+; mycall = CALL-0
+; arq_bandwidth = 500MAX
+; listen = yes
+; circuit_host = main.example.com
+; circuit_port = 7323
+; link_id = secondary-1-ardop
+; link_password = changeme
+; link_role = link
+; frequency_mhz = 7.100

@@ -21,10 +21,11 @@ Session core (commands, storage, mail, chat)
         ↕ byte stream
 TCP/IPv4+IPv6 + HBX v1 ([circuit])
         ↕
-Link adapters: telnet | packet_radio | (ssh, ws post–v1.0.0)
+Link adapters: telnet | packet_radio | ardop | (ssh, ws post–v1.0.0)
 ```
 
 - No KISS/AX.25/telnet parsing in `src/core/`.
+- **No sound-modem / RF DSP in HyBBX** — TNC, ARDOPC, CRDOPC, and sound-card software are **external**; plugins are serial or host-TCP clients only.
 - Plugins: `hybbx_transport_plugin_t` ([plugin.h](../include/hybbx/plugin.h)); register in `src/main.c`.
 - Packet radio: HBX circuit client; `write` may be NULL.
 

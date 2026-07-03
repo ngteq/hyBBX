@@ -27,6 +27,9 @@ extern const hybbx_transport_plugin_t hybbx_plugin_telnet;
 #ifdef HYBBX_HAVE_PLUGIN_PACKET_RADIO
 extern const hybbx_transport_plugin_t hybbx_plugin_packet_radio;
 #endif
+#ifdef HYBBX_HAVE_PLUGIN_ARDOP
+extern const hybbx_transport_plugin_t hybbx_plugin_ardop;
+#endif
 
 static void register_builtin_plugins(void)
 {
@@ -35,6 +38,9 @@ static void register_builtin_plugins(void)
 #endif
 #ifdef HYBBX_HAVE_PLUGIN_PACKET_RADIO
     hybbx_registry_register(&hybbx_plugin_packet_radio);
+#endif
+#ifdef HYBBX_HAVE_PLUGIN_ARDOP
+    hybbx_registry_register(&hybbx_plugin_ardop);
 #endif
 }
 

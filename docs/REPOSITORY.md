@@ -2,6 +2,8 @@
 
 API: `include/hybbx/`. Config: `share/hybbx.ini.example`.
 
+**Scope:** session core + `plugins/` (host-client bridges). Modems/TNCs/sound-card apps are **external** — not in this tree. See [AGENTS.md](../AGENTS.md#product-boundary-default--non-negotiable).
+
 ```
 hyBBX/
   include/hybbx/       Public C API
@@ -9,7 +11,8 @@ hyBBX/
   src/clients/         hybbx-telnet, hybbx-terminal
   src/main.c           Entry, plugin registration
   plugins/telnet/      TCP telnet adapter
-  plugins/packet_radio/  AX.25, TNC, HBX client
+  plugins/packet_radio/  Serial TNC host-client (external device)
+  plugins/ardop/       ARDOP host-client (external ARDOPC/CRDOPC)
   third_party/         Bundled crypto
   text/                banner, motd, news, rules (runtime texts)
   share/               INI examples, fail2ban

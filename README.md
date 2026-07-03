@@ -1,6 +1,8 @@
 # HyBBX
 ###### telnet un1t.me:2323 for auto-guest login full-serviced HyBBX.<br>
-C99 **multi-transport session daemon** for bandwidth-constrained networks. One session core (mail, chat, `/` commands) over link adapters: TCP telnet, AX.25 packet radio, HBX/TCP circuit bridge.
+C99 **multi-transport session daemon** for bandwidth-constrained networks. One session core (mail, chat, `/` commands) over **plugin-only** link adapters (host-client bridges). Modems, TNCs, and sound-card software are **always external** — not part of HyBBX.
+
+**Default architecture:** telnet plugin, `packet_radio` → serial TNC, `ardop` → external ARDOPC/CRDOPC. Embedded modem DSP = different project, not HyBBX.
 
 **Main** hosts users, storage, telnet :2323, HBX hub :7323. **Secondary** nodes attach local TNC/RF and bridge to Main. Same `hybbx` binary; role from INI. Default traffic: 2400 baud pacing, 80-column ASCII.
 

@@ -26,6 +26,7 @@ if(HYBBX_BUILD_DAEMON)
         core/conference.c
         core/mail.c
         core/networks.c
+        core/crdop.c
         core/terminal.c
         core/texts.c
         core/util.c

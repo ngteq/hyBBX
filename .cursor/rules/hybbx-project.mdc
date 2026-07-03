@@ -9,7 +9,7 @@ Read [AGENTS.md](../../AGENTS.md) and [docs/DEVELOPMENT.md](../../docs/DEVELOPME
 
 ## Product
 
-Multi-transport session daemon; Main + Secondary HBX topology ([ROADMAP.md](../../docs/ROADMAP.md)). **0.8.0** — no `RELEASE-*` until v1.0.0; track [FEATURES.md](../../docs/FEATURES.md).
+Multi-transport session daemon; Main + Secondary HBX topology ([ROADMAP.md](../../docs/ROADMAP.md)). **Plugin-only (default):** host-client bridges; modems/TNCs/sound-card services **external** — embedded modem DSP is not HyBBX. **0.8.0** — no `RELEASE-*` until v1.0.0; track [FEATURES.md](../../docs/FEATURES.md).
 
 ## Code
 

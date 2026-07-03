@@ -18,6 +18,8 @@ extern "C" {
 typedef struct hybbx_networks_config {
     /** AX.25 / packet radio link adapter (`transport.packet_radio`). */
     int ax25;
+    /** ARDOP host-client link adapter (`transport.ardop`) — external ARDOPC. */
+    int ardop;
     /** WebSocket transport (after v1.0.0). */
     int websocket;
     /** Internal HBX circuit hub for edge link/repeater daemons. */

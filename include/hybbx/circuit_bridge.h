@@ -3,7 +3,7 @@
 
 /**
  * Main-side bridge registry for remote Secondaries — one entry per
- * [transport.packet_radioN] section (link metadata; RF runs on the Secondary host).
+ * [transport.packet_radioN] or [transport.ardopN] section (link metadata; RF runs on the Secondary host).
  * Secondaries (edge extenders/repeaters, not telnet users or local Main transports)
  * authenticate with matching link_id + link_password over the HBX/TCP circuit hub.
  */
@@ -31,7 +31,7 @@ typedef struct hybbx_circuit_bridge_registry {
 
 void hybbx_circuit_bridge_clear(hybbx_circuit_bridge_registry_t *reg);
 
-/** Load all transport.packet_radioN sections from Main INI. */
+/** Load all transport.packet_radioN and transport.ardopN sections from Main INI. */
 hybbx_result_t hybbx_circuit_bridge_load(hybbx_circuit_bridge_registry_t *reg,
                                          const hybbx_config_t *config);
 

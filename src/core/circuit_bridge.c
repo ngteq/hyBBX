@@ -10,16 +10,18 @@ typedef struct bridge_load_ctx {
     const hybbx_config_t *reg_config;
 } bridge_load_ctx_t;
 
-static int bridge_section_is_numbered_packet_radio(const char *section)
+static int bridge_section_is_numbered_transport(const char *section,
+                                               const char *plugin)
 {
-    const char *prefix = "transport.packet_radio";
+    char prefix[64];
     size_t prefix_len;
     const char *suffix;
 
-    if (section == NULL) {
+    if (section == NULL || plugin == NULL) {
         return 0;
     }
 
+    snprintf(prefix, sizeof(prefix), "transport.%s", plugin);
     prefix_len = strlen(prefix);
     if (strncmp(section, prefix, prefix_len) != 0) {
         return 0;
@@ -40,6 +42,16 @@ static int bridge_section_is_numbered_packet_radio(const char *section)
     return 1;
 }
 
+static int bridge_section_is_numbered_packet_radio(const char *section)
+{
+    return bridge_section_is_numbered_transport(section, "packet_radio");
+}
+
+static int bridge_section_is_numbered_ardop(const char *section)
+{
+    return bridge_section_is_numbered_transport(section, "ardop");
+}
+
 static void bridge_load_section(const char *section, void *userdata)
 {
     bridge_load_ctx_t *ctx = (bridge_load_ctx_t *)userdata;
@@ -51,7 +63,8 @@ static void bridge_load_section(const char *section, void *userdata)
         return;
     }
 
-    if (!bridge_section_is_numbered_packet_radio(section)) {
+    if (!bridge_section_is_numbered_packet_radio(section) &&
+        !bridge_section_is_numbered_ardop(section)) {
         return;
     }
 

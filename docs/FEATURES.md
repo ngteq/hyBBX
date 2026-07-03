@@ -2,7 +2,7 @@
 
 **Version:** 0.8.0 · Config: `share/hybbx.ini.example` · Operator: [MANUAL.md](MANUAL.md) · Plan: [ROADMAP.md](ROADMAP.md)
 
-C99 multi-transport session daemon: mail, chat, `/` commands over plugin link adapters (telnet, AX.25/HBX bridge).
+C99 multi-transport session daemon: mail, chat, `/` commands over **plugin-only** host-client bridges (telnet, packet radio, ARDOP). **Standard:** all modems/TNCs/sound-card services stay **external**; HyBBX never runs modem DSP. Anything else is a different project.
 
 | Status | Meaning |
 |--------|---------|
@@ -17,9 +17,9 @@ C99 multi-transport session daemon: mail, chat, `/` commands over plugin link ad
 | Feature | Status | Description |
 |---------|--------|-------------|
 | C99 core | Done | GCC + LLVM/Clang; Windows 10+, macOS X+, Linux/BSD, AmigaOS 3.9+ — see [PLATFORMS.md](PLATFORMS.md) |
-| Plugin transports | Done | `hybbx_transport_plugin_t` registry; telnet and packet radio built in |
+| Plugin transports | Done | `hybbx_transport_plugin_t` registry; telnet and packet radio built in; **plugins only — no internal modem/DSP** |
 | INI configuration | Done | `-c` / `--config`; sections for service, storage, auth, traffic, transports |
-| `[networks]` switches | Done | `ax25`, `websocket`, `circuit`; datacenter Main defaults: TCP/IP + HBX only |
+| `[networks]` switches | Done | `ax25`, `ardop`, `websocket`, `circuit`; datacenter Main defaults: TCP/IP + HBX only |
 | Service lifecycle | Done | Load config, start circuit hub and enabled transports, run until shutdown |
 | Sysop `/shutdown` / `/restart` | Done | Stop daemon or re-exec with same `-c` config |
 | `security.log` | Done | fail2ban-compatible audit log in `[log] dir` (login/link auth failures, Sysop actions) |
@@ -72,6 +72,8 @@ C99 multi-transport session daemon: mail, chat, `/` commands over plugin link ad
 | Auto-generated link codes | Done | Issued on successful Secondary→Main `LINK_AUTH` |
 | Telnet dual-stack bind | Done | `ipv4`/`ipv6` toggles; `bind` / `bind6`; `IPV6_V6ONLY` |
 | Packet radio | Done | AX.25 link adapter; `[networks] ax25 = yes` + `[transport.packet_radio]` |
+| ARDOP host client | Partial | External ARDOPC only; `[networks] ardop = yes` + `[transport.ardopN]`; HyBBX never runs sound-modem DSP |
+| CRDOP (Level 2) | Planned | External CRDOPC + host plugin after v1.0.0 — [CRDOP.md](CRDOP.md); `radio_profile=cb` preview |
 | SSH | After v1.0.0 | Same session core as telnet |
 | WebSocket | After v1.0.0 | Local endpoint behind reverse-proxy only |
 
@@ -226,7 +228,7 @@ C99 multi-transport session daemon: mail, chat, `/` commands over plugin link ad
 | `hybbx_result_name()` | Done | Short `hybbx_result_t` name for logs/tests ([util.h](include/hybbx/util.h)) |
 | Unit tests (`HYBBX_BUILD_TESTS`) | Done | `tests/test_util.c` — boolean parser + result names; CI on push/PR |
 | `scripts/dev-setup.sh` | Done | Configure, build, `compile_commands.json` symlink |
-| GPL-3.0 license | Done | See `LICENSE.txt`; third-party table in MANUAL |
+| GPL-3.0 license | Done | See `LICENSE.txt`; [LICENSING.md](LICENSING.md) (ARDOP/CRDOP third-party) |
 | GitHub CI | Done | `.github/workflows/ci.yml` — build + tests on push/PR |
 
 ## Roadmap (not yet implemented)

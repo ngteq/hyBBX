@@ -11,11 +11,14 @@ struct hybbx_service;
 struct hybbx_session;
 
 /**
- * Transport plugin interface (link adapters).
+ * Transport plugin interface (link adapters / host-client bridges).
  *
- * HyBBX core uses TCP/IPv4+IPv6 internally only. Plugins terminate the wire
- * protocol (telnet on TCP, AX.25/KISS mapped to an internal TCP circuit, …)
- * and expose a byte stream to hybbx_session via the write callback.
+ * HyBBX is plugin-only: session core + plugins. Modems, TNCs, sound-card
+ * software, ARDOPC, and CRDOPC are external — never embedded in HyBBX.
+ *
+ * Core uses TCP/IPv4+IPv6 and HBX internally. Plugins terminate the wire
+ * to external services (telnet TCP, serial TNC, ARDOP host TCP, …) and
+ * expose a byte stream to hybbx_session via the write callback.
  */
 typedef struct hybbx_transport_plugin {
     const char *name;
