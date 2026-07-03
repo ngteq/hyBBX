@@ -131,6 +131,7 @@ path = mail
 [networks]
 ax25 = no
 ardop = no
+crdop = no
 websocket = no
 circuit = yes
 
@@ -227,3 +228,9 @@ frequency_mhz = 27.205
 ; link_password = changeme
 ; link_role = link
 ; frequency_mhz = 7.100
+
+; [transport.crdop1]
+; link_id = secondary-1-crdop
+; link_password = changeme
+; link_role = link
+; frequency_mhz = 27.205

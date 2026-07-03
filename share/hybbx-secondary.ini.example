@@ -52,6 +52,7 @@ enabled = no
 ; Secondary defaults: AX.25 on, no local HBX hub (outbound client to Main only).
 ax25 = yes
 ardop = no
+crdop = no
 circuit = no
 
 ; No [circuit] section on Secondary — hub runs on Main. Do not set circuit = yes here.
@@ -103,8 +104,8 @@ g3ruh_fsk = no
 frequency1 = 27.205
 frequency2 = 27.215
 
-; --- Optional: ARDOP parallel to AX.25 (external ARDOPC/CRDOPC — not inside HyBBX) ---
-; HyBBX is never a sound-modem service. Run ARDOPC or future CRDOPC separately.
+; --- Optional: ARDOP parallel to AX.25 (external ARDOPC/ardopcf — not inside HyBBX) ---
+; HyBBX is never a sound-modem service. Run ARDOPC or ardopcf separately.
 ; Start ARDOPC first, e.g.: ardo1pofdm TCPIP 8515 127.0.0.1
 ; [networks] ardop = yes
 ; [transport.ardop1]
@@ -120,3 +121,14 @@ frequency2 = 27.215
 ; link_password = changeme
 ; link_role = link
 ; frequency_mhz = 7.100
+
+; --- Optional: CRDOP CB bridge (external ARDOPC/ardopcf; [networks] crdop = yes) ---
+; [transport.crdop1]
+; enabled = yes
+; modem_host = 127.0.0.1
+; modem_port = 8515
+; mycall = CALL-0
+; circuit_host = main.example.com
+; link_id = secondary-1-crdop
+; link_password = changeme
+; frequency_mhz = 27.205

@@ -30,6 +30,9 @@ extern const hybbx_transport_plugin_t hybbx_plugin_packet_radio;
 #ifdef HYBBX_HAVE_PLUGIN_ARDOP
 extern const hybbx_transport_plugin_t hybbx_plugin_ardop;
 #endif
+#ifdef HYBBX_HAVE_PLUGIN_CRDOP
+extern const hybbx_transport_plugin_t hybbx_plugin_crdop;
+#endif
 
 static void register_builtin_plugins(void)
 {
@@ -41,6 +44,9 @@ static void register_builtin_plugins(void)
 #endif
 #ifdef HYBBX_HAVE_PLUGIN_ARDOP
     hybbx_registry_register(&hybbx_plugin_ardop);
+#endif
+#ifdef HYBBX_HAVE_PLUGIN_CRDOP
+    hybbx_registry_register(&hybbx_plugin_crdop);
 #endif
 }
 

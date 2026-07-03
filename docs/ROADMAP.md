@@ -47,7 +47,7 @@ Bridge registry: `[transport.packet_radioN]` on Main matches each remote Seconda
 | 3 | Fan-out to all links (broadcast AX.25 by MHz + QoS) — **Done** |
 | 4 | Reconnect policy, optional heartbeat — planned |
 
-Per-link table in `circuit_tcp.c`; `max_links` in `[circuit]`; bridge registry from `[transport.packet_radioN]` and `[transport.ardopN]`; Main storage authoritative.
+Per-link table in `circuit_tcp.c`; `max_links` in `[circuit]`; bridge registry from `[transport.packet_radioN]`, `[transport.ardopN]`, and `[transport.crdopN]`; Main storage authoritative.
 
 ## ARDOP (experimental, 0.8.x+)
 
@@ -66,10 +66,9 @@ Per-link table in `circuit_tcp.c`; `max_links` in `[circuit]`; bridge registry f
 | Item | Status | Notes |
 |------|--------|-------|
 | Spec & licensing path | Done (doc) | MIT ardopcf vs GPL ARDOPC vs clean-room |
-| Embedded modem | **Not in HyBBX** | Standalone external **CRDOPC** (sound-card / serial); HyBBX plugin only |
-| HyBBX `transport.crdop` | Planned | Host-client plugin only; pairs with **external** CRDOPC |
-| Global CB profiles | Preview | `radio_profile`, `arq_bandwidth`, MHz in INI |
-| CRDOPC sound-modem binary | **Not in HyBBX** | Standalone external service (Level 2, post–v1.0.0) |
+| Embedded modem | **Not in HyBBX** | External **ARDOPC/ardopcf** (sound-card / serial); HyBBX plugin only |
+| HyBBX `transport.crdop` | Partial | CB host-client plugin; external ARDOPC/ardopcf |
+| Global CB profiles | Done | `crdop` plugin; `modem_host` / `500MAX` defaults |
 
 ## v1.0.0 scope
 

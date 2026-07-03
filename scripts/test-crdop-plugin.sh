@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Smoke test: mock ARDOPC + HyBBX ardop plugin (no Main circuit required).
+# Smoke test: mock ARDOPC + HyBBX crdop plugin (CB defaults, no Main circuit required).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD="${ROOT}/build"
 HYBBX="${BUILD}/src/hybbx"
-MOCK_PORT=18515
-TMPDIR="${ROOT}/local/test-ardop-$$"
+MOCK_PORT=18517
+TMPDIR="${ROOT}/local/test-crdop-$$"
 mkdir -p "${TMPDIR}"
 
 cleanup() {
@@ -23,7 +23,7 @@ fi
 
 cat > "${TMPDIR}/hybbx.ini" <<EOF
 [service]
-name = test-ardop
+name = test-crdop
 
 [storage]
 path = ${TMPDIR}/data
@@ -33,31 +33,29 @@ auto_login = no
 
 [networks]
 ax25 = no
-ardop = yes
+ardop = no
+crdop = yes
 circuit = no
 
 [transport.telnet]
 enabled = no
 
-[transport.ardop]
+[transport.crdop]
 enabled = yes
-ardop_host = 127.0.0.1
-ardop_port = ${MOCK_PORT}
-mycall = TEST-0
-radio_profile = cb
-arq_bandwidth = 500MAX
+modem_host = 127.0.0.1
+modem_port = ${MOCK_PORT}
+mycall = CB-0
 listen = yes
 circuit_host = 127.0.0.1
-circuit_port = 17323
-link_id = test-ardop
+circuit_port = 17325
+link_id = test-crdop
 EOF
 
 python3 "${ROOT}/scripts/mock-ardopc.py" "${MOCK_PORT}" &
 MOCK_PID=$!
 sleep 0.3
 
-# Minimal TCP acceptor so circuit connect does not block startup (no HBX handshake).
-nc -l 127.0.0.1 17323 >/dev/null 2>&1 &
+nc -l 127.0.0.1 17325 >/dev/null 2>&1 &
 CIRCUIT_PID=$!
 sleep 0.2
 
@@ -69,21 +67,26 @@ kill "${HYBBX_PID}" 2>/dev/null || true
 wait "${HYBBX_PID}" 2>/dev/null || true
 kill "${CIRCUIT_PID}" 2>/dev/null || true
 
-grep -q "connected to external ARDOPC" "${LOG}" || {
-    echo "FAIL: no ARDOPC connect log" >&2
+grep -q '\[crdop\] connected to external ARDOPC' "${LOG}" || {
+    echo "FAIL: no CRDOP ARDOPC connect log" >&2
     cat "${LOG}" >&2
     exit 1
 }
-grep -q "host init sent" "${LOG}" || {
-    echo "FAIL: no host init log" >&2
+grep -q '\[crdop\] host init sent' "${LOG}" || {
+    echo "FAIL: no CRDOP host init log" >&2
     cat "${LOG}" >&2
     exit 1
 }
-grep -q "CB half-duplex profile" "${LOG}" || {
-    echo "FAIL: no CB profile log" >&2
+grep -q '\[crdop\] CB half-duplex profile' "${LOG}" || {
+    echo "FAIL: no CRDOP CB profile log" >&2
+    cat "${LOG}" >&2
+    exit 1
+}
+grep -q 'profile=cb' "${LOG}" || {
+    echo "FAIL: crdop profile not cb" >&2
     cat "${LOG}" >&2
     exit 1
 }
 
-echo "OK: ardop plugin smoke test passed"
-cat "${LOG}" | grep '\[ardop\]'
+echo "OK: crdop plugin smoke test passed"
+grep '\[crdop\]' "${LOG}"

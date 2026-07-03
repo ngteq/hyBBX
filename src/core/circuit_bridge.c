@@ -52,6 +52,11 @@ static int bridge_section_is_numbered_ardop(const char *section)
     return bridge_section_is_numbered_transport(section, "ardop");
 }
 
+static int bridge_section_is_numbered_crdop(const char *section)
+{
+    return bridge_section_is_numbered_transport(section, "crdop");
+}
+
 static void bridge_load_section(const char *section, void *userdata)
 {
     bridge_load_ctx_t *ctx = (bridge_load_ctx_t *)userdata;
@@ -64,7 +69,8 @@ static void bridge_load_section(const char *section, void *userdata)
     }
 
     if (!bridge_section_is_numbered_packet_radio(section) &&
-        !bridge_section_is_numbered_ardop(section)) {
+        !bridge_section_is_numbered_ardop(section) &&
+        !bridge_section_is_numbered_crdop(section)) {
         return;
     }
 

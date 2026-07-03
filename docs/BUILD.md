@@ -25,6 +25,8 @@ Tests: `-DHYBBX_BUILD_TESTS=ON` then `ctest --test-dir build`
 | `HYBBX_BUILD_PLUGINS` | ON | Transport plugins |
 | `HYBBX_PLUGIN_TELNET` | ON | Telnet plugin |
 | `HYBBX_PLUGIN_PACKET_RADIO` | ON | Packet radio plugin |
+| `HYBBX_PLUGIN_ARDOP` | ON | ARDOP host-client plugin (external ARDOPC/ardopcf) |
+| `HYBBX_PLUGIN_CRDOP` | ON | CRDOP CB host-client plugin (external ARDOPC/ardopcf) |
 | `HYBBX_BUILD_TESTS` | OFF | Unit tests |
 | `HYBBX_HARDENING` | ON | Stack protector, FORTIFY, RELRO/PIE |
 | `HYBBX_WARNINGS_AS_ERRORS` | OFF | `-Werror` |

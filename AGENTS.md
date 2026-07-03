@@ -17,7 +17,8 @@ That is the **absolute standard** for this project — not an ARDOP/CRDOP specia
 | `src/core/` sessions, HBX hub, storage | USB/serial TNC, KISS device |
 | `plugins/telnet` | Direwolf, sound-card packet apps |
 | `plugins/packet_radio` (serial/host bytes) | ARDOPC, ardopcf |
-| `plugins/ardop` (host TCP to modem) | CRDOPC (Level 2, separate program) |
+| `plugins/ardop` (host TCP to modem) | ARDOPC, ardopcf |
+| `plugins/crdop` (CB host TCP) | ARDOPC, ardopcf (same external modem family) |
 
 ---
 

@@ -12,7 +12,8 @@ hyBBX/
   src/main.c           Entry, plugin registration
   plugins/telnet/      TCP telnet adapter
   plugins/packet_radio/  Serial TNC host-client (external device)
-  plugins/ardop/       ARDOP host-client (external ARDOPC/CRDOPC)
+  plugins/ardop/       ARDOP host-client (external ARDOPC)
+  plugins/crdop/       CRDOP CB host-client (external ARDOPC)
   third_party/         Bundled crypto
   text/                banner, motd, news, rules (runtime texts)
   share/               INI examples, fail2ban

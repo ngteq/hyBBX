@@ -21,7 +21,7 @@ Session core (commands, storage, mail, chat)
         ↕ byte stream
 TCP/IPv4+IPv6 + HBX v1 ([circuit])
         ↕
-Link adapters: telnet | packet_radio | ardop | (ssh, ws post–v1.0.0)
+Link adapters: telnet | packet_radio | ardop | crdop | (ssh, ws post–v1.0.0)
 ```
 
 - No KISS/AX.25/telnet parsing in `src/core/`.

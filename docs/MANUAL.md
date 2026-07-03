@@ -23,7 +23,8 @@ Override any default in INI. Topology details: [ROADMAP.md](ROADMAP.md). Firewal
 | TCP/IP Telnet   | Started  | **static** (always on) | Line-oriented terminal access over TCP |
 | SSH             | After v1.0.0 | — | Secure shell transport plugin (post–first GitHub release) |
 | AX.25 / Packet Radio | Started | `ax25 = yes\|no` | TNC2C (KISS/AX.25); USB/RS232 |
-| ARDOP (host client) | Partial | `ardop = yes\|no` | External **ARDOPC** modem; HyBBX speaks TNC Host Interface over TCP |
+| ARDOP (host client) | Partial | `ardop = yes\|no` | External **ARDOPC**; amateur-profile host TCP bridge |
+| CRDOP (CB host client) | Partial | `crdop = yes\|no` | External **ARDOPC/ardopcf**; CB-profile host TCP bridge |
 | WebSocket       | After v1.0.0 | `websocket = yes\|no` | Forward-proxy behind Apache/nginx only |
 | HBX circuit hub | Started  | `circuit = yes\|no` | Main TCP hub — remote Secondary processes connect here |
 
@@ -33,7 +34,7 @@ Telnet starts when built (ignores `enabled`). Optional adapters need `[networks]
 
 Plugin API: `hybbx_transport_plugin_t` ([include/hybbx/plugin.h](../include/hybbx/plugin.h)). Core handles TCP/IPv4+IPv6 and HBX only — no KISS/AX.25 parsing in `src/core/`.
 
-**Project default:** HyBBX is **plugin-only** (host-client bridges). Modems, TNCs, and sound-card services stay **external** — standard HyBBX, not an optional mode. Embedded modem DSP = different project, not HyBBX. ARDOP/CRDOP via plugins to external ARDOPC/CRDOPC only.
+**Project default:** HyBBX is **plugin-only** (host-client bridges). Modems, TNCs, and sound-card services stay **external**. Use `ardop` (amateur) and/or `crdop` (CB) plugins against external ARDOPC or ardopcf — not a separate CRDOP daemon repo.
 
 ## Configuration (INI)
 
@@ -73,7 +74,8 @@ circuit = yes      ; HBX TCP hub on Main; Secondaries connect here
 | Key | Main default | Secondary default | Controls |
 |-----|--------------|-------------------|----------|
 | `ax25` | `no` | `yes` | `[transport.packet_radio]` / `[transport.packet_radioN]` |
-| `ardop` | `no` | `no` | `[transport.ardop]` / `[transport.ardopN]` — requires external ARDOPC |
+| `ardop` | `no` | `no` | `[transport.ardop]` / `[transport.ardopN]` — external ARDOPC |
+| `crdop` | `no` | `no` | `[transport.crdop]` / `[transport.crdopN]` — external ARDOPC (CB defaults) |
 | `websocket` | `no` | `no` | `[transport.websocket]` after v1.0.0 |
 | `circuit` | `yes` (loopback hub) | `no` | `[circuit]` HBX hub on Main; Secondary uses `circuit_host` instead |
 
@@ -287,7 +289,27 @@ Default: 80-column ASCII, paced 8N1. Echo off (`input_echo = no`); per-session `
 
 ### ARDOP (external ARDOPC + HyBBX host client)
 
-HyBBX is **not** a sound-modem service and does **not** embed ARDOP DSP or audio I/O. The operator runs **[ARDOPC](https://github.com/g8bpq/ardop)** (or MIT **ardopcf**, or future **CRDOPC**) as a **separate external process** — same model as a USB TNC for `packet_radio`. The `ardop` plugin is a **Host-Client** over TCP (control port + data port+1), parallel to AX.25 on a Secondary.
+HyBBX is **not** a sound-modem service. The operator runs **[ARDOPC](https://github.com/g8bpq/ardop)** or MIT **[ardopcf](https://github.com/pflarue/ardop)** as a **separate external process**. The `ardop` plugin is a host-client over TCP (control **N**, data **N+1**), parallel to AX.25 on a Secondary.
+
+### CRDOP (CB host client — `transport.crdop`)
+
+Same external modem as ARDOP; **`crdop`** plugin applies **CB defaults** (`500MAX`, half-duplex QoS, `crdop-link`). See [CRDOP.md](CRDOP.md).
+
+```ini
+[networks]
+crdop = yes
+
+[transport.crdop1]
+modem_host = 127.0.0.1
+modem_port = 8515
+mycall = CALL-0
+frequency_mhz = 27.205
+circuit_host = main.example.com
+link_id = secondary-1-crdop
+link_password = changeme
+```
+
+Not in HyBBX (external modem only): FEC/OFDM, PTC, radio CAT, audio DSP.
 
 **Implemented subset** (enough for HBX bridge traffic):
 
@@ -297,7 +319,7 @@ HyBBX is **not** a sound-modem service and does **not** embed ARDOP DSP or audio
 | TNC → Host | `CONNECTED` / `DISCONNECTED`, `BUFFER`, `FAULT`, `d:ARQ` data frames |
 | Wire | CRC-16 (poly 0x8810), binary `D:`/`d:` payloads |
 
-Not in scope for HyBBX (stay in external ARDOPC/CRDOPC): FEC/OFDM modes, PTC emulation, radio CAT, sound-card capture/playback, modem DSP. **CRDOP** (CB profile, Level 2 after v1.0.0): [CRDOP.md](CRDOP.md) — external **CRDOPC** daemon + same host-client plugin model.
+Not in scope for HyBBX (external modem only): FEC/OFDM modes, PTC emulation, radio CAT, sound-card capture/playback, modem DSP.
 
 **CRC:** host frames use CRC-16 for **error detection**; **ARQ** provides retransmission-based recovery.
 

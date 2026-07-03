@@ -22,7 +22,8 @@ typedef void (*ardop_host_event_fn)(const char *event, const char *detail,
 ardop_host_t *ardop_host_create(const hybbx_ardop_config_t *cfg,
                                 ardop_host_data_fn on_data,
                                 ardop_host_event_fn on_event,
-                                void *userdata);
+                                void *userdata,
+                                const char *log_tag);
 void ardop_host_destroy(ardop_host_t *host);
 
 hybbx_result_t ardop_host_connect(ardop_host_t *host);

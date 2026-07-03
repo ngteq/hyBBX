@@ -32,7 +32,16 @@ struct ardop_host {
     unsigned char data_rx[ARDOP_HOST_RX_MAX];
     size_t data_len;
     int init_sent;
+    const char *log_tag;
 };
+
+static const char *host_log_tag(const ardop_host_t *host)
+{
+    if (host != NULL && host->log_tag != NULL && host->log_tag[0] != '\0') {
+        return host->log_tag;
+    }
+    return "ardop";
+}
 
 static int str_ieq(const char *a, const char *b)
 {
@@ -222,7 +231,7 @@ static void ardop_host_handle_ctrl_line(ardop_host_t *host, char *line)
 
     if (strncmp(line, "FAULT", 5) == 0 ||
         strncmp(line, "CRCFAULT", 8) == 0) {
-        fprintf(stderr, "[ardop] TNC fault: %s\n", line);
+        fprintf(stderr, "[%s] TNC fault: %s\n", host_log_tag(host), line);
         (void)ardop_host_send_rdy(host);
         return;
     }
@@ -269,7 +278,7 @@ static void ardop_host_process_ctrl_rx(ardop_host_t *host)
 
         memcpy(frame, host->ctrl_rx, msg_len);
         if (!ardop_crc16_valid(frame, (unsigned short)msg_len)) {
-            fprintf(stderr, "[ardop] control CRC fault\n");
+            fprintf(stderr, "[%s] control CRC fault\n", host_log_tag(host));
             host->ctrl_len = 0;
             return;
         }
@@ -393,7 +402,8 @@ static hybbx_result_t ardop_host_send_init(ardop_host_t *host)
     }
 
     host->init_sent = 1;
-    printf("[ardop] host init sent (external ARDOPC at %s:%u)\n",
+    printf("[%s] host init sent (external ARDOPC at %s:%u)\n",
+           host_log_tag(host),
            host->cfg.ardop_host != NULL ? host->cfg.ardop_host : "?",
            host->cfg.ardop_port);
     return HYBBX_OK;
@@ -419,7 +429,8 @@ static void ardop_host_read_fd(int fd, unsigned char *buf, size_t *len,
 ardop_host_t *ardop_host_create(const hybbx_ardop_config_t *cfg,
                                 ardop_host_data_fn on_data,
                                 ardop_host_event_fn on_event,
-                                void *userdata)
+                                void *userdata,
+                                const char *log_tag)
 {
     ardop_host_t *host;
 
@@ -438,6 +449,7 @@ ardop_host_t *ardop_host_create(const hybbx_ardop_config_t *cfg,
     host->userdata = userdata;
     host->ctrl_fd = -1;
     host->data_fd = -1;
+    host->log_tag = log_tag;
     return host;
 }
 
@@ -473,23 +485,23 @@ hybbx_result_t ardop_host_connect(ardop_host_t *host)
 
     host->ctrl_fd = ardop_host_tcp_connect(h, port);
     if (host->ctrl_fd < 0) {
-        fprintf(stderr, "[ardop] cannot connect to ARDOPC control %s:%u\n",
-                h, port);
+        fprintf(stderr, "[%s] cannot connect to ARDOPC control %s:%u\n",
+                host_log_tag(host), h, port);
         return HYBBX_ERR_IO;
     }
 
     host->data_fd = ardop_host_tcp_connect(h, port + 1u);
     if (host->data_fd < 0) {
-        fprintf(stderr, "[ardop] cannot connect to ARDOPC data %s:%u\n",
-                h, port + 1u);
+        fprintf(stderr, "[%s] cannot connect to ARDOPC data %s:%u\n",
+                host_log_tag(host), h, port + 1u);
         ardop_host_disconnect(host);
         return HYBBX_ERR_IO;
     }
 
     host->tnc_ready = 0;
     host->init_sent = 0;
-    printf("[ardop] connected to external ARDOPC %s:%u (data %u)\n",
-           h, port, port + 1u);
+    printf("[%s] connected to external ARDOPC %s:%u (data %u)\n",
+           host_log_tag(host), h, port, port + 1u);
 
     (void)ardop_host_send_init(host);
     return HYBBX_OK;

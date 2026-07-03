@@ -4,8 +4,8 @@
 /**
  * CRDOP — CB Radio Digital Open Protocol (Level 2, experimental).
  *
- * Planned after HyBBX v1.0.0. CRDOP modem = external CRDOPC (not inside HyBBX).
- * Today: radio_profile hints on the ardop Host-Client plugin only.
+ * HyBBX `crdop` plugin: CB host-client bridge to external ARDOPC/ardopcf.
+ * Modem DSP stays outside HyBBX. Profile helpers shared with `ardop`.
  */
 
 #include "hybbx/types.h"
@@ -29,6 +29,12 @@ const char *hybbx_crdop_default_arq_bandwidth(hybbx_crdop_radio_profile_t profil
 
 /** Non-zero when bandwidth string is above CB-safe ceiling (1000MAX). */
 int hybbx_crdop_bandwidth_exceeds_cb(const char *arq_bandwidth);
+
+struct hybbx_ardop_config;
+
+/** Parse `[transport.crdop]` config (CB defaults). */
+hybbx_result_t hybbx_crdop_config_parse(const char *config,
+                                        struct hybbx_ardop_config *out);
 
 #ifdef __cplusplus
 }

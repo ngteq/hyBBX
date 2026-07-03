@@ -72,7 +72,7 @@ HyBBX **0.8.x** does **not** bundle ARDOPC. The `ardop` plugin is a **clean-room
 
 | Phase | License expectation |
 |-------|---------------------|
-| HyBBX host bridge (`transport.ardop` / future `transport.crdop`) | GPL-3.0 |
+| HyBBX host bridge (`transport.ardop` / `transport.crdop`) | GPL-3.0 |
 | Standalone **CRDOPC** (external; not in HyBBX repo) | GPL-3.0 if derived from g8bpq ARDOPC; MIT if from ardopcf; clean-room → separate project license |
 | Documentation & protocol spec (ngteq, in HyBBX docs) | GPL-3.0 (docs in repo) |
 

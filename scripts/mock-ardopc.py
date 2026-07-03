@@ -72,7 +72,10 @@ def serve_ctrl(port: int, log: list[str]) -> None:
     buf = bytearray()
     try:
         while True:
-            chunk = conn.recv(4096)
+            try:
+                chunk = conn.recv(4096)
+            except TimeoutError:
+                break
             if not chunk:
                 break
             buf.extend(chunk)
