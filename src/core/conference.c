@@ -414,15 +414,17 @@ typedef struct conference_post_ctx {
     hybbx_session_t *from;
     const char *message;
     const char *from_user;
-    const char *partner_username;
+    const char *from_login;
 } conference_post_ctx_t;
 
 static void conference_post_visitor(hybbx_session_t *session, void *userdata)
 {
     conference_post_ctx_t *ctx = (conference_post_ctx_t *)userdata;
     char line[HYBBX_USER_NAME_MAX + HYBBX_LINE_MAX + 16];
+    const char *session_login;
 
-    if (session == NULL || ctx == NULL || ctx->message == NULL) {
+    if (session == NULL || ctx == NULL || ctx->message == NULL ||
+        ctx->from == NULL || ctx->from_login == NULL) {
         return;
     }
 
@@ -430,17 +432,20 @@ static void conference_post_visitor(hybbx_session_t *session, void *userdata)
         return;
     }
 
-    if (!str_ieq(hybbx_session_conference_partner(session),
-                 ctx->partner_username)) {
+    if (session == ctx->from) {
+        snprintf(line, sizeof(line), "ME: %s", ctx->message);
+        hybbx_session_write_line(session, line);
         return;
     }
 
-    if (session == ctx->from) {
-        snprintf(line, sizeof(line), "ME: %s", ctx->message);
-    } else {
-        snprintf(line, sizeof(line), "%s: %s", ctx->from_user, ctx->message);
+    session_login = hybbx_session_username(session);
+    if (session_login == NULL ||
+        !str_ieq(hybbx_session_conference_partner(session), ctx->from_login) ||
+        !str_ieq(hybbx_session_conference_partner(ctx->from), session_login)) {
+        return;
     }
 
+    snprintf(line, sizeof(line), "%s: %s", ctx->from_user, ctx->message);
     hybbx_session_write_line(session, line);
 }
 
@@ -450,7 +455,6 @@ hybbx_result_t hybbx_conference_post(hybbx_service_t *service,
 {
     conference_post_ctx_t ctx;
     const hybbx_chat_config_t *chat;
-    const char *partner;
 
     if (service == NULL || from == NULL || message == NULL) {
         return HYBBX_ERR_INVALID;
@@ -473,15 +477,13 @@ hybbx_result_t hybbx_conference_post(hybbx_service_t *service,
         return HYBBX_ERR_INVALID;
     }
 
-    partner = hybbx_session_conference_partner(from);
-    if (partner == NULL || partner[0] == '\0') {
-        return HYBBX_ERR_INVALID;
-    }
-
     ctx.from = from;
     ctx.message = message;
     ctx.from_user = hybbx_session_display_name(from);
-    ctx.partner_username = partner;
+    ctx.from_login = hybbx_session_username(from);
+    if (ctx.from_login == NULL || ctx.from_login[0] == '\0') {
+        return HYBBX_ERR_INVALID;
+    }
 
     hybbx_service_visit_sessions(service, conference_post_visitor, &ctx);
     return HYBBX_OK;

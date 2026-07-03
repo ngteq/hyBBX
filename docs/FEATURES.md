@@ -107,11 +107,11 @@ C99 multi-transport session daemon: mail, chat, `/` commands over plugin link ad
 | Guest auto-login | Done | `Guest1`…`Guest25`; max 25 simultaneous; optional timeout disconnect |
 | Guest sessions | Done | Ephemeral; auto-login on connect only (not via `/login`) |
 | User registration | Done | `/register` (guests, password required); staff proof mail |
-| Profile / password | Done | `/changeme` (own); `/userchange` (staff overwrite, 8–24 char password) |
-| Staff create user | Done | `/createuser` (Sysop, Admin) |
+| Profile / password | Done | `/changeme` (own); `/changeuser` (staff; alias `/userchange`) |
+| Staff create user | Done | `/usercreate` (Sysop, Admin; alias `/createuser`) |
 | Login / logout | Done | `/login`; session level updated |
 | User levels | Done | Sysop, Admin, Mod, User, Guest (privilege rules enforced) |
-| Staff user management | Done | `/activate`, `/promote`, `/demote`, `/delete`, `/userdelete` (Sysop) |
+| Staff user management | Done | `/activate`, `/promote`, `/demote`, `/delete`, `/deleteuser` (Sysop; alias `/userdelete`) |
 | Self-delete | Done | `/deleteme yes\|no` (all boolean true/false aliases) |
 | Username validation | Done | 4–12 chars, lowercase + limited digits/separators |
 | Password formats | Done | `{sha256}`, legacy `{md5}`, plain auto-upgrade |
@@ -147,9 +147,9 @@ C99 multi-transport session daemon: mail, chat, `/` commands over plugin link ad
 | `/version` (`/ver`) | Done | HyBBX version and host OS name |
 | `/login`, `/register` | Done | Login; guest self-registration (password required) |
 | `/changeme` | Done | Update own profile and password (registered users) |
-| `/userchange` | Done | Staff overwrite profile and password (Sysop/Admin) |
-| `/userdelete` | Done | Sysop delete any account except Sysop (not self) |
-| `/createuser` | Done | Sysop/Admin create pending user accounts |
+| `/changeuser` | Done | Staff overwrite profile and password (alias `/userchange`) |
+| `/deleteuser` | Done | Sysop delete any account except Sysop (alias `/userdelete`) |
+| `/usercreate` | Done | Sysop/Admin create pending user accounts (alias `/createuser`) |
 | `/chat` | Done | List/join; `/chat show`, `/chat showall` (registered users) |
 | `/conference` (`/meeting`) | Done | Invite: `/conference <topic> <user>`; accept y/n; 2/30 min limit |
 | `/mail` | Done | Inbox list, read, delete, send (registered users) |

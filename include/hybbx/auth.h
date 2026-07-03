@@ -68,21 +68,21 @@ int hybbx_auth_may_activate(hybbx_user_level_t actor);
 /** Non-zero when @p actor may self-register via `/register` (guests only). */
 int hybbx_auth_may_register(hybbx_user_level_t actor);
 
-/** Non-zero when @p actor may create user accounts via `/createuser` (Sysop, Admin). */
+/** Non-zero when @p actor may create user accounts via `/usercreate` (Sysop, Admin). */
 int hybbx_auth_may_create_user(hybbx_user_level_t actor);
 
 /** Non-zero when @p actor may update own profile via `/changeme` (not guests). */
 int hybbx_auth_may_changeme(hybbx_user_level_t actor);
 
 /**
- * Non-zero when @p actor may overwrite another account via `/userchange`.
+ * Non-zero when @p actor may overwrite another account via `/changeuser`.
  * Sysop: Admin, Mod, User. Admin: Mod, User only. Not Sysop or guests.
  */
 int hybbx_auth_may_userchange(hybbx_user_level_t actor,
                               hybbx_user_level_t target_level);
 
 /**
- * Non-zero when @p actor may delete another account via `/userdelete` (Sysop only;
+ * Non-zero when @p actor may delete another account via `/deleteuser` (Sysop only;
  * any non-Sysop target).
  */
 int hybbx_auth_may_userdelete(hybbx_user_level_t actor,

@@ -564,13 +564,13 @@ Pre-login commands: `/help`, `/motd`, `/news`, `/rules`, `/login`, `/register`, 
 |--------|-----|
 | `/register` | Guest or login-prompt |
 | `/changeme` | Registered users |
-| `/userchange` | Sysop: Admin/Mod/User; Admin: Mod/User |
-| `/createuser`, `/activate` | Sysop, Admin |
+| `/changeuser` | Sysop: Admin/Mod/User; Admin: Mod/User (alias: `/userchange`) |
+| `/usercreate`, `/activate` | Sysop, Admin (alias: `/createuser`) |
 | Promote → Admin | Sysop |
 | Promote → Mod | Sysop, Admin |
 | Demote | Sysop (Admin), Sysop/Admin (Mod) |
 | `/delete` | Sysop, Admin (not Sysop) |
-| `/userdelete` | Sysop (not self, not Sysop target) |
+| `/deleteuser` | Sysop (not self, not Sysop target; alias: `/userdelete`) |
 | `/deleteme` | Registered (not Sysop) |
 
 `max_online` default 35. Guest timeout: `guest_timeout_minutes` (default 30).
@@ -614,9 +614,9 @@ Banner tokens: `@version@`, `@service@`. MOTD tokens: `@username@`.
 | `/login <user> <pass>` | Login |
 | `/register <user> …>` | Self-registration (guests; includes password) |
 | `/changeme <oldpass> <newpass> <name> …>` | Update own profile and password (newpass 8–24 chars) |
-| `/userchange <user> <newpass> <name> …>` | Staff overwrite profile and password (Sysop/Admin) |
-| `/userdelete <user>` | Sysop delete any account except Sysop (not self) |
-| `/createuser <user> …>` | Create user account (Sysop, Admin) |
+| `/changeuser <user> <newpass> <name> …>` | Staff overwrite profile and password (alias: `/userchange`) |
+| `/deleteuser <user>` | Sysop delete any account except Sysop (alias: `/userdelete`) |
+| `/usercreate <user> …>` | Create user account (alias: `/createuser`) |
 | `/activate`, `/promote`, `/demote`, `/delete` | Staff (Sysop, Admin) |
 | `/shutdown` | Stop the HyBBX daemon (Sysop only) |
 | `/restart` | Stop and re-exec HyBBX (Sysop only) |

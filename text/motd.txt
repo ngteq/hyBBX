@@ -1,3 +1,2 @@
 Message of the Day
-User @username@ — mail, chat, commands over telnet, RF, or HBX bridge.
-/rules  legal notice.  /help  command reference.
+Welcome, @username@

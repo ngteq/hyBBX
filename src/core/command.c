@@ -80,7 +80,7 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
         return hybbx_auth_may_register(level);
     }
 
-    if (str_ieq(verb, "createuser") || str_ieq(verb, "create")) {
+    if (str_ieq(verb, "usercreate") || str_ieq(verb, "createuser")) {
         return hybbx_auth_may_create_user(level);
     }
 
@@ -88,11 +88,11 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
         return hybbx_auth_may_changeme(level);
     }
 
-    if (str_ieq(verb, "userchange")) {
+    if (str_ieq(verb, "changeuser") || str_ieq(verb, "userchange")) {
         return hybbx_user_level_is_sysop_or_admin(level);
     }
 
-    if (str_ieq(verb, "userdelete")) {
+    if (str_ieq(verb, "deleteuser") || str_ieq(verb, "userdelete")) {
         return hybbx_user_level_is_sysop(level);
     }
 
@@ -244,10 +244,10 @@ static void cmd_help_staff(hybbx_session_t *session, hybbx_user_level_t level)
 {
     if (hybbx_auth_may_create_user(level)) {
         cmd_help_group(session, "Staff",
-                       "/createuser  /activate  /userchange");
+                       "/usercreate  /activate  /changeuser");
         if (level == HYBBX_LEVEL_SYSOP) {
             cmd_help_continuation(session,
-                "/promote  /demote  /delete  /userdelete");
+                "/promote  /demote  /delete  /deleteuser");
             cmd_help_continuation(session, "/shutdown  /restart  /broadcast");
         } else {
             cmd_help_continuation(session, "/promote  /demote  /delete");
@@ -343,6 +343,12 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         canonical = "rules";
     } else if (str_ieq(topic, "meeting")) {
         canonical = "conference";
+    } else if (str_ieq(topic, "createuser")) {
+        canonical = "usercreate";
+    } else if (str_ieq(topic, "userchange")) {
+        canonical = "changeuser";
+    } else if (str_ieq(topic, "userdelete")) {
+        canonical = "deleteuser";
     }
 
     if (!cmd_verb_allowed(level, canonical) ||
@@ -508,15 +514,17 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         return HYBBX_OK;
     }
 
-    if (str_ieq(canonical, "createuser") || str_ieq(canonical, "create")) {
+    if (str_ieq(canonical, "usercreate")) {
         if (!hybbx_auth_may_create_user(level)) {
             cmd_deny_privilege(session);
             return HYBBX_OK;
         }
-        cmd_help_topic_title(session, "/createuser",
+        cmd_help_topic_title(session, "/usercreate",
                              "create user account (Sysop, Admin)");
         cmd_help_topic_detail(session,
-            "  /createuser <user> <name> <country> <location> <email>");
+            "  /usercreate <user> <name> <country> <location> <email>");
+        cmd_help_topic_detail(session,
+            "  alias: /createuser");
         cmd_help_topic_detail(session,
             "  account is inactive until /activate");
         return HYBBX_OK;
@@ -568,11 +576,12 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         return HYBBX_OK;
     }
 
-    if (str_ieq(canonical, "userchange")) {
-        cmd_help_topic_title(session, "/userchange",
+    if (str_ieq(canonical, "changeuser")) {
+        cmd_help_topic_title(session, "/changeuser",
                              "overwrite user profile and password (staff)");
         cmd_help_topic_detail(session,
-            "  /userchange <user> <newpass> <name> <country> <location> <email>");
+            "  /changeuser <user> <newpass> <name> <country> <location> <email>");
+        cmd_help_topic_detail(session, "  alias: /userchange");
         cmd_help_topic_detail(session,
             "  newpass: 8-24 characters");
         if (level == HYBBX_LEVEL_ADMIN) {
@@ -585,10 +594,11 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         return HYBBX_OK;
     }
 
-    if (str_ieq(canonical, "userdelete")) {
-        cmd_help_topic_title(session, "/userdelete",
+    if (str_ieq(canonical, "deleteuser")) {
+        cmd_help_topic_title(session, "/deleteuser",
                              "delete any account except Sysop (Sysop only)");
-        cmd_help_topic_detail(session, "  /userdelete <username>");
+        cmd_help_topic_detail(session, "  /deleteuser <username>");
+        cmd_help_topic_detail(session, "  alias: /userdelete");
         cmd_help_topic_detail(session,
             "  cannot delete your own account or the Sysop account");
         return HYBBX_OK;
@@ -1354,7 +1364,7 @@ static hybbx_result_t cmd_register_user(hybbx_service_t *service,
     if (staff_created) {
         if (cmd->argc < 5) {
             hybbx_session_write_line(session,
-                "Usage: /createuser <username> <full-name> <country> <location> <email>");
+                "Usage: /usercreate <username> <full-name> <country> <location> <email>");
             return HYBBX_OK;
         }
     } else if (cmd->argc < 6) {
@@ -1565,7 +1575,7 @@ static hybbx_result_t cmd_userchange(hybbx_service_t *service,
 
     if (cmd->argc < 7) {
         hybbx_session_write_line(session,
-            "Usage: /userchange <user> <newpass> <full-name> <country> <location> <email>");
+            "Usage: /changeuser <user> <newpass> <full-name> <country> <location> <email>");
         return HYBBX_OK;
     }
 
@@ -1609,7 +1619,7 @@ static hybbx_result_t cmd_userchange(hybbx_service_t *service,
 
     if (hybbx_user_level_is_sysop(user.level)) {
         hybbx_session_write_line(session,
-            "The Sysop account cannot be changed with /userchange.");
+            "The Sysop account cannot be changed with /changeuser.");
         return HYBBX_OK;
     }
 
@@ -1662,7 +1672,7 @@ static hybbx_result_t cmd_userdelete(hybbx_service_t *service,
     }
 
     if (cmd->argc < 1 || cmd->argv[0] == NULL || cmd->argv[0][0] == '\0') {
-        hybbx_session_write_line(session, "Usage: /userdelete <username>");
+        hybbx_session_write_line(session, "Usage: /deleteuser <username>");
         return HYBBX_OK;
     }
 
@@ -2473,15 +2483,15 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
         return cmd_changeme(service, session, cmd);
     }
 
-    if (str_ieq(cmd->verb, "userchange")) {
+    if (str_ieq(cmd->verb, "changeuser") || str_ieq(cmd->verb, "userchange")) {
         return cmd_userchange(service, session, cmd);
     }
 
-    if (str_ieq(cmd->verb, "userdelete")) {
+    if (str_ieq(cmd->verb, "deleteuser") || str_ieq(cmd->verb, "userdelete")) {
         return cmd_userdelete(service, session, cmd);
     }
 
-    if (str_ieq(cmd->verb, "createuser") || str_ieq(cmd->verb, "create")) {
+    if (str_ieq(cmd->verb, "usercreate") || str_ieq(cmd->verb, "createuser")) {
         return cmd_createuser(service, session, cmd);
     }
 
