@@ -1,7 +1,15 @@
-; HyBBX Secondary — RF/TNC and other link adapters; bridges to Main over TCP/IP
+; HyBBX Secondary — remote edge extender/repeater/gateway (infrastructure, not a telnet user)
 ;
-; Default role: run AX.25 and hardware adapters here; connect outbound to Main HBX hub.
-; One Secondary per RF site (or more); each registers on Main as [transport.<plugin>N].
+; A Secondary is a separate remote machine — not a telnet user and not a local
+; [transport.*] on Main. It runs its own HyBBX process with RF/TNC (or other link
+; adapters) at an edge site and connects to Main over HBX/TCP (circuit_host → Main
+; [circuit]). Multiple remote Secondaries may connect to one Main at once (v0.8.0).
+; link_role (link/repeater/gateway/digipeater) labels the bridge type — all are
+; Secondary class relative to Main.
+;
+; Default: run AX.25 here; outbound HBX client to Main [circuit] hub.
+; One Secondary host per RF site (or more); each registers on Main as
+; [transport.<plugin>N] (bridge metadata — RF runs on the Secondary machine).
 ;
 ;   cp share/hybbx-secondary.ini.example <install>/hybbx/hybbx-secondary.ini
 ;   hybbx -c /path/to/secondary.ini
@@ -62,6 +70,8 @@ circuit_port = 7323
 link_id = secondary-1
 link_password = changeme
 link_role = link
+; Tune radio to this MHz (see Main [ax25] frequency list):
+frequency_mhz = 27.205
 
 ; --- TNC2C (primary test device) ---
 tnc = tnc2c
@@ -85,3 +95,8 @@ g3ruh_fsk = no
 ; mycall = DL1ABC-0
 ; dest = DL9XYZ-0
 ; via = RELAY-7
+
+; Same MHz list as Main (operator reference):
+[ax25]
+frequency1 = 27.205
+frequency2 = 27.215

@@ -12,6 +12,7 @@
 #include "hybbx/log.h"
 #include "hybbx/hybbx.h"
 #include "hybbx/util.h"
+#include "hybbx/bandwidth_policy.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -72,6 +73,8 @@ typedef struct hybbx_session_core {
     size_t mail_compose_body_len;
     unsigned out_col;
     int input_echo;
+    int bandwidth_paused;
+    int bandwidth_disconnect;
 } hybbx_session_core_t;
 
 static unsigned session_chat_message_max(const hybbx_session_core_t *core)
@@ -248,6 +251,10 @@ hybbx_result_t hybbx_session_write(hybbx_session_t *session, const char *text)
     }
 
     core = (hybbx_session_core_t *)session->core_data;
+    if (core != NULL && core->bandwidth_paused) {
+        return HYBBX_OK;
+    }
+
     return hybbx_traffic_emit(session,
                                 core != NULL ? &core->out_col : NULL,
                                 text, strlen(text));
@@ -844,6 +851,10 @@ hybbx_result_t hybbx_session_tick(hybbx_session_t *session)
         return HYBBX_ERR_INVALID;
     }
 
+    if (core->bandwidth_disconnect) {
+        return HYBBX_SESSION_END;
+    }
+
     return session_check_guest_expiry(core);
 }
 
@@ -861,6 +872,10 @@ hybbx_result_t hybbx_session_handle_input(hybbx_session_t *session,
     core = (hybbx_session_core_t *)session->core_data;
     if (core == NULL || !session_accepts_input(core)) {
         return HYBBX_ERR_INVALID;
+    }
+
+    if (core->bandwidth_paused) {
+        return HYBBX_OK;
     }
 
     if (core->logged_in) {
@@ -1634,4 +1649,73 @@ const char *hybbx_session_mail_compose_subject(const hybbx_session_t *session)
     }
 
     return core->mail_compose_subject;
+}
+
+time_t hybbx_session_connected_at(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return 0;
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return 0;
+    }
+
+    return core->record.connected_at;
+}
+
+int hybbx_session_bandwidth_paused(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return 0;
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return 0;
+    }
+
+    return core->bandwidth_paused;
+}
+
+void hybbx_session_set_bandwidth_paused(hybbx_session_t *session, int paused)
+{
+    hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return;
+    }
+
+    core->bandwidth_paused = paused ? 1 : 0;
+}
+
+void hybbx_session_disconnect_bandwidth(hybbx_session_t *session)
+{
+    hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL || !core->logged_in) {
+        return;
+    }
+
+    core->bandwidth_paused = 0;
+    (void)hybbx_traffic_emit(session, &core->out_col,
+                               HYBBX_BANDWIDTH_DISCONNECT_MSG,
+                               strlen(HYBBX_BANDWIDTH_DISCONNECT_MSG));
+    (void)hybbx_traffic_emit(session, &core->out_col, "\n", 1);
+    core->bandwidth_disconnect = 1;
 }

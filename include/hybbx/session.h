@@ -148,6 +148,20 @@ const char *hybbx_session_mail_compose_body(const hybbx_session_t *session);
 const char *hybbx_session_mail_compose_to(const hybbx_session_t *session);
 const char *hybbx_session_mail_compose_subject(const hybbx_session_t *session);
 
+/** Wall-clock time when this session connected (for bandwidth policy ordering). */
+time_t hybbx_session_connected_at(const hybbx_session_t *session);
+
+/** Non-zero when the session is frozen by circuit bandwidth limits. */
+int hybbx_session_bandwidth_paused(const hybbx_session_t *session);
+
+void hybbx_session_set_bandwidth_paused(hybbx_session_t *session, int paused);
+
+/**
+ * End the session after sending @ref HYBBX_BANDWIDTH_DISCONNECT_MSG.
+ * Newest-first under low-bandwidth link pressure.
+ */
+void hybbx_session_disconnect_bandwidth(hybbx_session_t *session);
+
 #ifdef __cplusplus
 }
 #endif

@@ -529,6 +529,18 @@ hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
         }
     }
 
+    value = find_kv(config, "frequency_mhz", scratch, sizeof(scratch));
+    if (value == NULL || value[0] == '\0') {
+        value = find_kv(config, "frequency", scratch, sizeof(scratch));
+    }
+    if (value != NULL && value[0] != '\0') {
+        out->frequency_mhz = hybbx_strdup(value);
+        if (out->frequency_mhz == NULL) {
+            hybbx_packet_radio_config_free(out);
+            return HYBBX_ERR_NOMEM;
+        }
+    }
+
     (void)hybbx_tnc_profile_apply_defaults(out);
     return HYBBX_OK;
 }
@@ -548,6 +560,7 @@ void hybbx_packet_radio_config_free(hybbx_packet_radio_config_t *config)
     free(config->link_id);
     free(config->link_password);
     free(config->link_role);
+    free(config->frequency_mhz);
     for (i = 0; i < config->via_count; i++) {
         free(config->via[i]);
         config->via[i] = NULL;

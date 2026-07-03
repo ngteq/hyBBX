@@ -2,6 +2,7 @@
 #include "hybbx/util.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static const char *find_kv_line(const char *payload, size_t len,
@@ -76,6 +77,49 @@ size_t hybbx_link_auth_format(const hybbx_link_auth_t *auth,
         return 0;
     }
 
+    if (auth->baud > 0) {
+        int extra = snprintf(out + (size_t)n, out_cap - (size_t)n,
+                             "baud=%u\n", auth->baud);
+        if (extra < 0 || (size_t)n + (size_t)extra >= out_cap) {
+            return 0;
+        }
+        n += extra;
+    }
+
+    if (auth->duplex == 1) {
+        int extra = snprintf(out + (size_t)n, out_cap - (size_t)n,
+                             "duplex=half\n");
+        if (extra < 0 || (size_t)n + (size_t)extra >= out_cap) {
+            return 0;
+        }
+        n += extra;
+    } else if (auth->duplex == 2) {
+        int extra = snprintf(out + (size_t)n, out_cap - (size_t)n,
+                             "duplex=full\n");
+        if (extra < 0 || (size_t)n + (size_t)extra >= out_cap) {
+            return 0;
+        }
+        n += extra;
+    }
+
+    if (auth->bandwidth[0] != '\0') {
+        int extra = snprintf(out + (size_t)n, out_cap - (size_t)n,
+                             "bandwidth=%s\n", auth->bandwidth);
+        if (extra < 0 || (size_t)n + (size_t)extra >= out_cap) {
+            return 0;
+        }
+        n += extra;
+    }
+
+    if (auth->frequency_mhz[0] != '\0') {
+        int extra = snprintf(out + (size_t)n, out_cap - (size_t)n,
+                             "frequency_mhz=%s\n", auth->frequency_mhz);
+        if (extra < 0 || (size_t)n + (size_t)extra >= out_cap) {
+            return 0;
+        }
+        n += extra;
+    }
+
     return (size_t)n;
 }
 
@@ -104,6 +148,34 @@ hybbx_result_t hybbx_link_auth_parse(const char *payload, size_t len,
         hybbx_strlcpy(auth->role, scratch, sizeof(auth->role));
     } else {
         hybbx_strlcpy(auth->role, "link", sizeof(auth->role));
+    }
+
+    if (find_kv_line(payload, len, "baud", scratch, sizeof(scratch)) != NULL) {
+        unsigned long baud = strtoul(scratch, NULL, 10);
+        if (baud > 0) {
+            auth->baud = (unsigned)baud;
+        }
+    }
+
+    if (find_kv_line(payload, len, "duplex", scratch, sizeof(scratch)) != NULL) {
+        if (strcmp(scratch, "full") == 0 || strcmp(scratch, "full-duplex") == 0) {
+            auth->duplex = 2;
+        } else if (strcmp(scratch, "half") == 0 ||
+                   strcmp(scratch, "half-duplex") == 0 ||
+                   strcmp(scratch, "simplex") == 0) {
+            auth->duplex = 1;
+        }
+    }
+
+    if (find_kv_line(payload, len, "bandwidth", scratch, sizeof(scratch)) != NULL) {
+        hybbx_strlcpy(auth->bandwidth, scratch, sizeof(auth->bandwidth));
+    }
+
+    if (find_kv_line(payload, len, "frequency_mhz", scratch, sizeof(scratch)) != NULL) {
+        hybbx_strlcpy(auth->frequency_mhz, scratch, sizeof(auth->frequency_mhz));
+    } else if (find_kv_line(payload, len, "frequency", scratch,
+                            sizeof(scratch)) != NULL) {
+        hybbx_strlcpy(auth->frequency_mhz, scratch, sizeof(auth->frequency_mhz));
     }
 
     return HYBBX_OK;

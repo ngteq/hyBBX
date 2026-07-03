@@ -9,12 +9,14 @@
 #include "hybbx/crypto_config.h"
 #include "hybbx/traffic.h"
 #include "hybbx/circuit_tcp.h"
+#include "hybbx/circuit_bridge.h"
 #include "hybbx/link.h"
 #include "hybbx/auth.h"
 #include "hybbx/storage.h"
 #include "hybbx/texts.h"
 #include "hybbx/chat.h"
 #include "hybbx/mail.h"
+#include "hybbx/broadcast.h"
 #include "hybbx/networks.h"
 #include "hybbx/log.h"
 #include "hybbx/security.h"
@@ -78,6 +80,7 @@ struct hybbx_service_internal {
     hybbx_texts_config_t texts;
     hybbx_chat_config_t chat;
     hybbx_mail_config_t mail;
+    hybbx_broadcast_config_t broadcast;
     hybbx_networks_config_t networks;
     active_transport_t transports[HYBBX_MAX_ACTIVE_TRANSPORTS];
     size_t transport_count;
@@ -232,6 +235,31 @@ const hybbx_mail_config_t *hybbx_service_get_mail(const hybbx_service_t *service
     }
 
     return &svc->mail;
+}
+
+const hybbx_broadcast_config_t *hybbx_service_get_broadcast(
+    const hybbx_service_t *service)
+{
+    const struct hybbx_service_internal *svc =
+        (const struct hybbx_service_internal *)service;
+
+    if (svc == NULL) {
+        return NULL;
+    }
+
+    return &svc->broadcast;
+}
+
+hybbx_circuit_hub_t *hybbx_service_circuit_hub(hybbx_service_t *service)
+{
+    struct hybbx_service_internal *svc =
+        (struct hybbx_service_internal *)service;
+
+    if (svc == NULL) {
+        return NULL;
+    }
+
+    return svc->circuit_hub;
 }
 
 const char *hybbx_service_get_prompt(const hybbx_service_t *service)
@@ -648,6 +676,19 @@ static hybbx_result_t service_apply_circuit(struct hybbx_service_internal *svc,
     cfg.link_auth = hybbx_config_get_bool(config, "circuit", "link_auth", 1);
     cfg.link_stale_days = hybbx_config_get_uint(
         config, "circuit", "link_stale_days", HYBBX_LINK_STALE_DAYS, 1u, 365u);
+    cfg.balance.enabled = hybbx_config_get_bool(config, "circuit", "balance", 1);
+    cfg.balance.lag_sec = hybbx_config_get_uint(
+        config, "circuit", "balance_lag_sec", 5u, 1u, 120u);
+    cfg.balance.queue_pause = (size_t)hybbx_config_get_uint(
+        config, "circuit", "balance_queue_pause", 4096u, 256u, 1048576u);
+    cfg.balance.queue_break = (size_t)hybbx_config_get_uint(
+        config, "circuit", "balance_queue_break", 16384u, 1024u, 1048576u);
+    cfg.balance.queue_cancel = (size_t)hybbx_config_get_uint(
+        config, "circuit", "balance_queue_cancel", 65536u, 4096u, 4194304u);
+    cfg.max_links = hybbx_config_get_uint(
+        config, "circuit", "max_links", HYBBX_CIRCUIT_DEFAULT_MAX_LINKS,
+        1u, HYBBX_CIRCUIT_MAX_LINKS);
+    (void)hybbx_circuit_bridge_load(&cfg.bridge, config);
 
     {
         const char *link_pw = hybbx_config_get(config, "circuit", "link_password", NULL);
@@ -921,6 +962,9 @@ void hybbx_service_restart_exec(const hybbx_service_t *service)
     } else {
         argv[1] = NULL;
     }
+
+    fflush(NULL);
+    execv(binary, argv);
     perror("hybbx restart failed");
 }
 
@@ -1013,6 +1057,7 @@ hybbx_result_t hybbx_service_apply_config(hybbx_service_t *service,
     hybbx_security_log_config_apply(config);
     service_apply_texts(svc, config);
     hybbx_chat_config_apply(&svc->chat, config);
+    hybbx_broadcast_config_apply(&svc->broadcast, config);
     service_apply_service(svc, config);
     hybbx_crypto_config_apply(config);
     hybbx_traffic_config_apply(config);

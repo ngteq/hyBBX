@@ -160,6 +160,7 @@ static void conference_notify_partner_left(hybbx_session_t *session,
 {
     hybbx_service_t *service;
     hybbx_session_t *partner;
+    char line[HYBBX_LINE_MAX];
 
     if (session == NULL || partner_username == NULL ||
         partner_username[0] == '\0') {
@@ -182,7 +183,9 @@ static void conference_notify_partner_left(hybbx_session_t *session,
     }
 
     hybbx_session_clear_conference(partner);
-    hybbx_session_write_line(partner, "Conference ended.");
+    snprintf(line, sizeof(line), "%s left the conference.",
+             hybbx_session_display_name(session));
+    hybbx_session_write_line(partner, line);
     if (hybbx_session_area(partner) == HYBBX_AREA_CONFERENCE) {
         (void)hybbx_session_leave_area(partner);
     }
@@ -218,12 +221,12 @@ static hybbx_result_t conference_activate(hybbx_service_t *service,
     snprintf(line, sizeof(line), "Conference: %s", topic);
     hybbx_session_write_line(initiator, line);
     hybbx_session_write_line(initiator,
-        "Private two-user channel. /leave or /main to exit.");
+        "Each line is a message; /leave or /main to exit.");
 
     snprintf(line, sizeof(line), "Conference: %s", topic);
     hybbx_session_write_line(partner, line);
     hybbx_session_write_line(partner,
-        "Private two-user channel. /leave or /main to exit.");
+        "Each line is a message; /leave or /main to exit.");
 
     return HYBBX_OK;
 }
@@ -339,8 +342,8 @@ hybbx_result_t hybbx_conference_reply_invite(hybbx_service_t *service,
                                              hybbx_session_t *session,
                                              const char *line)
 {
-    const char *from_username;
-    const char *topic;
+    char from_username[HYBBX_USER_NAME_MAX];
+    char topic[HYBBX_CONFERENCE_TOPIC_MAX];
     hybbx_session_t *initiator;
     char msg[HYBBX_LINE_MAX];
 
@@ -356,11 +359,18 @@ hybbx_result_t hybbx_conference_reply_invite(hybbx_service_t *service,
         return HYBBX_ERR_NOT_FOUND;
     }
 
-    from_username = hybbx_session_conference_invite_from(session);
-    topic = hybbx_session_conference_invite_topic(session);
-    if (from_username == NULL || topic == NULL) {
-        hybbx_session_clear_conference_invite(session);
-        return HYBBX_ERR_INVALID;
+    {
+        const char *from_ptr = hybbx_session_conference_invite_from(session);
+        const char *topic_ptr = hybbx_session_conference_invite_topic(session);
+
+        if (from_ptr == NULL || from_ptr[0] == '\0' ||
+            topic_ptr == NULL || topic_ptr[0] == '\0') {
+            hybbx_session_clear_conference_invite(session);
+            return HYBBX_ERR_INVALID;
+        }
+
+        hybbx_strlcpy(from_username, from_ptr, sizeof(from_username));
+        hybbx_strlcpy(topic, topic_ptr, sizeof(topic));
     }
 
     hybbx_session_clear_conference_invite(session);

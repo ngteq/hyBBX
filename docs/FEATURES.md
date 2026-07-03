@@ -1,6 +1,6 @@
 # HyBBX feature list
 
-**Version:** 0.7.0 · Config: `share/hybbx.ini.example` · Operator: [MANUAL.md](MANUAL.md) · Plan: [ROADMAP.md](ROADMAP.md)
+**Version:** 0.8.0 · Config: `share/hybbx.ini.example` · Operator: [MANUAL.md](MANUAL.md) · Plan: [ROADMAP.md](ROADMAP.md)
 
 C99 multi-transport session daemon: mail, chat, `/` commands over plugin link adapters (telnet, AX.25/HBX bridge).
 
@@ -37,19 +37,26 @@ C99 multi-transport session daemon: mail, chat, `/` commands over plugin link ad
 
 ## Internal circuit (HBX)
 
+**Secondaries** are **separate remote machines** — extenders, repeaters, gateways, and other next-hop edge devices that bridge RF or other transport **to** Main over HBX/TCP (`circuit_host` → Main `[circuit]` hub). Each runs its own HyBBX process; Main holds the session core. They are **infrastructure**, not end-user telnet sessions. **Not** Secondaries: telnet users, local `[transport.*]` on Main, or any adapter running inside the Main process. **v0.8.0:** multiple Secondaries may connect to one Main at once (unique `link_id` per active link). `link_role` (`link`, `repeater`, `gateway`, `digipeater`, …) is per-bridge metadata; all are the same **Secondary** class relative to Main.
+
 | Feature | Status | Description |
 |---------|--------|-------------|
 | TCP-only core semantics | Done | Application never parses KISS/AX.25 on-air formats directly |
-| Circuit hub | Done | `[circuit]` TCP hub IPv4+IPv6 (default port 7323, loopback bind) |
+| Circuit hub | Done | `[circuit]` TCP hub IPv4+IPv6; `max_links` (default 8, max 16) |
 | HBX v1 framing | Done | Magic `HBX\x01`, proto, flags, length, payload |
 | Protocol `ax25` | Done | Raw AX.25 frame (incl. FCS) RF ↔ core |
 | Protocol `ax25_ui` | Done | UI payload with optional path metadata |
 | Protocol `terminal` | Done | Terminal byte stream for host-mode / UI traffic |
+| Protocol `flow_ctrl` | Done | Load-balance pause / break / cancel / resume (`0x05`) |
+| Auto load-balancing | Done | Pace downlink to low-bandwidth links; `LINK_AUTH` QoS (`baud`, `duplex`, `bandwidth`) |
+| Bandwidth user policy | Done | AX.25 users before full-duplex TCP; LIFO within class; circuit secondaries spared until users exhausted |
+| AX.25 broadcast (Main) | Done | `/broadcast ax25` — QST UI; low+half-duplex QoS only; MHz not channel numbers |
+| TCP broadcast | Stub | `/broadcast tcp` — logged only until telnet fan-out |
 | G3RUH flag on uplink | Done | `HYBBX_CIRCUIT_FLAG_G3RUH_FSK` when 9600 FSK active |
 | Reserved protos | Planned | `0x20` APRS, `0x21` NETROM, … |
 | Packet radio link client | Done | Secondary connects via `circuit_host` / `circuit_port` |
 | Main/secondary TCP bridge | Done | HBX over TCP; main template + `hybbx-secondary.ini.example` |
-| Multi-link hub (N secondaries) | Planned | Several concurrent circuit links on one main |
+| Multi-link hub (N secondaries) | Done | Per-link slot table; same MHz allowed; multicast broadcast; duplicate `link_id` rejected |
 
 ---
 
@@ -230,7 +237,7 @@ See [ROADMAP.md](ROADMAP.md). Summary:
 |---------|--------|-------------|
 | Mail-Area | Done | Mailbox on **main** only (not chat) |
 | Main/secondary bridge | Done | HBX/TCP `LINK_AUTH`; templates in `share/` |
-| Multi-link hub | Planned | Several secondaries → one main; `[transport.packet_radioN]` bridge registry on Main |
+| Multi-link hub | Done | Several remote secondaries → one Main; `[transport.packet_radioN]` bridge registry on Main |
 | Secondary modes | Partial | Secondary INI + `link_role` metadata; role routing planned |
 | SSH transport | After v1.0.0 | Same session core as telnet |
 | WebSocket transport | After v1.0.0 | Reverse-proxy only |
@@ -242,4 +249,4 @@ See [ROADMAP.md](ROADMAP.md). Summary:
 
 ---
 
-*Last aligned with codebase: HyBBX 0.7.0.*
+*Last aligned with codebase: HyBBX 0.8.0.*

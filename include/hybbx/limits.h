@@ -39,6 +39,12 @@
 /** Default maximum simultaneous online sessions (guests included). */
 #define HYBBX_DEFAULT_MAX_ONLINE 35u
 
+/** Maximum concurrent HBX circuit links (secondaries) on Main. */
+#define HYBBX_CIRCUIT_MAX_LINKS 16u
+
+/** Default [circuit] max_links when not set in INI. */
+#define HYBBX_CIRCUIT_DEFAULT_MAX_LINKS 8u
+
 /** Default guest session lifetime before auto-disconnect (minutes). */
 #define HYBBX_DEFAULT_GUEST_TIMEOUT_MINUTES 30u
 

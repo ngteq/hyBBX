@@ -1,9 +1,15 @@
-; HyBBX Main instance configuration — version target: 0.7.0
+; HyBBX Main instance configuration — version target: 0.8.0
 ; Multi-transport session daemon for bandwidth-constrained networks.
 ; Default profile: datacenter Main — TCP/IP on this host only.
 ;
-;   ON by default:  telnet (user sessions), HBX circuit hub on loopback (Secondaries via bind change)
+;   ON by default:  telnet (end-user sessions), HBX circuit hub on loopback (Secondaries via bind change)
 ;   OFF by default: ax25, websocket — run on Secondary instance(s) instead
+;
+; Secondaries = remote edge machines (extenders, repeaters, gateways) — not telnet
+; users and not local [transport.*] on Main. Each runs its own HyBBX process and
+; connects to this Main over HBX/TCP ([circuit] hub). Multiple Secondaries may
+; connect at once (v0.8.0); link_role (link/repeater/gateway/…) is metadata —
+; all are Secondary class relative to Main.
 ;
 ; AX.25 and other non-core adapters normally live on one or more Secondaries that
 ; bridge RF/TNC traffic to this Main over HBX/TCP. The INI is fully overrideable:
@@ -26,8 +32,8 @@
 ;   [mail]               personal mailbox (Main only)
 ;   [networks]           connection switches (ax25, websocket, circuit)
 ;   [transport.telnet]   TCP telnet adapter (port 2323) — static enabled
-;   [circuit]            HBX TCP hub — secondaries connect here (main instance)
-;   [transport.packet_radioN]  Bridge registry on Main (one section per Secondary)
+;   [circuit]            HBX TCP hub — remote Secondary processes connect here
+;   [transport.packet_radioN]  Bridge registry on Main (one section per remote Secondary)
 ;                              Secondary: same section name + TNC/RF settings
 ;
 ; Templates:
@@ -149,7 +155,8 @@ ipv6 = yes
 ; User-files and public-files (documentation/file areas on Main) are planned after
 ; SSH and WebSocket — also post–v1.0.0. See docs/ROADMAP.md.
 
-; HBX circuit hub — Main only. Default: loopback (127.0.0.1 / ::1) for security.
+; HBX circuit hub — Main only. Remote Secondaries (RF extenders/repeaters, not telnet
+; users or local Main transports) attach here over TCP. Default: loopback (127.0.0.1 / ::1).
 ; Remote Secondaries: set bind = 0.0.0.0 and bind6 = :: (or a VPN/firewall address).
 ; HyBBX auth: link_id + link_password only. Firewall/VPN/tunnels: system-level.
 ; Master switch: [networks] circuit = yes|no
@@ -164,21 +171,51 @@ ipv6 = yes
 link_auth = yes
 link_password = changeme
 link_stale_days = 10
+; Up to HYBBX_CIRCUIT_MAX_LINKS (16) concurrent Secondary HBX links.
+max_links = 8
+; Auto load-balance high-bandwidth telnet vs low-bandwidth RF links (HBX FLOW_CTRL).
+balance = yes
+balance_lag_sec = 5
+balance_queue_pause = 4096
+balance_queue_break = 16384
+balance_queue_cancel = 65536
 
-; Bridge registry — one [transport.<plugin>N] section per Secondary on Main.
-; HyBBX ships only link_id and link_password here (same keys on the Secondary).
+; Broadcasting — Main instance only (remote Secondaries are RF extenders).
+[broadcast]
+enabled = yes
+ax25 = yes
+tcp = yes
+ax25_mycall = HYBBX
+ax25_dest = QST
+
+; AX.25 frequencies in MHz only (no CB channel numbers — those differ by region).
+; List each frequency your network uses; tune radios manually.
+[ax25]
+frequency1 = 27.205
+frequency1_label = local-A
+frequency2 = 27.215
+; frequency3 = 27.225
+
+; Bridge registry — one [transport.packet_radioN] section per remote Secondary
+; connected over HBX. Each Secondary is a separate edge host (extender/repeater/
+; gateway), not a telnet session or local [transport.*] on Main.
+; HyBBX ships link_id, link_password, and optional frequency_mhz here.
 ; Section name must match the Secondary INI (e.g. packet_radio1 on both sides).
-; Multi-link hub reads these when implemented; today LINK_AUTH uses [circuit] password.
+; LINK_AUTH on connect: per-link password from this registry (or [circuit] fallback).
+; Multiple secondaries may share the same MHz; QoS governs fan-out and load-balance.
 [transport.packet_radio1]
 link_id = secondary-1
 link_password = changeme
 link_role = link
+; RF frequency (MHz) this Secondary extends — must match radio tuning:
+frequency_mhz = 27.205
 
-; Second Secondary (comment out until needed):
-; [transport.packet_radio2]
-; link_id = secondary-2
-; link_password = changeme2
-; link_role = link
+; Second Secondary (same MHz allowed — HyBBX-QoS load-balances):
+[transport.packet_radio2]
+link_id = secondary-2
+link_password = changeme2
+link_role = link
+frequency_mhz = 27.205
 
 ; Full TNC/RF tuning lives on the Secondary only — see hybbx-secondary.ini.example.
 ; Dev/local single-box test with ax25=yes may use [transport.packet_radio] (unnumbered).

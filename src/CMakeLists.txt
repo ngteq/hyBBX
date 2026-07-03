@@ -5,6 +5,10 @@ if(HYBBX_BUILD_DAEMON)
         core/config.c
         core/circuit.c
         core/circuit_tcp.c
+        core/circuit_bridge.c
+        core/circuit_balance.c
+        core/bandwidth_policy.c
+        core/broadcast.c
         core/link.c
         core/command.c
         core/command_parse.c

@@ -4,12 +4,14 @@ Operator reference: INI, transports, commands. Templates: `share/hybbx.ini.examp
 
 ## Overview
 
-HyBBX is a C99 **multi-transport session daemon** for low-bandwidth links. One session core (mail, chat, `/` commands) serves all connections. **Link adapters** (telnet, packet radio, HBX circuit client) terminate wire protocols and attach byte streams to the core on **Main**. **Secondary** nodes run RF/TNC locally and bridge to Main over HBX v1 on TCP (port **7323**).
+HyBBX is a C99 **multi-transport session daemon** for low-bandwidth links. One session core (mail, chat, `/` commands) serves all connections. **Link adapters** (telnet, packet radio, HBX circuit client) terminate wire protocols and attach byte streams to the core on **Main**.
+
+**Secondaries** are **separate remote machines** — extenders, repeaters, gateways, and other next-hop edge devices that bridge RF or other transport **to** Main over HBX/TCP. Each runs its own HyBBX process (`circuit_host` → Main `[circuit]`, port **7323**); Main holds users, storage, and the session core. They are **infrastructure**, not end-user telnet sessions. **Not** Secondaries: telnet on Main (`:2323`), local `[transport.*]` on Main, or any adapter inside the Main process. **v0.8.0:** several remote Secondaries may connect to one Main at once (unique `link_id` per active link). `link_role` (`link`, `repeater`, `gateway`, `digipeater`, …) labels the bridge type; all are the same **Secondary** class relative to Main.
 
 | Role | Default | Hosts |
 |------|---------|-------|
 | **Main** | `ax25=no`, `circuit=yes` | Users, storage, telnet :2323, HBX hub |
-| **Secondary** | `ax25=yes`, `circuit=no` | TNC/RF; uplink via `circuit_host` |
+| **Secondary** | `ax25=yes`, `circuit=no` | Remote edge host: TNC/RF; outbound HBX client to Main |
 | **Standalone Main** | `ax25=yes` on same host | All adapters local; no remote Secondary |
 
 Override any default in INI. Topology details: [ROADMAP.md](ROADMAP.md). Firewall, VPN, TLS: **system layer** — not built into HyBBX.
@@ -22,7 +24,7 @@ Override any default in INI. Topology details: [ROADMAP.md](ROADMAP.md). Firewal
 | SSH             | After v1.0.0 | — | Secure shell transport plugin (post–first GitHub release) |
 | AX.25 / Packet Radio | Started | `ax25 = yes\|no` | TNC2C (KISS/AX.25); USB/RS232 |
 | WebSocket       | After v1.0.0 | `websocket = yes\|no` | Forward-proxy behind Apache/nginx only |
-| HBX circuit hub | Started  | `circuit = yes\|no` | Internal TCP hub for Secondary adapters |
+| HBX circuit hub | Started  | `circuit = yes\|no` | Main TCP hub — remote Secondary processes connect here |
 
 Telnet starts when built (ignores `enabled`). Optional adapters need `[networks]` switches. **SSH**, **WebSocket**, **user-files**, **public-files**: post–v1.0.0 ([ROADMAP.md](ROADMAP.md)).
 
@@ -82,8 +84,13 @@ internal circuit hub on loopback. Payloads are wrapped in **HBX v1** frames:
 | `ax25` (0x01) | Raw AX.25 frame incl. FCS | RF → core |
 | `ax25_ui` (0x02) | Masked path + UI bytes | Optional metadata |
 | `terminal` (0x10) | Terminal byte stream | Core ↔ RF TX |
+| `flow_ctrl` (0x05) | `action=pause\|break\|cancel\|resume` | Hub ↔ link (load-balance) |
 
 Reserved protocol IDs (`0x20` APRS, `0x21` NETROM, …) are allocated for future stacks.
+
+**Auto load-balancing:** When telnet (high bandwidth, full-duplex) and packet radio (low bandwidth, often half-duplex) share the same Main, the hub queues downlink at each link’s reported `radio_baud` and sends `flow_ctrl` if the queue grows. A few seconds of lag on slow links is normal. Escalation per link: **pause** (hold RF I/O) → **break** (drop queued frames) → **cancel** (drop the secondary link only after users are exhausted). Secondary advertises QoS in `LINK_AUTH` (`baud`, `duplex`, `bandwidth=low`); packet_radio sends these automatically.
+
+**User policy (LIFO):** Under the same pressure, telnet and on-RF **users** are frozen or dropped **last-connected first** — circuit secondaries are never the first sacrifice. Secondary links are cancelled only when no more users can be disconnected. Disconnect message: `You are disconnected by bandwidth limits.`
 
 ```ini
 [circuit]
@@ -93,6 +100,9 @@ bind6 = ::1
 port = 7323
 ipv4 = yes
 ipv6 = yes
+balance = yes
+balance_lag_sec = 5
+max_links = 8
 ```
 
 Packet radio connects as a **link client** (`circuit_host` / `circuit_port` in
@@ -109,7 +119,9 @@ Telnet remains native TCP to the session (no HBX wrapper on the wire).
 
 ### Main ↔ Secondary bridge
 
-Secondaries connect to Main `circuit_host:circuit_port` (plain TCP). Link auth: matching `link_id` + `link_password` on Main `[transport.packet_radioN]` and Secondary. No HyBBX link proxy before v1.0 — use Main directly or your own proxy.
+A **Secondary** is a **remote** edge extender/repeater/gateway (or similar device) — not a telnet user session and not a local `[transport.*]` on Main. It runs its own HyBBX process with local RF/TNC (or other link adapters) and maintains an outbound TCP HBX session to Main's `[circuit]` hub.
+
+Each remote Secondary connects to Main `circuit_host:circuit_port` (plain TCP). Link auth: matching `link_id` + `link_password` on Main `[transport.packet_radioN]` and Secondary. No HyBBX link proxy before v1.0 — point `circuit_host` at Main (or your own proxy).
 
 **External security:** firewall (TCP 2323/7323), VPN (`circuit_host` = tunnel IP), `ssh -L`, stunnel, reverse proxy.
 
@@ -127,7 +139,7 @@ Bridge sections — same name on both sides; increment **N** per Secondary:
 | Main | `[transport.packet_radio1]` | `link_id`, `link_password`, `link_role` |
 | Secondary | `[transport.packet_radio1]` | same link keys + TNC/device settings |
 
-**Limit today:** one active circuit link per Main ([ROADMAP.md](ROADMAP.md#multi-link-several-secondaries--one-main--planned)).
+**v0.8.0:** Up to `max_links` concurrent Secondaries (default 8, max 16); one active HBX link per `link_id`. Secondaries are edge infrastructure — not telnet users. Multiple secondaries may share the same MHz — broadcast and load-balance use HyBBX-QoS. See [ROADMAP.md](ROADMAP.md#multi-link-v080--done).
 
 **Main** — circuit hub on loopback by default; register bridges:
 
@@ -145,16 +157,19 @@ port = 7323
 link_auth = yes
 link_password = <shared-secret>
 link_stale_days = 10
+max_links = 8
 
 [transport.packet_radio1]
 link_id = secondary-1
 link_password = <shared-secret>
 link_role = link
+frequency_mhz = 27.205
 
 ; [transport.packet_radio2]
 ; link_id = secondary-2
 ; link_password = <other-secret>
 ; link_role = link
+; frequency_mhz = 27.205
 ```
 
 **Remote Secondaries** — widen the hub bind in `hybbx.ini` (and firewall accordingly):
@@ -190,7 +205,7 @@ protocol = kiss
 
 Run Secondary: `hybbx -c /path/to/hybbx-secondary.ini`.
 
-**Link flow:** TCP connect → `LINK_AUTH` (`link_password`, `link_id`, `link_role`) → registry → circuit session. RF uplink: HBX `ax25`; downlink: HBX `terminal`.
+**Link flow:** TCP connect → `LINK_AUTH` (`link_password`, `link_id`, `link_role`, optional `baud`, `duplex`, `bandwidth`) → registry → circuit session. RF uplink: HBX `ax25`; downlink: HBX `terminal`.
 
 #### Standalone Main
 
@@ -605,6 +620,7 @@ Banner tokens: `@version@`, `@service@`. MOTD tokens: `@username@`.
 | `/activate`, `/promote`, `/demote`, `/delete` | Staff (Sysop, Admin) |
 | `/shutdown` | Stop the HyBBX daemon (Sysop only) |
 | `/restart` | Stop and re-exec HyBBX (Sysop only) |
+| `/broadcast` | AX.25 RF or TCP broadcast (Sysop, Main only) |
 | `/deleteme yes\|no` | Delete own account |
 | `/exit` | Disconnect (`/quit`, `/logout`, `/bye`) |
 
@@ -614,9 +630,26 @@ Banner tokens: `@version@`, `@service@`. MOTD tokens: `@username@`.
 
 `/chat show` — display names in your current channel only. `/chat showall` — all chat users as `nick@ChannelN`, sorted by channel, wrapped at 80 columns (conference sessions excluded).
 
-**Conference** — `/conference <topic> <user>` (alias `/meeting`): sends an invite; partner accepts with `y`/`n` or `yes`/`no`. Maximum **2 invites per user per 30 minutes**. Private two-user channel after acceptance. `/leave` or `/main` ends the conference for both parties.
+**Conference** — `/conference <topic> <user>` (alias `/meeting`): invite; partner accepts `y`/`n`. On accept, **both** see `Conference: <topic>` and the same prompt as chat (`Each line is a message; /leave or /main to exit.`). **Chat** has no leave notice; **conference** notifies the partner (`<name> left the conference.`) when the other party leaves.
 
 **Mail** (registered users): `/mail` or `/mail list` shows inbox (`*` = unread). `/mail list 1-15` shows messages 1–15; `/mail list 5-20` shows 5–20 only. `/mail read <n>`, `/mail delete <n>` or `/mail delete <from-to>` (moves to recycle bin). `/mail recycle` permanently empties the recycle bin. Deleted mail is auto-purged after `recycle_days` (default 10, `[mail]` in INI). `/mail send <user> <subject>` then body lines; `/mail done` sends. `/mail cancel`, `/leave`, or `/main` aborts compose.
+
+### Broadcast (Main only)
+
+Only the **Main** instance originates broadcasts. Remote Secondaries are RF extenders — they TX what Main sends over HBX.
+
+**AX.25** broadcasts only on links that are **low-bandwidth and half-duplex together** (HyBBX QoS from `LINK_AUTH`). High-bandwidth or full-duplex links never receive RF broadcast frames.
+
+Frequencies are **MHz only** — HyBBX does not use CB channel numbers (same channel number maps to different MHz in different countries).
+
+| Command | Effect |
+|---------|--------|
+| `/broadcast ax25 list` | Configured MHz list |
+| `/broadcast ax25 27.205 <text>` | QST on that MHz (matching Secondary) |
+| `/broadcast ax25 all <text>` | Any connected low+half-duplex Secondary |
+| `/broadcast tcp <text>` | **Stub** — logged on Main |
+
+INI: `[broadcast]`, `[ax25]` with `frequency1 = 27.205` … (optional `frequencyN_label`). Secondary: `frequency_mhz = 27.205` in `[transport.packet_radioN]`; advertised in `LINK_AUTH`.
 
 **Navigation:** `/leave` (`/back`) = one menu level up. `/main` (`/menu`) = main area from anywhere.
 

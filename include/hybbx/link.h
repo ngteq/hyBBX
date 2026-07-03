@@ -29,6 +29,10 @@ typedef struct hybbx_link_auth {
     char password[128];
     char role[HYBBX_LINK_ROLE_MAX];
     char id[HYBBX_LINK_ID_MAX];
+    unsigned baud;
+    int duplex;
+    char bandwidth[16];
+    char frequency_mhz[16];
 } hybbx_link_auth_t;
 
 typedef struct hybbx_link_registry {
@@ -40,7 +44,8 @@ typedef struct hybbx_link_registry {
 void hybbx_link_auth_clear(hybbx_link_auth_t *auth);
 
 /**
- * Build line-oriented LINK_AUTH payload (password=, role=, id=).
+ * Build line-oriented LINK_AUTH payload (password=, role=, id=, optional
+ * baud=, duplex=, bandwidth= for circuit load-balancing).
  * @return payload length or 0 on error.
  */
 size_t hybbx_link_auth_format(const hybbx_link_auth_t *auth,

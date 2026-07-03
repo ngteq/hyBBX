@@ -8,6 +8,7 @@
 #include "hybbx/chat.h"
 #include "hybbx/conference.h"
 #include "hybbx/mail.h"
+#include "hybbx/broadcast.h"
 #include "hybbx/security.h"
 #include "hybbx/service.h"
 #include "hybbx/password.h"
@@ -117,6 +118,10 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
     }
 
     if (str_ieq(verb, "shutdown") || str_ieq(verb, "restart")) {
+        return hybbx_user_level_is_sysop(level);
+    }
+
+    if (str_ieq(verb, "broadcast")) {
         return hybbx_user_level_is_sysop(level);
     }
 
@@ -243,7 +248,7 @@ static void cmd_help_staff(hybbx_session_t *session, hybbx_user_level_t level)
         if (level == HYBBX_LEVEL_SYSOP) {
             cmd_help_continuation(session,
                 "/promote  /demote  /delete  /userdelete");
-            cmd_help_continuation(session, "/shutdown  /restart");
+            cmd_help_continuation(session, "/shutdown  /restart  /broadcast");
         } else {
             cmd_help_continuation(session, "/promote  /demote  /delete");
         }
@@ -607,6 +612,22 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         cmd_help_topic_title(session, "/restart",
                              "restart the HyBBX daemon (Sysop)");
         cmd_help_topic_detail(session, "  /restart");
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(canonical, "broadcast")) {
+        if (!hybbx_user_level_is_sysop(level)) {
+            cmd_deny_privilege(session);
+            return HYBBX_OK;
+        }
+        cmd_help_topic_title(session, "/broadcast",
+                             "AX.25 RF or TCP broadcast (Main only; Sysop)");
+        cmd_help_topic_detail(session,
+            "  /broadcast ax25 list");
+        cmd_help_topic_detail(session,
+            "  /broadcast ax25 <MHz|all> <message>  (low+half-duplex QoS)");
+        cmd_help_topic_detail(session,
+            "  /broadcast tcp <message>   (stub — logged only)");
         return HYBBX_OK;
     }
 
@@ -2142,6 +2163,135 @@ static hybbx_result_t cmd_exit(hybbx_session_t *session)
     return HYBBX_SESSION_END;
 }
 
+static hybbx_result_t cmd_broadcast(hybbx_service_t *service,
+                                    hybbx_session_t *session,
+                                    const hybbx_parsed_command_t *cmd)
+{
+    const hybbx_broadcast_config_t *cfg;
+    char message[HYBBX_BROADCAST_MESSAGE_MAX + 1];
+    double frequency_mhz = 0.0;
+    int msg_start;
+    int i;
+    size_t off = 0;
+    hybbx_result_t rc;
+
+    cfg = hybbx_service_get_broadcast(service);
+    if (cfg == NULL || !cfg->enabled) {
+        hybbx_session_write_line(session, "Broadcast is disabled.");
+        return HYBBX_OK;
+    }
+
+    if (cmd->argc < 2) {
+        hybbx_session_write_line(session,
+            "Usage: /broadcast ax25 list | ax25 <MHz|all> <text> | tcp <text>");
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(cmd->argv[1], "ax25")) {
+        if (!cfg->ax25_enabled) {
+            hybbx_session_write_line(session, "AX.25 broadcast is disabled.");
+            return HYBBX_OK;
+        }
+        if (cmd->argc < 3) {
+            hybbx_session_write_line(session,
+                "Usage: /broadcast ax25 list | ax25 <MHz|all> <text>");
+            return HYBBX_OK;
+        }
+        if (str_ieq(cmd->argv[2], "list")) {
+            hybbx_broadcast_list_ax25_frequencies(session, cfg);
+            return HYBBX_OK;
+        }
+        if (str_ieq(cmd->argv[2], "all")) {
+            frequency_mhz = 0.0;
+            msg_start = 3;
+        } else {
+            char *end = NULL;
+            double parsed = strtod(cmd->argv[2], &end);
+
+            if (end == cmd->argv[2] || parsed <= 0.0) {
+                hybbx_session_write_line(session,
+                    "Use frequency in MHz (e.g. 27.205) or all.");
+                return HYBBX_ERR_INVALID;
+            }
+            frequency_mhz = parsed;
+            msg_start = 3;
+        }
+        if ((size_t)cmd->argc <= (size_t)msg_start) {
+            hybbx_session_write_line(session, "Missing broadcast message.");
+            return HYBBX_ERR_INVALID;
+        }
+        message[0] = '\0';
+        for (i = msg_start; i < (int)cmd->argc; i++) {
+            size_t part_len = strlen(cmd->argv[i]);
+
+            if (off > 0) {
+                if (off >= sizeof(message) - 1) {
+                    break;
+                }
+                message[off++] = ' ';
+            }
+            if (off + part_len >= sizeof(message)) {
+                part_len = sizeof(message) - off - 1;
+            }
+            memcpy(message + off, cmd->argv[i], part_len);
+            off += part_len;
+        }
+        message[off] = '\0';
+        rc = hybbx_broadcast_ax25(service, frequency_mhz, message);
+        if (rc == HYBBX_ERR_BUSY) {
+            hybbx_session_write_line(session, "No circuit link attached.");
+        } else if (rc == HYBBX_ERR_DENIED) {
+            hybbx_session_write_line(session,
+                "AX.25 broadcast requires low-bandwidth half-duplex link (QoS).");
+        } else if (rc == HYBBX_ERR_NOT_FOUND) {
+            hybbx_session_write_line(session,
+                "No secondary on that frequency (MHz).");
+        } else if (rc != HYBBX_OK) {
+            hybbx_session_write_line(session, "AX.25 broadcast failed.");
+        } else {
+            hybbx_session_write_line(session, "AX.25 broadcast sent.");
+        }
+        return rc == HYBBX_OK ? HYBBX_OK : HYBBX_ERR_IO;
+    }
+
+    if (str_ieq(cmd->argv[1], "tcp")) {
+        if (!cfg->tcp_enabled) {
+            hybbx_session_write_line(session, "TCP broadcast is disabled.");
+            return HYBBX_OK;
+        }
+        if (cmd->argc < 3) {
+            hybbx_session_write_line(session, "Usage: /broadcast tcp <text>");
+            return HYBBX_OK;
+        }
+        message[0] = '\0';
+        off = 0;
+        for (i = 2; i < (int)cmd->argc; i++) {
+            size_t part_len = strlen(cmd->argv[i]);
+
+            if (off > 0 && off < sizeof(message) - 1) {
+                message[off++] = ' ';
+            }
+            if (off + part_len >= sizeof(message)) {
+                part_len = sizeof(message) - off - 1;
+            }
+            memcpy(message + off, cmd->argv[i], part_len);
+            off += part_len;
+        }
+        message[off] = '\0';
+        rc = hybbx_broadcast_tcp_stub(service, message);
+        if (rc != HYBBX_OK) {
+            hybbx_session_write_line(session, "TCP broadcast failed.");
+            return HYBBX_ERR_IO;
+        }
+        hybbx_session_write_line(session, "TCP broadcast logged (stub).");
+        return HYBBX_OK;
+    }
+
+    hybbx_session_write_line(session,
+        "Usage: /broadcast ax25 list | ax25 <MHz|all> <text> | tcp <text>");
+    return HYBBX_ERR_INVALID;
+}
+
 static hybbx_result_t cmd_shutdown(hybbx_service_t *service,
                                    hybbx_session_t *session)
 {
@@ -2353,6 +2503,10 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
 
     if (str_ieq(cmd->verb, "deleteme")) {
         return cmd_deleteme(service, session, cmd);
+    }
+
+    if (str_ieq(cmd->verb, "broadcast")) {
+        return cmd_broadcast(service, session, cmd);
     }
 
     if (str_ieq(cmd->verb, "shutdown")) {

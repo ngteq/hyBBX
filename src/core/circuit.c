@@ -38,6 +38,8 @@ const char *hybbx_circuit_proto_name(hybbx_circuit_proto_t proto)
         return "link_auth";
     case HYBBX_CIRCUIT_PROTO_LINK_AUTH_ACK:
         return "link_auth_ack";
+    case HYBBX_CIRCUIT_PROTO_FLOW_CTRL:
+        return "flow_ctrl";
     case HYBBX_CIRCUIT_PROTO_TERMINAL:
         return "terminal";
     case HYBBX_CIRCUIT_PROTO_RESERVED_APRS:

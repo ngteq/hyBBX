@@ -8,6 +8,7 @@
 #include "hybbx/tnc.h"
 #include "hybbx/circuit.h"
 #include "hybbx/circuit_tcp.h"
+#include "hybbx/circuit_balance.h"
 #include "hybbx/traffic.h"
 
 #include <pthread.h>
@@ -66,6 +67,14 @@ static const char *tnc_name(hybbx_packet_radio_tnc_t tnc)
     }
 }
 
+static volatile int g_circuit_flow_paused;
+static volatile int g_circuit_flow_cancel;
+
+static int circuit_uplink_allowed(void)
+{
+    return !g_circuit_flow_paused && !g_circuit_flow_cancel;
+}
+
 static hybbx_result_t circuit_uplink(const uint8_t *frame, size_t frame_len)
 {
     uint8_t hbx[HYBBX_CIRCUIT_MAX_FRAME];
@@ -74,6 +83,10 @@ static hybbx_result_t circuit_uplink(const uint8_t *frame, size_t frame_len)
 
     if (g_circuit_fd < 0) {
         return HYBBX_ERR_IO;
+    }
+
+    if (!circuit_uplink_allowed()) {
+        return HYBBX_OK;
     }
 
     if (hybbx_packet_radio_modulation_is_g3ruh(
@@ -114,6 +127,10 @@ static void on_tnc_host_ui(const uint8_t *payload, size_t len,
         return;
     }
 
+    if (!circuit_uplink_allowed()) {
+        return;
+    }
+
     hbx_len = hybbx_circuit_encode(HYBBX_CIRCUIT_PROTO_TERMINAL,
                                    HYBBX_CIRCUIT_FLAG_RX,
                                    payload, len, hbx, sizeof(hbx));
@@ -138,6 +155,45 @@ static hybbx_result_t packet_radio_send_bytes(const uint8_t *data, size_t len)
     return hybbx_tnc_send_ui(g_tnc, data, len);
 }
 
+static void on_circuit_flow_ctrl(hybbx_circuit_proto_t proto, uint16_t flags,
+                                 const uint8_t *payload, size_t len,
+                                 void *userdata)
+{
+    hybbx_circuit_balance_action_t action;
+    char reason[64];
+
+    (void)proto;
+    (void)flags;
+    (void)userdata;
+
+    if (hybbx_circuit_flow_ctrl_parse((const char *)payload, len, &action,
+                                      reason, sizeof(reason)) != HYBBX_OK) {
+        return;
+    }
+
+    switch (action) {
+    case HYBBX_CIRCUIT_BAL_PAUSE:
+        g_circuit_flow_paused = 1;
+        printf("[packet_radio] circuit flow pause (%s)\n", reason);
+        break;
+    case HYBBX_CIRCUIT_BAL_BREAK:
+        g_circuit_flow_paused = 0;
+        hybbx_circuit_decoder_init(&g_circuit_dec);
+        printf("[packet_radio] circuit flow break (%s)\n", reason);
+        break;
+    case HYBBX_CIRCUIT_BAL_CANCEL:
+        g_circuit_flow_cancel = 1;
+        fprintf(stderr, "[packet_radio] circuit flow cancel (%s)\n", reason);
+        break;
+    case HYBBX_CIRCUIT_BAL_RESUME:
+        g_circuit_flow_paused = 0;
+        printf("[packet_radio] circuit flow resume (%s)\n", reason);
+        break;
+    default:
+        break;
+    }
+}
+
 static void on_circuit_downlink(hybbx_circuit_proto_t proto, uint16_t flags,
                                 const uint8_t *payload, size_t len,
                                 void *userdata)
@@ -145,7 +201,12 @@ static void on_circuit_downlink(hybbx_circuit_proto_t proto, uint16_t flags,
     (void)flags;
     (void)userdata;
 
-    if (g_tnc == NULL || len == 0) {
+    if (proto == HYBBX_CIRCUIT_PROTO_FLOW_CTRL) {
+        on_circuit_flow_ctrl(proto, flags, payload, len, userdata);
+        return;
+    }
+
+    if (g_tnc == NULL || len == 0 || g_circuit_flow_paused) {
         return;
     }
 
@@ -183,6 +244,8 @@ static void packet_radio_poll_sleep_ms(unsigned ms)
 #endif
 }
 
+static hybbx_result_t packet_radio_connect_circuit(void);
+
 static void *packet_radio_poll_thread(void *arg)
 {
     uint8_t buf[512];
@@ -202,6 +265,16 @@ static void *packet_radio_poll_thread(void *arg)
                 hybbx_circuit_decoder_feed(&g_circuit_dec, buf, read_len,
                                            on_circuit_downlink, NULL);
             }
+        }
+
+        if (g_circuit_flow_cancel) {
+            g_circuit_flow_cancel = 0;
+            g_circuit_flow_paused = 0;
+            if (g_circuit_fd >= 0) {
+                close(g_circuit_fd);
+                g_circuit_fd = -1;
+            }
+            (void)packet_radio_connect_circuit();
         }
 
         packet_radio_poll_sleep_ms(20);
@@ -240,9 +313,24 @@ static hybbx_result_t packet_radio_connect_circuit(void)
                     link_role = "link";
                 }
 
-                rc = hybbx_circuit_link_authenticate(
-                    g_circuit_fd, g_active_config.link_password,
-                    link_role, link_id);
+                {
+                    hybbx_circuit_link_qos_t qos;
+                    int duplex = (int)g_active_config.params.duplex;
+
+                    memset(&qos, 0, sizeof(qos));
+                    qos.baud = g_active_config.params.radio_baud;
+                    if (duplex == HYBBX_PACKET_RADIO_DUPLEX_HALF) {
+                        qos.duplex = 1;
+                    } else if (duplex == HYBBX_PACKET_RADIO_DUPLEX_FULL) {
+                        qos.duplex = 2;
+                    }
+                    qos.bandwidth = "low";
+                    qos.frequency_mhz = g_active_config.frequency_mhz;
+
+                    rc = hybbx_circuit_link_authenticate_ex(
+                        g_circuit_fd, g_active_config.link_password,
+                        link_role, link_id, &qos);
+                }
                 if (rc != HYBBX_OK) {
                     close(g_circuit_fd);
                     g_circuit_fd = -1;
@@ -269,6 +357,8 @@ static hybbx_result_t packet_radio_init(hybbx_service_t *service)
     g_tnc = NULL;
     g_circuit_fd = -1;
     g_radio_running = 0;
+    g_circuit_flow_paused = 0;
+    g_circuit_flow_cancel = 0;
     return HYBBX_OK;
 }
 
@@ -322,6 +412,11 @@ static hybbx_result_t packet_radio_start(const char *config)
            hybbx_packet_radio_modulation_name(g_active_config.params.modulation),
            g_active_config.circuit_host,
            g_active_config.circuit_port);
+    if (g_active_config.frequency_mhz != NULL &&
+        g_active_config.frequency_mhz[0] != '\0') {
+        printf("[packet_radio] frequency_mhz=%s\n",
+               g_active_config.frequency_mhz);
+    }
 
     rc = packet_radio_connect_circuit();
     if (rc != HYBBX_OK) {

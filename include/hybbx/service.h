@@ -149,6 +149,9 @@ void hybbx_service_visit_sessions(hybbx_service_t *service,
                                   hybbx_service_session_visit_fn fn,
                                   void *userdata);
 
+struct hybbx_circuit_hub;
+struct hybbx_circuit_hub *hybbx_service_circuit_hub(hybbx_service_t *service);
+
 #ifdef __cplusplus
 }
 #endif

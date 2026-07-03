@@ -2,6 +2,7 @@
 build/
 build-*/
 out/
+logs/
 data/
 local/data/
 cmake-build-*/

@@ -71,9 +71,15 @@ int hybbx_config_resolve_transport_section(const hybbx_config_t *config,
 typedef void (*hybbx_config_iter_fn)(const char *section, const char *key,
                                      const char *value, void *ctx);
 
+typedef void (*hybbx_config_section_iter_fn)(const char *section, void *ctx);
+
 /** Invoke @p fn for every entry in @p config (in file order). */
 void hybbx_config_foreach(const hybbx_config_t *config,
                           hybbx_config_iter_fn fn, void *ctx);
+
+/** Invoke @p fn once per unique section name (first occurrence order). */
+void hybbx_config_foreach_section(const hybbx_config_t *config,
+                                  hybbx_config_section_iter_fn fn, void *ctx);
 
 /** Set or replace a key in @p config (in-memory only until saved). */
 hybbx_result_t hybbx_config_set(hybbx_config_t *config,

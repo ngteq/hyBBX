@@ -485,6 +485,33 @@ void hybbx_config_foreach(const hybbx_config_t *config,
     }
 }
 
+void hybbx_config_foreach_section(const hybbx_config_t *config,
+                                  hybbx_config_section_iter_fn fn, void *ctx)
+{
+    size_t i;
+
+    if (config == NULL || fn == NULL) {
+        return;
+    }
+
+    for (i = 0; i < config->count; i++) {
+        const char *section = config->entries[i].section;
+        size_t j;
+        int seen = 0;
+
+        for (j = 0; j < i; j++) {
+            if (strcmp(config->entries[j].section, section) == 0) {
+                seen = 1;
+                break;
+            }
+        }
+
+        if (!seen) {
+            fn(section, ctx);
+        }
+    }
+}
+
 hybbx_result_t hybbx_config_set(hybbx_config_t *config,
                                const char *section,
                                const char *key,

@@ -121,6 +121,7 @@ typedef struct hybbx_packet_radio_config {
     char *link_id;
     char *link_password;
     char *link_role;
+    char *frequency_mhz;
 } hybbx_packet_radio_config_t;
 
 typedef struct hybbx_tnc hybbx_tnc_t;

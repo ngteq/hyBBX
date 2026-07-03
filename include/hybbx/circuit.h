@@ -40,6 +40,7 @@ typedef enum hybbx_circuit_proto {
     HYBBX_CIRCUIT_PROTO_AX25_UI = 0x02,      /**< Masked UI: path + payload */
     HYBBX_CIRCUIT_PROTO_LINK_AUTH = 0x03,    /**< Edge link password auth (no ping) */
     HYBBX_CIRCUIT_PROTO_LINK_AUTH_ACK = 0x04,/**< Central auth response */
+    HYBBX_CIRCUIT_PROTO_FLOW_CTRL = 0x05,    /**< Load-balance pause/break/cancel */
     HYBBX_CIRCUIT_PROTO_TERMINAL = 0x10,     /**< BBS terminal byte stream */
     HYBBX_CIRCUIT_PROTO_RESERVED_APRS = 0x20,
     HYBBX_CIRCUIT_PROTO_RESERVED_NETROM = 0x21

@@ -10,7 +10,7 @@ C99 **multi-transport session daemon** for bandwidth-constrained networks. One s
 | Secondary | `ax25=yes`, `circuit=no` | RF edge → `circuit_host` |
 | Standalone Main | `ax25=yes` locally | Single-box; no Secondary |
 
-Config: [`share/hybbx.ini.example`](share/hybbx.ini.example) · [`share/hybbx-secondary.ini.example`](share/hybbx-secondary.ini.example) · **0.7.0**
+Config: [`share/hybbx.ini.example`](share/hybbx.ini.example) · [`share/hybbx-secondary.ini.example`](share/hybbx-secondary.ini.example) · **0.8.0**
 
 ## Build
 

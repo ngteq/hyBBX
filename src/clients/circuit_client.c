@@ -127,7 +127,11 @@ hybbx_result_t hybbx_circuit_link_read(int fd, uint8_t *buf, size_t buf_len,
 
     n = recv(fd, buf, buf_len, 0);
     if (n < 0) {
+#if EAGAIN == EWOULDBLOCK
+        if (errno == EAGAIN) {
+#else
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
+#endif
             *read_len = 0;
             return HYBBX_OK;
         }
@@ -174,6 +178,15 @@ hybbx_result_t hybbx_circuit_link_authenticate(int fd,
                                                const char *role,
                                                const char *id)
 {
+    return hybbx_circuit_link_authenticate_ex(fd, password, role, id, NULL);
+}
+
+hybbx_result_t hybbx_circuit_link_authenticate_ex(int fd,
+                                                    const char *password,
+                                                    const char *role,
+                                                    const char *id,
+                                                    const hybbx_circuit_link_qos_t *qos)
+{
     hybbx_link_auth_t auth;
     char payload[HYBBX_LINK_AUTH_PAYLOAD_MAX];
     uint8_t frame[HYBBX_CIRCUIT_MAX_FRAME];
@@ -195,6 +208,22 @@ hybbx_result_t hybbx_circuit_link_authenticate(int fd,
         hybbx_strlcpy(auth.role, role, sizeof(auth.role));
     } else {
         hybbx_strlcpy(auth.role, "link", sizeof(auth.role));
+    }
+
+    if (qos != NULL) {
+        if (qos->baud > 0) {
+            auth.baud = qos->baud;
+        }
+        if (qos->duplex > 0) {
+            auth.duplex = qos->duplex;
+        }
+        if (qos->bandwidth != NULL && qos->bandwidth[0] != '\0') {
+            hybbx_strlcpy(auth.bandwidth, qos->bandwidth, sizeof(auth.bandwidth));
+        }
+        if (qos->frequency_mhz != NULL && qos->frequency_mhz[0] != '\0') {
+            hybbx_strlcpy(auth.frequency_mhz, qos->frequency_mhz,
+                          sizeof(auth.frequency_mhz));
+        }
     }
 
     payload_len = hybbx_link_auth_format(&auth, payload, sizeof(payload));
