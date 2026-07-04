@@ -45,9 +45,9 @@ void hybbx_libsodium_x25519_shared(uint8_t shared[32],
 
 void hybbx_backend_sha256_hex(const char *data, size_t len, char hex[65])
 {
+#if defined(HYBBX_HAVE_OPENSSL)
     const hybbx_crypto_config_t *cfg = hybbx_crypto_config_get();
 
-#if defined(HYBBX_HAVE_OPENSSL)
     if (cfg->password_hash == HYBBX_PASSWORD_HASH_OPENSSL) {
         hybbx_openssl_sha256_hex(data, len, hex);
         return;
@@ -62,9 +62,9 @@ int hybbx_backend_aes256gcm_encrypt(
     size_t aad_len, const uint8_t *plaintext, size_t plaintext_len,
     uint8_t *ciphertext, uint8_t tag[16])
 {
+#if defined(HYBBX_HAVE_OPENSSL)
     const hybbx_crypto_config_t *cfg = hybbx_crypto_config_get();
 
-#if defined(HYBBX_HAVE_OPENSSL)
     if (cfg->aes_gcm == HYBBX_AES_GCM_OPENSSL) {
         return hybbx_openssl_aes256gcm_encrypt(key, nonce, aad, aad_len,
                                                  plaintext, plaintext_len,
@@ -81,9 +81,9 @@ int hybbx_backend_aes256gcm_decrypt(
     size_t aad_len, const uint8_t *ciphertext, size_t ciphertext_len,
     uint8_t *plaintext, const uint8_t tag[16])
 {
+#if defined(HYBBX_HAVE_OPENSSL)
     const hybbx_crypto_config_t *cfg = hybbx_crypto_config_get();
 
-#if defined(HYBBX_HAVE_OPENSSL)
     if (cfg->aes_gcm == HYBBX_AES_GCM_OPENSSL) {
         return hybbx_openssl_aes256gcm_decrypt(key, nonce, aad, aad_len,
                                                ciphertext, ciphertext_len,
@@ -100,9 +100,9 @@ void hybbx_backend_chacha_lock(uint8_t *ciphertext, uint8_t tag[16],
                                const uint8_t *aad, size_t aad_len,
                                const uint8_t *plaintext, size_t plaintext_len)
 {
+#if defined(HYBBX_HAVE_LIBSODIUM)
     const hybbx_crypto_config_t *cfg = hybbx_crypto_config_get();
 
-#if defined(HYBBX_HAVE_LIBSODIUM)
     if (cfg->chacha == HYBBX_CHACHA_LIBSODIUM) {
         hybbx_libsodium_chacha_lock(ciphertext, tag, key, nonce, aad, aad_len,
                                     plaintext, plaintext_len);
@@ -119,9 +119,9 @@ int hybbx_backend_chacha_unlock(uint8_t *plaintext, const uint8_t tag[16],
                                 const uint8_t *aad, size_t aad_len,
                                 const uint8_t *ciphertext, size_t ciphertext_len)
 {
+#if defined(HYBBX_HAVE_LIBSODIUM)
     const hybbx_crypto_config_t *cfg = hybbx_crypto_config_get();
 
-#if defined(HYBBX_HAVE_LIBSODIUM)
     if (cfg->chacha == HYBBX_CHACHA_LIBSODIUM) {
         return hybbx_libsodium_chacha_unlock(plaintext, tag, key, nonce, aad,
                                              aad_len, ciphertext,
@@ -136,9 +136,9 @@ int hybbx_backend_chacha_unlock(uint8_t *plaintext, const uint8_t tag[16],
 void hybbx_backend_x25519_public_key(uint8_t public_key[32],
                                      const uint8_t secret_key[32])
 {
+#if defined(HYBBX_HAVE_LIBSODIUM)
     const hybbx_crypto_config_t *cfg = hybbx_crypto_config_get();
 
-#if defined(HYBBX_HAVE_LIBSODIUM)
     if (cfg->x25519 == HYBBX_X25519_LIBSODIUM) {
         hybbx_libsodium_x25519_public_key(public_key, secret_key);
         return;
@@ -152,9 +152,9 @@ void hybbx_backend_x25519_shared(uint8_t shared[32],
                                  const uint8_t secret_key[32],
                                  const uint8_t peer_public_key[32])
 {
+#if defined(HYBBX_HAVE_LIBSODIUM)
     const hybbx_crypto_config_t *cfg = hybbx_crypto_config_get();
 
-#if defined(HYBBX_HAVE_LIBSODIUM)
     if (cfg->x25519 == HYBBX_X25519_LIBSODIUM) {
         hybbx_libsodium_x25519_shared(shared, secret_key, peer_public_key);
         return;
@@ -211,9 +211,9 @@ static hybbx_result_t system_random(uint8_t *buf, size_t len)
 
 hybbx_result_t hybbx_backend_random(uint8_t *buf, size_t len)
 {
+#if defined(HYBBX_HAVE_OPENSSL)
     const hybbx_crypto_config_t *cfg = hybbx_crypto_config_get();
 
-#if defined(HYBBX_HAVE_OPENSSL)
     if (cfg->random == HYBBX_RANDOM_OPENSSL) {
         return hybbx_openssl_random(buf, len);
     }

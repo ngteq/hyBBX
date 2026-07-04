@@ -1,48 +1,30 @@
-# HyBBX development guide
+# Development
 
-AI agents: [AGENTS.md](../AGENTS.md). Humans: [CONTRIBUTING.md](../CONTRIBUTING.md).
+[AGENTS.md](../AGENTS.md) · [REPOSITORY.md](REPOSITORY.md) · **v1.0.0**
 
 ## Toolchain
 
-CMake 3.16+, GCC or Clang, pthread. [PLATFORMS.md](PLATFORMS.md).
+CMake 3.16+, GCC or Clang, pthread.
 
 ```bash
-./scripts/dev-setup.sh    # build + compile_commands.json symlink
+./scripts/dev-setup.sh
 ```
-
-## Layout
-
-[REPOSITORY.md](REPOSITORY.md) — `include/hybbx/` (API), `src/core/`, `plugins/`, `third_party/` (vendored crypto).
 
 ## Architecture
 
 ```
-Session core (commands, storage, mail, chat)
-        ↕ byte stream
-TCP/IPv4+IPv6 + HBX v1 ([circuit])
-        ↕
-Link adapters: telnet | packet_radio | ardop | crdop | (ssh, ws post–v1.0.0)
+Session core ←→ telnet | HBX circuit ←→ packet_radio | ardop | crdop
 ```
 
-- No KISS/AX.25/telnet parsing in `src/core/`.
-- **No sound-modem / RF DSP in HyBBX** — TNC, ARDOPC, CRDOPC, and sound-card software are **external**; plugins are serial or host-TCP clients only.
-- Plugins: `hybbx_transport_plugin_t` ([plugin.h](../include/hybbx/plugin.h)); register in `src/main.c`.
-- Packet radio: HBX circuit client; `write` may be NULL.
+- No wire-protocol parsing in `src/core/`
+- No modem DSP in HyBBX — external TNC / ARDOPC / CRDOPC
+- Plugins: `hybbx_transport_plugin_t` — register in `src/main.c`
 
 ## Conventions
 
-- C99, `hybbx_` prefix, `hybbx_result_t` errors, 4-space indent
-- INI: [config.h](../include/hybbx/config.h); booleans via `hybbx_parse_bool()`
-- Security: [limits.h](../include/hybbx/limits.h), `HYBBX_HARDENING=ON` ([BUILD.md](BUILD.md))
-
-## Common tasks
-
-| Task | Where |
-|------|-------|
-| INI key | Parse in config module; document MANUAL + `share/hybbx.ini.example` |
-| `/` command | `command.c`; auth via `hybbx_auth_*`; update FEATURES + MANUAL |
-| Transport plugin | `plugins/<name>/`, `main.c`, CMake option |
-| TNC/radio | `plugins/packet_radio/`, [tnc.h](../include/hybbx/tnc.h) |
+- C99, `hybbx_` prefix, `hybbx_result_t`
+- INI booleans: `hybbx_parse_bool()`
+- Limits: `include/hybbx/limits.h`
 
 ## Testing
 
@@ -51,18 +33,15 @@ cmake -B build -DHYBBX_BUILD_TESTS=ON && cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Also: `./scripts/hybbx.sh` + telnet login check (`telnet 127.0.0.1 2323`).
-
-**Scope v0.9.x:** testing release before v1.0.0 — unit tests and build in CI. **AX.25** RF integration and **ARDOP/CRDOP** live-modem tests are **out of scope** until after v1.0.0. Optional local checks: `scripts/test-ardop-plugin.sh`, `scripts/test-crdop-plugin.sh` (mock host TCP via `mock-ardopc.py`, not RF).
+**v1.0.0 verified:** telnet session path. **AX.25/RF:** local tests only. Optional: `scripts/test-ardop-plugin.sh`, `scripts/test-crdop-plugin.sh`.
 
 ## Doc duty
 
 | Change | Update |
 |--------|--------|
-| Feature | FEATURES.md |
-| Config/operator | MANUAL.md, INI examples |
+| Behavior | FEATURES.md |
+| INI/operator | MANUAL.md + `share/*.ini.example` |
 | Build | BUILD.md |
-| Planned only | ROADMAP.md |
-| Layout | REPOSITORY.md |
+| Planned | ROADMAP.md |
 
-Git: `user.name=ngteq`, empty email; no agent co-author trailers.
+Git: `user.name=ngteq`, empty email.

@@ -139,7 +139,7 @@ void hybbx_security_log_config_apply(const struct hybbx_config *config)
 void hybbx_security_log_write(const char *fmt, ...)
 {
     char message[HYBBX_SECURITY_LINE_MAX];
-    char line[HYBBX_SECURITY_LINE_MAX + 32];
+    char line[HYBBX_SECURITY_LINE_MAX + 64];
     char stamp[32];
     va_list ap;
     time_t now;

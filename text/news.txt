@@ -1,1 +1,3 @@
-News:
+News — HyBBX v1.0.0
+First release: telnet sessions on Main (tested).
+AX.25 / RF bridges: built, field validation planned.

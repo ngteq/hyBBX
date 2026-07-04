@@ -1,77 +1,40 @@
-# HyBBX — agent & contributor guide
+# HyBBX — agent guide
 
-For AI agents and developers. Humans: [CONTRIBUTING.md](CONTRIBUTING.md).
+Humans: [CONTRIBUTING.md](CONTRIBUTING.md). **v1.0.0** telnet-session release — see [docs/RELEASE-1.0.0.md](docs/RELEASE-1.0.0.md).
 
-## Project
+## Product
 
-C99 multi-transport session daemon (mail/chat/commands + link adapters). **Main** + **Secondary** topology: Main hosts users, storage, telnet, and the HBX hub; **Secondaries** are **remote edge machines** (separate HyBBX processes with `circuit_host` → Main) — not telnet users or local `[transport.*]` on Main. Default Main: TCP/IP + HBX (`ax25=no`). **0.9.x** testing release — **feature freeze** until **v1.0.0**; `RELEASE-*` docs from v1.0.0. INI: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
+Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** = remote edge (HBX client to Main). No modem DSP inside `hybbx`.
 
-## Product boundary (default — non-negotiable)
+| In tree | External |
+|---------|----------|
+| `src/core/`, `plugins/telnet` | TNC, KISS, sound-card apps |
+| `plugins/packet_radio` | Serial/USB TNC |
+| `plugins/ardop`, `plugins/crdop` | ARDOPC, CRDOPC |
 
-**HyBBX is plugin-only:** session core + **host-client bridge plugins**. Modems, TNCs, sound-card software, ARDOPC, CRDOPC, and all RF/audio DSP run as **external services** the operator starts separately.
+## Rules
 
-That is the **absolute standard** for this project — not an ARDOP/CRDOP special case. Anything that embeds a sound-modem, runs modem DSP, or captures/plays radio audio **inside the daemon** is a **different product**, not HyBBX. Do not add it here.
+1. Core = sessions + HBX/TCP only — no KISS/AX.25/telnet wire parsing in `src/core/`
+2. Plugins: `hybbx_transport_plugin_t` in `plugins/`
+3. Booleans: `hybbx_parse_bool()` — `yes`/`no`
+4. Buffers: [limits.h](include/hybbx/limits.h)
+5. Doc changes: feature → FEATURES.md; INI → MANUAL.md + `share/*.ini.example`
 
-| In HyBBX | External (not HyBBX) |
-|----------|-------------------------|
-| `src/core/` sessions, HBX hub, storage | USB/serial TNC, KISS device |
-| `plugins/telnet` | Direwolf, sound-card packet apps |
-| `plugins/packet_radio` (serial/host bytes) | USB/serial TNC, KISS device |
-| `plugins/ardop` (host TCP) | **ARDOP** — standalone plugin; external ARDOPC/ardopcf |
-| `plugins/crdop` (CB host TCP) | **CRDOP** — standalone plugin; external CRDOPC ([ngteq/CRDOP](https://github.com/ngteq/CRDOP)) |
+## Doc map (`docs/` = full technical reference)
 
----
-
-## Doc map
-
-| File | Use when |
-|------|----------|
-| [FEATURES.md](docs/FEATURES.md) | What exists — update on feature changes |
-| [DEVELOPMENT.md](docs/DEVELOPMENT.md) | How to code |
-| [ROADMAP.md](docs/ROADMAP.md) | Planned work |
-| [MANUAL.md](docs/MANUAL.md) | Operator INI/commands |
-| [ARDOP.md](docs/ARDOP.md) | ARDOP plugin + external ARDOPC/ardopcf |
-| [CRDOP.md](docs/CRDOP.md) | CRDOP plugin + external CRDOPC |
-| [LICENSING.md](docs/LICENSING.md) | GPL, third-party, ARDOP/CRDOP |
+| File | Use |
+|------|-----|
+| [RELEASE-1.0.0.md](docs/RELEASE-1.0.0.md) | v1.0.0 scope and verification |
+| [FEATURES.md](docs/FEATURES.md) | Shipped vs partial |
+| [MANUAL.md](docs/MANUAL.md) | INI + commands |
+| [ROADMAP.md](docs/ROADMAP.md) | Post–1.0.0 |
 | [BUILD.md](docs/BUILD.md) | CMake |
-| [REPOSITORY.md](docs/REPOSITORY.md) | Tree layout |
-
-## Architecture rules
-
-1. **Plugin-only / external modems** — [Product boundary](#product-boundary-default--non-negotiable); embedded modem DSP is out of scope (different project).
-2. Match [FEATURES.md](docs/FEATURES.md) and [ROADMAP.md](docs/ROADMAP.md); no `RELEASE-*` before v1.0.0.
-3. Core (`src/core/`) = sessions + HBX/TCP only — **no KISS/AX.25/telnet wire parsing** in core.
-4. Link adapters: `hybbx_transport_plugin_t` in `plugins/` only.
-5. Packet radio on **remote Secondaries** bridges RF ↔ HBX/TCP (`circuit_host` / `[circuit]` hub on Main).
-6. Booleans: `hybbx_parse_bool()` — canonical `yes`/`no` ([util.h](include/hybbx/util.h)).
-7. Bounded buffers: [limits.h](include/hybbx/limits.h); `hybbx_strlcpy`, `hybbx_path_join`.
-8. C99, `hybbx_*` prefix, minimal diffs, match existing style.
 
 ## Build
 
 ```bash
 ./scripts/dev-setup.sh
-./scripts/hybbx.sh
-ctest --test-dir build   # with -DHYBBX_BUILD_TESTS=ON
+ctest --test-dir build   # -DHYBBX_BUILD_TESTS=ON
 ```
 
-Do not commit unless the user asks.
-
-## Git (public)
-
-`user.name=ngteq`, empty `user.email`. No `Co-authored-by` agent lines.
-
-## Key paths
-
-```
-include/hybbx/     Public API
-src/core/          Session, storage, circuit hub
-plugins/telnet/    TCP adapter
-plugins/packet_radio/  AX.25, TNC, HBX client
-plugins/ardop/     ARDOP plugin (standalone sources)
-plugins/crdop/     CRDOP plugin (standalone sources)
-share/hybbx.ini.example
-local/hybbx.ini    Dev only
-```
-
-GPL-3.0 — [LICENSE.txt](LICENSE.txt)
+Do not commit unless the user asks. Git: `ngteq`, empty email.

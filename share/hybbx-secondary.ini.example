@@ -1,31 +1,5 @@
-; HyBBX Secondary — remote edge extender/repeater/gateway (infrastructure, not a telnet user)
-;
-; A Secondary is a separate remote machine — not a telnet user and not a local
-; [transport.*] on Main. It runs its own HyBBX process with RF/TNC (or other link
-; adapters) at an edge site and connects to Main over HBX/TCP (circuit_host → Main
-; [circuit]). Multiple remote Secondaries may connect to one Main at once (v0.8.0).
-; link_role (link/repeater/gateway/digipeater) labels the bridge type — all are
-; Secondary class relative to Main.
-;
-; Default: run AX.25 here; outbound HBX client to Main [circuit] hub.
-; One Secondary host per RF site (or more); each registers on Main as
-; [transport.<plugin>N] (bridge metadata — RF runs on the Secondary machine).
-;
-;   cp share/hybbx-secondary.ini.example <install>/hybbx/hybbx-secondary.ini
-;   hybbx -c /path/to/secondary.ini
-;
-; Main template: share/hybbx.ini.example
-;   [networks] circuit = yes  — HBX hub on Main (loopback by default; widen bind there)
-;   [transport.packet_radio1]  link_id + link_password (same section name here)
-;   [transport.ardop1]         optional ARDOP bridge (external ARDOPC on Secondary)
-;
-; Secondary has no local [circuit] hub — [networks] circuit = no (default below).
-; Secondaries connect only to a Main instance or a custom proxy you operate.
-; HyBBX does not ship a link proxy before v1.0.
-;
-; HyBBX auth: link_id and link_password only (on Main bridge section and here).
-; Advanced security: system firewall, system VPN, SSH tunnels, stunnel, etc.
-; HyBBX does not integrate those — point circuit_host at the reachable Main address.
+; HyBBX Secondary — v1.0.0. Full keys: docs/MANUAL.md
+; Remote RF edge → Main [circuit]. Not a telnet user on Main.
 
 [service]
 name = hyBBX-secondary
@@ -35,7 +9,6 @@ backend = flatfile
 path = data-secondary
 
 [auth]
-; Login prompt: registered /login and /register only (no guest auto-login).
 auto_login = no
 
 [traffic]
@@ -49,34 +22,26 @@ input_echo = no
 enabled = no
 
 [networks]
-; Secondary defaults: AX.25 on, no local HBX hub (outbound client to Main only).
 ax25 = yes
 ardop = no
 crdop = no
 circuit = no
 
-; No [circuit] section on Secondary — hub runs on Main. Do not set circuit = yes here.
-
 [transport.telnet]
-; Local maintenance only
 bind = 127.0.0.1
 bind6 = ::1
 port = 2323
 ipv4 = yes
 ipv6 = yes
 
-; Section name must match Main [transport.packet_radio1] (increment N per Secondary).
+; Section name must match Main [transport.packet_radioN]
 [transport.packet_radio1]
-; TCP/IP bridge to Main (HBX v1 on [circuit])
 circuit_host = main.example.com
 circuit_port = 7323
 link_id = secondary-1
 link_password = changeme
 link_role = link
-; Tune radio to this MHz (see Main [ax25] frequency list):
 frequency_mhz = 27.205
-
-; --- TNC2C (primary test device) ---
 tnc = tnc2c
 protocol = kiss
 device_type = usb
@@ -94,42 +59,9 @@ radio_band = amateur
 radio_duplex = half
 g3ruh_fsk = no
 
-; AX.25 (set before on-air use)
-; mycall = DL1ABC-0
-; dest = DL9XYZ-0
-; via = RELAY-7
-
-; Same MHz list as Main (operator reference):
 [ax25]
 frequency1 = 27.205
 frequency2 = 27.215
 
-; --- Optional: ARDOP parallel to AX.25 — external ARDOPC/ardopcf, not inside HyBBX ---
-; HyBBX is never a sound-modem service. Run ARDOPC or ardopcf separately.
-; Start ARDOPC first, e.g.: ardo1pofdm TCPIP 8515 127.0.0.1
-; [networks] ardop = yes
-; [transport.ardop1]
-; enabled = yes
-; ardop_host = 127.0.0.1
-; ardop_port = 8515
-; mycall = CALL-0
-; arq_bandwidth = 500MAX
-; listen = yes
-; circuit_host = main.example.com
-; circuit_port = 7323
-; link_id = secondary-1-ardop
-; link_password = changeme
-; link_role = link
-; frequency_mhz = 7.100
-
-; --- Optional: CRDOP CB bridge — external CRDOPC; [networks] crdop = yes ---
-; Start CRDOPC first — see https://github.com/ngteq/CRDOP (./scripts/crdopc, port 8515)
-; [transport.crdop1]
-; enabled = yes
-; modem_host = 127.0.0.1
-; modem_port = 8515
-; mycall = CALL-0
-; circuit_host = main.example.com
-; link_id = secondary-1-crdop
-; link_password = changeme
-; frequency_mhz = 27.205
+; ARDOP: docs/ARDOP.md — start external ARDOPC first
+; CRDOP: docs/CRDOP.md — start external CRDOPC first (github.com/ngteq/CRDOP)

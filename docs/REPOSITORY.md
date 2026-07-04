@@ -1,40 +1,30 @@
-# HyBBX repository layout
+# Repository layout
 
-API: `include/hybbx/`. Config: `share/hybbx.ini.example`.
-
-**Scope:** session core + `plugins/` (host-client bridges). Modems/TNCs/sound-card apps are **external** — not in this tree. See [AGENTS.md](../AGENTS.md#product-boundary-default--non-negotiable).
+API: `include/hybbx/`. Config templates: `share/`. Full INI keys: [MANUAL.md](MANUAL.md).
 
 ```
 hyBBX/
-  include/hybbx/       Public C API
-  src/core/            Sessions, storage, crypto, circuit hub, commands
-  src/clients/         hybbx-telnet, hybbx-terminal
-  src/main.c           Entry, plugin registration
-  plugins/telnet/      TCP telnet adapter
-  plugins/packet_radio/  Serial TNC host-client (external device)
-  plugins/ardop/       ARDOP plugin — standalone sources ([ARDOP.md](ARDOP.md))
-  plugins/crdop/       CRDOP plugin — standalone sources ([CRDOP.md](CRDOP.md))
-  third_party/         Bundled crypto (crypto only — not modems)
-  text/                banner, motd, news, rules (runtime texts)
-  share/               INI examples, fail2ban
-  local/               Dev config (not installed)
-  scripts/             hybbx.sh, dev-setup.sh
-  docs/                Documentation
+  include/hybbx/         Public C API
+  src/core/              Session, storage, circuit, commands
+  src/clients/           hybbx-telnet, hybbx-terminal
+  src/main.c             Daemon entry
+  plugins/telnet/        Telnet (v1.0.0 verified path)
+  plugins/packet_radio/  AX.25 / TNC (built; RF TBD)
+  plugins/ardop/         ARDOP plugin (standalone)
+  plugins/crdop/         CRDOP plugin (standalone)
+  third_party/           Crypto (not modems)
+  text/                  Runtime texts
+  share/                 INI examples
+  docs/                  Technical documentation
+  scripts/               dev-setup, hybbx.sh, tests
 ```
 
-## Key modules
+| Module | File(s) |
+|--------|---------|
+| Service lifecycle | `service.c` |
+| HBX hub | `circuit_tcp.c`, `circuit.c` |
+| Sessions | `session.c` |
+| Commands | `command.c` |
+| Users | `storage_flatfile.c`, `auth.c` |
 
-| Path | Role |
-|------|------|
-| `service.c` | Config, plugins, circuit hub, sessions |
-| `circuit*.c` | HBX framing, TCP hub |
-| `session.c` | Line I/O, areas, echo |
-| `command.c` | `/` dispatch, privileges |
-| `storage_flatfile.c` | INI user shards (50/user file) |
-| `plugins/packet_radio/` | KISS, 6PACK, TNC2, AX.25 |
-| `plugins/ardop/` | ARDOP plugin (standalone) — [ARDOP.md](ARDOP.md) |
-| `plugins/crdop/` | CRDOP plugin (standalone) — [CRDOP.md](CRDOP.md) |
-
-Plugin API: [plugin.h](../include/hybbx/plugin.h). Build: top-level + `src/` + per-plugin `CMakeLists.txt`.
-
-[BUILD.md](BUILD.md) · [DEVELOPMENT.md](DEVELOPMENT.md) · [MANUAL.md](MANUAL.md)
+Plugin API: [plugin.h](../include/hybbx/plugin.h).

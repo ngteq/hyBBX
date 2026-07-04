@@ -1,5 +1,5 @@
 /*
- * Link/repeater edge registry: data/links/*.ini, [link.<id>], stale prune.
+ * Link/repeater edge registry: data/links/<id>.ini, [link.<id>], stale prune.
  */
 #include "hybbx/link.h"
 #include "hybbx/config.h"

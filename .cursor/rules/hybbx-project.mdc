@@ -9,7 +9,7 @@ Read [AGENTS.md](../../AGENTS.md) and [docs/DEVELOPMENT.md](../../docs/DEVELOPME
 
 ## Product
 
-Multi-transport session daemon; Main + Secondary HBX topology ([ROADMAP.md](../../docs/ROADMAP.md)). **Plugin-only (default):** host-client bridges; modems/TNCs/sound-card services **external** — embedded modem DSP is not HyBBX. **0.9.x** testing release — **feature freeze** until v1.0.0; no `RELEASE-*` until v1.0.0; track [FEATURES.md](../../docs/FEATURES.md).
+Plugin-only session daemon; Main + Secondary HBX topology ([ROADMAP.md](../../docs/ROADMAP.md)). **v1.0.0** telnet-session release — [RELEASE-1.0.0.md](../../docs/RELEASE-1.0.0.md). Technical docs in `docs/`; root README is short overview.
 
 ## Code
 
@@ -20,7 +20,7 @@ Multi-transport session daemon; Main + Secondary HBX topology ([ROADMAP.md](../.
 
 ## Docs
 
-Feature changes → FEATURES.md. Config → MANUAL.md + `share/hybbx.ini.example`.
+Feature changes → FEATURES.md. Config → MANUAL.md + `share/hybbx.ini.example` (keep INI comments short).
 
 ## Git
 

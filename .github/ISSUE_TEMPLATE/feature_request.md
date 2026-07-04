@@ -7,7 +7,7 @@ labels: enhancement
 
 ## Problem / use case
 
-<!-- What problem does this solve? RF, telnet, mail-area, link/repeater expansion, … -->
+<!-- v1.0.0 scope is telnet sessions; RF/digital field work is post-release — see docs/ROADMAP.md -->
 
 ## Proposed solution
 

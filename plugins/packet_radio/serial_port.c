@@ -543,7 +543,11 @@ hybbx_result_t hybbx_serial_write(hybbx_serial_port_t *port,
         ssize_t n = write(port->fd, data + written, len - written);
 
         if (n < 0) {
+#if EAGAIN == EWOULDBLOCK
+            if (errno == EAGAIN) {
+#else
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
+#endif
                 continue;
             }
             return HYBBX_ERR_IO;
@@ -569,7 +573,11 @@ hybbx_result_t hybbx_serial_read(hybbx_serial_port_t *port,
 
     n = read(port->fd, buf, buf_len);
     if (n < 0) {
+#if EAGAIN == EWOULDBLOCK
+        if (errno == EAGAIN) {
+#else
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
+#endif
             *read_len = 0;
             return HYBBX_OK;
         }

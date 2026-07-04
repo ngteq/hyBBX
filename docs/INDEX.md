@@ -1,40 +1,47 @@
-# HyBBX documentation
+# Documentation index
 
-Index. Intro: [README.md](../README.md). Main INI: `share/hybbx.ini.example`.
+Intro: [README.md](../README.md). **v1.0.0** release notes: [RELEASE-1.0.0.md](RELEASE-1.0.0.md).
 
-## Contributors
+## Operators
 
-| Document | Audience | Contents |
-|----------|----------|----------|
-| [CONTRIBUTING.md](../CONTRIBUTING.md) | Humans | PR checklist, git policy |
-| [AGENTS.md](../AGENTS.md) | AI agents | Architecture rules, doc map |
-| [DEVELOPMENT.md](DEVELOPMENT.md) | Developers | C99 style, plugins, tasks |
+| Doc | Contents |
+|-----|----------|
+| [QUICKSTART.md](QUICKSTART.md) | Build, run, first telnet login |
+| [MANUAL.md](MANUAL.md) | INI reference, commands, topology |
+| [CLIENTS.md](CLIENTS.md) | `hybbx-telnet`, `hybbx-terminal` |
+| [FEATURES.md](FEATURES.md) | What works vs partial |
 
-## Reference
+## Developers
 
-| Document | Audience | Contents |
-|----------|----------|----------|
-| [FEATURES.md](FEATURES.md) | Everyone | Feature status (update on code changes) |
-| [QUICKSTART.md](QUICKSTART.md) | Operators | Build, run, first telnet session |
-| [MANUAL.md](MANUAL.md) | Operators | INI, transports, auth, commands |
-| [ARDOP.md](ARDOP.md) | Developers / operators | ARDOP plugin, ARDOPC/ardopcf, host TCP |
-| [CRDOP.md](CRDOP.md) | Developers / operators | CRDOP plugin, CRDOPC, CB bridge |
-| [CLIENTS.md](CLIENTS.md) | Operators | `hybbx-telnet`, `hybbx-terminal` CLI |
-| [ROADMAP.md](ROADMAP.md) | Everyone | Planned work (`RELEASE-*` from v1.0.0) |
-| [REPOSITORY.md](REPOSITORY.md) | Developers | Source tree |
-| [BUILD.md](BUILD.md) | Developers | CMake options, toolchains |
-| [PLATFORMS.md](PLATFORMS.md) | Developers | GCC/Clang targets |
+| Doc | Contents |
+|-----|----------|
+| [BUILD.md](BUILD.md) | CMake options |
+| [DEVELOPMENT.md](DEVELOPMENT.md) | Code rules, layout |
+| [REPOSITORY.md](REPOSITORY.md) | Source tree |
+| [PLATFORMS.md](PLATFORMS.md) | OS / compiler matrix |
 
-## Config and tooling
+## Transports (external modems)
 
-- Main: [share/hybbx.ini.example](../share/hybbx.ini.example)
-- Secondary: [share/hybbx-secondary.ini.example](../share/hybbx-secondary.ini.example)
-- Dev: [local/hybbx.ini](../local/hybbx.ini)
-- CI: [.github/workflows/ci.yml](../.github/workflows/ci.yml)
-- Cursor rules: [.cursor/rules/](../.cursor/rules/)
+| Doc | Contents |
+|-----|----------|
+| [ARDOP.md](ARDOP.md) | `plugins/ardop` + ARDOPC/ardopcf |
+| [CRDOP.md](CRDOP.md) | `plugins/crdop` + CRDOPC |
 
-## Maintainers
+## Other
 
-- Functional changes → [FEATURES.md](FEATURES.md) + [MANUAL.md](MANUAL.md) / INI examples
-- Planned work → [ROADMAP.md](ROADMAP.md)
-- Public git: `user.name=ngteq`, empty `user.email`; no agent `Co-authored-by` trailers
+| Doc | Contents |
+|-----|----------|
+| [ROADMAP.md](ROADMAP.md) | Post–v1.0.0 work |
+| [LICENSING.md](LICENSING.md) | GPL + third-party |
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | PR flow |
+| [AGENTS.md](../AGENTS.md) | AI agent rules |
+
+## Config files
+
+| File | Role |
+|------|------|
+| [share/hybbx.ini.example](../share/hybbx.ini.example) | Main template |
+| [share/hybbx-secondary.ini.example](../share/hybbx-secondary.ini.example) | Secondary template |
+| [local/hybbx.ini](../local/hybbx.ini) | Dev only |
+
+INI comments are short; full keys → [MANUAL.md](MANUAL.md).

@@ -293,7 +293,8 @@ static void md5_update(md5_ctx_t *ctx, const uint8_t *data, size_t len)
         memcpy(&ctx->buffer[index], data, part_len);
         md5_transform(ctx->state, ctx->buffer);
         for (i = part_len; i + 63 < len; i += 64) {
-            md5_transform(ctx->state, &data[i]);
+            memcpy(ctx->buffer, &data[i], 64);
+            md5_transform(ctx->state, ctx->buffer);
         }
         index = 0;
     } else {

@@ -126,8 +126,9 @@ static const char *discover_config_path(char *buf, size_t buflen,
                 if (dir_len + 1 < sizeof(etc)) {
                     memcpy(etc, exe, dir_len);
                     etc[dir_len] = '\0';
-                    snprintf(buf, buflen, "%s/" HYBBX_FILE_CONFIG, etc);
-                    if (path_is_readable(buf)) {
+                    if (hybbx_path_join(buf, buflen, etc, HYBBX_FILE_CONFIG) ==
+                            HYBBX_OK &&
+                        path_is_readable(buf)) {
                         return buf;
                     }
                 }
@@ -144,8 +145,9 @@ static const char *discover_config_path(char *buf, size_t buflen,
 
         snprintf(path_copy, sizeof(path_copy), "%s", argv0);
         dir = dirname(path_copy);
-        snprintf(candidate, sizeof(candidate), "%s/" HYBBX_FILE_CONFIG, dir);
-        if (path_is_readable(candidate)) {
+        if (hybbx_path_join(candidate, sizeof(candidate), dir,
+                            HYBBX_FILE_CONFIG) == HYBBX_OK &&
+            path_is_readable(candidate)) {
             snprintf(buf, buflen, "%s", candidate);
             return buf;
         }

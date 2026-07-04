@@ -1358,7 +1358,7 @@ static hybbx_result_t cmd_register_user(hybbx_service_t *service,
     hybbx_storage_t *storage;
     hybbx_user_registration_t reg;
     hybbx_user_record_t user;
-    char buf[128];
+    char buf[HYBBX_USER_FULL_NAME_MAX + 64];
     hybbx_result_t rc;
 
     if (staff_created) {

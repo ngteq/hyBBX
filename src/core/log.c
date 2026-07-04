@@ -130,7 +130,7 @@ static void log_close_file(void)
 
 static int log_build_path(char *out, size_t out_len, const struct tm *tm)
 {
-    char name[32];
+    char name[48];
 
     snprintf(name, sizeof(name), "%04d%02d%02d-hybbx.log",
              tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
@@ -159,7 +159,7 @@ static int log_open_for_time(const struct tm *tm)
         return -1;
     }
 
-    if (log_build_path(path, sizeof(path), tm) != HYBBX_OK) {
+    if (log_build_path(path, sizeof(path), tm) != 0) {
         fprintf(stderr, "[log] path too long for log file\n");
         return -1;
     }

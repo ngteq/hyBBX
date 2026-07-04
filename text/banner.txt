@@ -1,3 +1,2 @@
-HyBBX @version@
-Multi-transport session — @service@
-/help  /rules  /login  /register
+HyBBX @version@ — telnet session system
+@service@ — /help  /rules  /login  /register
