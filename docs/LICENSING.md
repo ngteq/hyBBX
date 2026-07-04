@@ -36,7 +36,7 @@ Optional **external** backends (not vendored): OpenSSL, libsodium — their lice
 
 ## ARDOP / ARDOPC upstream (external modem — not shipped with HyBBX)
 
-HyBBX **0.8.x** does **not** bundle ARDOPC. The `ardop` plugin is a **clean-room Host-Client** over TCP (control + data ports), documented in public ARDOPC operator notes and host-interface behaviour.
+HyBBX **0.8.x** does **not** bundle ARDOPC. The `ardop` plugin is a **clean-room Host-Client** over TCP — see [ARDOP.md](ARDOP.md).
 
 | Upstream | Repository | Stated / inferred license | HyBBX use |
 |----------|------------|---------------------------|-----------|
@@ -68,7 +68,7 @@ HyBBX **0.8.x** does **not** bundle ARDOPC. The `ardop` plugin is a **clean-room
 
 ## Planned CRDOP (Level 2 — after HyBBX v1.0.0)
 
-**CRDOP** = CB-oriented digital open protocol, **not** a 1:1 ARDOP clone. See [CRDOP.md](CRDOP.md).
+**CRDOP** = CB-oriented digital open protocol, **not** a 1:1 ARDOP clone. See [CRDOP.md](CRDOP.md) and [ARDOP.md](ARDOP.md).
 
 | Phase | License expectation |
 |-------|---------------------|

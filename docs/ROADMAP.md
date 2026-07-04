@@ -53,7 +53,7 @@ Per-link table in `circuit_tcp.c`; `max_links` in `[circuit]`; bridge registry f
 
 | Item | Status | Notes |
 |------|--------|-------|
-| External ARDOPC | Done | Operator runs g8bpq/ardop or MIT ardopcf separately; HyBBX plugin = Host-Client TCP only |
+| External ARDOPC | Done | Operator runs g8bpq/ardop or MIT ardopcf separately; see [ARDOP.md](ARDOP.md) |
 | ARQ host subset | Done | Init, listen, connect, `d:ARQ` data, CRC + RDY |
 | HBX bridge | Done | `terminal` proto on circuit; parallel `link_id` to AX.25 Secondary |
 | `radio_profile=cb` | Preview | CRDOP Level 2 INI hint; half-duplex QoS — see [CRDOP.md](CRDOP.md) |
@@ -62,13 +62,13 @@ Per-link table in `circuit_tcp.c`; `max_links` in `[circuit]`; bridge registry f
 
 ## CRDOP (Level 2 — after v1.0.0, experimental)
 
-**CRDOP** (CB Radio Digital Open Protocol): configurable CB-oriented fork/merge of ARDOP-applicable elements — **not** 1:1. See [CRDOP.md](CRDOP.md), [LICENSING.md](LICENSING.md).
+**CRDOP** (CB Radio Digital Open Protocol): configurable CB-oriented merge of ARDOP-applicable elements — **not** 1:1. See [CRDOP.md](CRDOP.md), [ARDOP.md](ARDOP.md), [LICENSING.md](LICENSING.md).
 
 | Item | Status | Notes |
 |------|--------|-------|
 | Spec & licensing path | Done (doc) | MIT ardopcf vs GPL ARDOPC vs clean-room |
 | Embedded modem | **Not in HyBBX** | External **ARDOPC/ardopcf** (sound-card / serial); HyBBX plugin only |
-| HyBBX `transport.crdop` | Partial | CB host-client plugin; external ARDOPC/ardopcf |
+| HyBBX `transport.crdop` | Partial | CB host-client plugin; external **CRDOPC** |
 | Global CB profiles | Done | `crdop` plugin; `modem_host` / `500MAX` defaults |
 | Live RF verification | **After v1.0.0** | After AX.25 integration tests; mock smoke only until then |
 

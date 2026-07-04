@@ -72,8 +72,8 @@ C99 multi-transport session daemon: mail, chat, `/` commands over **plugin-only*
 | Auto-generated link codes | Done | Issued on successful Secondary→Main `LINK_AUTH` |
 | Telnet dual-stack bind | Done | `ipv4`/`ipv6` toggles; `bind` / `bind6`; `IPV6_V6ONLY` |
 | Packet radio | Done | AX.25 link adapter; `[networks] ax25 = yes` + `[transport.packet_radio]` |
-| ARDOP host client | Partial | `[networks] ardop` + `[transport.ardopN]` → external ARDOPC; **not RF-tested pre–v1.0.0** |
-| CRDOP host client | Partial | `[networks] crdop` + `[transport.crdopN]` → external ARDOPC (CB defaults); **not RF-tested pre–v1.0.0** |
+| ARDOP host client | Partial | `[networks] ardop` + `[transport.ardopN]` → external ARDOPC/ardopcf; **not RF-tested pre–v1.0.0** |
+| CRDOP host client | Partial | `[networks] crdop` + `[transport.crdopN]` → external CRDOPC; **not RF-tested pre–v1.0.0** |
 | SSH | After v1.0.0 | Same session core as telnet |
 | WebSocket | After v1.0.0 | Local endpoint behind reverse-proxy only |
 

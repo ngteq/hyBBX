@@ -4,7 +4,8 @@
 /**
  * CRDOP — CB Radio Digital Open Protocol (Level 2, experimental).
  *
- * HyBBX `crdop` plugin: CB host-client bridge to external ARDOPC/ardopcf.
+ * HyBBX `crdop` plugin: CB host-client bridge to external CRDOPC.
+ * ARDOP uses the `ardop` plugin with ARDOPC/ardopcf.
  * Modem DSP stays outside HyBBX. Profile helpers shared with `ardop`.
  */
 

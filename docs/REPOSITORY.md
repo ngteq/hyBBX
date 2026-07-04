@@ -12,8 +12,8 @@ hyBBX/
   src/main.c           Entry, plugin registration
   plugins/telnet/      TCP telnet adapter
   plugins/packet_radio/  Serial TNC host-client (external device)
-  plugins/ardop/       ARDOP host-client (external ARDOPC)
-  plugins/crdop/       CRDOP CB host-client (external ARDOPC)
+  plugins/ardop/       ARDOP host-client (ARDOPC/ardopcf)
+  plugins/crdop/       CRDOP CB host-client (CRDOPC)
   third_party/         Bundled crypto
   text/                banner, motd, news, rules (runtime texts)
   share/               INI examples, fail2ban
@@ -32,6 +32,8 @@ hyBBX/
 | `command.c` | `/` dispatch, privileges |
 | `storage_flatfile.c` | INI user shards (50/user file) |
 | `plugins/packet_radio/` | KISS, 6PACK, TNC2, AX.25 |
+| `plugins/ardop/` | ARDOP host TCP — see [ARDOP.md](ARDOP.md) |
+| `plugins/crdop/` | CRDOP CB host TCP — see [CRDOP.md](CRDOP.md) |
 
 Plugin API: [plugin.h](../include/hybbx/plugin.h). Build: top-level + `src/` + per-plugin `CMakeLists.txt`.
 

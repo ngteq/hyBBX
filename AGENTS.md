@@ -16,9 +16,9 @@ That is the **absolute standard** for this project — not an ARDOP/CRDOP specia
 |----------|-------------------------|
 | `src/core/` sessions, HBX hub, storage | USB/serial TNC, KISS device |
 | `plugins/telnet` | Direwolf, sound-card packet apps |
-| `plugins/packet_radio` (serial/host bytes) | ARDOPC, ardopcf |
-| `plugins/ardop` (host TCP to modem) | ARDOPC, ardopcf |
-| `plugins/crdop` (CB host TCP) | ARDOPC, ardopcf (same external modem family) |
+| `plugins/packet_radio` (serial/host bytes) | USB/serial TNC, KISS device |
+| `plugins/ardop` (host TCP) | **ARDOP** — ARDOPC, ardopcf |
+| `plugins/crdop` (CB host TCP) | **CRDOP** — CRDOPC (ARDOP-compatible host TCP) |
 
 ---
 
@@ -30,8 +30,9 @@ That is the **absolute standard** for this project — not an ARDOP/CRDOP specia
 | [DEVELOPMENT.md](docs/DEVELOPMENT.md) | How to code |
 | [ROADMAP.md](docs/ROADMAP.md) | Planned work |
 | [MANUAL.md](docs/MANUAL.md) | Operator INI/commands |
+| [ARDOP.md](docs/ARDOP.md) | ARDOP plugin + external ARDOPC/ardopcf |
+| [CRDOP.md](docs/CRDOP.md) | CRDOP plugin + external CRDOPC |
 | [LICENSING.md](docs/LICENSING.md) | GPL, third-party, ARDOP/CRDOP |
-| [CRDOP.md](docs/CRDOP.md) | CB digital protocol (Level 2, experimental) |
 | [BUILD.md](docs/BUILD.md) | CMake |
 | [REPOSITORY.md](docs/REPOSITORY.md) | Tree layout |
 

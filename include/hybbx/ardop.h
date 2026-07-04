@@ -2,10 +2,11 @@
 #define HYBBX_ARDOP_H
 
 /**
- * ARDOP link adapter — HyBBX Host-Client subset (external ARDOPC modem service).
+ * ARDOP link adapter — HyBBX Host-Client subset (external ARDOP modem).
  *
- * HyBBX is never a sound-modem service. Operator runs ARDOPC, ardopcf, or future
- * CRDOPC as a separate process; this plugin speaks the TNC Host Interface over TCP.
+ * HyBBX is never a sound-modem service. Operator runs ARDOPC or ardopcf as a
+ * separate process; this plugin speaks the TNC Host Interface over TCP.
+ * For CRDOP, use the `crdop` plugin and external CRDOPC instead.
  */
 
 #include "hybbx/types.h"

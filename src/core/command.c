@@ -288,7 +288,7 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
         cmd_help_pair(session, "/login", "<user> <pass>",
                       "/register", "new account");
         cmd_help_pair(session, "/clear", "clear screen",
-                      "/echo", "input echo on/off");
+                      "/echo", "input echo");
         cmd_help_line(session, "/exit", "close connection");
         return;
     }

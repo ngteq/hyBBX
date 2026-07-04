@@ -2,7 +2,7 @@
 ###### telnet un1t.me:2323 for auto-guest login full-serviced HyBBX.<br>
 C99 **multi-transport session daemon** for bandwidth-constrained networks. One session core (mail, chat, `/` commands) over **plugin-only** link adapters (host-client bridges). Modems, TNCs, and sound-card software are **always external** — not part of HyBBX.
 
-**Default architecture:** telnet plugin, `packet_radio` → serial TNC, `ardop` → external ARDOPC/CRDOPC. Embedded modem DSP = different project, not HyBBX.
+**Default architecture:** telnet plugin, `packet_radio` → serial TNC, **`ardop`** → ARDOP (ARDOPC/ardopcf), **`crdop`** → CRDOP (CRDOPC). Both use the same host-TCP bridge model; modem DSP stays external.
 
 **Main** hosts users, storage, telnet :2323, HBX hub :7323. **Secondary** nodes attach local TNC/RF and bridge to Main. Same `hybbx` binary; role from INI. Default traffic: 2400 baud pacing, 80-column ASCII.
 
@@ -29,6 +29,8 @@ Clients: `build/src/clients/hybbx-telnet`, `hybbx-terminal` — [docs/CLIENTS.md
 |-----|----------|
 | [FEATURES.md](docs/FEATURES.md) | Implemented vs planned |
 | [MANUAL.md](docs/MANUAL.md) | INI, transports, commands |
+| [ARDOP.md](docs/ARDOP.md) | ARDOP plugin + ARDOPC/ardopcf |
+| [CRDOP.md](docs/CRDOP.md) | CRDOP plugin + CRDOPC |
 | [QUICKSTART.md](docs/QUICKSTART.md) | First run |
 | [ROADMAP.md](docs/ROADMAP.md) | Topology and release plan |
 | [INDEX.md](docs/INDEX.md) | Full index |

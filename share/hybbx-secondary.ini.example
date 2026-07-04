@@ -104,7 +104,7 @@ g3ruh_fsk = no
 frequency1 = 27.205
 frequency2 = 27.215
 
-; --- Optional: ARDOP parallel to AX.25 (external ARDOPC/ardopcf — not inside HyBBX) ---
+; --- Optional: ARDOP parallel to AX.25 — external ARDOPC/ardopcf, not inside HyBBX ---
 ; HyBBX is never a sound-modem service. Run ARDOPC or ardopcf separately.
 ; Start ARDOPC first, e.g.: ardo1pofdm TCPIP 8515 127.0.0.1
 ; [networks] ardop = yes
@@ -122,7 +122,8 @@ frequency2 = 27.215
 ; link_role = link
 ; frequency_mhz = 7.100
 
-; --- Optional: CRDOP CB bridge (external ARDOPC/ardopcf; [networks] crdop = yes) ---
+; --- Optional: CRDOP CB bridge — external CRDOPC; [networks] crdop = yes ---
+; Start CRDOPC on modem_port (default 8515; data port +1). Use ardop plugin for ARDOP.
 ; [transport.crdop1]
 ; enabled = yes
 ; modem_host = 127.0.0.1

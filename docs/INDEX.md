@@ -17,6 +17,8 @@ Index. Intro: [README.md](../README.md). Main INI: `share/hybbx.ini.example`.
 | [FEATURES.md](FEATURES.md) | Everyone | Feature status (update on code changes) |
 | [QUICKSTART.md](QUICKSTART.md) | Operators | Build, run, first telnet session |
 | [MANUAL.md](MANUAL.md) | Operators | INI, transports, auth, commands |
+| [ARDOP.md](ARDOP.md) | Developers / operators | ARDOP plugin, ARDOPC/ardopcf, host TCP |
+| [CRDOP.md](CRDOP.md) | Developers / operators | CRDOP plugin, CRDOPC, CB bridge |
 | [CLIENTS.md](CLIENTS.md) | Operators | `hybbx-telnet`, `hybbx-terminal` CLI |
 | [ROADMAP.md](ROADMAP.md) | Everyone | Planned work (`RELEASE-*` from v1.0.0) |
 | [REPOSITORY.md](REPOSITORY.md) | Developers | Source tree |
