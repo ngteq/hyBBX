@@ -68,6 +68,7 @@ include/hybbx/     Public API
 src/core/          Session, storage, circuit hub
 plugins/telnet/    TCP adapter
 plugins/packet_radio/  AX.25, TNC, HBX client
+plugins/crdop/     CRDOP CB host-client (external CRDOPC)
 share/hybbx.ini.example
 local/hybbx.ini    Dev only
 ```

@@ -67,8 +67,13 @@ kill "${HYBBX_PID}" 2>/dev/null || true
 wait "${HYBBX_PID}" 2>/dev/null || true
 kill "${CIRCUIT_PID}" 2>/dev/null || true
 
-grep -q '\[crdop\] connected to external ARDOPC' "${LOG}" || {
-    echo "FAIL: no CRDOP ARDOPC connect log" >&2
+grep -q '\[crdop\] connected to external CRDOPC' "${LOG}" || {
+    echo "FAIL: no CRDOP CRDOPC connect log" >&2
+    cat "${LOG}" >&2
+    exit 1
+}
+grep -q '\[crdop\] modem VERSION' "${LOG}" || {
+    echo "FAIL: no CRDOP VERSION log" >&2
     cat "${LOG}" >&2
     exit 1
 }

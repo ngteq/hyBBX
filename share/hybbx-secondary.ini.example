@@ -123,7 +123,7 @@ frequency2 = 27.215
 ; frequency_mhz = 7.100
 
 ; --- Optional: CRDOP CB bridge — external CRDOPC; [networks] crdop = yes ---
-; Start CRDOPC on modem_port (default 8515; data port +1). Use ardop plugin for ARDOP.
+; Start CRDOPC first — see https://github.com/ngteq/CRDOP (./scripts/crdopc, port 8515)
 ; [transport.crdop1]
 ; enabled = yes
 ; modem_host = 127.0.0.1

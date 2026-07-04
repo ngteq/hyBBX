@@ -60,17 +60,16 @@ Per-link table in `circuit_tcp.c`; `max_links` in `[circuit]`; bridge registry f
 | Live RF verification | **After v1.0.0** | Mock smoke scripts only until post-release integration |
 | FEC / OFDM / CAT | Planned | Not required for first bridge |
 
-## CRDOP (Level 2 — after v1.0.0, experimental)
+## CRDOP (CB digital — external CRDOPC)
 
-**CRDOP** (CB Radio Digital Open Protocol): configurable CB-oriented merge of ARDOP-applicable elements — **not** 1:1. See [CRDOP.md](CRDOP.md), [ARDOP.md](ARDOP.md), [LICENSING.md](LICENSING.md).
+**CRDOP** modem: **[github.com/ngteq/CRDOP](https://github.com/ngteq/CRDOP)** **1.0.0** (MIT, ardopcf lineage). HyBBX **`crdop`** plugin = host TCP bridge only. See [CRDOP.md](CRDOP.md), [ARDOP.md](ARDOP.md), [LICENSING.md](LICENSING.md).
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Spec & licensing path | Done (doc) | MIT ardopcf vs GPL ARDOPC vs clean-room |
-| Embedded modem | **Not in HyBBX** | External **ARDOPC/ardopcf** (sound-card / serial); HyBBX plugin only |
-| HyBBX `transport.crdop` | Partial | CB host-client plugin; external **CRDOPC** |
-| Global CB profiles | Done | `crdop` plugin; `modem_host` / `500MAX` defaults |
-| Live RF verification | **After v1.0.0** | After AX.25 integration tests; mock smoke only until then |
+| External CRDOPC | Done | [ngteq/CRDOP](https://github.com/ngteq/CRDOP) `crdopc` on **8515/8516** |
+| HyBBX `transport.crdop` | Partial | CB bridge defaults; **not RF-tested pre–v1.0.0** |
+| Global CB profiles | Done | `crdop` plugin; modem profiles in CRDOP INI |
+| Live RF verification | **After v1.0.0** | After AX.25 integration tests |
 
 ## v1.0.0 scope
 

@@ -13,8 +13,8 @@ hyBBX/
   plugins/telnet/      TCP telnet adapter
   plugins/packet_radio/  Serial TNC host-client (external device)
   plugins/ardop/       ARDOP host-client (ARDOPC/ardopcf)
-  plugins/crdop/       CRDOP CB host-client (CRDOPC)
-  third_party/         Bundled crypto
+  plugins/crdop/       CRDOP CB host-client (external CRDOPC)
+  third_party/         Bundled crypto (crypto only — not modems)
   text/                banner, motd, news, rules (runtime texts)
   share/               INI examples, fail2ban
   local/               Dev config (not installed)

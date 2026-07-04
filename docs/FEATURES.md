@@ -229,7 +229,7 @@ C99 multi-transport session daemon: mail, chat, `/` commands over **plugin-only*
 | Plugin build toggles | Done | Telnet / packet_radio / ardop / crdop on by default |
 | `hybbx_result_name()` | Done | Short `hybbx_result_t` name for logs/tests ([util.h](include/hybbx/util.h)) |
 | Unit tests (`HYBBX_BUILD_TESTS`) | Done | `tests/test_util.c` — boolean parser + result names; CI on push/PR |
-| Integration tests (AX.25 / ARDOP / CRDOP) | **Not yet** | No RF or live-modem CI before **v1.0.0**; see [ROADMAP.md](ROADMAP.md#verification) |
+| Integration tests (AX.25 / ARDOP / CRDOP) | **Not yet** | No RF or live-modem CI before **v1.0.0**; CRDOPC [1.0.0](https://github.com/ngteq/CRDOP) |
 | ARDOP/CRDOP mock smoke scripts | Done | `scripts/test-ardop-plugin.sh`, `scripts/test-crdop-plugin.sh` (local mock ARDOPC; not CI) |
 | `scripts/dev-setup.sh` | Done | Configure, build, `compile_commands.json` symlink |
 | GPL-3.0 license | Done | See `LICENSE.txt`; [LICENSING.md](LICENSING.md) (ARDOP/CRDOP third-party) |

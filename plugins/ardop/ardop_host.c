@@ -44,6 +44,15 @@ static const char *host_log_tag(const ardop_host_t *host)
     return "ardop";
 }
 
+static const char *host_modem_name(const ardop_host_t *host)
+{
+    if (host != NULL && host->log_tag != NULL &&
+        strcmp(host->log_tag, "crdop") == 0) {
+        return "CRDOPC";
+    }
+    return "ARDOPC";
+}
+
 static int str_ieq(const char *a, const char *b)
 {
     if (a == NULL || b == NULL) {
@@ -201,6 +210,12 @@ static void ardop_host_handle_ctrl_line(ardop_host_t *host, char *line)
 
     if (str_ieq(line, "RDY")) {
         host->tnc_ready = 1;
+        return;
+    }
+
+    if (strncmp(line, "VERSION", 7) == 0) {
+        printf("[%s] modem %s\n", host_log_tag(host), line);
+        (void)ardop_host_send_rdy(host);
         return;
     }
 
@@ -403,8 +418,8 @@ static hybbx_result_t ardop_host_send_init(ardop_host_t *host)
     }
 
     host->init_sent = 1;
-    printf("[%s] host init sent (external ARDOPC at %s:%u)\n",
-           host_log_tag(host),
+    printf("[%s] host init sent (external %s at %s:%u)\n",
+           host_log_tag(host), host_modem_name(host),
            host->cfg.ardop_host != NULL ? host->cfg.ardop_host : "?",
            host->cfg.ardop_port);
     return HYBBX_OK;
@@ -486,25 +501,35 @@ hybbx_result_t ardop_host_connect(ardop_host_t *host)
 
     host->ctrl_fd = ardop_host_tcp_connect(h, port);
     if (host->ctrl_fd < 0) {
-        fprintf(stderr, "[%s] cannot connect to ARDOPC control %s:%u\n",
-                host_log_tag(host), h, port);
+        fprintf(stderr, "[%s] cannot connect to %s control %s:%u\n",
+                host_log_tag(host), host_modem_name(host), h, port);
         return HYBBX_ERR_IO;
     }
 
     host->data_fd = ardop_host_tcp_connect(h, port + 1u);
     if (host->data_fd < 0) {
-        fprintf(stderr, "[%s] cannot connect to ARDOPC data %s:%u\n",
-                host_log_tag(host), h, port + 1u);
+        fprintf(stderr, "[%s] cannot connect to %s data %s:%u\n",
+                host_log_tag(host), host_modem_name(host), h, port + 1u);
         ardop_host_disconnect(host);
         return HYBBX_ERR_IO;
     }
 
     host->tnc_ready = 0;
     host->init_sent = 0;
-    printf("[%s] connected to external ARDOPC %s:%u (data %u)\n",
-           host_log_tag(host), h, port, port + 1u);
+    printf("[%s] connected to external %s %s:%u (data %u)\n",
+           host_log_tag(host), host_modem_name(host), h, port, port + 1u);
 
     (void)ardop_host_send_init(host);
+    {
+        unsigned spin;
+
+        for (spin = 0; spin < 8u; spin++) {
+            ardop_host_poll(host);
+            if (host->tnc_ready) {
+                break;
+            }
+        }
+    }
     return HYBBX_OK;
 }
 

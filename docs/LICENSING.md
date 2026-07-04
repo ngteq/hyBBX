@@ -58,25 +58,31 @@ HyBBX **0.8.x** does **not** bundle ARDOPC. The `ardop` plugin is a **clean-room
 | Model | When | License impact |
 |-------|------|----------------|
 | **A — External ARDOPC** (current 0.8.x) | Modem runs as separate process | HyBBX plugin stays GPL-3.0; no ARDOP source in HyBBX tree; operator supplies ARDOPC under its own terms |
-| **B — External ardopcf / CRDOPC (MIT lineage)** | Standalone CRDOPC after v1.0.0 | CRDOPC binary under MIT (+ notices); HyBBX plugin GPL-3.0; no linking of modem code into `hybbx` |
+| **B — External CRDOPC** | [ngteq/CRDOP](https://github.com/ngteq/CRDOP) 1.0.0 | CRDOPC **MIT**; HyBBX plugin GPL-3.0; no linking |
 | **C — External CRDOPC from g8bpq fork** | GPL ARDOPC lineage | CRDOPC as **GPL-3.0** standalone; HyBBX plugin unchanged |
 | **D — Clean-room CRDOPC** | New external modem + HyBBX host client | HyBBX GPL for plugin; CRDOPC licensed separately |
 
-**Recommended path for HyBBX:** **A** now; **B or C** for a **standalone CRDOPC** after v1.0.0 (never vendored DSP inside HyBBX).
+**Recommended path for HyBBX:** **A** for amateur ARDOP; **B** for CRDOP ([ngteq/CRDOP](https://github.com/ngteq/CRDOP)). Never vend DSP inside HyBBX.
 
 ---
 
-## Planned CRDOP (Level 2 — after HyBBX v1.0.0)
+## CRDOP / CRDOPC (external modem + HyBBX plugin)
 
-**CRDOP** = CB-oriented digital open protocol, **not** a 1:1 ARDOP clone. See [CRDOP.md](CRDOP.md) and [ARDOP.md](ARDOP.md).
+**CRDOP** = CB-oriented digital open protocol — **not** a 1:1 ARDOP clone. Modem: **[ngteq/CRDOP](https://github.com/ngteq/CRDOP)** **1.0.0** (MIT). HyBBX bridge: [CRDOP.md](CRDOP.md), [ARDOP.md](ARDOP.md).
 
-| Phase | License expectation |
-|-------|---------------------|
-| HyBBX host bridge (`transport.ardop` / `transport.crdop`) | GPL-3.0 |
-| Standalone **CRDOPC** (external; not in HyBBX repo) | GPL-3.0 if derived from g8bpq ARDOPC; MIT if from ardopcf; clean-room → separate project license |
-| Documentation & protocol spec (ngteq, in HyBBX docs) | GPL-3.0 (docs in repo) |
+| Component | License |
+|-----------|---------|
+| HyBBX `plugins/crdop/` (host bridge) | **GPL-3.0** |
+| **CRDOPC** ([ngteq/CRDOP](https://github.com/ngteq/CRDOP)) | **MIT** (ngteq + ardopcf upstream notices — [NOTICE.md](https://github.com/ngteq/CRDOP/blob/main/NOTICE.md)) |
+| HyBBX CRDOP docs | GPL-3.0 (in this repo) |
 
-Mark all CRDOP work **experimental / Level 2 development** in [ROADMAP.md](ROADMAP.md) until a stable release after v1.0.0.
+**Integration model:** external CRDOPC process + HyBBX `crdop` plugin over host TCP — same as ARDOP/ARDOPC (**no** modem code linked into `hybbx`).
+
+---
+
+## Deprecated note
+
+Earlier docs referred to CRDOP as “planned after v1.0.0” only. The **modem** is now released separately at [ngteq/CRDOP](https://github.com/ngteq/CRDOP). HyBBX live RF verification remains post–v1.0.0.
 
 ---
 
@@ -90,7 +96,7 @@ HyBBX works with **any legally usable** external packet-radio device or sound-ca
 
 1. Ship [LICENSE.txt](../LICENSE.txt) (GPL-3.0).
 2. Include third-party notices for Monocypher, tiny-AES-c, tinysha256 (see table above).
-3. If you distribute a **standalone CRDOPC** or ARDOPC build alongside HyBBX, ship that program’s `LICENSE`/`NOTICE` with it — not inside HyBBX sources.
+3. If you distribute **CRDOPC** or ARDOPC alongside HyBBX, ship that program’s `LICENSE`/`NOTICE` with it.
 4. If distributing **only** HyBBX + external ARDOPC, document that ARDOPC is a separate program (GPL-3.0 or MIT depending on build).
 
 ---
@@ -98,7 +104,7 @@ HyBBX works with **any legally usable** external packet-radio device or sound-ca
 ## References
 
 - [MANUAL.md — Licensing](MANUAL.md#licensing)
-- [CRDOP.md](CRDOP.md)
+- [CRDOP.md](CRDOP.md) · upstream modem [ngteq/CRDOP](https://github.com/ngteq/CRDOP)
 - [FEATURES.md](FEATURES.md)
 - ARDOPC operator doc: [cantab.net ARDOPC](https://www.cantab.net/users/john.wiseman/Documents/ARDOPC.html)
 - ardopcf MIT: [pflarue/ardop LICENSE](https://github.com/pflarue/ardop/blob/master/LICENSE)

@@ -20,7 +20,7 @@ typedef struct hybbx_networks_config {
     int ax25;
     /** ARDOP host-client (`transport.ardop`) — external ARDOPC. */
     int ardop;
-    /** CRDOP CB host-client (`transport.crdop`) — external ARDOP-compatible modem. */
+    /** CRDOP CB host-client (`transport.crdop`) — external CRDOPC (github.com/ngteq/CRDOP). */
     int crdop;
     /** WebSocket transport (after v1.0.0). */
     int websocket;

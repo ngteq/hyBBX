@@ -69,6 +69,7 @@ def serve_ctrl(port: int, log: list[str]) -> None:
         srv.close()
         return
     conn.settimeout(2.0)
+    conn.sendall(frame_cmd("VERSION crdopc_1.0.0"))
     buf = bytearray()
     try:
         while True:

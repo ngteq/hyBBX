@@ -15,6 +15,8 @@ Optional crypto: `-DHYBBX_CRYPTO_OPENSSL=ON`, `-DHYBBX_CRYPTO_LIBSODIUM=ON`
 
 Tests: `-DHYBBX_BUILD_TESTS=ON` then `ctest --test-dir build`
 
+**CRDOPC** (external modem for the `crdop` plugin) is built separately from [ngteq/CRDOP](https://github.com/ngteq/CRDOP) — not vendored in this repo.
+
 ## CMake options
 
 | Option | Default | Description |
@@ -26,7 +28,7 @@ Tests: `-DHYBBX_BUILD_TESTS=ON` then `ctest --test-dir build`
 | `HYBBX_PLUGIN_TELNET` | ON | Telnet plugin |
 | `HYBBX_PLUGIN_PACKET_RADIO` | ON | Packet radio plugin |
 | `HYBBX_PLUGIN_ARDOP` | ON | ARDOP host-client plugin (external ARDOPC/ardopcf) |
-| `HYBBX_PLUGIN_CRDOP` | ON | CRDOP CB host-client plugin (external ARDOPC/ardopcf) |
+| `HYBBX_PLUGIN_CRDOP` | ON | CRDOP CB host-client plugin (external CRDOPC) |
 | `HYBBX_BUILD_TESTS` | OFF | Unit tests |
 | `HYBBX_HARDENING` | ON | Stack protector, FORTIFY, RELRO/PIE |
 | `HYBBX_WARNINGS_AS_ERRORS` | OFF | `-Werror` |
@@ -57,3 +59,5 @@ cmake --install build --prefix /path
 ```
 
 → `<prefix>/hybbx/` (`hybbx`, `hybbx-start`, `hybbx.ini`, `text/`, `data/`, `logs/`, `lib/`).
+
+**CRDOPC** is not installed by HyBBX — build and ship it separately from [ngteq/CRDOP](https://github.com/ngteq/CRDOP) if needed. See [LICENSING.md](LICENSING.md).

@@ -1,8 +1,14 @@
 # CRDOP — HyBBX host-client plugin
 
-**Status:** Experimental Level 2 (0.8.x) — CB host-TCP bridge implemented; live RF integration tests planned after v1.0.0.
+**Status:** Partial (0.8.x) — host-TCP bridge aligned with [CRDOP 1.0.0](https://github.com/ngteq/CRDOP); live RF tests after HyBBX v1.0.0.
 
-Standalone reference for **CRDOP** (CB Radio Digital Open Protocol), the **`crdop`** transport plugin, external **CRDOPC** modem, INI, and developer layout. For amateur-band ARDOP use **`ardop`** — see [ARDOP.md](ARDOP.md).
+Standalone reference for **CRDOP** (CB Radio Digital Open Protocol), the HyBBX **`crdop`** transport plugin, external **CRDOPC** modem, INI, and developer layout. For amateur-band ARDOP use **`ardop`** — see [ARDOP.md](ARDOP.md).
+
+| | |
+|---|---|
+| **CRDOP modem project** | [github.com/ngteq/CRDOP](https://github.com/ngteq/CRDOP) |
+| **CRDOPC version** | **1.0.0** (`VERSION crdopc_1.0.0` on host TCP) |
+| **HyBBX plugin** | `crdop` (this repo) |
 
 ---
 
@@ -49,20 +55,40 @@ CRDOP and ARDOP can coexist on one Secondary only with **separate modem processe
 
 ## External modem (CRDOPC)
 
-CRDOPC is a **standalone modem program** (not in the HyBBX tree). It speaks ARDOP-compatible host TCP so HyBBX needs no modem source inside the repo.
-
-Start CRDOPC **before** HyBBX on the configured control port:
+**CRDOPC** is a **separate process** (MIT, ardopcf lineage) — HyBBX never embeds modem DSP in the `hybbx` daemon. Build and run it from **[ngteq/CRDOP](https://github.com/ngteq/CRDOP)** before starting HyBBX.
 
 ```bash
-crdopc 8515 127.0.0.1
-# control 8515, data 8516
+git clone https://github.com/ngteq/CRDOP.git
+cd CRDOP && ./scripts/build-crdop.sh
+./scripts/crdopc
+# control 8515, data 8516 — CB profile default
 ```
 
-Default plugin target: `127.0.0.1:8515`.
+Or with example INI:
+
+```bash
+CRDOP_INI=share/crdop.ini.example ./scripts/crdopc
+```
+
+Point HyBBX `[transport.crdopN]` at the same host/port (`modem_host` / `modem_port`, default **8515**).
+
+**Legal:** HyBBX is **GPL-3.0**; **CRDOPC** is **MIT** — ship each program’s license when distributing both. See [LICENSING.md](LICENSING.md).
+
+### CRDOPC profiles (modem INI)
+
+CRDOPC launch profiles (`cb`, `dual`, `amateur`) are configured in **CRDOP** INI (`share/crdop*.ini.example`), not in HyBBX. The HyBBX **`crdop`** plugin always applies **CB bridge defaults** (`500MAX`, half-duplex QoS, `crdop-link`) on the HBX side.
+
+| CRDOPC profile | Typical use | Default ARQ BW |
+|----------------|-------------|-----------------|
+| `cb` | 11 m CB (default) | 500MAX |
+| `dual` | CB ↔ amateur links | 500MAX |
+| `amateur` | Ham secondary | 1000MAX |
+
+See [CRDOP docs/CONFIG.md](https://github.com/ngteq/CRDOP/blob/main/docs/CONFIG.md).
 
 ### VERSION strings
 
-CRDOPC may report e.g. `VERSION crdopc_0.1.0-l2-cb`. HyBBX **does not parse or whitelist** version tokens — it acks with **`RDY`** and continues. No HyBBX change is required when CRDOPC revs its version string.
+CRDOP **1.0.0** reports `VERSION crdopc_1.0.0` on the control port. HyBBX **does not whitelist** version tokens — it logs the line, acks **`RDY`**, and continues. Future CRDOPC releases need no HyBBX code change unless the host wire format changes.
 
 ---
 
@@ -188,7 +214,7 @@ cmake --build build
 ./scripts/test-crdop-plugin.sh    # mock host TCP, no RF
 ```
 
-CRDOP-only build: `-DHYBBX_PLUGIN_ARDOP=OFF -DHYBBX_PLUGIN_CRDOP=ON`.
+CRDOP-only plugin build: `-DHYBBX_PLUGIN_ARDOP=OFF -DHYBBX_PLUGIN_CRDOP=ON`.
 
 **Pre–v1.0.0:** mock smoke only. **Post–v1.0.0:** AX.25 RF tests first; CRDOP live RF after ([ROADMAP.md](ROADMAP.md#verification)).
 
@@ -222,7 +248,7 @@ Both share **`hybbx_ardop_common`** — changes to host TCP affect both plugins.
 
 ## Licensing
 
-HyBBX `crdop` plugin: **GPL-3.0**. CRDOPC is a **separate binary** (MIT or GPL lineage depending on upstream) — [LICENSING.md](LICENSING.md).
+HyBBX `crdop` plugin: **GPL-3.0**. **CRDOPC** is **[ngteq/CRDOP](https://github.com/ngteq/CRDOP)** (**MIT**, ardopcf lineage) — [LICENSING.md](LICENSING.md).
 
 ---
 

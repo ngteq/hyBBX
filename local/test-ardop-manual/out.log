@@ -1,0 +1,18 @@
+[storage] invalid path 'local/test-ardop-manual/data'
+Failed to apply configuration (storage path writable? telnet/circuit bind ok?) — io
+HyBBX 0.8.0 starting
+Available transport plugins:
+  - telnet (kind=1, version=1)
+  - packet_radio (kind=2, version=1)
+  - ardop (kind=4, version=1)
+Loaded configuration: /home/akb/hyBBX/local/test-ardop-manual/hybbx.ini
+[service] guest_timeout_minutes=30
+[time] clock=24h seconds=no
+[log] enabled=no dir=- level=info
+[security] log=/home/akb/hyBBX/local/test-ardop-manual/logs/security.log
+[chat] channels=10 message_max=72
+[ax25] no frequencies in INI (set frequency1 … in [ax25])
+[broadcast] enabled=yes ax25=yes (low+half-duplex QoS only) tcp=yes (stub)
+[service] max_online=35
+[crypto] password_hash=tinysha256 aes_gcm=tinyaes chacha=monocypher x25519=monocypher random=system
+[traffic] baud=2400 line_width=80 pace=yes ansi=no echo=no

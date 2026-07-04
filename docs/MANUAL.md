@@ -293,7 +293,7 @@ External **ARDOPC/ardopcf** + HyBBX host-client over TCP (control **N**, data **
 
 ### CRDOP (`crdop` plugin)
 
-External **CRDOPC** + CB-profile bridge. Full reference: **[CRDOP.md](CRDOP.md)**.
+External **CRDOPC** + CB-profile bridge. Modem: [github.com/ngteq/CRDOP](https://github.com/ngteq/CRDOP). Full reference: **[CRDOP.md](CRDOP.md)**.
 
 ```ini
 [networks]
