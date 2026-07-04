@@ -1,6 +1,6 @@
 # ARDOP — HyBBX host-client plugin
 
-**Status:** Partial (0.8.x) — host-TCP bridge implemented; live RF integration tests planned after v1.0.0.
+**Status:** Partial (0.9.x testing) — standalone `plugins/ardop/` host-TCP bridge; live RF integration tests after v1.0.0.
 
 Standalone reference for the **`ardop`** transport plugin, external ARDOP modems, INI, wire protocol subset, and developer layout. For CB digital use **CRDOP** instead — see [CRDOP.md](CRDOP.md).
 
@@ -186,32 +186,32 @@ Binary frames: `D:` host TX, `d:ARQ` modem RX (see `ardop_host.c`).
 
 ---
 
-## Source tree (developer)
+## Source tree (standalone plugin)
+
+**ARDOP** and **CRDOP** are separate protocols with **standalone plugin sources**. This tree is **`plugins/ardop/`** only:
 
 ```
 plugins/ardop/
   ardop.c           Plugin wrapper (HYBBX_TRANSPORT_ARDOP)
   ardop_config.c    hybbx_ardop_config_parse()
-  ardop_link.c/h    Shared link layer (poll thread, circuit, reconnect)
+  ardop_link.c/h    Link layer (poll thread, circuit, reconnect)
   ardop_host.c/h    TCP host client (control + data)
   ardop_crc.c       CRC-16
   CMakeLists.txt    hybbx_ardop_common + hybbx_plugin_ardop
 
 include/hybbx/
   ardop.h           Config struct, parse/free API
-  crdop.h           Profile helpers (shared with crdop plugin)
 
 src/core/
   networks.c        [networks] ardop switch
   circuit_bridge.c  [transport.ardopN] on Main
-  crdop.c           radio_profile parse helpers
 
 src/main.c          hybbx_plugin_ardop registration
 ```
 
-**Shared library:** `hybbx_ardop_common` (link + host + crc + config) is also linked by the **`crdop`** plugin. See [CRDOP.md](CRDOP.md) for the CB wrapper.
+**CRDOP** lives in **`plugins/crdop/`** — see [CRDOP.md](CRDOP.md). Today `hybbx_ardop_common` (link + host + crc) is also linked by the CRDOP plugin as shared host-TCP code; ARDOP and CRDOP will diverge in future releases.
 
-**CMake:** `HYBBX_PLUGIN_ARDOP=ON` (default). Builds common lib when `HYBBX_PLUGIN_ARDOP` or `HYBBX_PLUGIN_CRDOP` is on.
+**CMake:** `HYBBX_PLUGIN_ARDOP=ON` (default). Builds `hybbx_ardop_common` when ARDOP or CRDOP is enabled.
 
 **Transport kind:** `HYBBX_TRANSPORT_ARDOP` (= 4) in `include/hybbx/types.h`.
 
@@ -222,12 +222,12 @@ src/main.c          hybbx_plugin_ardop registration
 ```bash
 cmake -B build -DHYBBX_PLUGIN_ARDOP=ON
 cmake --build build
-./scripts/test-ardop-plugin.sh    # mock ARDOPC, no RF
+./scripts/test-ardop-plugin.sh    # local mock host TCP, no RF
 ```
 
-Smoke test uses `scripts/mock-ardopc.py` on a ephemeral port under `local/test-ardop-*/`.
+Local test uses `scripts/mock-ardopc.py` on an ephemeral port under `local/test-ardop-*/`.
 
-**Pre–v1.0.0:** no live-modem CI. **Post–v1.0.0:** AX.25 RF tests first; ARDOP live RF later ([ROADMAP.md](ROADMAP.md#verification)).
+**v0.9.x:** testing release — no live-modem CI. **Post–v1.0.0:** AX.25 RF tests first; ARDOP live RF later ([ROADMAP.md](ROADMAP.md#verification)).
 
 ---
 
@@ -236,7 +236,7 @@ Smoke test uses `scripts/mock-ardopc.py` on a ephemeral port under `local/test-a
 | Topic | Notes |
 |-------|--------|
 | One plugin instance | `ardop_link.c` uses static singleton state — do not run two `ardop` sections in one process without refactor |
-| `ardop` + `crdop` together | Use **separate TCP ports** and separate modem processes |
+| `ardop` + `crdop` together | Separate plugins — use **separate TCP ports** and separate modem processes |
 | FEC / OFDM / CAT | External modem only |
 | Live RF verification | After v1.0.0 |
 
@@ -262,4 +262,4 @@ References:
 | [FEATURES.md](FEATURES.md) | Shipped vs planned |
 | [ROADMAP.md](ROADMAP.md) | Release and test plan |
 
-*Last aligned with HyBBX 0.8.x.*
+*Last aligned with HyBBX 0.9.x.*

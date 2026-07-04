@@ -15,7 +15,7 @@
 <!-- How did you verify? e.g. cmake --build build, telnet 127.0.0.1 2323 -->
 
 - [ ] `cmake --build build` succeeds
-- [ ] Manual smoke test (describe):
+- [ ] Manual verification (describe):
 
 ## Documentation
 

@@ -4,7 +4,7 @@ For AI agents and developers. Humans: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Project
 
-C99 multi-transport session daemon (mail/chat/commands + link adapters). **Main** + **Secondary** topology: Main hosts users, storage, telnet, and the HBX hub; **Secondaries** are **remote edge machines** (separate HyBBX processes with `circuit_host` → Main) — not telnet users or local `[transport.*]` on Main. Default Main: TCP/IP + HBX (`ax25=no`). **0.8.x** line; `RELEASE-*` docs from **v1.0.0**. INI: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
+C99 multi-transport session daemon (mail/chat/commands + link adapters). **Main** + **Secondary** topology: Main hosts users, storage, telnet, and the HBX hub; **Secondaries** are **remote edge machines** (separate HyBBX processes with `circuit_host` → Main) — not telnet users or local `[transport.*]` on Main. Default Main: TCP/IP + HBX (`ax25=no`). **0.9.x** testing release — **feature freeze** until **v1.0.0**; `RELEASE-*` docs from v1.0.0. INI: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
 
 ## Product boundary (default — non-negotiable)
 
@@ -17,8 +17,8 @@ That is the **absolute standard** for this project — not an ARDOP/CRDOP specia
 | `src/core/` sessions, HBX hub, storage | USB/serial TNC, KISS device |
 | `plugins/telnet` | Direwolf, sound-card packet apps |
 | `plugins/packet_radio` (serial/host bytes) | USB/serial TNC, KISS device |
-| `plugins/ardop` (host TCP) | **ARDOP** — ARDOPC, ardopcf |
-| `plugins/crdop` (CB host TCP) | **CRDOP** — CRDOPC (ARDOP-compatible host TCP) |
+| `plugins/ardop` (host TCP) | **ARDOP** — standalone plugin; external ARDOPC/ardopcf |
+| `plugins/crdop` (CB host TCP) | **CRDOP** — standalone plugin; external CRDOPC ([ngteq/CRDOP](https://github.com/ngteq/CRDOP)) |
 
 ---
 
@@ -68,7 +68,8 @@ include/hybbx/     Public API
 src/core/          Session, storage, circuit hub
 plugins/telnet/    TCP adapter
 plugins/packet_radio/  AX.25, TNC, HBX client
-plugins/crdop/     CRDOP CB host-client (external CRDOPC)
+plugins/ardop/     ARDOP plugin (standalone sources)
+plugins/crdop/     CRDOP plugin (standalone sources)
 share/hybbx.ini.example
 local/hybbx.ini    Dev only
 ```

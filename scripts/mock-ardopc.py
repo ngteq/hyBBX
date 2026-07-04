@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Minimal ARDOPC TCP mock for HyBBX ardop plugin smoke tests.
+Minimal ARDOPC TCP mock for HyBBX plugin host-TCP local tests.
 Control port N, data port N+1. CRC-16 poly 0x8810 (ARDOP host family).
 """
 from __future__ import annotations

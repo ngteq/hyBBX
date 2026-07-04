@@ -1,6 +1,6 @@
 # HyBBX manual
 
-Operator reference: INI, transports, commands. Templates: `share/hybbx.ini.example` (Main), `share/hybbx-secondary.ini.example` (Secondary). Index: [INDEX.md](INDEX.md) · Features: [FEATURES.md](FEATURES.md) · Build: [BUILD.md](BUILD.md).
+Operator reference: INI, transports, commands. Templates: `share/hybbx.ini.example` (Main), `share/hybbx-secondary.ini.example` (Secondary). **v0.9.0** — testing release before v1.0.0; feature freeze ([ROADMAP.md](ROADMAP.md)). Index: [INDEX.md](INDEX.md) · Features: [FEATURES.md](FEATURES.md) · Build: [BUILD.md](BUILD.md).
 
 ## Overview
 
@@ -23,8 +23,8 @@ Override any default in INI. Topology details: [ROADMAP.md](ROADMAP.md). Firewal
 | TCP/IP Telnet   | Started  | **static** (always on) | Line-oriented terminal access over TCP |
 | SSH             | After v1.0.0 | — | Secure shell transport plugin (post–first GitHub release) |
 | AX.25 / Packet Radio | Started | `ax25 = yes\|no` | TNC2C (KISS/AX.25); USB/RS232 |
-| ARDOP (host client) | Partial | `ardop = yes\|no` | External **ARDOPC/ardopcf**; amateur-profile bridge |
-| CRDOP (CB host client) | Partial | `crdop = yes\|no` | External **CRDOPC**; CB-profile bridge |
+| ARDOP (host client) | Partial | `ardop = yes\|no` | Standalone `plugins/ardop/` → external **ARDOPC/ardopcf** |
+| CRDOP (CB host client) | Partial | `crdop = yes\|no` | Standalone `plugins/crdop/` → external **CRDOPC** |
 | WebSocket       | After v1.0.0 | `websocket = yes\|no` | Forward-proxy behind Apache/nginx only |
 | HBX circuit hub | Started  | `circuit = yes\|no` | Main TCP hub — remote Secondary processes connect here |
 
@@ -34,7 +34,7 @@ Telnet starts when built (ignores `enabled`). Optional adapters need `[networks]
 
 Plugin API: `hybbx_transport_plugin_t` ([include/hybbx/plugin.h](../include/hybbx/plugin.h)). Core handles TCP/IPv4+IPv6 and HBX only — no KISS/AX.25 parsing in `src/core/`.
 
-**Project default:** HyBBX is **plugin-only** (host-client bridges). Modems, TNCs, and sound-card services stay **external**. HyBBX supports **both** **ARDOP** (`ardop` plugin + ARDOPC/ardopcf) and **CRDOP** (`crdop` plugin + CRDOPC) over the same host-TCP wire model.
+**Project default:** HyBBX is **plugin-only** (host-client bridges). Modems, TNCs, and sound-card services stay **external**. **ARDOP** (`plugins/ardop/` + ARDOPC/ardopcf) and **CRDOP** (`plugins/crdop/` + CRDOPC) are **separate standalone plugins** and protocols — similar host-TCP wire today, diverging later.
 
 ## Configuration (INI)
 

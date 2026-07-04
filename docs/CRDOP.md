@@ -1,6 +1,6 @@
 # CRDOP — HyBBX host-client plugin
 
-**Status:** Partial (0.8.x) — host-TCP bridge aligned with [CRDOP 1.0.0](https://github.com/ngteq/CRDOP); live RF tests after HyBBX v1.0.0.
+**Status:** Partial (0.9.x testing) — standalone `plugins/crdop/` host-TCP bridge aligned with [CRDOP 1.0.0](https://github.com/ngteq/CRDOP); live RF tests after HyBBX v1.0.0.
 
 Standalone reference for **CRDOP** (CB Radio Digital Open Protocol), the HyBBX **`crdop`** transport plugin, external **CRDOPC** modem, INI, and developer layout. For amateur-band ARDOP use **`ardop`** — see [ARDOP.md](ARDOP.md).
 
@@ -174,23 +174,18 @@ HyBBX `crdop` uses the same `ardop_host.c` implementation via `hybbx_ardop_commo
 
 ---
 
-## Source tree (developer)
+## Source tree (standalone plugin)
+
+**CRDOP** and **ARDOP** are separate protocols with **standalone plugin sources**. This tree is **`plugins/crdop/`** only:
 
 ```
 plugins/crdop/
   crdop.c           Plugin wrapper (HYBBX_TRANSPORT_CRDOP)
   crdop_config.c    hybbx_crdop_config_parse() — CB defaults
-  CMakeLists.txt    hybbx_plugin_crdop → links hybbx_ardop_common
-
-plugins/ardop/      Shared host TCP stack (not duplicated)
-  ardop_link.c/h
-  ardop_host.c/h
-  ardop_crc.c
-  ardop_config.c    Also used by ardop plugin
+  CMakeLists.txt    hybbx_plugin_crdop
 
 include/hybbx/
   crdop.h           CRDOP parse API, profile helpers
-  ardop.h           hybbx_ardop_config_t wire struct
 
 src/core/
   networks.c        [networks] crdop
@@ -200,7 +195,9 @@ src/core/
 src/main.c          hybbx_plugin_crdop registration
 ```
 
-**CMake:** `HYBBX_PLUGIN_CRDOP=ON` (default). `add_subdirectory(ardop)` runs when ARDOP **or** CRDOP is enabled (common library).
+**ARDOP** lives in **`plugins/ardop/`** — see [ARDOP.md](ARDOP.md). Today `hybbx_ardop_common` (in `plugins/ardop/`) provides shared host-TCP link code linked by this plugin; the two stacks will diverge in future releases.
+
+**CMake:** `HYBBX_PLUGIN_CRDOP=ON` (default). CRDOP-only build: `-DHYBBX_PLUGIN_ARDOP=OFF -DHYBBX_PLUGIN_CRDOP=ON`.
 
 **Transport kind:** `HYBBX_TRANSPORT_CRDOP` (= 5).
 
@@ -211,12 +208,12 @@ src/main.c          hybbx_plugin_crdop registration
 ```bash
 cmake -B build -DHYBBX_PLUGIN_CRDOP=ON
 cmake --build build
-./scripts/test-crdop-plugin.sh    # mock host TCP, no RF
+./scripts/test-crdop-plugin.sh    # local mock host TCP, no RF
 ```
 
 CRDOP-only plugin build: `-DHYBBX_PLUGIN_ARDOP=OFF -DHYBBX_PLUGIN_CRDOP=ON`.
 
-**Pre–v1.0.0:** mock smoke only. **Post–v1.0.0:** AX.25 RF tests first; CRDOP live RF after ([ROADMAP.md](ROADMAP.md#verification)).
+**v0.9.x:** testing release — local mock host-TCP scripts only. **Post–v1.0.0:** AX.25 RF tests first; CRDOP live RF after ([ROADMAP.md](ROADMAP.md#verification)).
 
 ---
 
@@ -231,7 +228,7 @@ CRDOP-only plugin build: `-DHYBBX_PLUGIN_ARDOP=OFF -DHYBBX_PLUGIN_CRDOP=ON`.
 | Default `link_id` | `ardop-link` | `crdop-link` |
 | Typical bands | Amateur HF/VHF | 11 m CB |
 
-Both share **`hybbx_ardop_common`** — changes to host TCP affect both plugins.
+Both use **`hybbx_ardop_common`** host-TCP code today — temporary coupling; separate plugins and protocols long term.
 
 ---
 
@@ -261,4 +258,4 @@ HyBBX `crdop` plugin: **GPL-3.0**. **CRDOPC** is **[ngteq/CRDOP](https://github.
 | [FEATURES.md](FEATURES.md) | Shipped vs planned |
 | [ROADMAP.md](ROADMAP.md) | Level 2 roadmap, verification |
 
-*Last aligned with HyBBX 0.8.x.*
+*Last aligned with HyBBX 0.9.x.*

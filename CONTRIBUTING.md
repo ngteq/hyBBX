@@ -20,7 +20,7 @@ telnet 127.0.0.1 2323
 - Update [FEATURES.md](docs/FEATURES.md) for behavior changes; [MANUAL.md](docs/MANUAL.md) / INI for operator changes
 - GCC or Clang ([PLATFORMS.md](docs/PLATFORMS.md)); GPL-3.0 compatible
 
-Use PR template. Test: `cmake --build build`, telnet smoke test, packet radio if touched.
+Use PR template. Test: `cmake --build build`, telnet login check, packet radio if touched.
 
 ## Git identity (public)
 

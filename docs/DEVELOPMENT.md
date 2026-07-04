@@ -51,9 +51,9 @@ cmake -B build -DHYBBX_BUILD_TESTS=ON && cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Also: `./scripts/hybbx.sh` + telnet smoke test.
+Also: `./scripts/hybbx.sh` + telnet login check (`telnet 127.0.0.1 2323`).
 
-**Scope before v1.0.0:** unit tests and build only in CI. **AX.25** RF integration and **ARDOP/CRDOP** live-modem tests are **out of scope** until after the v1.0.0 release; first post-release integration work targets **AX.25** ([ROADMAP.md](ROADMAP.md#verification)). Optional local checks: `scripts/test-ardop-plugin.sh`, `scripts/test-crdop-plugin.sh` (mock ARDOPC, not RF).
+**Scope v0.9.x:** testing release before v1.0.0 — unit tests and build in CI. **AX.25** RF integration and **ARDOP/CRDOP** live-modem tests are **out of scope** until after v1.0.0. Optional local checks: `scripts/test-ardop-plugin.sh`, `scripts/test-crdop-plugin.sh` (mock host TCP via `mock-ardopc.py`, not RF).
 
 ## Doc duty
 

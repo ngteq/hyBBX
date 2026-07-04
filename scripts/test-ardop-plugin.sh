@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Smoke test: mock ARDOPC + HyBBX ardop plugin (no Main circuit required).
+# Local test: mock ARDOPC + HyBBX ardop plugin (no Main circuit required).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD="${ROOT}/build"
@@ -85,5 +85,5 @@ grep -q "CB half-duplex profile" "${LOG}" || {
     exit 1
 }
 
-echo "OK: ardop plugin smoke test passed"
+echo "OK: ardop plugin local test passed"
 cat "${LOG}" | grep '\[ardop\]'

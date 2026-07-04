@@ -36,7 +36,7 @@ Optional **external** backends (not vendored): OpenSSL, libsodium — their lice
 
 ## ARDOP / ARDOPC upstream (external modem — not shipped with HyBBX)
 
-HyBBX **0.8.x** does **not** bundle ARDOPC. The `ardop` plugin is a **clean-room Host-Client** over TCP — see [ARDOP.md](ARDOP.md).
+HyBBX **0.9.x** does **not** bundle ARDOPC or CRDOPC. The `ardop` and `crdop` plugins are **standalone** host-client bridges over TCP — see [ARDOP.md](ARDOP.md), [CRDOP.md](CRDOP.md).
 
 | Upstream | Repository | Stated / inferred license | HyBBX use |
 |----------|------------|---------------------------|-----------|
@@ -57,7 +57,7 @@ HyBBX **0.8.x** does **not** bundle ARDOPC. The `ardop` plugin is a **clean-room
 
 | Model | When | License impact |
 |-------|------|----------------|
-| **A — External ARDOPC** (current 0.8.x) | Modem runs as separate process | HyBBX plugin stays GPL-3.0; no ARDOP source in HyBBX tree; operator supplies ARDOPC under its own terms |
+| **A — External ARDOPC** (current) | Modem runs as separate process | HyBBX `ardop` plugin GPL-3.0; no ARDOP source in HyBBX tree |
 | **B — External CRDOPC** | [ngteq/CRDOP](https://github.com/ngteq/CRDOP) 1.0.0 | CRDOPC **MIT**; HyBBX plugin GPL-3.0; no linking |
 | **C — External CRDOPC from g8bpq fork** | GPL ARDOPC lineage | CRDOPC as **GPL-3.0** standalone; HyBBX plugin unchanged |
 | **D — Clean-room CRDOPC** | New external modem + HyBBX host client | HyBBX GPL for plugin; CRDOPC licensed separately |

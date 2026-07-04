@@ -1,4 +1,4 @@
-; HyBBX Main instance configuration — version target: 0.8.0
+; HyBBX Main instance configuration — version target: 0.9.0 (testing release; feature freeze until v1.0.0)
 ; Multi-transport session daemon for bandwidth-constrained networks.
 ; Default profile: datacenter Main — TCP/IP on this host only.
 ;

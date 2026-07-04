@@ -1,6 +1,6 @@
 # HyBBX feature list
 
-**Version:** 0.8.0 · Config: `share/hybbx.ini.example` · Operator: [MANUAL.md](MANUAL.md) · Plan: [ROADMAP.md](ROADMAP.md)
+**Version:** 0.9.0 (testing release; feature freeze until v1.0.0) · Config: `share/hybbx.ini.example` · Operator: [MANUAL.md](MANUAL.md) · Plan: [ROADMAP.md](ROADMAP.md)
 
 C99 multi-transport session daemon: mail, chat, `/` commands over **plugin-only** host-client bridges (telnet, packet radio, ARDOP, CRDOP). **Standard:** all modems/TNCs/sound-card services stay **external**; HyBBX never runs modem DSP. Anything else is a different project.
 
@@ -72,8 +72,8 @@ C99 multi-transport session daemon: mail, chat, `/` commands over **plugin-only*
 | Auto-generated link codes | Done | Issued on successful Secondary→Main `LINK_AUTH` |
 | Telnet dual-stack bind | Done | `ipv4`/`ipv6` toggles; `bind` / `bind6`; `IPV6_V6ONLY` |
 | Packet radio | Done | AX.25 link adapter; `[networks] ax25 = yes` + `[transport.packet_radio]` |
-| ARDOP host client | Partial | `[networks] ardop` + `[transport.ardopN]` → external ARDOPC/ardopcf; **not RF-tested pre–v1.0.0** |
-| CRDOP host client | Partial | `[networks] crdop` + `[transport.crdopN]` → external CRDOPC; **not RF-tested pre–v1.0.0** |
+| ARDOP host client | Partial | Standalone `plugins/ardop/` → external ARDOPC/ardopcf; **not RF-tested pre–v1.0.0** |
+| CRDOP host client | Partial | Standalone `plugins/crdop/` → external CRDOPC; **not RF-tested pre–v1.0.0** |
 | SSH | After v1.0.0 | Same session core as telnet |
 | WebSocket | After v1.0.0 | Local endpoint behind reverse-proxy only |
 
@@ -81,7 +81,7 @@ C99 multi-transport session daemon: mail, chat, `/` commands over **plugin-only*
 
 ## Packet radio & AX.25
 
-**Verification:** code complete for 0.8.x; automated **AX.25 RF integration tests** planned **after v1.0.0** (first post-release push). See [ROADMAP.md](ROADMAP.md#verification).
+**Verification:** v0.9.x testing release — operator validation before v1.0.0; automated **AX.25 RF integration tests** planned **after v1.0.0**. See [ROADMAP.md](ROADMAP.md#verification).
 
 | Feature | Status | Description |
 |---------|--------|-------------|
@@ -226,11 +226,12 @@ C99 multi-transport session daemon: mail, chat, `/` commands over **plugin-only*
 | Dev helper script | Done | `scripts/hybbx.sh` → `local/hybbx.ini` |
 | Optional OpenSSL | Done | `-DHYBBX_CRYPTO_OPENSSL=ON` |
 | Optional libsodium | Done | `-DHYBBX_CRYPTO_LIBSODIUM=ON` |
-| Plugin build toggles | Done | Telnet / packet_radio / ardop / crdop on by default |
+| Plugin build toggles | Done | Telnet / packet_radio / ardop / crdop on by default (each plugin is a standalone source tree) |
+| ARDOP/CRDOP local host-TCP tests | Done | `scripts/test-ardop-plugin.sh`, `scripts/test-crdop-plugin.sh` + `mock-ardopc.py` (not CI; not RF) |
+| v0.9.0 testing release | Done | Feature freeze until v1.0.0 — fixes and validation only |
 | `hybbx_result_name()` | Done | Short `hybbx_result_t` name for logs/tests ([util.h](include/hybbx/util.h)) |
 | Unit tests (`HYBBX_BUILD_TESTS`) | Done | `tests/test_util.c` — boolean parser + result names; CI on push/PR |
 | Integration tests (AX.25 / ARDOP / CRDOP) | **Not yet** | No RF or live-modem CI before **v1.0.0**; CRDOPC [1.0.0](https://github.com/ngteq/CRDOP) |
-| ARDOP/CRDOP mock smoke scripts | Done | `scripts/test-ardop-plugin.sh`, `scripts/test-crdop-plugin.sh` (local mock ARDOPC; not CI) |
 | `scripts/dev-setup.sh` | Done | Configure, build, `compile_commands.json` symlink |
 | GPL-3.0 license | Done | See `LICENSE.txt`; [LICENSING.md](LICENSING.md) (ARDOP/CRDOP third-party) |
 | GitHub CI | Done | `.github/workflows/ci.yml` — build + tests on push/PR |
@@ -255,4 +256,4 @@ See [ROADMAP.md](ROADMAP.md). Summary:
 
 ---
 
-*Last aligned with codebase: HyBBX 0.8.0.*
+*Last aligned with codebase: HyBBX 0.9.0.*

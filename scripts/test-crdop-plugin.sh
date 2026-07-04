@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Smoke test: mock ARDOPC + HyBBX crdop plugin (CB defaults, no Main circuit required).
+# Local test: mock CRDOPC + HyBBX crdop plugin (CB defaults, no Main circuit required).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD="${ROOT}/build"
@@ -93,5 +93,5 @@ grep -q 'profile=cb' "${LOG}" || {
     exit 1
 }
 
-echo "OK: crdop plugin smoke test passed"
+echo "OK: crdop plugin local test passed"
 grep '\[crdop\]' "${LOG}"

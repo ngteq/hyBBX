@@ -2,6 +2,8 @@
 ###### telnet un1t.me:2323 for auto-guest login full-serviced HyBBX.<br>
 C99 **multi-transport session daemon** for bandwidth-constrained networks. One session core (mail, chat, `/` commands) over **plugin-only** link adapters (host-client bridges). Modems, TNCs, and sound-card software are **always external** — not part of HyBBX.
 
+**v0.9.0** is the first **testing release** before **v1.0.0** — feature freeze; validation only until the public release.
+
 **Default architecture:** telnet plugin, `packet_radio` → serial TNC, **`ardop`** → ARDOP (ARDOPC/ardopcf), **`crdop`** → CRDOP (CRDOPC). Both use the same host-TCP bridge model; modem DSP stays external.
 
 **Main** hosts users, storage, telnet :2323, HBX hub :7323. **Secondary** nodes attach local TNC/RF and bridge to Main. Same `hybbx` binary; role from INI. Default traffic: 2400 baud pacing, 80-column ASCII.
@@ -12,7 +14,7 @@ C99 **multi-transport session daemon** for bandwidth-constrained networks. One s
 | Secondary | `ax25=yes`, `circuit=no` | RF edge → `circuit_host` |
 | Standalone Main | `ax25=yes` locally | Single-box; no Secondary |
 
-Config: [`share/hybbx.ini.example`](share/hybbx.ini.example) · [`share/hybbx-secondary.ini.example`](share/hybbx-secondary.ini.example) · **0.8.0**
+Config: [`share/hybbx.ini.example`](share/hybbx.ini.example) · [`share/hybbx-secondary.ini.example`](share/hybbx-secondary.ini.example) · **0.9.0** (testing release before v1.0.0)
 
 ## Build
 
