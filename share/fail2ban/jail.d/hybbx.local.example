@@ -24,11 +24,11 @@ maxretry = 5
 findtime = 600
 bantime = 3600
 
-# SSH and WebSocket transports are planned after v1.0.0 — enable when built.
+# SSH transport — enable when [networks] ssh=yes and plugin is built (libssh).
 [hybbx-ssh]
 enabled = false
 filter = hybbx-ssh
-port = 2222
+port = 3232
 logpath = /usr/local/hybbx/logs/security.log
 maxretry = 5
 findtime = 600

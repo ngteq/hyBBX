@@ -29,7 +29,7 @@ if(NOT DEFINED ENV{CC} AND NOT CMAKE_C_COMPILER)
 endif()
 
 project(HyBBX
-    VERSION 1.0.0
+    VERSION 1.0.1
     DESCRIPTION "C99 transport service: centralized daemon + link/repeater edge"
     LANGUAGES C
 )
@@ -54,6 +54,7 @@ option(HYBBX_PLUGIN_TELNET      "Build TCP/IP telnet transport"     ON)
 option(HYBBX_PLUGIN_PACKET_RADIO "Build packet radio transport"     ON)
 option(HYBBX_PLUGIN_ARDOP       "Build ARDOP host-client transport"  ON)
 option(HYBBX_PLUGIN_CRDOP       "Build CRDOP CB host-client transport" ON)
+option(HYBBX_PLUGIN_SSH         "Build SSH transport (requires libssh)" ON)
 option(HYBBX_BUILD_TESTS        "Build unit tests"                  OFF)
 option(HYBBX_HARDENING          "Enable compiler security hardening" ON)
 option(HYBBX_WARNINGS_AS_ERRORS "Treat warnings as errors"           OFF)
@@ -69,6 +70,21 @@ if(HYBBX_CLIENTS_ONLY)
     set(HYBBX_BUILD_DAEMON OFF CACHE BOOL "Clients-only build" FORCE)
     set(HYBBX_BUILD_PLUGINS OFF CACHE BOOL "Clients-only build" FORCE)
     set(HYBBX_BUILD_CLIENTS ON CACHE BOOL "Clients-only build" FORCE)
+endif()
+
+set(HYBBX_HAVE_LIBSSH FALSE)
+if(HYBBX_PLUGIN_SSH)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(LIBSSH QUIET libssh)
+    endif()
+    if(LIBSSH_FOUND)
+        set(HYBBX_HAVE_LIBSSH TRUE)
+        message(STATUS "HyBBX: libssh ${LIBSSH_VERSION} — SSH transport enabled")
+    else()
+        message(WARNING "HYBBX_PLUGIN_SSH=ON but libssh was not found — SSH plugin disabled")
+        set(HYBBX_PLUGIN_SSH OFF CACHE BOOL "libssh not found" FORCE)
+    endif()
 endif()
 
 if(NOT HYBBX_BUILD_DAEMON)

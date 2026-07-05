@@ -12,7 +12,6 @@
 | `link_role` routing | Metadata today; semantics later |
 | Circuit reconnect / heartbeat | Planned |
 | TCP `/broadcast` fan-out | Stub today |
-| SSH transport | Same session core as telnet |
 | WebSocket transport | Behind reverse proxy |
 
 ## Later

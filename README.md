@@ -2,7 +2,7 @@
 
 C99 **session daemon** for low-bandwidth links: mail, chat, and `/` commands over line-oriented transports.
 
-**v1.0.0** — first official release. Scope: **telnet sessions** on Main (tested in operation). AX.25 and RF bridges are built in but **not yet verified in live service** — local tests only. Details: [docs/RELEASE-1.0.0.md](docs/RELEASE-1.0.0.md).
+**v1.0.1** — telnet-session release (v1.0.0) plus SSH transport (libssh). See [docs/RELEASE-1.0.1.md](docs/RELEASE-1.0.1.md).
 
 Live demo: `telnet un1t.me 2323` (guest auto-login).
 

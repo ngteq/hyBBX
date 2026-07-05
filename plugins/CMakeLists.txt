@@ -13,3 +13,7 @@ endif()
 if(HYBBX_PLUGIN_CRDOP)
     add_subdirectory(crdop)
 endif()
+
+if(HYBBX_PLUGIN_SSH AND HYBBX_HAVE_LIBSSH)
+    add_subdirectory(ssh)
+endif()

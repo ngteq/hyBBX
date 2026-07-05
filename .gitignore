@@ -5,6 +5,7 @@ out/
 logs/
 data/
 local/data/
+local/keys/
 cmake-build-*/
 
 # IDE

@@ -46,6 +46,7 @@ void hybbx_networks_config_defaults(hybbx_networks_config_t *networks)
     networks->ax25 = 0;
     networks->ardop = 0;
     networks->crdop = 0;
+    networks->ssh = 0;
     networks->websocket = 0;
     networks->circuit = 1;
 }
@@ -81,6 +82,8 @@ void hybbx_networks_config_apply(hybbx_networks_config_t *networks,
         networks->crdop = hybbx_config_get_bool(config, "networks", "crdop", 0);
     }
 
+    networks->ssh = hybbx_config_get_bool(config, "networks", "ssh", 0);
+
     networks->websocket = hybbx_config_get_bool(config, "networks",
                                                 "websocket", 0);
 
@@ -92,7 +95,8 @@ void hybbx_networks_config_apply(hybbx_networks_config_t *networks,
                                                   1);
     }
 
-    printf("[networks] telnet=static ax25=%s ardop=%s crdop=%s websocket=%s circuit=%s\n",
+    printf("[networks] telnet=static ssh=%s ax25=%s ardop=%s crdop=%s websocket=%s circuit=%s\n",
+           hybbx_bool_to_string(networks->ssh),
            hybbx_bool_to_string(networks->ax25),
            hybbx_bool_to_string(networks->ardop),
            hybbx_bool_to_string(networks->crdop),
@@ -134,6 +138,10 @@ int hybbx_networks_transport_wanted(const char *plugin_name,
 
     if (str_ieq(plugin_name, "crdop")) {
         return networks->crdop;
+    }
+
+    if (str_ieq(plugin_name, "ssh")) {
+        return networks->ssh;
     }
 
     if (str_ieq(plugin_name, "websocket")) {

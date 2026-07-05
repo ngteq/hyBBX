@@ -1,6 +1,6 @@
 # Feature status
 
-**Version:** 1.0.0 · Release: [RELEASE-1.0.0.md](RELEASE-1.0.0.md) · INI: [MANUAL.md](MANUAL.md)
+**Version:** 1.0.1 · Releases: [RELEASE-1.0.1.md](RELEASE-1.0.1.md), [RELEASE-1.0.0.md](RELEASE-1.0.0.md) · INI: [MANUAL.md](MANUAL.md)
 
 | Status | Meaning |
 |--------|---------|
@@ -28,8 +28,9 @@
 | ARDOP plugin | **Built** | External ARDOPC; local host-TCP script |
 | CRDOP plugin | **Built** | External CRDOPC; local host-TCP script |
 | TCP `/broadcast` | Partial | Log stub only |
+| SSH transport | Built | libssh; `[networks] ssh=yes` |
 | SQL storage | Planned | Post–v1.0.0 |
-| SSH / WebSocket | Planned | Post–v1.0.0 |
+| WebSocket | Planned | Post–v1.0.0 |
 
 ---
 
@@ -66,6 +67,7 @@
 | Plugin | Status | External |
 |--------|--------|----------|
 | telnet | **Verified** | — |
+| ssh | **Built** | libssh; transport-only wire auth |
 | packet_radio | Built | TNC serial/KISS |
 | ardop | Built | ARDOPC / ardopcf — [ARDOP.md](ARDOP.md) |
 | crdop | Built | CRDOPC — [CRDOP.md](CRDOP.md) |
@@ -82,4 +84,4 @@ Clients: `hybbx-telnet`, `hybbx-terminal` — [CLIENTS.md](CLIENTS.md).
 | Unit tests (`HYBBX_BUILD_TESTS`) | Built; CI |
 | GitHub Actions build+test | Verified |
 
-*Aligned with HyBBX 1.0.0.*
+*Aligned with HyBBX 1.0.1.*

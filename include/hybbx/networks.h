@@ -12,8 +12,7 @@ extern "C" {
  * Connection / link adapter switches from INI `[networks]`.
  *
  * Telnet is the static-enabled core IP session transport (always on when built).
- * AX.25, WebSocket, and other optional adapters are toggled here; SSH and
- * WebSocket transports are planned after v1.0.0 — see docs/ROADMAP.md.
+ * SSH, AX.25, WebSocket, and other optional adapters are toggled in `[networks]`.
  */
 typedef struct hybbx_networks_config {
     /** AX.25 / packet radio link adapter (`transport.packet_radio`). */
@@ -22,7 +21,9 @@ typedef struct hybbx_networks_config {
     int ardop;
     /** CRDOP CB host-client (`transport.crdop`) — external CRDOPC (github.com/ngteq/CRDOP). */
     int crdop;
-    /** WebSocket transport (after v1.0.0). */
+    /** SSH transport (`transport.ssh`) — libssh server on port 3232. */
+    int ssh;
+    /** WebSocket transport (planned). */
     int websocket;
     /** Internal HBX circuit hub for edge link/repeater daemons. */
     int circuit;

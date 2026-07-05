@@ -1,6 +1,6 @@
 # Operator manual
 
-**v1.0.0** — telnet on Main is the verified path. Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example` (short comments; detail here).
+**v1.0.1** — telnet verified (v1.0.0); SSH transport added (libssh). Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example` (short comments; detail here).
 
 Booleans: `yes`/`no` (+ `true`/`false`, `on`/`off`, `1`/`0`).
 
@@ -122,7 +122,8 @@ Tokens: `@version@`, `@service@`, `@username@` in banner/motd.
 | `ax25` | `no` | Packet radio plugin |
 | `ardop` | `no` | ARDOP host client |
 | `crdop` | `no` | CRDOP host client |
-| `websocket` | `no` | Planned post–v1.0.0 |
+| `ssh` | `no` | SSH plugin (libssh, port 3232) |
+| `websocket` | `no` | Planned |
 | `circuit` | `yes` | HBX hub (Main) |
 
 Telnet is always started when built (not gated here).
@@ -134,6 +135,23 @@ Telnet is always started when built (not gated here).
 | `bind` / `bind6` | `0.0.0.0` / `::` | Listen addresses |
 | `port` | `2323` | |
 | `ipv4` / `ipv6` | `yes` | Dual-stack toggles |
+
+### `[transport.ssh]` (requires libssh at build time)
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `enabled` | `yes` | Gated by `[networks] ssh=yes` |
+| `bind` / `bind6` | `0.0.0.0` / `::` | Listen addresses |
+| `port` | `3232` | |
+| `ipv4` / `ipv6` | `yes` | Dual-stack toggles |
+| `hostkey_dir` | `keys` | Ed25519 host key directory (auto-generated) |
+
+SSH username and password are **not** HyBBX accounts — they only satisfy the
+SSH client handshake. After connect, behaviour matches telnet: `[auth] auto_login`
+assigns a guest, otherwise the session shows the registered `/login` prompt.
+Use `/login <user> <pass>` for HyBBX authentication.
+
+See `share/THIRD_PARTY_NOTICES.txt` (libssh LGPL).
 
 ### `[circuit]` (Main)
 

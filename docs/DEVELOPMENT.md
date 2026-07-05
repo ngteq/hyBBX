@@ -13,7 +13,7 @@ CMake 3.16+, GCC or Clang, pthread.
 ## Architecture
 
 ```
-Session core ←→ telnet | HBX circuit ←→ packet_radio | ardop | crdop
+Session core ←→ telnet | ssh | HBX circuit ←→ packet_radio | ardop | crdop
 ```
 
 - No wire-protocol parsing in `src/core/`

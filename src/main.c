@@ -33,6 +33,9 @@ extern const hybbx_transport_plugin_t hybbx_plugin_ardop;
 #ifdef HYBBX_HAVE_PLUGIN_CRDOP
 extern const hybbx_transport_plugin_t hybbx_plugin_crdop;
 #endif
+#ifdef HYBBX_HAVE_PLUGIN_SSH
+extern const hybbx_transport_plugin_t hybbx_plugin_ssh;
+#endif
 
 static void register_builtin_plugins(void)
 {
@@ -47,6 +50,9 @@ static void register_builtin_plugins(void)
 #endif
 #ifdef HYBBX_HAVE_PLUGIN_CRDOP
     hybbx_registry_register(&hybbx_plugin_crdop);
+#endif
+#ifdef HYBBX_HAVE_PLUGIN_SSH
+    hybbx_registry_register(&hybbx_plugin_ssh);
 #endif
 }
 

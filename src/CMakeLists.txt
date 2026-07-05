@@ -114,6 +114,10 @@ if(HYBBX_BUILD_DAEMON)
         FILES_MATCHING PATTERN "*.txt"
     )
 
+    install(FILES ${CMAKE_SOURCE_DIR}/share/THIRD_PARTY_NOTICES.txt
+        DESTINATION ${HYBBX_INSTALL_HOME}
+    )
+
     install(FILES ${CMAKE_SOURCE_DIR}/share/data.gitkeep
         DESTINATION ${HYBBX_INSTALL_HOME}/data
         RENAME .gitkeep

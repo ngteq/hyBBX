@@ -1,6 +1,6 @@
 # HyBBX — agent guide
 
-Humans: [CONTRIBUTING.md](CONTRIBUTING.md). **v1.0.0** telnet-session release — see [docs/RELEASE-1.0.0.md](docs/RELEASE-1.0.0.md).
+Humans: [CONTRIBUTING.md](CONTRIBUTING.md). **v1.0.1** — SSH transport + v1.0.0 telnet release — see [docs/RELEASE-1.0.1.md](docs/RELEASE-1.0.1.md).
 
 ## Product
 
@@ -24,6 +24,7 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 
 | File | Use |
 |------|-----|
+| [RELEASE-1.0.1.md](docs/RELEASE-1.0.1.md) | v1.0.1 SSH transport |
 | [RELEASE-1.0.0.md](docs/RELEASE-1.0.0.md) | v1.0.0 scope and verification |
 | [FEATURES.md](docs/FEATURES.md) | Shipped vs partial |
 | [MANUAL.md](docs/MANUAL.md) | INI + commands |

@@ -1,0 +1,22 @@
+HyBBX third-party notices
+=========================
+
+libssh
+------
+
+The SSH transport plugin (`plugins/ssh/`) uses libssh for the SSHv2 server
+protocol.
+
+  Project:  https://www.libssh.org/
+  License:  GNU Lesser General Public License v2.1 or later (LGPL-2.1+)
+
+HyBBX links against the shared libssh library (`libssh.so`) at build and
+runtime. HyBBX source code does not incorporate libssh source.
+
+Under the LGPL you may replace the libssh shared library with a compatible
+version without rebuilding HyBBX. Corresponding source code for the libssh
+version you use is available from the libssh project and your OS distributor.
+
+  SPDX-License-Identifier: LGPL-2.1-or-later
+
+See also LICENSE.txt for HyBBX (GPL-3.0).
