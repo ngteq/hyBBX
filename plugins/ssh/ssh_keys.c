@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 static hybbx_result_t mkdir_keys_dir(const char *keys_dir)
@@ -67,6 +68,25 @@ static hybbx_result_t generate_ed25519_keypair(const char *priv_path,
     return HYBBX_OK;
 }
 
+static int hostkey_needs_rotation(const char *priv_path)
+{
+    struct stat st;
+    time_t now;
+    time_t age;
+
+    if (stat(priv_path, &st) != 0) {
+        return 0;
+    }
+
+    now = time(NULL);
+    if (now <= st.st_mtime) {
+        return 0;
+    }
+
+    age = now - st.st_mtime;
+    return age > (time_t)HYBBX_SSH_HOSTKEY_VALID_DAYS * 86400L;
+}
+
 hybbx_result_t hybbx_ssh_keys_ensure(const char *keys_dir,
                                      char *hostkey_path,
                                      size_t hostkey_path_len)
@@ -103,13 +123,22 @@ hybbx_result_t hybbx_ssh_keys_ensure(const char *keys_dir,
         return HYBBX_ERR_IO;
     }
 
+    if (stat(priv_path, &st) == 0 && hostkey_needs_rotation(priv_path)) {
+        fprintf(stderr,
+                "[ssh] host key older than %u days — rotating %s\n",
+                HYBBX_SSH_HOSTKEY_VALID_DAYS, priv_path);
+        (void)unlink(priv_path);
+        (void)unlink(pub_path);
+    }
+
     if (stat(priv_path, &st) != 0) {
         if (generate_ed25519_keypair(priv_path, pub_path) != HYBBX_OK) {
             fprintf(stderr, "[ssh] failed to generate host key in %s\n",
                     resolved_dir);
             return HYBBX_ERR_IO;
         }
-        printf("[ssh] generated host key %s\n", priv_path);
+        printf("[ssh] generated host key %s (valid %u days)\n", priv_path,
+               HYBBX_SSH_HOSTKEY_VALID_DAYS);
     }
 
     hybbx_strlcpy(hostkey_path, priv_path, hostkey_path_len);

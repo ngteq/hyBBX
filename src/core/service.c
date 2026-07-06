@@ -975,6 +975,12 @@ typedef struct apply_transport_ctx {
     hybbx_result_t last_error;
 } apply_transport_ctx_t;
 
+static int transport_start_failure_is_fatal(const char *plugin_name)
+{
+    /* Telnet is the primary session transport; others may fail independently. */
+    return plugin_name != NULL && strcmp(plugin_name, "telnet") == 0;
+}
+
 static void apply_transport_cb(const hybbx_transport_plugin_t *plugin,
                                void *userdata)
 {
@@ -1007,7 +1013,11 @@ static void apply_transport_cb(const hybbx_transport_plugin_t *plugin,
 
     rc = hybbx_service_load_transport(ctx->service, plugin->name);
     if (rc != HYBBX_OK) {
-        ctx->last_error = rc;
+        fprintf(stderr, "[service] %s: plugin load failed (%s)\n",
+                plugin->name, hybbx_result_name(rc));
+        if (transport_start_failure_is_fatal(plugin->name)) {
+            ctx->last_error = rc;
+        }
         return;
     }
 
@@ -1017,7 +1027,11 @@ static void apply_transport_cb(const hybbx_transport_plugin_t *plugin,
     free(transport_config);
 
     if (rc != HYBBX_OK) {
-        ctx->last_error = rc;
+        fprintf(stderr, "[service] %s: start failed (%s)\n", plugin->name,
+                hybbx_result_name(rc));
+        if (transport_start_failure_is_fatal(plugin->name)) {
+            ctx->last_error = rc;
+        }
     }
 }
 

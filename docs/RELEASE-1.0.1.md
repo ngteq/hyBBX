@@ -10,7 +10,7 @@ Adds the **SSH transport** (`[networks] ssh=yes`, `[transport.ssh]`, port **3232
 | Session auth over SSH | Same as telnet — `[auth]` in `hybbx.ini` only |
 | Host keys | Auto-generated Ed25519 under `hostkey_dir` (default `keys/`) |
 | fail2ban | `hybbx-ssh` filter/jail examples (port 3232) |
-| WebSocket transport | **Built** — RFC6455 forward-proxy on `:591` |
+| WebSocket transport | **Built** — RFC6455 forward-proxy on `:4591` |
 | PHP / proxy examples | `share/web/`, `share/nginx/`, `share/apache2/`, `share/lighttpd/` |
 
 SSH username/password complete the wire handshake only; HyBBX guest auto-login or `/login` follows INI settings.

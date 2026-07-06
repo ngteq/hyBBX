@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 /** Default WebSocket listen port (behind TLS reverse proxy). */
-#define HYBBX_WEBSOCKET_DEFAULT_PORT 591u
+#define HYBBX_WEBSOCKET_DEFAULT_PORT 4591u
 
 #define HYBBX_WEBSOCKET_BIND_V4_MAX 64
 #define HYBBX_WEBSOCKET_BIND_V6_MAX 64

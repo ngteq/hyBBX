@@ -38,7 +38,7 @@ bantime = 3600
 [hybbx-websocket]
 enabled = false
 filter = hybbx-websocket
-port = 591
+port = 4591
 logpath = /usr/local/hybbx/logs/security.log
 maxretry = 5
 findtime = 600

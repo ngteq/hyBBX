@@ -21,6 +21,9 @@ extern "C" {
 
 #define HYBBX_SSH_HOSTKEY_ED25519 "ssh_host_ed25519_key"
 
+/** Regenerate Ed25519 host keys when older than this (days). */
+#define HYBBX_SSH_HOSTKEY_VALID_DAYS 1825u
+
 typedef struct hybbx_ssh_config {
     char bind_v4[HYBBX_SSH_BIND_V4_MAX];
     char bind_v6[HYBBX_SSH_BIND_V6_MAX];

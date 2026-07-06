@@ -9,7 +9,7 @@ session core. HyBBX login follows `hybbx.ini` (`[auth] auto_login` or
 ## Topology
 
 ```
-Browser  --wss-->  nginx/Apache/lighttpd  --ws/wss-->  hybbx :591/hybbx  -->  session core
+Browser  --wss-->  nginx/Apache/lighttpd  --ws/wss-->  hybbx :4591/hybbx  -->  session core
 ```
 
 HyBBX binds **loopback** by default (`127.0.0.1` / `::1`). Public HTTP/HTTPS
@@ -18,7 +18,7 @@ the WebSocket upgrade to HyBBX.
 
 When the build links **OpenSSL**, HyBBX creates a self-signed certificate on
 first start (`keys/hybbx_ws.crt` + `hybbx_ws.key`) and listens with **wss**
-on port 591. Without OpenSSL, HyBBX serves plain **ws** on the same port.
+on port 4591. Without OpenSSL, HyBBX serves plain **ws** on the same port.
 
 ## INI
 
@@ -30,7 +30,7 @@ websocket = yes
 enabled = yes
 bind = 127.0.0.1
 bind6 = ::1
-port = 591
+port = 4591
 path = /hybbx
 cert_dir = keys
 ipv4 = yes
@@ -39,7 +39,7 @@ ipv6 = yes
 
 | Key | Default | Notes |
 |-----|---------|-------|
-| `port` | `591` | Loopback listen port |
+| `port` | `4591` | Loopback listen port |
 | `path` | `/hybbx` | HTTP Upgrade URI path (must match proxy) |
 | `cert_dir` | `keys` | Self-signed TLS files when OpenSSL is available |
 
@@ -58,7 +58,7 @@ backend to what HyBBX prints at startup (`ws` or `wss`).
 
 ```nginx
 location /hybbx {
-    proxy_pass http://127.0.0.1:591;
+    proxy_pass http://127.0.0.1:4591;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
@@ -69,7 +69,7 @@ location /hybbx {
 ```
 
 Use `wss://` on the public vhost with your TLS certificate. When HyBBX uses
-local TLS, point `proxy_pass` at `https://127.0.0.1:591` and set
+local TLS, point `proxy_pass` at `https://127.0.0.1:4591` and set
 `proxy_ssl_verify off` for the self-signed cert.
 
 ## PHP frontend
