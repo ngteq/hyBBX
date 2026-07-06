@@ -8,6 +8,7 @@
 #include "hybbx/session.h"
 #include "hybbx/socket.h"
 #include "hybbx/ssh.h"
+#include "hybbx/traffic.h"
 #include "hybbx/util.h"
 
 #include <libssh/callbacks.h>
@@ -404,6 +405,19 @@ static void *ssh_client_thread(void *arg)
 
     if (remote[0] != '\0') {
         (void)hybbx_session_set_remote(client->hbx_session, remote);
+    }
+
+    /*
+     * Telnet clients echo locally when the server sends WONT ECHO; SSH PTY
+     * clients do not. Mirror telnet UX by enabling HyBBX input echo unless
+     * [traffic] input_echo=yes already turned it on.
+     */
+    {
+        const hybbx_traffic_config_t *traffic = hybbx_traffic_config_get();
+
+        if (traffic == NULL || !traffic->input_echo) {
+            (void)hybbx_session_set_input_echo(client->hbx_session, 1);
+        }
     }
 
     cctx.client = client;

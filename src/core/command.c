@@ -57,7 +57,9 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
                str_ieq(verb, "rules") || str_ieq(verb, "legal") ||
                str_ieq(verb, "login") || str_ieq(verb, "register") ||
                str_ieq(verb, "clear") || str_ieq(verb, "cls") ||
-               str_ieq(verb, "reset") || str_ieq(verb, "echo");
+               str_ieq(verb, "reset") || str_ieq(verb, "echo") ||
+               str_ieq(verb, "exit") || str_ieq(verb, "logout") ||
+               str_ieq(verb, "bye") || str_ieq(verb, "quit");
     }
 
     if (str_ieq(verb, "news") || str_ieq(verb, "motd") ||
