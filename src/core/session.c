@@ -75,7 +75,127 @@ typedef struct hybbx_session_core {
     int input_echo;
     int bandwidth_paused;
     int bandwidth_disconnect;
+    unsigned char esc_state;
+    char csi_buf[24];
+    size_t csi_len;
 } hybbx_session_core_t;
+
+#define SESSION_ESC_NONE 0u
+#define SESSION_ESC_ESC  1u
+#define SESSION_ESC_CSI  2u
+#define SESSION_ESC_SS3 3u
+
+#define SESSION_CSI_BUF_MAX 24u
+
+static hybbx_result_t session_handle_user_byte(hybbx_session_core_t *core,
+                                               unsigned char byte);
+
+static void session_escape_reset(hybbx_session_core_t *core)
+{
+    if (core == NULL) {
+        return;
+    }
+
+    core->esc_state = SESSION_ESC_NONE;
+    core->csi_len = 0;
+}
+
+static int session_csi_is_final(unsigned char ch)
+{
+    return ch >= 0x40u && ch <= 0x7eu;
+}
+
+static hybbx_result_t session_apply_csi(hybbx_session_core_t *core,
+                                        const char *params, char final_ch)
+{
+    if (core == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (final_ch == 'A' || final_ch == 'B' || final_ch == 'C' || final_ch == 'D') {
+        return HYBBX_OK;
+    }
+
+    if (final_ch == '~') {
+        if (strcmp(params, "3") == 0 && core->line_len > 0) {
+            return session_handle_user_byte(core, 127);
+        }
+        return HYBBX_OK;
+    }
+
+    if (final_ch == 'H' || final_ch == 'F' || final_ch == 'K' || final_ch == 'P') {
+        return HYBBX_OK;
+    }
+
+    return HYBBX_OK;
+}
+
+static int session_filter_escape_byte(hybbx_session_core_t *core, unsigned char byte)
+{
+    if (core == NULL) {
+        return 0;
+    }
+
+    if (core->esc_state == SESSION_ESC_NONE && byte == 0x9bu) {
+        core->esc_state = SESSION_ESC_CSI;
+        core->csi_len = 0;
+        return 1;
+    }
+
+    if (core->esc_state == SESSION_ESC_NONE && byte == 0x1bu) {
+        core->esc_state = SESSION_ESC_ESC;
+        return 1;
+    }
+
+    if (core->esc_state == SESSION_ESC_ESC) {
+        if (byte == '[') {
+            core->esc_state = SESSION_ESC_CSI;
+            core->csi_len = 0;
+            return 1;
+        }
+        if (byte == 'O') {
+            core->esc_state = SESSION_ESC_SS3;
+            return 1;
+        }
+
+        session_escape_reset(core);
+        return 0;
+    }
+
+    if (core->esc_state == SESSION_ESC_SS3) {
+        session_escape_reset(core);
+        return 1;
+    }
+
+    if (core->esc_state == SESSION_ESC_CSI) {
+        if (core->csi_len + 1 >= SESSION_CSI_BUF_MAX) {
+            session_escape_reset(core);
+            return 1;
+        }
+
+        core->csi_buf[core->csi_len++] = (char)byte;
+
+        if (session_csi_is_final(byte)) {
+            char final_ch = (char)byte;
+            char params[SESSION_CSI_BUF_MAX];
+
+            if (core->csi_len > 1) {
+                memcpy(params, core->csi_buf, core->csi_len - 1);
+                params[core->csi_len - 1] = '\0';
+            } else {
+                params[0] = '\0';
+            }
+
+            session_escape_reset(core);
+            (void)session_apply_csi(core, params, final_ch);
+            return 1;
+        }
+
+        return 1;
+    }
+
+    return 0;
+}
 
 static unsigned session_chat_message_max(const hybbx_session_core_t *core)
 {
@@ -886,7 +1006,13 @@ hybbx_result_t hybbx_session_handle_input(hybbx_session_t *session,
     }
 
     for (i = 0; i < len; i++) {
-        hybbx_result_t rc = session_handle_user_byte(core, data[i]);
+        hybbx_result_t rc;
+
+        if (session_filter_escape_byte(core, data[i])) {
+            continue;
+        }
+
+        rc = session_handle_user_byte(core, data[i]);
 
         if (rc == HYBBX_SESSION_END) {
             return HYBBX_SESSION_END;
