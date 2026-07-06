@@ -4,9 +4,9 @@
  *
  * Deploy with your TLS reverse proxy (see share/nginx/, share/apache2/,
  * share/lighttpd/ hybbx-websocket.conf.example).
- * Set the public wss:// URL below; HyBBX auth is via hybbx.ini on the daemon.
+ * Set $ws_url to your public endpoint, e.g. wss://host/hybbx-telnet
  */
-$ws_url = 'wss://example.com/hybbx';
+$ws_url = 'wss://example.com/hybbx-telnet';
 ?><!DOCTYPE html>
 <html lang="en">
 <head>

@@ -9,6 +9,7 @@
 #include "hybbx/session.h"
 #include "hybbx/socket.h"
 #include "hybbx/websocket.h"
+#include "hybbx/util.h"
 #include "ws_proto.h"
 #include "ws_tls.h"
 
@@ -456,10 +457,18 @@ static hybbx_result_t ws_plugin_start(const char *config)
     }
 
     if (hybbx_ws_tls_compiled()) {
-        hybbx_result_t tls_rc = hybbx_ws_tls_ensure_certs(g_config.cert_dir);
+        char cert_dir[HYBBX_PATH_MAX];
+        hybbx_result_t tls_rc;
+
+        if (hybbx_path_resolve(cert_dir, sizeof(cert_dir),
+                               g_config.cert_dir) != HYBBX_OK) {
+            hybbx_strlcpy(cert_dir, g_config.cert_dir, sizeof(cert_dir));
+        }
+
+        tls_rc = hybbx_ws_tls_ensure_certs(cert_dir);
 
         if (tls_rc == HYBBX_OK) {
-            tls_rc = hybbx_ws_tls_server_start(g_config.cert_dir);
+            tls_rc = hybbx_ws_tls_server_start(cert_dir);
         }
         if (tls_rc != HYBBX_OK) {
             fprintf(stderr,

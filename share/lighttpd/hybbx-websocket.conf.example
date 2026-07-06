@@ -1,24 +1,13 @@
-# HyBBX WebSocket — lighttpd 1.4 reverse proxy example.
-# Enable: server.modules += ( "mod_proxy" )
-# HyBBX listens on 127.0.0.1:4591 path /hybbx (see hybbx.ini).
-#
-# Public HTTPS terminates on lighttpd; only the WebSocket is proxied to HyBBX.
-#
-# Choose ONE backend:
-#   A) "proxy" => "http://127.0.0.1:4591"  — plain ws (no OpenSSL in HyBBX)
-#   B) "proxy" => "https://127.0.0.1:4591" — wss (HyBBX self-signed TLS)
+# HyBBX WebSocket — lighttpd 1.4 (mod_proxy). Install: ~/hybbx/  path /hybbx :4591
 
-$HTTP["url"] =~ "^/hybbx" {
+$HTTP["url"] =~ "^/hybbx-telnet" {
     proxy.server = ( "" => (
         "hybbx" => (
-            # --- A) plain ws backend ---
-            "host" => "127.0.0.1",
-            "port" => 4591
-
-            # --- B) wss backend (replace A with): ---
-            # "proxy"  => "https://127.0.0.1:4591",
-            # "upgrade" => "enable"
+            "proxy"  => "https://127.0.0.1:4591/hybbx",
+            "upgrade" => "enable"
         )
     ))
     proxy.header = ( "upgrade" => "enable" )
 }
+
+# Plain ws: "proxy" => "http://127.0.0.1:4591/hybbx"

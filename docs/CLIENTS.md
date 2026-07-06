@@ -34,4 +34,5 @@ Hub settings: [MANUAL.md — circuit](MANUAL.md#circuit-main).
 
 ## Web browser (WebSocket)
 
-PHP terminal: `share/web/hybbx-terminal.php` — connects via `wss://` through your reverse proxy to `[transport.websocket]`. See [WEBSOCKET.md](WEBSOCKET.md).
+PHP terminal: `share/web/hybbx-terminal.php` — `wss://host/hybbx-telnet` via nginx.
+See [WEBSOCKET.md](WEBSOCKET.md).

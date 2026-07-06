@@ -15,7 +15,8 @@ Adds the **SSH transport** (`[networks] ssh=yes`, `[transport.ssh]`, port **3232
 
 SSH username/password complete the wire handshake only; HyBBX guest auto-login or `/login` follows INI settings.
 
-WebSocket is forward-proxy only (no HyBBX auth on the wire); use TLS at the reverse proxy. See [WEBSOCKET.md](WEBSOCKET.md).
+WebSocket is forward-proxy only; use TLS at the reverse proxy. Compact setup:
+[WEBSOCKET.md](WEBSOCKET.md) (`~/hybbx/`, port 4591, nginx `/hybbx-telnet`).
 
 ## Build
 

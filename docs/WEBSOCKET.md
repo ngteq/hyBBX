@@ -1,24 +1,42 @@
 # WebSocket transport
 
-Browser and PHP frontends reach HyBBX through a **TLS reverse proxy**
-(nginx, Apache httpd, or lighttpd). The `websocket` plugin is a **forward
-proxy only** — it upgrades HTTP to WebSocket and relays raw bytes to the
-session core. HyBBX login follows `hybbx.ini` (`[auth] auto_login` or
-`/login`), same as telnet and SSH.
+Forward-proxy only — RFC6455 to the session core. HyBBX auth via `hybbx.ini`
+(same as telnet/SSH). Public TLS on nginx/Apache/lighttpd.
+
+## Install layout
+
+```
+~/hybbx/                    # HYBBX_ROOT — always start from here
+├── hybbx                   # binary
+├── hybbx-start             # cd $HYBBX_ROOT && exec hybbx -c hybbx.ini
+├── hybbx.ini
+├── keys/                   # cert_dir + SSH host keys
+│   ├── hybbx_ws.crt
+│   └── hybbx_ws.key
+├── data/  logs/  text/  web/
+└── nginx/  apache2/  lighttpd/   # proxy examples
+```
+
+```sh
+cd ~/hybbx && ./hybbx-start
+# or: HYBBX_ROOT=~/hybbx ~/hybbx/hybbx -c ~/hybbx/hybbx.ini
+```
+
+Relative INI paths (`keys`, `data`, `text`) resolve under `HYBBX_ROOT`
+(dirname of `hybbx.ini`).
 
 ## Topology
 
 ```
-Browser  --wss-->  nginx/Apache/lighttpd  --ws/wss-->  hybbx :4591/hybbx  -->  session core
+Browser  --wss://host/hybbx-telnet-->  nginx  --wss://127.0.0.1:4591/hybbx-->  hybbx
 ```
 
-HyBBX binds **loopback** by default (`127.0.0.1` / `::1`). Public HTTP/HTTPS
-and your site certificate live on the reverse proxy. The proxy forwards only
-the WebSocket upgrade to HyBBX.
+| Layer | Address |
+|-------|---------|
+| Public | `wss://your-host/hybbx-telnet` (your site cert) |
+| HyBBX | `127.0.0.1:4591` path `/hybbx` (loopback, self-signed `keys/hybbx_ws.*`) |
 
-When the build links **OpenSSL**, HyBBX creates a self-signed certificate on
-first start (`keys/hybbx_ws.crt` + `hybbx_ws.key`) and listens with **wss**
-on port 4591. Without OpenSSL, HyBBX serves plain **ws** on the same port.
+Check: `sockstat -4 -l | grep 4591` → `127.0.0.1:4591`
 
 ## INI
 
@@ -29,65 +47,52 @@ websocket = yes
 [transport.websocket]
 enabled = yes
 bind = 127.0.0.1
-bind6 = ::1
 port = 4591
 path = /hybbx
 cert_dir = keys
 ipv4 = yes
-ipv6 = yes
+ipv6 = no
 ```
 
-| Key | Default | Notes |
-|-----|---------|-------|
-| `port` | `4591` | Loopback listen port |
-| `path` | `/hybbx` | HTTP Upgrade URI path (must match proxy) |
-| `cert_dir` | `keys` | Self-signed TLS files when OpenSSL is available |
+OpenSSL build → auto-creates `keys/hybbx_ws.crt` + `.key` (5 years), listens **wss**.
+No OpenSSL → plain **ws** on the same port.
 
-## Reverse proxy examples
+## nginx (recommended)
 
-| Server | Example file |
-|--------|----------------|
-| nginx | `share/nginx/hybbx-websocket.conf.example` |
-| Apache 2 | `share/apache2/hybbx-websocket.conf.example` |
-| lighttpd | `share/lighttpd/hybbx-websocket.conf.example` |
-
-Each file documents **plain ws** and **wss** backend variants. Match the
-backend to what HyBBX prints at startup (`ws` or `wss`).
-
-### nginx (plain ws backend)
+Public path `/hybbx-telnet`, backend HyBBX path `/hybbx`:
 
 ```nginx
-location /hybbx {
-    proxy_pass http://127.0.0.1:4591;
+location /hybbx-telnet {
+    proxy_pass https://127.0.0.1:4591/hybbx;
+    proxy_ssl_verify off;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
 }
 ```
 
-Use `wss://` on the public vhost with your TLS certificate. When HyBBX uses
-local TLS, point `proxy_pass` at `https://127.0.0.1:4591` and set
-`proxy_ssl_verify off` for the self-signed cert.
+Alternative: set `path = /hybbx-telnet` in `hybbx.ini` and use
+`proxy_pass https://127.0.0.1:4591;` (no URI suffix).
 
-## PHP frontend
+Full examples: `share/nginx/`, `share/apache2/`, `share/lighttpd/`.
 
-Minimal terminal UI: `share/web/hybbx-terminal.php` + `hybbx-terminal.js`.
+## PHP terminal
 
-Set `$ws_url` in the PHP file to your public `wss://host/hybbx` endpoint.
+`share/web/hybbx-terminal.php` — set:
 
-## hybbx-telnet as CGI (optional)
+```php
+$ws_url = 'wss://your-host/hybbx-telnet';
+```
 
-For classic shared hosting without the WebSocket plugin, `share/cgi/hybbx-telnet.cgi.example`
-shows a server-side bridge using the **hybbx-telnet** client to localhost telnet.
-The WebSocket + reverse-proxy path is preferred (TLS at the edge, no long-lived CGI).
+## Test
 
-## Security
-
-- No HyBBX credentials on the WebSocket wire — only RFC6455 framing.
-- `/login` failures are logged to `security.log` (`transport=websocket`).
-- fail2ban: enable `[hybbx-websocket]` in `share/fail2ban/jail.d/hybbx.local.example`.
+```sh
+wscat -c wss://127.0.0.1:4591/hybbx --no-check          # direct
+wscat -c wss://your-host/hybbx-telnet --no-check      # via nginx
+```
 
 See [MANUAL.md](MANUAL.md#transportwebsocket) · [CLIENTS.md](CLIENTS.md)

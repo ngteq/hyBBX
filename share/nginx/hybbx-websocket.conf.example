@@ -1,13 +1,11 @@
-# HyBBX WebSocket — place inside your TLS server { } block.
-# HyBBX listens on 127.0.0.1:4591 path /hybbx (see hybbx.ini).
-#
-# Choose ONE backend block:
-#   A) plain ws  — HyBBX built without OpenSSL, or TLS init failed
-#   B) wss       — HyBBX with OpenSSL (self-signed cert in keys/)
+# HyBBX WebSocket — inside your public TLS server { } block.
+# Install: ~/hybbx/  —  HyBBX listens 127.0.0.1:4591 path /hybbx (hybbx.ini).
+# Certs: ~/hybbx/keys/hybbx_ws.crt (self-signed, loopback only).
 
-# --- A) plain ws backend (default when no OpenSSL) ---
-location /hybbx {
-    proxy_pass http://127.0.0.1:4591;
+# Public wss://host/hybbx-telnet  →  backend wss://127.0.0.1:4591/hybbx
+location /hybbx-telnet {
+    proxy_pass https://127.0.0.1:4591/hybbx;
+    proxy_ssl_verify off;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
@@ -18,16 +16,15 @@ location /hybbx {
     proxy_send_timeout 3600s;
 }
 
-# --- B) wss backend (HyBBX self-signed TLS on loopback) ---
-# location /hybbx {
+# Plain ws backend (no OpenSSL in HyBBX build):
+# location /hybbx-telnet {
+#     proxy_pass http://127.0.0.1:4591/hybbx;
+#     ...
+# }
+
+# Same public path as backend — set hybbx.ini path = /hybbx-telnet instead:
+# location /hybbx-telnet {
 #     proxy_pass https://127.0.0.1:4591;
 #     proxy_ssl_verify off;
-#     proxy_http_version 1.1;
-#     proxy_set_header Upgrade $http_upgrade;
-#     proxy_set_header Connection "upgrade";
-#     proxy_set_header Host $host;
-#     proxy_set_header X-Real-IP $remote_addr;
-#     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-#     proxy_read_timeout 3600s;
-#     proxy_send_timeout 3600s;
+#     ...
 # }

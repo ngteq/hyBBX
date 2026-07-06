@@ -158,19 +158,13 @@ See `share/THIRD_PARTY_NOTICES.txt` (libssh LGPL).
 | Key | Default | Description |
 |-----|---------|-------------|
 | `enabled` | `yes` | Gated by `[networks] websocket=yes` |
-| `bind` / `bind6` | `127.0.0.1` / `::1` | Loopback — use reverse proxy for public TLS |
-| `port` | `4591` | Loopback listen port (non-privileged) |
-| `path` | `/hybbx` | WebSocket Upgrade URI path |
-| `cert_dir` | `keys` | Self-signed TLS cert/key (when OpenSSL linked) |
+| `bind` / `bind6` | `127.0.0.1` / `::1` | Loopback — public TLS on reverse proxy |
+| `port` | `4591` | Loopback listen (`sockstat -4 -l \| grep 4591`) |
+| `path` | `/hybbx` | Upgrade URI on HyBBX (nginx may map `/hybbx-telnet` → this) |
+| `cert_dir` | `keys` | Under `HYBBX_ROOT`; `hybbx_ws.crt` + `.key` when OpenSSL linked |
 | `ipv4` / `ipv6` | `yes` | Dual-stack toggles |
 
-On first start with OpenSSL available, HyBBX creates `hybbx_ws.crt` and
-`hybbx_ws.key` in `cert_dir` (valid **5 years**) and listens with **wss**. Without OpenSSL the
-listener is plain **ws** only. Public HTTP/HTTPS stays on nginx, Apache, or
-lighttpd — see [WEBSOCKET.md](WEBSOCKET.md).
-
-Optional transports (SSH, WebSocket, RF plugins) start independently — a bind
-failure on one does not stop the others. Telnet failure still aborts startup.
+Start from install root (`hybbx-start` or `cd ~/hybbx`). See [WEBSOCKET.md](WEBSOCKET.md).
 
 ### `[circuit]` (Main)
 
