@@ -1,39 +1,29 @@
 # WebSocket transport
 
-HyBBX `websocket` plugin = **forward-proxy only** (bytes ↔ session core).
-Browser UI and public TLS live on **nginx / Apache / lighttpd**.
+HyBBX = forward-proxy on loopback. Browser UI + public TLS = reverse-proxy only.
 
-## Install layout
+## Operator steps
 
-```
-~/hybbx/                         HYBBX_ROOT
-├── hybbx / hybbx-start / hybbx.ini
-├── keys/                        hybbx_ws.* + SSH host keys
-├── hybbx-websocket/             HTTP UI only (reverse-proxy serves GET)
-│   ├── index.php
-│   └── hybbx-terminal.js
-└── reverse-proxy/               nginx / apache2 / lighttpd examples
-```
+1. Edit **`hybbx.ini`** `[transport.websocket]` (defaults below).
+2. **`cd ~/hybbx && ./hybbx-start`** — writes `hybbx-websocket/hybbx-ws.json`.
+3. Copy **`~/hybbx/reverse-proxy/nginx.conf.example`** (or apache2/lighttpd),
+   set `HYBBX_ROOT`, reload httpd.
 
-```sh
-cd ~/hybbx && ./hybbx-start
-sockstat -4 -l | grep 4591    # 127.0.0.1:4591
-```
+No PHP or JS edits.
 
-## Roles
-
-| Piece | Role |
-|-------|------|
-| `hybbx` `:4591` `/hybbx` | WebSocket forward-proxy (loopback, wss + self-signed `keys/`) |
-| `hybbx-websocket/` | Static/PHP terminal UI — **httpd fetches files here only** |
-| `/hybbx-websocket/ws` | Public WebSocket URL — **httpd forward-proxies to hybbx** |
+## Layout
 
 ```
-Browser  --GET-->  /hybbx-websocket/     -->  files in ~/hybbx/hybbx-websocket/
-Browser  --wss-->  /hybbx-websocket/ws   -->  wss://127.0.0.1:4591/hybbx  -->  hybbx
+~/hybbx/
+├── hybbx.ini
+├── hybbx-websocket/          httpd serves GET from here
+│   ├── index.php             reads hybbx-ws.json (auto)
+│   ├── hybbx-terminal.js
+│   └── hybbx-ws.json         generated on start
+└── reverse-proxy/            httpd snippets
 ```
 
-## INI
+## hybbx.ini
 
 ```ini
 [networks]
@@ -43,16 +33,24 @@ websocket = yes
 bind = 127.0.0.1
 port = 4591
 path = /hybbx
+public_prefix = /hybbx-websocket
 cert_dir = keys
 ipv4 = yes
 ipv6 = no
 ```
 
-## Reverse proxy
+| Key | Default | Role |
+|-----|---------|------|
+| `port` | `4591` | Loopback listen |
+| `path` | `/hybbx` | HyBBX upgrade path (proxy backend) |
+| `public_prefix` | `/hybbx-websocket` | Public UI path; WS = `{prefix}/ws` |
 
-Copy and edit `~/hybbx/reverse-proxy/*.conf.example` — set `HYBBX_ROOT`.
+## Reverse proxy (must match `public_prefix`)
 
-**nginx** (summary):
+| Public URL | httpd |
+|------------|-------|
+| `GET /hybbx-websocket/` | files from `$HYBBX_ROOT/hybbx-websocket/` |
+| `WS /hybbx-websocket/ws` | `https://127.0.0.1:4591` + `path` |
 
 ```nginx
 location = /hybbx-websocket/ws {
@@ -64,18 +62,11 @@ location = /hybbx-websocket/ws {
     proxy_read_timeout 3600s;
 }
 location /hybbx-websocket/ {
-    alias /home/hybbx/hybbx/hybbx-websocket/;
+    root /home/hybbx/hybbx;
     index index.php;
 }
 ```
 
-`index.php` sets `wss://<host>/hybbx-websocket/ws` automatically.
+If you change `public_prefix` in ini, use the same paths in httpd and restart hybbx.
 
-## Test
-
-```sh
-wscat -c wss://127.0.0.1:4591/hybbx --no-check
-wscat -c wss://your-host/hybbx-websocket/ws --no-check
-```
-
-See [MANUAL.md](MANUAL.md#transportwebsocket) · `share/reverse-proxy/`
+See `share/reverse-proxy/` · [MANUAL.md](MANUAL.md#transportwebsocket)

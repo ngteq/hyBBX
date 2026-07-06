@@ -1,7 +1,8 @@
 # HyBBX — nginx inside your public TLS server { } block.
 # HYBBX_ROOT=/home/hybbx/hybbx
 
-# 1) WebSocket forward-proxy → HyBBX daemon (no files from hybbx-websocket/)
+# 1) WebSocket forward-proxy — URI must match hybbx.ini public_prefix + "/ws"
+#    and proxy_pass path must match hybbx.ini [transport.websocket] path (/hybbx)
 location = /hybbx-websocket/ws {
     proxy_pass https://127.0.0.1:4591/hybbx;
     proxy_ssl_verify off;

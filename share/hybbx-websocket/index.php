@@ -1,12 +1,26 @@
 <?php
 /**
- * HyBBX browser terminal — static UI for reverse-proxy deployments.
- * WebSocket sessions use /hybbx-websocket/ws (proxied to hybbx :4591/hybbx).
- * See ../reverse-proxy/ for nginx, Apache, lighttpd examples.
+ * HyBBX browser terminal — reads hybbx-ws.json (written by hybbx on start).
+ * Configure [transport.websocket] in hybbx.ini only; set reverse-proxy to match.
  */
+$ws_path = null;
+$cfg_file = __DIR__ . '/hybbx-ws.json';
+
+if (is_readable($cfg_file)) {
+    $cfg = json_decode(file_get_contents($cfg_file), true);
+    if (is_array($cfg) && !empty($cfg['public_ws'])) {
+        $ws_path = $cfg['public_ws'];
+    }
+}
+
+if ($ws_path === null) {
+    $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+    $ws_path = ($base !== '' ? $base : '/hybbx-websocket') . '/ws';
+}
+
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'wss' : 'ws';
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-$ws_url = $scheme . '://' . $host . '/hybbx-websocket/ws';
+$ws_url = $scheme . '://' . $host . $ws_path;
 ?><!DOCTYPE html>
 <html lang="en">
 <head>

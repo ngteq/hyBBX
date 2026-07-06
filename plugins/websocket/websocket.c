@@ -456,6 +456,8 @@ static hybbx_result_t ws_plugin_start(const char *config)
         return HYBBX_ERR_IO;
     }
 
+    (void)hybbx_ws_publish_proxy_config(&g_config);
+
     if (hybbx_ws_tls_compiled()) {
         char cert_dir[HYBBX_PATH_MAX];
         hybbx_result_t tls_rc;

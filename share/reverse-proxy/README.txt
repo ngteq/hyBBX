@@ -1,7 +1,6 @@
-HyBBX reverse-proxy snippets — install with hybbx to ~/hybbx/reverse-proxy/
+HyBBX reverse-proxy — match paths to hybbx.ini [transport.websocket]:
+  public_prefix = /hybbx-websocket   →  UI at /hybbx-websocket/
+  public_prefix + /ws                →  proxy to 127.0.0.1:port + path
 
-Split roles:
-  hybbx-websocket/   HTTP only — browser UI (GET static/PHP from install tree)
-  /hybbx-websocket/ws   WebSocket only — forward-proxy to 127.0.0.1:4591/hybbx
-
-Set HYBBX_ROOT in the examples to your install path (e.g. /home/hybbx/hybbx).
+Edit hybbx.ini only, start hybbx (writes hybbx-websocket/hybbx-ws.json), then
+copy the snippet for your httpd and set HYBBX_ROOT.

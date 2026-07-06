@@ -160,8 +160,9 @@ See `share/THIRD_PARTY_NOTICES.txt` (libssh LGPL).
 | `enabled` | `yes` | Gated by `[networks] websocket=yes` |
 | `bind` / `bind6` | `127.0.0.1` / `::1` | Loopback — public TLS on reverse proxy |
 | `port` | `4591` | Loopback listen (`sockstat -4 -l \| grep 4591`) |
-| `path` | `/hybbx` | HyBBX upgrade path; public URL `/hybbx-websocket/ws` (see WEBSOCKET.md) |
-| `cert_dir` | `keys` | Under `HYBBX_ROOT`; `hybbx_ws.crt` + `.key` when OpenSSL linked |
+| `path` | `/hybbx` | HyBBX upgrade path (httpd proxies `{public_prefix}/ws` here) |
+| `public_prefix` | `/hybbx-websocket` | Public UI URL prefix; writes `hybbx-websocket/hybbx-ws.json` |
+| `cert_dir` | `keys` | Under `HYBBX_ROOT`; self-signed `hybbx_ws.*` when OpenSSL linked |
 | `ipv4` / `ipv6` | `yes` | Dual-stack toggles |
 
 Start from install root (`hybbx-start` or `cd ~/hybbx`). See [WEBSOCKET.md](WEBSOCKET.md).
