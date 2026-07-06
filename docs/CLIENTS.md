@@ -31,3 +31,7 @@ Env: `HYBBX_CIRCUIT_HOST`, `HYBBX_CIRCUIT_PORT`
 | RX | TERMINAL, AX25_UI, AX25 |
 
 Hub settings: [MANUAL.md — circuit](MANUAL.md#circuit-main).
+
+## Web browser (WebSocket)
+
+PHP terminal: `share/web/hybbx-terminal.php` — connects via `wss://` through your reverse proxy to `[transport.websocket]`. See [WEBSOCKET.md](WEBSOCKET.md).

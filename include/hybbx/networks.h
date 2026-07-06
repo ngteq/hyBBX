@@ -23,7 +23,7 @@ typedef struct hybbx_networks_config {
     int crdop;
     /** SSH transport (`transport.ssh`) — libssh server on port 3232. */
     int ssh;
-    /** WebSocket transport (planned). */
+    /** WebSocket forward-proxy (`transport.websocket`). */
     int websocket;
     /** Internal HBX circuit hub for edge link/repeater daemons. */
     int circuit;

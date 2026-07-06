@@ -34,10 +34,11 @@ maxretry = 5
 findtime = 600
 bantime = 3600
 
+# WebSocket transport — enable when [networks] websocket=yes.
 [hybbx-websocket]
 enabled = false
 filter = hybbx-websocket
-port = 8080
+port = 591
 logpath = /usr/local/hybbx/logs/security.log
 maxretry = 5
 findtime = 600

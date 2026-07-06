@@ -17,3 +17,7 @@ endif()
 if(HYBBX_PLUGIN_SSH AND HYBBX_HAVE_LIBSSH)
     add_subdirectory(ssh)
 endif()
+
+if(HYBBX_PLUGIN_WEBSOCKET)
+    add_subdirectory(websocket)
+endif()

@@ -30,6 +30,7 @@ typedef enum hybbx_transport_kind {
     HYBBX_TRANSPORT_ARDOP = 4,
     HYBBX_TRANSPORT_CRDOP = 5,
     HYBBX_TRANSPORT_SSH = 6,
+    HYBBX_TRANSPORT_WEBSOCKET = 7,
 } hybbx_transport_kind_t;
 
 #ifdef __cplusplus

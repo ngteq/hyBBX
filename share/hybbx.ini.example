@@ -79,6 +79,16 @@ ipv4 = yes
 ipv6 = yes
 hostkey_dir = keys
 
+[transport.websocket]
+enabled = yes
+bind = 127.0.0.1
+bind6 = ::1
+port = 591
+path = /hybbx
+cert_dir = keys
+ipv4 = yes
+ipv6 = yes
+
 [circuit]
 enabled = yes
 bind = 127.0.0.1

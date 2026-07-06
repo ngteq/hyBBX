@@ -29,8 +29,8 @@
 | CRDOP plugin | **Built** | External CRDOPC; local host-TCP script |
 | TCP `/broadcast` | Partial | Log stub only |
 | SSH transport | Built | libssh; `[networks] ssh=yes` |
+| WebSocket transport | Built | Forward-proxy; `[networks] websocket=yes` |
 | SQL storage | Planned | Post–v1.0.0 |
-| WebSocket | Planned | Post–v1.0.0 |
 
 ---
 
@@ -68,6 +68,7 @@
 |--------|--------|----------|
 | telnet | **Verified** | — |
 | ssh | **Built** | libssh; transport-only wire auth |
+| websocket | **Built** | RFC6455 forward-proxy |
 | packet_radio | Built | TNC serial/KISS |
 | ardop | Built | ARDOPC / ardopcf — [ARDOP.md](ARDOP.md) |
 | crdop | Built | CRDOPC — [CRDOP.md](CRDOP.md) |

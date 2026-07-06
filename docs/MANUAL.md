@@ -123,7 +123,7 @@ Tokens: `@version@`, `@service@`, `@username@` in banner/motd.
 | `ardop` | `no` | ARDOP host client |
 | `crdop` | `no` | CRDOP host client |
 | `ssh` | `no` | SSH plugin (libssh, port 3232) |
-| `websocket` | `no` | Planned |
+| `websocket` | `no` | WebSocket forward-proxy (port 591) |
 | `circuit` | `yes` | HBX hub (Main) |
 
 Telnet is always started when built (not gated here).
@@ -152,6 +152,22 @@ assigns a guest, otherwise the session shows the registered `/login` prompt.
 Use `/login <user> <pass>` for HyBBX authentication.
 
 See `share/THIRD_PARTY_NOTICES.txt` (libssh LGPL).
+
+### `[transport.websocket]`
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `enabled` | `yes` | Gated by `[networks] websocket=yes` |
+| `bind` / `bind6` | `127.0.0.1` / `::1` | Loopback — use reverse proxy for public TLS |
+| `port` | `591` | On Linux, ports below 1024 may need root or `cap_net_bind_service` |
+| `path` | `/hybbx` | WebSocket Upgrade URI path |
+| `cert_dir` | `keys` | Self-signed TLS cert/key (when OpenSSL linked) |
+| `ipv4` / `ipv6` | `yes` | Dual-stack toggles |
+
+On first start with OpenSSL available, HyBBX creates `hybbx_ws.crt` and
+`hybbx_ws.key` in `cert_dir` (valid **5 years**) and listens with **wss**. Without OpenSSL the
+listener is plain **ws** only. Public HTTP/HTTPS stays on nginx, Apache, or
+lighttpd — see [WEBSOCKET.md](WEBSOCKET.md).
 
 ### `[circuit]` (Main)
 

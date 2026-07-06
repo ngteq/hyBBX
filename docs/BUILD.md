@@ -22,6 +22,7 @@ Tests: `-DHYBBX_BUILD_TESTS=ON` → `ctest --test-dir build`
 | `HYBBX_PLUGIN_ARDOP` | ON | ARDOP plugin |
 | `HYBBX_PLUGIN_CRDOP` | ON | CRDOP plugin |
 | `HYBBX_PLUGIN_SSH` | ON | SSH (requires libssh) |
+| `HYBBX_PLUGIN_WEBSOCKET` | ON | WebSocket forward-proxy (port 591; OpenSSL → wss) |
 | `HYBBX_BUILD_TESTS` | OFF | Unit tests |
 | `HYBBX_HARDENING` | ON | Stack protector, RELRO/PIE |
 | `HYBBX_CRYPTO_OPENSSL` | OFF | Optional OpenSSL |

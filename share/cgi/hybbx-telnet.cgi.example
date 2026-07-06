@@ -1,0 +1,18 @@
+#!/bin/sh
+# Example CGI bridge: hybbx-telnet to local HyBBX (telnet transport).
+# Prefer WebSocket + reverse proxy when available — see docs/WEBSOCKET.md.
+#
+# Install: copy to cgi-bin, chmod +x, set HYBBX_TELNET and paths below.
+
+HYBBX_TELNET="${HYBBX_TELNET:-/usr/local/hybbx/hybbx-telnet}"
+HOST="${HYBBX_HOST:-127.0.0.1}"
+PORT="${HYBBX_PORT:-2323}"
+
+printf 'Content-Type: text/plain; charset=utf-8\r\n\r\n'
+
+if [ ! -x "$HYBBX_TELNET" ]; then
+    printf 'hybbx-telnet not found\n'
+    exit 1
+fi
+
+exec "$HYBBX_TELNET" -H "$HOST" -p "$PORT" --pace no

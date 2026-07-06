@@ -1,0 +1,26 @@
+# HyBBX WebSocket — Apache 2.4 reverse proxy example.
+# Enable: a2enmod proxy proxy_http proxy_wstunnel ssl
+# HyBBX listens on 127.0.0.1:591 path /hybbx (see hybbx.ini).
+#
+# Place inside your public HTTPS VirtualHost. Public TLS terminates here;
+# the proxy forwards only the WebSocket upgrade to HyBBX.
+#
+# Choose ONE backend variant:
+#   A) ws://127.0.0.1:591   — plain (no OpenSSL in HyBBX build)
+#   B) wss://127.0.0.1:591  — HyBBX local TLS (self-signed in keys/)
+
+<IfModule mod_proxy.c>
+    ProxyPreserveHost On
+
+    # --- A) plain ws backend ---
+    ProxyPass "/hybbx" "ws://127.0.0.1:591/hybbx"
+    ProxyPassReverse "/hybbx" "ws://127.0.0.1:591/hybbx"
+
+    # --- B) wss backend (uncomment and comment out A) ---
+    # SSLProxyEngine On
+    # SSLProxyVerify none
+    # SSLProxyCheckPeerCN off
+    # SSLProxyCheckPeerName off
+    # ProxyPass "/hybbx" "wss://127.0.0.1:591/hybbx"
+    # ProxyPassReverse "/hybbx" "wss://127.0.0.1:591/hybbx"
+</IfModule>

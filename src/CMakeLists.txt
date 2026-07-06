@@ -118,6 +118,27 @@ if(HYBBX_BUILD_DAEMON)
         DESTINATION ${HYBBX_INSTALL_HOME}
     )
 
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/web/
+        DESTINATION ${HYBBX_INSTALL_HOME}/web
+    )
+
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/nginx/
+        DESTINATION ${HYBBX_INSTALL_HOME}/nginx
+    )
+
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/apache2/
+        DESTINATION ${HYBBX_INSTALL_HOME}/apache2
+    )
+
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/lighttpd/
+        DESTINATION ${HYBBX_INSTALL_HOME}/lighttpd
+    )
+
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cgi/
+        DESTINATION ${HYBBX_INSTALL_HOME}/cgi
+        FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+    )
+
     install(FILES ${CMAKE_SOURCE_DIR}/share/data.gitkeep
         DESTINATION ${HYBBX_INSTALL_HOME}/data
         RENAME .gitkeep
