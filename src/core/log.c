@@ -66,15 +66,15 @@ void hybbx_log_config_defaults(hybbx_log_config_t *cfg)
         return;
     }
 
-    cfg->enabled = 0;
+    cfg->enabled = 1;
     cfg->dir[0] = '\0';
-    cfg->level = HYBBX_LOG_INFO;
+    cfg->level = HYBBX_LOG_WARN;
 }
 
 static hybbx_log_level_t log_parse_level(const char *value)
 {
     if (value == NULL || value[0] == '\0') {
-        return HYBBX_LOG_INFO;
+        return HYBBX_LOG_WARN;
     }
 
     if (strcasecmp(value, "debug") == 0) {
@@ -90,7 +90,7 @@ static hybbx_log_level_t log_parse_level(const char *value)
         return HYBBX_LOG_WARN;
     }
 
-    return HYBBX_LOG_INFO;
+    return HYBBX_LOG_WARN;
 }
 
 const char *hybbx_log_level_name(hybbx_log_level_t level)
@@ -205,9 +205,9 @@ void hybbx_log_config_apply(const struct hybbx_config *config)
 
     if (config != NULL) {
         g_log_config.enabled =
-            hybbx_config_get_bool(config, "log", "enabled", 0);
+            hybbx_config_get_bool(config, "log", "enabled", 1);
         dir_raw = hybbx_config_get(config, "log", "dir", NULL);
-        level_raw = hybbx_config_get(config, "log", "level", "info");
+        level_raw = hybbx_config_get(config, "log", "level", "warn");
 
         g_log_config.level = log_parse_level(level_raw);
 
@@ -223,6 +223,11 @@ void hybbx_log_config_apply(const struct hybbx_config *config)
                 fprintf(stderr, "[log] cannot resolve default log directory\n");
                 g_log_config.enabled = 0;
             }
+        }
+    } else {
+        if (hybbx_path_resolve(g_log_config.dir, sizeof(g_log_config.dir),
+                               HYBBX_DIR_LOGS) != HYBBX_OK) {
+            g_log_config.enabled = 0;
         }
     }
 

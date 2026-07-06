@@ -30,7 +30,8 @@ extern "C" {
 
 /** Default Sysop account (auto-created when no Sysop exists in the user database). */
 #define HYBBX_DEFAULT_SYSOP_USERNAME "Sysop"
-#define HYBBX_DEFAULT_SYSOP_PASSWORD "SysopPassword"
+#define HYBBX_SYSOP_INIT_PASSWORD_MIN 10u
+#define HYBBX_SYSOP_INIT_PASSWORD_MAX 14u
 
 /** Plain-text password length policy for new passwords (/changeme, future set-password). */
 #define HYBBX_PASSWORD_MIN_LEN 8u

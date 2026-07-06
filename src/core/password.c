@@ -1,4 +1,5 @@
 #include "hybbx/password.h"
+#include "hybbx/crypto.h"
 #include "hybbx/util.h"
 
 #include "crypto_backends.h"
@@ -356,4 +357,40 @@ int hybbx_password_match(const char *stored, const char *provided)
     }
 
     return str_ieq(stored, provided);
+}
+
+hybbx_result_t hybbx_password_generate_alnum(char *out,
+                                            size_t out_size,
+                                            size_t min_len,
+                                            size_t max_len)
+{
+    static const char alphabet[] = "abcdefghijklmnopqrstuvwxyz0123456789";
+    uint8_t rnd[32];
+    size_t len;
+    size_t span;
+    size_t i;
+    size_t rnd_off = sizeof(rnd);
+
+    if (out == NULL || out_size == 0 || min_len == 0 || min_len > max_len ||
+        max_len >= out_size) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    span = max_len - min_len + 1u;
+    if (hybbx_crypto_random(rnd, sizeof(rnd)) != HYBBX_OK) {
+        return HYBBX_ERR_IO;
+    }
+
+    len = min_len + (size_t)(rnd[0] % (unsigned)span);
+    for (i = 0; i < len; i++) {
+        if (rnd_off >= sizeof(rnd)) {
+            if (hybbx_crypto_random(rnd, sizeof(rnd)) != HYBBX_OK) {
+                return HYBBX_ERR_IO;
+            }
+            rnd_off = 0;
+        }
+        out[i] = alphabet[rnd[rnd_off++] % 36u];
+    }
+    out[len] = '\0';
+    return HYBBX_OK;
 }

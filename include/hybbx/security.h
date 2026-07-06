@@ -15,7 +15,7 @@ struct hybbx_config;
 void hybbx_security_log_config_apply(const struct hybbx_config *config);
 void hybbx_security_log_shutdown(void);
 
-/** Append one line to security.log (timestamp added). No-op when not configured. */
+/** Append one line to security.log (timestamp added). Always enabled when the log directory is available. */
 void hybbx_security_log_write(const char *fmt, ...)
     __attribute__((format(printf, 1, 2)));
 

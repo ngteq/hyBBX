@@ -1,6 +1,7 @@
 #include "hybbx/storage.h"
 #include "hybbx/auth.h"
 #include "hybbx/password.h"
+#include "hybbx/security.h"
 #include "hybbx/config.h"
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
@@ -675,6 +676,7 @@ static hybbx_result_t ensure_default_sysop(hybbx_storage_t *storage)
     struct flatfile_state *state;
     size_t sysop_count = 0;
     hybbx_user_record_t sysop;
+    char plain_password[HYBBX_PASSWORD_MAX_LEN + 1];
     uint64_t user_id;
     time_t now = time(NULL);
     hybbx_result_t rc;
@@ -712,7 +714,12 @@ static hybbx_result_t ensure_default_sysop(hybbx_storage_t *storage)
     sysop.active = 1;
     sysop.created_at = now;
     hybbx_strlcpy(sysop.full_name, "System Operator", sizeof(sysop.full_name));
-    if (hybbx_password_hash(HYBBX_DEFAULT_SYSOP_PASSWORD,
+    if (hybbx_password_generate_alnum(plain_password, sizeof(plain_password),
+                                      HYBBX_SYSOP_INIT_PASSWORD_MIN,
+                                      HYBBX_SYSOP_INIT_PASSWORD_MAX) != HYBBX_OK) {
+        return HYBBX_ERR_IO;
+    }
+    if (hybbx_password_hash(plain_password,
                             sysop.password, sizeof(sysop.password)) != HYBBX_OK) {
         return HYBBX_ERR_IO;
     }
@@ -723,7 +730,8 @@ static hybbx_result_t ensure_default_sysop(hybbx_storage_t *storage)
     }
 
     printf("[storage] created default Sysop at %s/users/users.ini (login: %s / %s)\n",
-           storage->path, sysop.nickname, HYBBX_DEFAULT_SYSOP_PASSWORD);
+           storage->path, sysop.nickname, plain_password);
+    hybbx_security_log_write("sysop_created user=%s", sysop.nickname);
     return HYBBX_OK;
 }
 

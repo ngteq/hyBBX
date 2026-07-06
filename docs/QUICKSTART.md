@@ -31,7 +31,7 @@ cmake --install build --prefix "$HOME"
 
 ## First login
 
-Empty data dir → **Sysop** / **SysopPassword** (change with `/changeme`). `auto_login = yes` → guest; `/login` for registered users.
+Empty data dir → **Sysop** with a random password (printed on first start; change with `/changeme`). `auto_login = yes` → guest; `/login` for registered users.
 
 ## Commands
 

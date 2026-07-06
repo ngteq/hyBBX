@@ -33,6 +33,10 @@ input_echo = no
 [texts]
 path = text
 
+[log]
+enabled = yes
+level = warn
+
 [chat]
 channels = 10
 message_max = 72

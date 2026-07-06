@@ -37,6 +37,15 @@ hybbx_result_t hybbx_password_hash(const char *plain, char *out, size_t out_size
 /** Return non-zero when @p provided matches @p stored (plain, sha256, or md5). */
 int hybbx_password_match(const char *stored, const char *provided);
 
+/**
+ * Fill @p out with a random password of length @p min_len … @p max_len using
+ * characters a-z and 0-9 only.
+ */
+hybbx_result_t hybbx_password_generate_alnum(char *out,
+                                             size_t out_size,
+                                             size_t min_len,
+                                             size_t max_len);
+
 #ifdef __cplusplus
 }
 #endif

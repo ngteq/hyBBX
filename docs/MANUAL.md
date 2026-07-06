@@ -46,11 +46,11 @@ Users (telnet :2323, SSH :3232, WebSocket via proxy) ──► Main (storage, ma
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `enabled` | `no` | File logging |
-| `dir` | — | Log directory under install root |
-| `level` | `info` | `debug` \| `info` \| `stats` \| `warn` |
+| `enabled` | `yes` | File logging (`yyyymmdd-hybbx.log`) |
+| `dir` | `logs` | Log directory under install root |
+| `level` | `warn` | `debug` \| `info` \| `stats` \| `warn` |
 
-Monthly file: `yyyymmdd-hybbx.log`. `security.log` in same dir.
+`security.log` is always written to the same directory (independent of `enabled`).
 
 ### `[storage]`
 
@@ -59,7 +59,7 @@ Monthly file: `yyyymmdd-hybbx.log`. `security.log` in same dir.
 | `backend` | `flatfile` | `sqlite`/`mysql` planned |
 | `path` | `data` | User shards under `users/` |
 
-First start creates Sysop in `users/users.ini`.
+First start creates Sysop in `users/users.ini` with a random password (10–14 chars, `a-z` `0-9`); printed once on the console.
 
 ### `[auth]`
 
