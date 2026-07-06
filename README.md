@@ -2,19 +2,25 @@
 
 C99 **session daemon** for low-bandwidth links: mail, chat, and `/` commands over line-oriented transports.
 
-**v1.0.1** — telnet-session release (v1.0.0) plus SSH transport (libssh). See [docs/RELEASE-1.0.1.md](docs/RELEASE-1.0.1.md).
+**v1.0.1** — telnet-session release (v1.0.0) plus SSH and WebSocket transports. See [docs/RELEASE-1.0.1.md](docs/RELEASE-1.0.1.md).
 
-Live demo: `telnet un1t.me 2323` (guest auto-login).
+## Live (un1t.me)
+
+| Access | How |
+|--------|-----|
+| **Browser** | [https://un1t.me/hybbx-websocket/](https://un1t.me/hybbx-websocket/) |
+| **Telnet** | `telnet un1t.me 2323` — guest auto-login |
+| **SSH** | `ssh un1t.me -p 3232` — SSH username/password are wire-only; HyBBX login via `[auth]` or `/login` |
 
 ## What it is
 
 | Piece | Role |
-|-------|------|
+| ----- | ---- |
 | **Main** | Users, storage, telnet `:2323`, HBX hub `:7323` |
 | **Secondary** | Remote RF edge → HBX client to Main |
-| **Plugins** | Telnet (default), packet radio, ARDOP, CRDOP — modems/TNCs stay **external** |
+| **Plugins** | Telnet, SSH, WebSocket, packet radio, ARDOP, CRDOP — modems/TNCs stay **external** |
 
-Same `hybbx` binary; role from INI. Templates: [`share/hybbx.ini.example`](share/hybbx.ini.example), [`share/hybbx-secondary.ini.example`](share/hybbx-secondary.ini.example).
+Same `hybbx` binary; role from INI. Templates: [share/hybbx.ini.example](share/hybbx.ini.example), [share/hybbx-secondary.ini.example](share/hybbx-secondary.ini.example).
 
 ## Quick start
 
@@ -29,8 +35,9 @@ Full steps: [docs/QUICKSTART.md](docs/QUICKSTART.md).
 ## Documentation
 
 | Audience | Start here |
-|----------|------------|
+| -------- | ---------- |
 | Operator / admin | [docs/QUICKSTART.md](docs/QUICKSTART.md) → [docs/MANUAL.md](docs/MANUAL.md) |
+| WebSocket deploy | [docs/WEBSOCKET.md](docs/WEBSOCKET.md) |
 | Feature status | [docs/FEATURES.md](docs/FEATURES.md) |
 | Developer | [docs/BUILD.md](docs/BUILD.md) → [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
 | Index | [docs/INDEX.md](docs/INDEX.md) |
