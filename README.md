@@ -10,7 +10,7 @@ C99 **session daemon** for low-bandwidth links: mail, chat, and `/` commands ove
 |--------|-----|
 | **Browser** | [https://un1t.me/hybbx-websocket/](https://un1t.me/hybbx-websocket/) |
 | **Telnet** | `telnet un1t.me 2323` — guest auto-login |
-| **SSH** | `ssh un1t.me -p 3232` — SSH username/password are wire-only; HyBBX login via `[auth]` or `/login` |
+| **SSH** | `ssh un1t.me -p 3232` — SSH username/password are wire-only, any possible
 
 ## What it is
 
