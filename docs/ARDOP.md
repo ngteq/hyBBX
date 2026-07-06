@@ -1,6 +1,6 @@
 # ARDOP plugin
 
-**Status:** Built in v1.0.0 — **not live RF verified**. Standalone sources: `plugins/ardop/`. External modem: ARDOPC or ardopcf (not in HyBBX tree).
+**Status:** Built — **not live RF verified**. Standalone sources: `plugins/ardop/`. External modem: ARDOPC or ardopcf (not in HyBBX tree).
 
 Amateur-band digital bridge. For CB use **`crdop`** + CRDOPC — [CRDOP.md](CRDOP.md).
 

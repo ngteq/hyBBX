@@ -8,7 +8,9 @@ hyBBX/
   src/core/              Session, storage, circuit, commands
   src/clients/           hybbx-telnet, hybbx-terminal
   src/main.c             Daemon entry
-  plugins/telnet/        Telnet (v1.0.0 verified path)
+  plugins/telnet/        Telnet (verified path)
+  plugins/ssh/           SSH transport (libssh)
+  plugins/websocket/     WebSocket forward-proxy
   plugins/packet_radio/  AX.25 / TNC (built; RF TBD)
   plugins/ardop/         ARDOP plugin (standalone)
   plugins/crdop/         CRDOP plugin (standalone)

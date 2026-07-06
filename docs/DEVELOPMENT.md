@@ -1,6 +1,6 @@
 # Development
 
-[AGENTS.md](../AGENTS.md) · [REPOSITORY.md](REPOSITORY.md) · **v1.0.0**
+[AGENTS.md](../AGENTS.md) · [REPOSITORY.md](REPOSITORY.md) · **v1.0.1**
 
 ## Toolchain
 
@@ -33,7 +33,7 @@ cmake -B build -DHYBBX_BUILD_TESTS=ON && cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-**v1.0.0 verified:** telnet session path. **AX.25/RF:** local tests only. Optional: `scripts/test-ardop-plugin.sh`, `scripts/test-crdop-plugin.sh`.
+**Verified:** telnet session path. **Built:** SSH, WebSocket. **AX.25/RF:** local tests only.
 
 ## Doc duty
 

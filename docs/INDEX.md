@@ -1,13 +1,14 @@
 # Documentation index
 
-Intro: [README.md](../README.md). **v1.0.0** release notes: [RELEASE-1.0.0.md](RELEASE-1.0.0.md).
+[README.md](../README.md) · **v1.0.1** [RELEASE-1.0.1.md](RELEASE-1.0.1.md) · [RELEASE-NOTES-1.0.1.txt](RELEASE-NOTES-1.0.1.txt)
 
 ## Operators
 
 | Doc | Contents |
 |-----|----------|
-| [QUICKSTART.md](QUICKSTART.md) | Build, run, first telnet login |
+| [QUICKSTART.md](QUICKSTART.md) | Build, run, first login |
 | [MANUAL.md](MANUAL.md) | INI reference, commands, topology |
+| [WEBSOCKET.md](WEBSOCKET.md) | WebSocket proxy + browser UI |
 | [CLIENTS.md](CLIENTS.md) | `hybbx-telnet`, `hybbx-terminal` |
 | [FEATURES.md](FEATURES.md) | What works vs partial |
 
@@ -31,7 +32,7 @@ Intro: [README.md](../README.md). **v1.0.0** release notes: [RELEASE-1.0.0.md](R
 
 | Doc | Contents |
 |-----|----------|
-| [ROADMAP.md](ROADMAP.md) | Post–v1.0.0 work |
+| [ROADMAP.md](ROADMAP.md) | Planned work |
 | [LICENSING.md](LICENSING.md) | GPL + third-party |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | PR flow |
 | [AGENTS.md](../AGENTS.md) | AI agent rules |

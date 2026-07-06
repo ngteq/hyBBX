@@ -7,7 +7,7 @@ labels: enhancement
 
 ## Problem / use case
 
-<!-- v1.0.0 scope is telnet sessions; RF/digital field work is post-release — see docs/ROADMAP.md -->
+<!-- See docs/ROADMAP.md for planned work -->
 
 ## Proposed solution
 

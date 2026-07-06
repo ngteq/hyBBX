@@ -1,7 +1,6 @@
 # WebSocket transport
 
-The **websocket plugin** is a forward-proxy only — it relays session bytes on
-loopback. It does **not** serve PHP, JS, or static files.
+**v1.0.1** — session forward-proxy on loopback. Does **not** serve PHP, JS, or static files.
 
 Browser UI files live in your **httpd document root** (copy from
 `~/hybbx/reverse-proxy/docroot/hybbx-websocket/`). Public TLS terminates on

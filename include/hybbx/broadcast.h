@@ -7,7 +7,7 @@
  * AX.25: QST UI over HBX to Secondary extenders on links that are
  * low-bandwidth AND half-duplex (HyBBX QoS). Frequencies are MHz only —
  * no CB channel numbers (those differ by region).
- * TCP/IP: stub (logged; wire path reserved for after v1.0.0).
+ * TCP/IP: stub (logged; wire path reserved).
  */
 
 #include "hybbx/ax25.h"

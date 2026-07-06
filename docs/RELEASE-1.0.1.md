@@ -1,28 +1,50 @@
 # HyBBX v1.0.1
 
-Adds the **SSH transport** (`[networks] ssh=yes`, `[transport.ssh]`, port **3232**) using **libssh** (LGPL, dynamic link).
+Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSocket** (loopback `:4591`). Shared session core — `[auth]`, mail, chat, `/` commands.
 
-## What changed
+**Demo:** [README — un1t.me](../README.md#live-un1tme).
+
+## Transports
+
+| Transport | Detail |
+|-----------|--------|
+| Telnet | Primary user path `:2323` |
+| SSH | libssh; Ed25519 keys in `hostkey_dir`; wire auth ≠ HyBBX accounts |
+| WebSocket | RFC6455 forward-proxy; public TLS via reverse proxy — [WEBSOCKET.md](WEBSOCKET.md) |
+| Browser UI | PHP/JS in httpd docroot (not served by `hybbx`) |
+
+## Session
+
+| Item | Detail |
+|------|--------|
+| Line input (SSH) | ANSI filter; arrows, Home/End, backspace/delete |
+| WebSocket TX | UTF-8-safe buffering |
+| `max_connections` | WebSocket slot limit (default `10`) |
+| One session per account | `/login` rejected if already online |
+| fail2ban | `hybbx-ssh` examples (port 3232) |
+
+## Status
 
 | Area | Status |
 |------|--------|
-| SSH transport plugin | **Built** — libssh server; dual-stack bind |
-| Session auth over SSH | Same as telnet — `[auth]` in `hybbx.ini` only |
-| Host keys | Auto-generated Ed25519 under `hostkey_dir` (default `keys/`) |
-| fail2ban | `hybbx-ssh` filter/jail examples (port 3232) |
-| WebSocket transport | **Built** — RFC6455 forward-proxy on `:4591` |
-| Proxy / UI examples | `reverse-proxy/` (docroot → httpd www) |
-
-SSH username/password complete the wire handshake only; HyBBX guest auto-login or `/login` follows INI settings.
-
-WebSocket plugin = session data forward-proxy only. UI in httpd docroot — [WEBSOCKET.md](WEBSOCKET.md).
+| Telnet, mail, chat, commands | **Verified** |
+| SSH, WebSocket | **Built** — verify in your deployment |
+| HBX, packet_radio, ARDOP, CRDOP | **Built** — not live RF verified |
 
 ## Build
 
-Requires **libssh** (pkg-config) for SSH. CMake: `HYBBX_PLUGIN_SSH=ON`, `HYBBX_PLUGIN_WEBSOCKET=ON` (defaults).
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+cmake --install build --prefix "$HOME"
+```
 
-See [MANUAL.md](MANUAL.md#transportssh-requires-libssh-at-build-time) and `share/THIRD_PARTY_NOTICES.txt`.
+**libssh** required for SSH (`HYBBX_PLUGIN_SSH=ON`, default). Options: [BUILD.md](BUILD.md). LGPL notice: [share/THIRD_PARTY_NOTICES.txt](../share/THIRD_PARTY_NOTICES.txt).
 
-## Unchanged from v1.0.0
+## Install layout
 
-Telnet (`:2323`) remains the primary verified user path. v1.0.0 scope and verification: [RELEASE-1.0.0.md](RELEASE-1.0.0.md).
+`<prefix>/hybbx/` — `hybbx`, `hybbx-start`, `hybbx.ini`, `keys/`, `reverse-proxy/`, `data/`, `text/`, `logs/`, `lib/`.
+
+## See also
+
+[RELEASE-NOTES-1.0.1.txt](RELEASE-NOTES-1.0.1.txt) · [FEATURES.md](FEATURES.md) · [MANUAL.md](MANUAL.md) · [ROADMAP.md](ROADMAP.md)

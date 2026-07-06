@@ -1,6 +1,6 @@
 # HyBBX — agent guide
 
-Humans: [CONTRIBUTING.md](CONTRIBUTING.md). **v1.0.1** — SSH transport + v1.0.0 telnet release — see [docs/RELEASE-1.0.1.md](docs/RELEASE-1.0.1.md).
+Humans: [CONTRIBUTING.md](CONTRIBUTING.md). **v1.0.1** — [docs/RELEASE-1.0.1.md](docs/RELEASE-1.0.1.md).
 
 ## Product
 
@@ -9,6 +9,7 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 | In tree | External |
 |---------|----------|
 | `src/core/`, `plugins/telnet` | TNC, KISS, sound-card apps |
+| `plugins/ssh`, `plugins/websocket` | libssh; httpd for browser UI |
 | `plugins/packet_radio` | Serial/USB TNC |
 | `plugins/ardop`, `plugins/crdop` | ARDOPC, CRDOPC |
 
@@ -19,16 +20,17 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 3. Booleans: `hybbx_parse_bool()` — `yes`/`no`
 4. Buffers: [limits.h](include/hybbx/limits.h)
 5. Doc changes: feature → FEATURES.md; INI → MANUAL.md + `share/*.ini.example`
+6. **Version docs:** current release only (`HYBBX_VERSION_STRING`). No prior-version references. As-is software — compact text, no upgrade/history bloat. On bump: replace release docs; remove old `RELEASE-*.md` from tree.
 
-## Doc map (`docs/` = full technical reference)
+## Doc map
 
 | File | Use |
 |------|-----|
-| [RELEASE-1.0.1.md](docs/RELEASE-1.0.1.md) | v1.0.1 SSH transport |
-| [RELEASE-1.0.0.md](docs/RELEASE-1.0.0.md) | v1.0.0 scope and verification |
+| [RELEASE-1.0.1.md](docs/RELEASE-1.0.1.md) | Current release |
 | [FEATURES.md](docs/FEATURES.md) | Shipped vs partial |
 | [MANUAL.md](docs/MANUAL.md) | INI + commands |
-| [ROADMAP.md](docs/ROADMAP.md) | Post–1.0.0 |
+| [WEBSOCKET.md](docs/WEBSOCKET.md) | WebSocket deploy |
+| [ROADMAP.md](docs/ROADMAP.md) | Planned work |
 | [BUILD.md](docs/BUILD.md) | CMake |
 
 ## Build

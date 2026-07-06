@@ -1,8 +1,7 @@
-HyBBX — Rules and legal notice (v1.0.0)
+HyBBX — Rules and legal notice
 
-HyBBX is a multi-transport session daemon. v1.0.0 focuses on
-telnet user sessions; packet-radio bridges are provided but not
-yet verified in live RF operation.
+HyBBX is a multi-transport session daemon (telnet, SSH, WebSocket).
+Packet-radio bridges are built but not yet verified in live RF operation.
 
 1. Your responsibility
 You use this system at your own risk. You are liable for your

@@ -1,6 +1,6 @@
 # Operator manual
 
-**v1.0.1** — telnet verified (v1.0.0); SSH transport added (libssh). Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example` (short comments; detail here).
+**v1.0.1** — telnet, SSH, WebSocket. Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
 
 Booleans: `yes`/`no` (+ `true`/`false`, `on`/`off`, `1`/`0`).
 
@@ -9,10 +9,10 @@ Booleans: `yes`/`no` (+ `true`/`false`, `on`/`off`, `1`/`0`).
 ## Topology
 
 ```
-Telnet users ──► Main (telnet :2323, storage, mail)
-                      ▲
-                      │ HBX/TCP :7323
-                 Secondary (packet_radio / ardop / crdop at RF edge)
+Users (telnet :2323, SSH :3232, WebSocket via proxy) ──► Main (storage, mail)
+                                                              ▲
+                                                              │ HBX/TCP :7323
+                                                         Secondary (packet_radio / ardop / crdop)
 ```
 
 | Role | `[networks]` typical | Hosts |
@@ -274,4 +274,4 @@ HyBBX: GPL-3.0 — [LICENSING.md](LICENSING.md). External modems are separate pr
 
 ## See also
 
-[QUICKSTART.md](QUICKSTART.md) · [FEATURES.md](FEATURES.md) · [RELEASE-1.0.0.md](RELEASE-1.0.0.md)
+[QUICKSTART.md](QUICKSTART.md) · [FEATURES.md](FEATURES.md) · [WEBSOCKET.md](WEBSOCKET.md) · [RELEASE-1.0.1.md](RELEASE-1.0.1.md)

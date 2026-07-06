@@ -19,7 +19,7 @@ labels: bug
 
 - HyBBX version / commit:
 - OS:
-- Transport: telnet / packet_radio / other
+- Transport: telnet / ssh / websocket / packet_radio / other
 - Config (relevant `[section]` only, no secrets):
 
 ## Logs / output
@@ -30,6 +30,6 @@ labels: bug
 
 ## Documentation checked
 
-- [ ] [docs/RELEASE-1.0.0.md](../../docs/RELEASE-1.0.0.md)
+- [ ] [docs/RELEASE-1.0.1.md](../../docs/RELEASE-1.0.1.md)
 - [ ] [docs/MANUAL.md](../../docs/MANUAL.md)
 - [ ] [docs/FEATURES.md](../../docs/FEATURES.md)

@@ -1,0 +1,37 @@
+HyBBX v1.0.1
+============
+
+Multi-transport session daemon: telnet (:2323), SSH (:3232), WebSocket
+(loopback :4591). Mail, chat, and / commands on every path.
+
+Transports
+----------
+  Telnet   :2323 — primary verified path
+  SSH      :3232 — libssh; wire auth separate from HyBBX accounts
+  WebSocket: 127.0.0.1:4591/hybbx — reverse-proxy + httpd docroot UI
+
+Session
+-------
+  One registered session per account
+  SSH line editor (arrows, Home/End, backspace/delete)
+  WebSocket max_connections (default 10); UTF-8-safe output
+
+Status
+------
+  Verified : telnet, mail, chat, commands
+  Built    : SSH, WebSocket
+  Built    : HBX, packet_radio, ARDOP, CRDOP — not live RF verified
+
+Build
+-----
+  cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
+  libssh required for SSH plugin (default ON)
+
+Demo
+----
+  Browser : https://un1t.me/hybbx-websocket/
+  Telnet  : telnet un1t.me 2323
+  SSH     : ssh un1t.me -p 3232
+
+Docs: docs/RELEASE-1.0.1.md · docs/MANUAL.md · docs/WEBSOCKET.md
+License: GPL-3.0

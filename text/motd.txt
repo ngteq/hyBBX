@@ -1,2 +1,2 @@
-HyBBX v1.0.0 — Message of the day
 Welcome, @username@
+Telnet, SSH, and WebSocket — same session and /commands.

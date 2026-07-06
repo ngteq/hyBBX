@@ -1,10 +1,10 @@
 # Quick start
 
-**v1.0.0** targets telnet sessions on Main. INI detail: [MANUAL.md](MANUAL.md).
+**v1.0.1** — telnet, SSH, WebSocket. INI: [MANUAL.md](MANUAL.md).
 
 ## Requirements
 
-CMake 3.16+, GCC or Clang — [PLATFORMS.md](PLATFORMS.md).
+CMake 3.16+, GCC or Clang — [PLATFORMS.md](PLATFORMS.md). **libssh** for SSH plugin.
 
 ## Build and run
 
@@ -15,7 +15,10 @@ cmake --build build
 telnet 127.0.0.1 2323
 ```
 
-Client alternative: `./build/src/clients/hybbx-telnet -H 127.0.0.1 -p 2323`
+| Transport | Try |
+|-----------|-----|
+| SSH | `ssh 127.0.0.1 -p 3232` |
+| WebSocket | [WEBSOCKET.md](WEBSOCKET.md) |
 
 ## Install
 
@@ -24,36 +27,16 @@ cmake --install build --prefix "$HOME"
 "$HOME/hybbx/hybbx-start"
 ```
 
-Tree: `<prefix>/hybbx/` — `hybbx`, `hybbx-start`, `hybbx.ini`, `keys/`, `reverse-proxy/`, `data/`.
-
-```bash
-cd ~/hybbx && ./hybbx-start
-```
-
-Override: `HYBBX_CONFIG`, `HYBBX_ROOT`. WebSocket: [WEBSOCKET.md](WEBSOCKET.md) (UI in httpd docroot).
+`<prefix>/hybbx/` — `hybbx`, `hybbx-start`, `hybbx.ini`, `keys/`, `reverse-proxy/`, `data/`.
 
 ## First login
 
-Empty data dir → default **Sysop** / **SysopPassword** (change with `/changeme`).
-
-| Mode | Behavior |
-|------|----------|
-| `auto_login = yes` (Main default) | Guest slot, `/login` for registered users |
-| `auto_login = no` | Login prompt |
-
-After registered `/login`, MOTD from `text/motd.txt` is shown automatically.
-
-## Main vs Secondary
-
-| Role | Typical INI | Use |
-|------|-------------|-----|
-| Main | `share/hybbx.ini.example` | Telnet users + HBX hub |
-| Secondary | `share/hybbx-secondary.ini.example` | RF edge → Main (not v1.0.0 verified on air) |
+Empty data dir → **Sysop** / **SysopPassword** (change with `/changeme`). `auto_login = yes` → guest; `/login` for registered users.
 
 ## Commands
 
-`/help` in session. Full list: [MANUAL.md — Commands](MANUAL.md#commands).
+`/help` in session — [MANUAL.md — Commands](MANUAL.md#commands).
 
 ## Next
 
-[FEATURES.md](FEATURES.md) · [RELEASE-1.0.0.md](RELEASE-1.0.0.md) · [BUILD.md](BUILD.md)
+[FEATURES.md](FEATURES.md) · [RELEASE-1.0.1.md](RELEASE-1.0.1.md) · [BUILD.md](BUILD.md)

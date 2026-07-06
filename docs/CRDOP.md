@@ -1,6 +1,6 @@
 # CRDOP plugin
 
-**Status:** Built in v1.0.0 — **not live RF verified**. Standalone sources: `plugins/crdop/`. External modem: [CRDOPC](https://github.com/ngteq/CRDOP) (MIT, not in HyBBX tree).
+**Status:** Built — **not live RF verified**. Standalone sources: `plugins/crdop/`. External modem: [CRDOPC](https://github.com/ngteq/CRDOP) (MIT, not in HyBBX tree).
 
 CB-oriented digital bridge. Separate protocol from ARDOP — [ARDOP.md](ARDOP.md).
 
