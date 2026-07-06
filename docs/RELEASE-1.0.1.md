@@ -11,12 +11,11 @@ Adds the **SSH transport** (`[networks] ssh=yes`, `[transport.ssh]`, port **3232
 | Host keys | Auto-generated Ed25519 under `hostkey_dir` (default `keys/`) |
 | fail2ban | `hybbx-ssh` filter/jail examples (port 3232) |
 | WebSocket transport | **Built** — RFC6455 forward-proxy on `:4591` |
-| PHP / proxy examples | `hybbx-websocket/`, `reverse-proxy/` |
+| Proxy / UI examples | `reverse-proxy/` (docroot → httpd www) |
 
 SSH username/password complete the wire handshake only; HyBBX guest auto-login or `/login` follows INI settings.
 
-WebSocket forward-proxy only; browser UI in `hybbx-websocket/`, snippets in
-`reverse-proxy/`. See [WEBSOCKET.md](WEBSOCKET.md).
+WebSocket plugin = session data forward-proxy only. UI in httpd docroot — [WEBSOCKET.md](WEBSOCKET.md).
 
 ## Build
 

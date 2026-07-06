@@ -1,25 +1,36 @@
 # WebSocket transport
 
-HyBBX = forward-proxy on loopback. Browser UI + public TLS = reverse-proxy only.
+The **websocket plugin** is a forward-proxy only — it relays session bytes on
+loopback. It does **not** serve PHP, JS, or static files.
 
-## Operator steps
+Browser UI files live in your **httpd document root** (copy from
+`~/hybbx/reverse-proxy/docroot/hybbx-websocket/`). Public TLS terminates on
+nginx, Apache 2.4, or lighttpd.
 
-1. Edit **`hybbx.ini`** `[transport.websocket]` (defaults below).
-2. **`cd ~/hybbx && ./hybbx-start`** — writes `hybbx-websocket/hybbx-ws.json`.
-3. Add one httpd snippet below (set `HYBBX_ROOT`), reload httpd.
+## Steps
 
-No PHP or JS edits.
+1. **`hybbx.ini`** — enable `[transport.websocket]` (below).
+2. **`./hybbx-start`** — listens `127.0.0.1:4591`, path `/hybbx`.
+3. **Copy UI** to httpd docroot:
+   ```sh
+   cp -r ~/hybbx/reverse-proxy/docroot/hybbx-websocket /usr/local/www/
+   ```
+4. **httpd snippet** — one of the sections below (`NGINX_DOCROOT` = your www path).
 
 ## Layout
 
 ```
-~/hybbx/                         HYBBX_ROOT=/home/hybbx/hybbx
-├── hybbx.ini
-├── hybbx-websocket/             httpd GET only
-│   ├── index.php                  reads hybbx-ws.json
-│   ├── hybbx-terminal.js
-│   └── hybbx-ws.json              generated on start
-└── reverse-proxy/                 copy-paste snippets
+~/hybbx/                         HYBBX — data only
+├── hybbx / hybbx.ini / keys/
+└── reverse-proxy/
+    ├── docroot/hybbx-websocket/   → copy to httpd document root
+    ├── nginx.conf.example
+    ├── apache2.conf.example
+    └── lighttpd.conf.example
+
+/usr/local/www/hybbx-websocket/  NGINX_DOCROOT (example)
+├── index.php
+└── hybbx-terminal.js
 ```
 
 ## hybbx.ini
@@ -32,7 +43,6 @@ websocket = yes
 bind = 127.0.0.1
 port = 4591
 path = /hybbx
-public_prefix = /hybbx-websocket
 cert_dir = keys
 ipv4 = yes
 ipv6 = no
@@ -41,28 +51,22 @@ ipv6 = no
 | Key | Default | Role |
 |-----|---------|------|
 | `port` | `4591` | Loopback listen |
-| `path` | `/hybbx` | HyBBX upgrade path (proxy backend) |
-| `public_prefix` | `/hybbx-websocket` | Public UI; WS URL = `{prefix}/ws` |
+| `path` | `/hybbx` | Upgrade path (httpd proxies `{url}/ws` here) |
 
-Paths in httpd **must match** `public_prefix` and `path`. Change ini → restart hybbx →
-update httpd.
+| Public URL | Handler |
+|------------|---------|
+| `GET /hybbx-websocket/` | files from **httpd docroot** |
+| `WS /hybbx-websocket/ws` | forward-proxy → `wss://127.0.0.1:4591/hybbx` |
 
-| Public URL | httpd |
-|------------|-------|
-| `GET /hybbx-websocket/` | files from `$HYBBX_ROOT/hybbx-websocket/` |
-| `WS /hybbx-websocket/ws` | `wss://127.0.0.1:4591/hybbx` |
-
-HyBBX without OpenSSL: use `http://127.0.0.1:4591/hybbx` / `ws://` in the examples below.
+No OpenSSL in HyBBX → use `http://127.0.0.1:4591/hybbx` in httpd snippets.
 
 ---
 
 ## nginx
 
-Inside your public `server { }` TLS block. FreeBSD: `pkg install nginx`.
+`NGINX_DOCROOT=/usr/local/www` (FreeBSD default; adjust to match `nginx.conf`).
 
 ```nginx
-# HYBBX_ROOT=/home/hybbx/hybbx
-
 location = /hybbx-websocket/ws {
     proxy_pass https://127.0.0.1:4591/hybbx;
     proxy_ssl_verify off;
@@ -71,13 +75,12 @@ location = /hybbx-websocket/ws {
     proxy_set_header Connection "upgrade";
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_read_timeout 3600s;
     proxy_send_timeout 3600s;
 }
 
 location /hybbx-websocket/ {
-    root /home/hybbx/hybbx;
+    root /usr/local/www;
     index index.php;
     location ~ \.php$ {
         include fastcgi_params;
@@ -91,19 +94,11 @@ location /hybbx-websocket/ {
 nginx -t && service nginx reload
 ```
 
-Full file: `~/hybbx/reverse-proxy/nginx.conf.example`
-
 ---
 
 ## Apache 2.4 (apache24)
 
-Inside your `VirtualHost *:443`. FreeBSD: `pkg install apache24 mod_proxy_html`.
-
 ```apache
-# HYBBX_ROOT=/home/hybbx/hybbx
-# a2enmod proxy proxy_http proxy_wstunnel ssl  (Debian)
-# LoadModule proxy_wstunnel_module ...          (FreeBSD httpd.conf)
-
 <IfModule mod_proxy.c>
     ProxyPreserveHost On
     SSLProxyEngine On
@@ -115,8 +110,8 @@ Inside your `VirtualHost *:443`. FreeBSD: `pkg install apache24 mod_proxy_html`.
     ProxyPassReverse "/hybbx-websocket/ws" "wss://127.0.0.1:4591/hybbx"
 </IfModule>
 
-Alias /hybbx-websocket /home/hybbx/hybbx/hybbx-websocket
-<Directory /home/hybbx/hybbx/hybbx-websocket>
+Alias /hybbx-websocket /usr/local/www/hybbx-websocket
+<Directory /usr/local/www/hybbx-websocket>
     DirectoryIndex index.php
     Require all granted
     <FilesMatch \.php$>
@@ -129,17 +124,11 @@ Alias /hybbx-websocket /home/hybbx/hybbx/hybbx-websocket
 apachectl configtest && service apache24 reload
 ```
 
-Full file: `~/hybbx/reverse-proxy/apache2.conf.example`
-
 ---
 
 ## lighttpd
 
-`server.modules` needs `mod_proxy`, `mod_fastcgi` (for PHP). FreeBSD: `pkg install lighttpd`.
-
 ```lighttpd
-# HYBBX_ROOT=/home/hybbx/hybbx
-
 $HTTP["url"] == "/hybbx-websocket/ws" {
     proxy.server = ( "" => (
         "hybbx" => (
@@ -150,7 +139,7 @@ $HTTP["url"] == "/hybbx-websocket/ws" {
     proxy.header = ( "upgrade" => "enable" )
 }
 
-alias.url += ( "/hybbx-websocket/" => "/home/hybbx/hybbx/hybbx-websocket/" )
+alias.url += ( "/hybbx-websocket/" => "/usr/local/www/hybbx-websocket/" )
 index-file.names += ( "index.php" )
 
 fastcgi.server += ( ".php" =>
@@ -164,16 +153,12 @@ fastcgi.server += ( ".php" =>
 service lighttpd reload
 ```
 
-Full file: `~/hybbx/reverse-proxy/lighttpd.conf.example`
-
 ---
 
 ## Test
 
 ```sh
 sockstat -4 -l | grep 4591
-cat ~/hybbx/hybbx-websocket/hybbx-ws.json
-
 wscat -c wss://127.0.0.1:4591/hybbx --no-check
 wscat -c wss://your-host/hybbx-websocket/ws --no-check
 ```

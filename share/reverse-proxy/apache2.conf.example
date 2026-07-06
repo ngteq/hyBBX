@@ -1,5 +1,4 @@
-# HyBBX — Apache 2.4 / FreeBSD apache24 inside HTTPS VirtualHost.
-# HYBBX_ROOT=/home/hybbx/hybbx
+# HyBBX — Apache 2.4 / FreeBSD apache24. NGINX_DOCROOT=/usr/local/www
 
 <IfModule mod_proxy.c>
     ProxyPreserveHost On
@@ -12,8 +11,8 @@
     ProxyPassReverse "/hybbx-websocket/ws" "wss://127.0.0.1:4591/hybbx"
 </IfModule>
 
-Alias /hybbx-websocket /home/hybbx/hybbx/hybbx-websocket
-<Directory /home/hybbx/hybbx/hybbx-websocket>
+Alias /hybbx-websocket /usr/local/www/hybbx-websocket
+<Directory /usr/local/www/hybbx-websocket>
     DirectoryIndex index.php
     Require all granted
     <FilesMatch \.php$>
@@ -21,4 +20,4 @@ Alias /hybbx-websocket /home/hybbx/hybbx/hybbx-websocket
     </FilesMatch>
 </Directory>
 
-# Plain ws backend: wss:// → ws://127.0.0.1:4591/hybbx
+# UI: cp -r reverse-proxy/docroot/hybbx-websocket /usr/local/www/

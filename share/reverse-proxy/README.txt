@@ -1,6 +1,5 @@
-HyBBX reverse-proxy — match paths to hybbx.ini [transport.websocket]:
-  public_prefix = /hybbx-websocket   →  UI at /hybbx-websocket/
-  public_prefix + /ws                →  proxy to 127.0.0.1:port + path
+HyBBX reverse-proxy examples. WebSocket plugin = session data on loopback only.
 
-Edit hybbx.ini only, start hybbx (writes hybbx-websocket/hybbx-ws.json), then
-copy the snippet for your httpd and set HYBBX_ROOT.
+1. cp -r docroot/hybbx-websocket /usr/local/www/
+2. Add nginx/apache2/lighttpd snippet (set docroot path)
+3. hybbx.ini [transport.websocket] — see docs/WEBSOCKET.md

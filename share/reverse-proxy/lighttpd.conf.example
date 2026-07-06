@@ -1,4 +1,4 @@
-# HyBBX — lighttpd 1.4 (mod_proxy + mod_fastcgi). HYBBX_ROOT=/home/hybbx/hybbx
+# HyBBX — lighttpd 1.4. NGINX_DOCROOT=/usr/local/www/hybbx-websocket
 
 $HTTP["url"] == "/hybbx-websocket/ws" {
     proxy.server = ( "" => (
@@ -10,7 +10,7 @@ $HTTP["url"] == "/hybbx-websocket/ws" {
     proxy.header = ( "upgrade" => "enable" )
 }
 
-alias.url += ( "/hybbx-websocket/" => "/home/hybbx/hybbx/hybbx-websocket/" )
+alias.url += ( "/hybbx-websocket/" => "/usr/local/www/hybbx-websocket/" )
 index-file.names += ( "index.php" )
 
 fastcgi.server += ( ".php" =>
@@ -19,4 +19,4 @@ fastcgi.server += ( ".php" =>
     )
 )
 
-# Plain ws: "proxy" => "http://127.0.0.1:4591/hybbx"
+# UI: cp -r reverse-proxy/docroot/hybbx-websocket /usr/local/www/

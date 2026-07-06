@@ -1,23 +1,10 @@
 <?php
 /**
- * HyBBX browser terminal — reads hybbx-ws.json (written by hybbx on start).
- * Configure [transport.websocket] in hybbx.ini only; set reverse-proxy to match.
+ * HyBBX browser terminal — copy this folder to your httpd document root.
+ * WebSocket data comes from hybbx only; this file is not part of the daemon.
  */
-$ws_path = null;
-$cfg_file = __DIR__ . '/hybbx-ws.json';
-
-if (is_readable($cfg_file)) {
-    $cfg = json_decode(file_get_contents($cfg_file), true);
-    if (is_array($cfg) && !empty($cfg['public_ws'])) {
-        $ws_path = $cfg['public_ws'];
-    }
-}
-
-if ($ws_path === null) {
-    $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
-    $ws_path = ($base !== '' ? $base : '/hybbx-websocket') . '/ws';
-}
-
+$base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+$ws_path = ($base !== '' ? $base : '/hybbx-websocket') . '/ws';
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'wss' : 'ws';
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $ws_url = $scheme . '://' . $host . $ws_path;

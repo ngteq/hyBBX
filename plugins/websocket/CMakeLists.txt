@@ -2,7 +2,6 @@ add_library(hybbx_plugin_websocket STATIC
     websocket.c
     ws_config.c
     ws_proto.c
-    ws_publish.c
     ws_sha1.c
     ws_tls.c
 )

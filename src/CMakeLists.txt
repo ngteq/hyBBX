@@ -118,10 +118,6 @@ if(HYBBX_BUILD_DAEMON)
         DESTINATION ${HYBBX_INSTALL_HOME}
     )
 
-    install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/hybbx-websocket/
-        DESTINATION ${HYBBX_INSTALL_HOME}/hybbx-websocket
-    )
-
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/reverse-proxy/
         DESTINATION ${HYBBX_INSTALL_HOME}/reverse-proxy
     )

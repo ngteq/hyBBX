@@ -34,5 +34,5 @@ Hub settings: [MANUAL.md — circuit](MANUAL.md#circuit-main).
 
 ## Web browser (WebSocket)
 
-Browser UI: `~/hybbx/hybbx-websocket/` + `~/hybbx/reverse-proxy/`. WebSocket: `wss://host/hybbx-websocket/ws`.
-See [WEBSOCKET.md](WEBSOCKET.md).
+Browser UI: copy `~/hybbx/reverse-proxy/docroot/hybbx-websocket/` to httpd www root.
+WebSocket data: `wss://host/hybbx-websocket/ws` → hybbx. See [WEBSOCKET.md](WEBSOCKET.md).

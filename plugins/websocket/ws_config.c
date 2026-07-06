@@ -75,9 +75,6 @@ void hybbx_websocket_config_defaults(hybbx_websocket_config_t *config)
                   sizeof(config->bind_v6));
     hybbx_strlcpy(config->path, HYBBX_WEBSOCKET_DEFAULT_PATH,
                   sizeof(config->path));
-    hybbx_strlcpy(config->public_prefix,
-                  HYBBX_WEBSOCKET_DEFAULT_PUBLIC_PREFIX,
-                  sizeof(config->public_prefix));
     hybbx_strlcpy(config->cert_dir, HYBBX_WEBSOCKET_DEFAULT_CERT_DIR,
                   sizeof(config->cert_dir));
     config->port = HYBBX_WEBSOCKET_DEFAULT_PORT;
@@ -121,11 +118,6 @@ hybbx_result_t hybbx_websocket_config_parse(const char *config,
     value = find_kv(config, "path", scratch, sizeof(scratch));
     if (value != NULL && value[0] != '\0') {
         hybbx_strlcpy(out->path, value, sizeof(out->path));
-    }
-
-    value = find_kv(config, "public_prefix", scratch, sizeof(scratch));
-    if (value != NULL && value[0] != '\0') {
-        hybbx_strlcpy(out->public_prefix, value, sizeof(out->public_prefix));
     }
 
     value = find_kv(config, "cert_dir", scratch, sizeof(scratch));

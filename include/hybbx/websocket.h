@@ -19,11 +19,6 @@ extern "C" {
 #define HYBBX_WEBSOCKET_DEFAULT_BIND_V6 "::1"
 #define HYBBX_WEBSOCKET_DEFAULT_PATH "/hybbx"
 #define HYBBX_WEBSOCKET_DEFAULT_CERT_DIR "keys"
-/** HTTP UI path prefix (reverse-proxy); public WS = prefix + "/ws". */
-#define HYBBX_WEBSOCKET_DEFAULT_PUBLIC_PREFIX "/hybbx-websocket"
-
-#define HYBBX_WS_PROXY_UI_DIR "hybbx-websocket"
-#define HYBBX_WS_PROXY_CONFIG_FILE "hybbx-ws.json"
 
 /** Filenames inside @c cert_dir (auto-generated on first start when TLS). */
 #define HYBBX_WS_TLS_CERT_FILENAME "hybbx_ws.crt"
@@ -36,7 +31,6 @@ typedef struct hybbx_websocket_config {
     char bind_v4[HYBBX_WEBSOCKET_BIND_V4_MAX];
     char bind_v6[HYBBX_WEBSOCKET_BIND_V6_MAX];
     char path[HYBBX_WEBSOCKET_PATH_MAX];
-    char public_prefix[HYBBX_WEBSOCKET_PATH_MAX];
     char cert_dir[HYBBX_PATH_MAX];
     unsigned int port;
     int ipv4;
@@ -47,10 +41,6 @@ void hybbx_websocket_config_defaults(hybbx_websocket_config_t *config);
 
 hybbx_result_t hybbx_websocket_config_parse(const char *config,
                                             hybbx_websocket_config_t *out);
-
-/** Write hybbx-websocket/hybbx-ws.json for the browser UI (from install root). */
-hybbx_result_t hybbx_ws_publish_proxy_config(
-    const hybbx_websocket_config_t *config);
 
 #ifdef __cplusplus
 }
