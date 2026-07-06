@@ -29,7 +29,7 @@
 | CRDOP plugin | **Built** | External CRDOPC; local host-TCP script |
 | TCP `/broadcast` | Partial | Log stub only |
 | SSH transport | Built | libssh; `[networks] ssh=yes` |
-| WebSocket transport | Built | Forward-proxy; `[networks] websocket=yes` |
+| WebSocket transport | Built | Forward-proxy; `[networks] websocket=yes`; `max_connections` |
 | SQL storage | Planned | Post–v1.0.0 |
 
 ---

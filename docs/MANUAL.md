@@ -163,6 +163,7 @@ See `share/THIRD_PARTY_NOTICES.txt` (libssh LGPL).
 | `bind` / `bind6` | `127.0.0.1` / `::1` | Loopback — public TLS on reverse proxy |
 | `port` | `4591` | Loopback listen (`sockstat -4 -l \| grep 4591`) |
 | `path` | `/hybbx` | HyBBX upgrade path; httpd proxies `/hybbx-websocket/ws` here |
+| `max_connections` | `10` | Max simultaneous WebSocket clients |
 | `cert_dir` | `keys` | Self-signed `hybbx_ws.*` when OpenSSL linked |
 | `ipv4` / `ipv6` | `yes` | Dual-stack toggles |
 

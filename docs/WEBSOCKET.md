@@ -44,6 +44,7 @@ bind = 127.0.0.1
 port = 4591
 path = /hybbx
 cert_dir = keys
+max_connections = 10
 ipv4 = yes
 ipv6 = no
 ```
@@ -52,6 +53,7 @@ ipv6 = no
 |-----|---------|------|
 | `port` | `4591` | Loopback listen |
 | `path` | `/hybbx` | Upgrade path (httpd proxies `{url}/ws` here) |
+| `max_connections` | `10` | Simultaneous WebSocket clients |
 
 | Public URL | Handler |
 |------------|---------|

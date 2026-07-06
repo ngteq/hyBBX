@@ -21,6 +21,23 @@ static unsigned int parse_port(const char *value)
     return (unsigned int)port;
 }
 
+static unsigned int parse_max_connections(const char *value)
+{
+    char *end;
+    unsigned long n;
+
+    if (value == NULL || value[0] == '\0') {
+        return HYBBX_WEBSOCKET_DEFAULT_MAX_CONNECTIONS;
+    }
+
+    n = strtoul(value, &end, 10);
+    if (end == value || *end != '\0' || n == 0 || n > 65535u) {
+        return HYBBX_WEBSOCKET_DEFAULT_MAX_CONNECTIONS;
+    }
+
+    return (unsigned int)n;
+}
+
 static const char *find_kv(const char *config, const char *key,
                            char *scratch, size_t scratch_len)
 {
@@ -78,6 +95,7 @@ void hybbx_websocket_config_defaults(hybbx_websocket_config_t *config)
     hybbx_strlcpy(config->cert_dir, HYBBX_WEBSOCKET_DEFAULT_CERT_DIR,
                   sizeof(config->cert_dir));
     config->port = HYBBX_WEBSOCKET_DEFAULT_PORT;
+    config->max_connections = HYBBX_WEBSOCKET_DEFAULT_MAX_CONNECTIONS;
     config->ipv4 = 1;
     config->ipv6 = 1;
 }
@@ -100,6 +118,12 @@ hybbx_result_t hybbx_websocket_config_parse(const char *config,
 
     value = find_kv(config, "port", scratch, sizeof(scratch));
     out->port = parse_port(value);
+
+    value = find_kv(config, "max_connections", scratch, sizeof(scratch));
+    if (value == NULL) {
+        value = find_kv(config, "max_online", scratch, sizeof(scratch));
+    }
+    out->max_connections = parse_max_connections(value);
 
     value = find_kv(config, "bind", scratch, sizeof(scratch));
     if (value != NULL && value[0] != '\0') {

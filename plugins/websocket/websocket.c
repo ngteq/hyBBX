@@ -30,6 +30,7 @@ typedef struct ws_client {
     hybbx_ws_connection_t ws;
     hybbx_session_t *hbx_session;
     hybbx_result_t last_rc;
+    int slot_held;
     uint8_t tx_buf[HYBBX_WS_FRAME_PAYLOAD_MAX];
     size_t tx_len;
 } ws_client_t;
@@ -46,6 +47,8 @@ static pthread_t g_accept_thread;
 static int g_listen_v4 = -1;
 static int g_listen_v6 = -1;
 static volatile int g_ws_running = 0;
+static unsigned g_active_clients;
+static pthread_mutex_t g_client_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static hybbx_result_t ws_plugin_stop(void);
 
@@ -286,6 +289,50 @@ static void ws_send_busy(ws_client_t *client)
     (void)hybbx_ws_write_text(&client->ws, msg, sizeof(msg) - 1u);
 }
 
+static void ws_send_limit(ws_client_t *client)
+{
+    static const char msg[] =
+        "All WebSocket connections in use. Try later.\r\n";
+
+    if (client == NULL) {
+        return;
+    }
+
+    (void)hybbx_ws_write_text(&client->ws, msg, sizeof(msg) - 1u);
+}
+
+static int ws_client_acquire_slot(ws_client_t *client)
+{
+    if (client == NULL) {
+        return 0;
+    }
+
+    pthread_mutex_lock(&g_client_lock);
+    if (g_active_clients >= g_config.max_connections) {
+        pthread_mutex_unlock(&g_client_lock);
+        return 0;
+    }
+
+    g_active_clients++;
+    client->slot_held = 1;
+    pthread_mutex_unlock(&g_client_lock);
+    return 1;
+}
+
+static void ws_client_release_slot(ws_client_t *client)
+{
+    if (client == NULL || !client->slot_held) {
+        return;
+    }
+
+    pthread_mutex_lock(&g_client_lock);
+    if (g_active_clients > 0) {
+        g_active_clients--;
+    }
+    client->slot_held = 0;
+    pthread_mutex_unlock(&g_client_lock);
+}
+
 static void ws_on_user_data(void *ctx, const uint8_t *data, size_t len)
 {
     ws_client_ctx_t *wctx = (ws_client_ctx_t *)ctx;
@@ -328,6 +375,11 @@ static void *ws_client_thread(void *arg)
 
     rc = hybbx_ws_server_handshake(&client->ws, g_config.path);
     if (rc != HYBBX_OK) {
+        goto cleanup;
+    }
+
+    if (!ws_client_acquire_slot(client)) {
+        ws_send_limit(client);
         goto cleanup;
     }
 
@@ -401,6 +453,8 @@ cleanup:
         hybbx_session_close(client->hbx_session);
         client->hbx_session = NULL;
     }
+
+    ws_client_release_slot(client);
 
     (void)ws_tx_flush(client, 1);
 
@@ -571,6 +625,7 @@ static hybbx_result_t ws_plugin_start(const char *config)
     }
 
     g_ws_running = 1;
+    g_active_clients = 0;
 
     if (pthread_create(&g_accept_thread, NULL, ws_accept_thread, NULL) != 0) {
         g_ws_running = 0;
@@ -592,7 +647,8 @@ static hybbx_result_t ws_plugin_start(const char *config)
     if (g_listen_v6 >= 0) {
         printf(" IPv6 [%s]:%u", g_config.bind_v6, g_config.port);
     }
-    printf(" path=%s (%s, forward-proxy)\n", g_config.path,
+    printf(" path=%s max_connections=%u (%s, forward-proxy)\n", g_config.path,
+           g_config.max_connections,
            hybbx_ws_tls_server_enabled() ? "wss" : "ws");
 
     return HYBBX_OK;

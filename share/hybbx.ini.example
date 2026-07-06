@@ -86,6 +86,7 @@ bind6 = ::1
 port = 4591
 path = /hybbx
 cert_dir = keys
+max_connections = 10
 ipv4 = yes
 ipv6 = yes
 

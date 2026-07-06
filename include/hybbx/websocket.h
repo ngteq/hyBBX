@@ -11,6 +11,9 @@ extern "C" {
 /** Default WebSocket listen port (behind TLS reverse proxy). */
 #define HYBBX_WEBSOCKET_DEFAULT_PORT 4591u
 
+/** Default simultaneous WebSocket client connections. */
+#define HYBBX_WEBSOCKET_DEFAULT_MAX_CONNECTIONS 10u
+
 #define HYBBX_WEBSOCKET_BIND_V4_MAX 64
 #define HYBBX_WEBSOCKET_BIND_V6_MAX 64
 #define HYBBX_WEBSOCKET_PATH_MAX 128
@@ -33,6 +36,7 @@ typedef struct hybbx_websocket_config {
     char path[HYBBX_WEBSOCKET_PATH_MAX];
     char cert_dir[HYBBX_PATH_MAX];
     unsigned int port;
+    unsigned int max_connections;
     int ipv4;
     int ipv6;
 } hybbx_websocket_config_t;
