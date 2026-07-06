@@ -29,6 +29,26 @@ static int header_has_token(const char *value, const char *token)
     return 0;
 }
 
+static int header_value_equals(const char *value, const char *expected)
+{
+    size_t expected_len;
+
+    if (value == NULL || expected == NULL) {
+        return 0;
+    }
+
+    expected_len = strlen(expected);
+    if (strncasecmp(value, expected, expected_len) != 0) {
+        return 0;
+    }
+
+    {
+        char c = value[expected_len];
+
+        return c == '\0' || c == '\r' || c == ' ' || c == '\t' || c == ',';
+    }
+}
+
 static ssize_t recv_some(int fd, void *buf, size_t len)
 {
     ssize_t n;
@@ -279,7 +299,7 @@ hybbx_result_t hybbx_ws_server_handshake(hybbx_ws_connection_t *ws,
     upgrade = header_value(buf, "Upgrade");
     connection = header_value(buf, "Connection");
     if (upgrade == NULL || connection == NULL ||
-        strcasecmp(upgrade, "websocket") != 0 ||
+        !header_value_equals(upgrade, "websocket") ||
         !header_has_token(connection, "upgrade")) {
         return HYBBX_ERR_DENIED;
     }
