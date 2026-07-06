@@ -30,6 +30,8 @@ typedef struct ws_client {
     hybbx_ws_connection_t ws;
     hybbx_session_t *hbx_session;
     hybbx_result_t last_rc;
+    uint8_t tx_buf[HYBBX_WS_FRAME_PAYLOAD_MAX];
+    size_t tx_len;
 } ws_client_t;
 
 typedef struct ws_client_ctx {
@@ -142,13 +144,95 @@ static void log_bind_failure(const char *bind_addr, unsigned port)
     }
 }
 
+static size_t utf8_char_span(const uint8_t *buf, size_t len, size_t pos)
+{
+    uint8_t b;
+    size_t n;
+    size_t i;
+
+    if (pos >= len) {
+        return 0;
+    }
+
+    b = buf[pos];
+    if (b < 0x80u) {
+        return 1;
+    }
+    if ((b & 0xE0u) == 0xC0u) {
+        n = 2;
+    } else if ((b & 0xF0u) == 0xE0u) {
+        n = 3;
+    } else if ((b & 0xF8u) == 0xF0u) {
+        n = 4;
+    } else {
+        return 1;
+    }
+
+    if (pos + n > len) {
+        return 0;
+    }
+
+    for (i = 1; i < n; i++) {
+        if ((buf[pos + i] & 0xC0u) != 0x80u) {
+            return 1;
+        }
+    }
+
+    return n;
+}
+
+static size_t utf8_complete_prefix(const uint8_t *buf, size_t len)
+{
+    size_t pos = 0;
+
+    while (pos < len) {
+        size_t span = utf8_char_span(buf, len, pos);
+
+        if (span == 0) {
+            break;
+        }
+        pos += span;
+    }
+
+    return pos;
+}
+
+static hybbx_result_t ws_tx_flush(ws_client_t *client, int force_tail)
+{
+    size_t n;
+    hybbx_result_t rc;
+
+    if (client == NULL || client->tx_len == 0) {
+        return HYBBX_OK;
+    }
+
+    n = utf8_complete_prefix(client->tx_buf, client->tx_len);
+    if (n == 0 && force_tail) {
+        client->tx_buf[0] = '?';
+        n = 1;
+    }
+    if (n == 0) {
+        return HYBBX_OK;
+    }
+
+    rc = hybbx_ws_write_text(&client->ws, (const char *)client->tx_buf, n);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    if (n < client->tx_len) {
+        memmove(client->tx_buf, client->tx_buf + n, client->tx_len - n);
+    }
+    client->tx_len -= n;
+
+    return HYBBX_OK;
+}
+
 static hybbx_result_t ws_plugin_write(hybbx_session_t *session,
                                       const char *data, size_t len)
 {
     ws_client_t *client;
     size_t i;
-    char chunk[HYBBX_WS_FRAME_PAYLOAD_MAX];
-    size_t chunk_len = 0;
     hybbx_result_t rc;
 
     if (session == NULL || data == NULL) {
@@ -164,21 +248,28 @@ static hybbx_result_t ws_plugin_write(hybbx_session_t *session,
         char ch = data[i];
 
         if (ch == '\n' && (i == 0 || data[i - 1] != '\r')) {
-            chunk[chunk_len++] = '\r';
+            if (client->tx_len + 2 > sizeof(client->tx_buf)) {
+                rc = ws_tx_flush(client, 1);
+                if (rc != HYBBX_OK) {
+                    return rc;
+                }
+            }
+            client->tx_buf[client->tx_len++] = '\r';
         }
-        chunk[chunk_len++] = ch;
 
-        if (chunk_len >= sizeof(chunk) - 2) {
-            rc = hybbx_ws_write_text(&client->ws, chunk, chunk_len);
+        if (client->tx_len >= sizeof(client->tx_buf)) {
+            rc = ws_tx_flush(client, 1);
             if (rc != HYBBX_OK) {
                 return rc;
             }
-            chunk_len = 0;
         }
-    }
 
-    if (chunk_len > 0) {
-        return hybbx_ws_write_text(&client->ws, chunk, chunk_len);
+        client->tx_buf[client->tx_len++] = (uint8_t)ch;
+
+        rc = ws_tx_flush(client, 0);
+        if (rc != HYBBX_OK) {
+            return rc;
+        }
     }
 
     return HYBBX_OK;
@@ -310,6 +401,8 @@ cleanup:
         hybbx_session_close(client->hbx_session);
         client->hbx_session = NULL;
     }
+
+    (void)ws_tx_flush(client, 1);
 
     if (client->ws.established) {
         (void)hybbx_ws_close(&client->ws);
