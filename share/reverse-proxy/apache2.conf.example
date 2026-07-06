@@ -1,19 +1,24 @@
-# HyBBX — Apache 2.4 inside your HTTPS VirtualHost.
+# HyBBX — Apache 2.4 / FreeBSD apache24 inside HTTPS VirtualHost.
 # HYBBX_ROOT=/home/hybbx/hybbx
 
 <IfModule mod_proxy.c>
     ProxyPreserveHost On
     SSLProxyEngine On
     SSLProxyVerify none
+    SSLProxyCheckPeerCN off
+    SSLProxyCheckPeerName off
 
-    # WebSocket forward-proxy only
     ProxyPass "/hybbx-websocket/ws" "wss://127.0.0.1:4591/hybbx"
     ProxyPassReverse "/hybbx-websocket/ws" "wss://127.0.0.1:4591/hybbx"
 </IfModule>
 
-# Browser UI — files from HYBBX_ROOT/hybbx-websocket/ only
 Alias /hybbx-websocket /home/hybbx/hybbx/hybbx-websocket
 <Directory /home/hybbx/hybbx/hybbx-websocket>
     DirectoryIndex index.php
     Require all granted
+    <FilesMatch \.php$>
+        SetHandler application/x-httpd-php
+    </FilesMatch>
 </Directory>
+
+# Plain ws backend: wss:// → ws://127.0.0.1:4591/hybbx
