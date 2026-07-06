@@ -1,12 +1,12 @@
 <?php
 /**
- * HyBBX browser terminal — WebSocket forward-proxy frontend.
- *
- * Deploy with your TLS reverse proxy (see share/nginx/, share/apache2/,
- * share/lighttpd/ hybbx-websocket.conf.example).
- * Set $ws_url to your public endpoint, e.g. wss://host/hybbx-telnet
+ * HyBBX browser terminal — static UI for reverse-proxy deployments.
+ * WebSocket sessions use /hybbx-websocket/ws (proxied to hybbx :4591/hybbx).
+ * See ../reverse-proxy/ for nginx, Apache, lighttpd examples.
  */
-$ws_url = 'wss://example.com/hybbx-telnet';
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'wss' : 'ws';
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$ws_url = $scheme . '://' . $host . '/hybbx-websocket/ws';
 ?><!DOCTYPE html>
 <html lang="en">
 <head>

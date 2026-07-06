@@ -34,5 +34,5 @@ Hub settings: [MANUAL.md — circuit](MANUAL.md#circuit-main).
 
 ## Web browser (WebSocket)
 
-PHP terminal: `share/web/hybbx-terminal.php` — `wss://host/hybbx-telnet` via nginx.
+Browser UI: `~/hybbx/hybbx-websocket/` + `~/hybbx/reverse-proxy/`. WebSocket: `wss://host/hybbx-websocket/ws`.
 See [WEBSOCKET.md](WEBSOCKET.md).

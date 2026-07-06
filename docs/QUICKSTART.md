@@ -24,13 +24,13 @@ cmake --install build --prefix "$HOME"
 "$HOME/hybbx/hybbx-start"
 ```
 
-Tree: `<prefix>/hybbx/` — `hybbx`, `hybbx-start`, `hybbx.ini`, `keys/`, `data/`, `text/`, `web/`.
+Tree: `<prefix>/hybbx/` — `hybbx`, `hybbx-start`, `hybbx.ini`, `keys/`, `hybbx-websocket/`, `reverse-proxy/`, `data/`.
 
 ```bash
 cd ~/hybbx && ./hybbx-start
 ```
 
-Override: `HYBBX_CONFIG`, `HYBBX_ROOT`. WebSocket browser access: [WEBSOCKET.md](WEBSOCKET.md).
+Override: `HYBBX_CONFIG`, `HYBBX_ROOT`. Browser terminal: [WEBSOCKET.md](WEBSOCKET.md) (`hybbx-websocket/` + `reverse-proxy/`).
 
 ## First login
 

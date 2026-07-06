@@ -118,20 +118,12 @@ if(HYBBX_BUILD_DAEMON)
         DESTINATION ${HYBBX_INSTALL_HOME}
     )
 
-    install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/web/
-        DESTINATION ${HYBBX_INSTALL_HOME}/web
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/hybbx-websocket/
+        DESTINATION ${HYBBX_INSTALL_HOME}/hybbx-websocket
     )
 
-    install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/nginx/
-        DESTINATION ${HYBBX_INSTALL_HOME}/nginx
-    )
-
-    install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/apache2/
-        DESTINATION ${HYBBX_INSTALL_HOME}/apache2
-    )
-
-    install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/lighttpd/
-        DESTINATION ${HYBBX_INSTALL_HOME}/lighttpd
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/reverse-proxy/
+        DESTINATION ${HYBBX_INSTALL_HOME}/reverse-proxy
     )
 
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/share/cgi/

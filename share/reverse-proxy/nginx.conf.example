@@ -1,0 +1,29 @@
+# HyBBX — nginx inside your public TLS server { } block.
+# HYBBX_ROOT=/home/hybbx/hybbx
+
+# 1) WebSocket forward-proxy → HyBBX daemon (no files from hybbx-websocket/)
+location = /hybbx-websocket/ws {
+    proxy_pass https://127.0.0.1:4591/hybbx;
+    proxy_ssl_verify off;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+}
+
+# 2) Browser UI — GET only from $HYBBX_ROOT/hybbx-websocket/
+location /hybbx-websocket/ {
+    root /home/hybbx/hybbx;
+    index index.php;
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_pass unix:/var/run/php-fpm.sock;
+    }
+}
+
+# Plain ws backend: proxy_pass http://127.0.0.1:4591/hybbx;
