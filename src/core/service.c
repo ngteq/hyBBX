@@ -3,6 +3,7 @@
  * link registry prune. Wire protocols stay in plugins/ (telnet, packet_radio).
  */
 #include "hybbx/service.h"
+#include "hybbx/session.h"
 #include "storage_private.h"
 #include "hybbx/registry.h"
 #include "hybbx/config.h"
@@ -482,6 +483,53 @@ void hybbx_service_visit_sessions(hybbx_service_t *service,
         }
     }
     pthread_mutex_unlock(&svc->session_lock);
+}
+
+typedef struct find_registered_session_ctx {
+    uint64_t user_id;
+    hybbx_session_t *exclude;
+    hybbx_session_t *found;
+} find_registered_session_ctx_t;
+
+static void find_registered_session_visitor(hybbx_session_t *session,
+                                            void *userdata)
+{
+    find_registered_session_ctx_t *ctx = (find_registered_session_ctx_t *)userdata;
+    const hybbx_session_record_t *rec;
+
+    if (ctx == NULL || ctx->found != NULL || session == NULL ||
+        session == ctx->exclude) {
+        return;
+    }
+
+    if (!hybbx_session_logged_in(session) || hybbx_session_is_guest(session)) {
+        return;
+    }
+
+    rec = hybbx_session_record(session);
+    if (rec == NULL || rec->user_id != ctx->user_id) {
+        return;
+    }
+
+    ctx->found = session;
+}
+
+hybbx_session_t *hybbx_service_find_registered_session(
+    hybbx_service_t *service,
+    uint64_t user_id,
+    hybbx_session_t *exclude)
+{
+    find_registered_session_ctx_t ctx;
+
+    if (service == NULL || user_id == 0) {
+        return NULL;
+    }
+
+    ctx.user_id = user_id;
+    ctx.exclude = exclude;
+    ctx.found = NULL;
+    hybbx_service_visit_sessions(service, find_registered_session_visitor, &ctx);
+    return ctx.found;
 }
 
 static void service_apply_service(struct hybbx_service_internal *svc,

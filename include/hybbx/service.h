@@ -149,6 +149,15 @@ void hybbx_service_visit_sessions(hybbx_service_t *service,
                                   hybbx_service_session_visit_fn fn,
                                   void *userdata);
 
+/**
+ * Return a logged-in registered session for @p user_id on another connection,
+ * or NULL when the account is not online elsewhere.
+ */
+struct hybbx_session *hybbx_service_find_registered_session(
+    hybbx_service_t *service,
+    uint64_t user_id,
+    struct hybbx_session *exclude);
+
 struct hybbx_circuit_hub;
 struct hybbx_circuit_hub *hybbx_service_circuit_hub(hybbx_service_t *service);
 

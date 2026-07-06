@@ -149,7 +149,9 @@ Telnet is always started when built (not gated here).
 SSH username and password are **not** HyBBX accounts — they only satisfy the
 SSH client handshake. After connect, behaviour matches telnet: `[auth] auto_login`
 assigns a guest, otherwise the session shows the registered `/login` prompt.
-Use `/login <user> <pass>` for HyBBX authentication.
+Use `/login <user> <pass>` for HyBBX authentication. A registered account may
+have only **one** active HyBBX session; a second `/login` is rejected while the
+first connection is still open.
 
 See `share/THIRD_PARTY_NOTICES.txt` (libssh LGPL).
 
@@ -244,7 +246,7 @@ Input: `/command` … · `;` and `#` lines ignored · other text → area handle
 | `/chat` | Chat channels |
 | `/conference` | Two-user conference |
 | `/mail` | Mailbox (registered) |
-| `/login <user> <pass>` | Registered login |
+| `/login <user> <pass>` | Registered login (one active session per account) |
 | `/register` | Self-registration (guest) |
 | `/changeme` | Own profile/password |
 

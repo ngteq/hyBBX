@@ -16,7 +16,7 @@
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Telnet `:2323` | **Verified** | Primary v1.0.0 delivery |
-| Guest + registered auth | **Verified** | `/login`, `/register`, Sysop |
+| Guest + registered auth | **Verified** | `/login`, `/register`, Sysop; one registered session per account |
 | Mail, chat, conference | **Verified** | Via telnet |
 | `/` command set | **Verified** | See [MANUAL.md](MANUAL.md#commands) |
 | Flat-file storage | **Verified** | `backend=flatfile` |

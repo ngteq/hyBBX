@@ -1797,6 +1797,13 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
         return HYBBX_OK;
     }
 
+    if (hybbx_service_find_registered_session(service, user.id, session) !=
+        NULL) {
+        hybbx_session_write_line(session,
+            "That account is already logged in elsewhere.");
+        return HYBBX_OK;
+    }
+
     rc = hybbx_session_switch_user(session, &user);
     if (rc != HYBBX_OK) {
         hybbx_session_write_line(session, "Login failed.");
