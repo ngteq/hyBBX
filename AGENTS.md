@@ -21,7 +21,7 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 4. Buffers: [limits.h](include/hybbx/limits.h)
 5. Doc changes: feature → FEATURES.md; INI → MANUAL.md + `share/*.ini.example`
 6. **Version docs:** current release only (`HYBBX_VERSION_STRING`). No prior-version references. As-is software — compact text, no upgrade/history bloat. On bump: replace release docs; remove old `RELEASE-*.md` from tree.
-7. **Operator docs:** generic **Linux** — `HTTPD_DOCROOT`, `systemctl`, `ss`; no distro-specific package managers or layout (no Debian/Ubuntu/FreeBSD paths in operator guides).
+7. **Documentation — Linux-based.** All docs in `docs/`, `text/`, README, and share examples assume Linux. Use `HTTPD_DOCROOT`, `systemctl`, `ss`. Do not name other OSes (BSD, macOS, Windows, …) or distro-specific package paths unless unavoidable in third-party license names.
 
 ## Doc map
 

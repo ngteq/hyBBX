@@ -19,7 +19,7 @@
 | [BUILD.md](BUILD.md) | CMake options |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Code rules, layout |
 | [REPOSITORY.md](REPOSITORY.md) | Source tree |
-| [PLATFORMS.md](PLATFORMS.md) | OS / compiler matrix |
+| [PLATFORMS.md](PLATFORMS.md) | Linux build requirements |
 
 ## Transports (external modems)
 

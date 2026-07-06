@@ -29,8 +29,7 @@ Build
 
 Docs
 ----
-  Operator guides use generic Linux paths and reload commands.
-  Set HTTPD_DOCROOT to your httpd document root.
+  Documentation assumes Linux (HTTPD_DOCROOT, systemctl, ss).
 
 Demo
 ----

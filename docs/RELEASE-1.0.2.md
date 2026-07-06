@@ -45,7 +45,7 @@ cmake --install build --prefix "$HOME"
 
 `<prefix>/hybbx/` — `hybbx`, `hybbx-start`, `hybbx.ini`, `keys/`, `reverse-proxy/`, `data/`, `text/`, `logs/`, `lib/`.
 
-Operator docs assume **generic Linux** — your httpd docroot and init tool; no distro-specific paths. [WEBSOCKET.md](WEBSOCKET.md).
+Documentation assumes **Linux** — `HTTPD_DOCROOT`, `systemctl`, `ss`. [WEBSOCKET.md](WEBSOCKET.md).
 
 ## See also
 

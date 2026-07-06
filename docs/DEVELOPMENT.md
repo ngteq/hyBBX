@@ -40,7 +40,7 @@ ctest --test-dir build --output-on-failure
 | Change | Update |
 |--------|--------|
 | Behavior | FEATURES.md |
-| INI/operator | MANUAL.md + `share/*.ini.example` (generic Linux paths) |
+| INI/operator | MANUAL.md + `share/*.ini.example` (Linux-based paths) |
 | Build | BUILD.md |
 | Planned | ROADMAP.md |
 

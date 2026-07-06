@@ -39,11 +39,3 @@ cmake --install build --prefix /path
 → `<prefix>/hybbx/` (`hybbx`, `hybbx-start`, `hybbx.ini`, `text/`, `data/`, `logs/`, `lib/`).
 
 CRDOPC is **not** built by HyBBX — [CRDOP.md](CRDOP.md).
-
-## Toolchains
-
-| Target | Notes |
-|--------|-------|
-| Linux/BSD/macOS | Native GCC/Clang |
-| Windows | MinGW Makefiles |
-| AmigaOS | `cmake/Toolchain-AmigaOS.cmake` |
