@@ -3,9 +3,10 @@
 
   var term = document.getElementById('term');
   var status = document.getElementById('status');
+  var form = document.getElementById('input-bar');
+  var input = document.getElementById('cmd');
   var wsUrl = window.HYBBX_WS_URL;
   var ws = null;
-  var line = '';
 
   function append(text) {
     term.textContent += text;
@@ -16,12 +17,29 @@
     status.textContent = s;
   }
 
+  function setInputEnabled(enabled) {
+    input.disabled = !enabled;
+    if (enabled) {
+      input.focus();
+    }
+  }
+
+  function sendLine(text) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    ws.send(text + '\r');
+  }
+
   function connect() {
     setStatus('connecting');
+    setInputEnabled(false);
     ws = new WebSocket(wsUrl);
 
     ws.onopen = function () {
       setStatus('connected');
+      setInputEnabled(true);
     };
 
     ws.onmessage = function (ev) {
@@ -31,37 +49,25 @@
     ws.onclose = function () {
       setStatus('disconnected');
       ws = null;
+      setInputEnabled(false);
     };
 
     ws.onerror = function () {
       setStatus('error');
+      setInputEnabled(false);
     };
   }
 
-  document.addEventListener('keydown', function (ev) {
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       return;
     }
 
-    if (ev.key === 'Enter') {
-      ws.send(line + '\r');
-      line = '';
-      ev.preventDefault();
-      return;
-    }
-
-    if (ev.key === 'Backspace') {
-      if (line.length > 0) {
-        line = line.slice(0, -1);
-      }
-      ev.preventDefault();
-      return;
-    }
-
-    if (ev.key.length === 1 && !ev.ctrlKey && !ev.metaKey) {
-      line += ev.key;
-      ev.preventDefault();
-    }
+    sendLine(input.value);
+    input.value = '';
+    input.focus();
   });
 
   connect();
