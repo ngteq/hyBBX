@@ -106,6 +106,7 @@ static void ws_sha1_final(ws_sha1_ctx_t *ctx, uint8_t out[20])
     size_t idx = (size_t)((ctx->count >> 3) & 63u);
     unsigned i;
 
+    memcpy(final, ctx->buffer, idx);
     final[idx++] = 0x80;
     if (idx > 56) {
         memset(final + idx, 0, 64 - idx);

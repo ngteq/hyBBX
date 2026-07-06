@@ -395,12 +395,11 @@ static hybbx_result_t ws_handle_frame(hybbx_ws_connection_t *ws,
         return HYBBX_ERR_IO;
     case 0x9:
         {
-            uint8_t pong[6];
+            uint8_t pong[2];
 
             pong[0] = 0x8A;
-            pong[1] = 0x80;
-            pong[2] = pong[3] = pong[4] = pong[5] = 0;
-            (void)ws_send_all(ws, pong, sizeof(pong));
+            pong[1] = 0x00;
+            (void)ws_send_all(ws, pong, 2);
         }
         return HYBBX_OK;
     case 0xA:
@@ -514,16 +513,15 @@ hybbx_result_t hybbx_ws_write_text(hybbx_ws_connection_t *ws,
 
 hybbx_result_t hybbx_ws_close(hybbx_ws_connection_t *ws)
 {
-    uint8_t frame[4];
+    uint8_t frame[2];
 
     if (ws == NULL || ws->fd < 0) {
         return HYBBX_ERR_INVALID;
     }
 
     frame[0] = 0x88;
-    frame[1] = 0x80;
-    frame[2] = frame[3] = 0;
-    (void)ws_send_all(ws, frame, sizeof(frame));
+    frame[1] = 0x00;
+    (void)ws_send_all(ws, frame, 2);
     ws->established = 0;
     return HYBBX_OK;
 }
