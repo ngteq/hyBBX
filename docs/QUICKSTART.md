@@ -1,6 +1,6 @@
 # Quick start
 
-**v1.0.1** — telnet, SSH, WebSocket. INI: [MANUAL.md](MANUAL.md).
+**v1.0.2** — telnet, SSH, WebSocket. INI: [MANUAL.md](MANUAL.md).
 
 ## Requirements
 
@@ -39,4 +39,4 @@ Empty data dir → **Sysop** / **SysopPassword** (change with `/changeme`). `aut
 
 ## Next
 
-[FEATURES.md](FEATURES.md) · [RELEASE-1.0.1.md](RELEASE-1.0.1.md) · [BUILD.md](BUILD.md)
+[FEATURES.md](FEATURES.md) · [RELEASE-1.0.2.md](RELEASE-1.0.2.md) · [BUILD.md](BUILD.md)

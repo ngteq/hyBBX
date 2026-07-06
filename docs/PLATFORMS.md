@@ -35,4 +35,4 @@ cmake --build build
 
 \* Correct device path per OS.
 
-CI: Ubuntu GCC — [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
+CI: Linux GCC — [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).

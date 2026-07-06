@@ -1,4 +1,4 @@
-HyBBX v1.0.1
+HyBBX v1.0.2
 ============
 
 Multi-transport session daemon: telnet (:2323), SSH (:3232), WebSocket
@@ -27,11 +27,16 @@ Build
   cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
   libssh required for SSH plugin (default ON)
 
+Docs
+----
+  Operator guides use generic Linux paths and reload commands.
+  Set HTTPD_DOCROOT to your httpd document root.
+
 Demo
 ----
   Browser : https://un1t.me/hybbx-websocket/
   Telnet  : telnet un1t.me 2323
   SSH     : ssh un1t.me -p 3232
 
-Docs: docs/RELEASE-1.0.1.md · docs/MANUAL.md · docs/WEBSOCKET.md
+docs/RELEASE-1.0.2.md · docs/MANUAL.md · docs/WEBSOCKET.md
 License: GPL-3.0

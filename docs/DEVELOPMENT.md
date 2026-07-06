@@ -1,6 +1,6 @@
 # Development
 
-[AGENTS.md](../AGENTS.md) · [REPOSITORY.md](REPOSITORY.md) · **v1.0.1**
+[AGENTS.md](../AGENTS.md) · [REPOSITORY.md](REPOSITORY.md) · **v1.0.2**
 
 ## Toolchain
 
@@ -40,7 +40,7 @@ ctest --test-dir build --output-on-failure
 | Change | Update |
 |--------|--------|
 | Behavior | FEATURES.md |
-| INI/operator | MANUAL.md + `share/*.ini.example` |
+| INI/operator | MANUAL.md + `share/*.ini.example` (generic Linux paths) |
 | Build | BUILD.md |
 | Planned | ROADMAP.md |
 

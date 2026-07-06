@@ -1,33 +1,34 @@
 # WebSocket transport
 
-**v1.0.1** — session forward-proxy on loopback. Does **not** serve PHP, JS, or static files.
+**v1.0.2** — session forward-proxy on loopback. Does **not** serve PHP, JS, or static files.
 
-Browser UI files live in your **httpd document root** (copy from
-`~/hybbx/reverse-proxy/docroot/hybbx-websocket/`). Public TLS terminates on
-nginx, Apache 2.4, or lighttpd.
+Browser UI files live in your **httpd document root** (`HTTPD_DOCROOT`). Copy from
+`~/hybbx/reverse-proxy/docroot/hybbx-websocket/`. Public TLS terminates on
+nginx, Apache httpd, or lighttpd.
 
 ## Steps
 
 1. **`hybbx.ini`** — enable `[transport.websocket]` (below).
 2. **`./hybbx-start`** — listens `127.0.0.1:4591`, path `/hybbx`.
-3. **Copy UI** to httpd docroot:
+3. **Copy UI** to `HTTPD_DOCROOT`:
    ```sh
-   cp -r ~/hybbx/reverse-proxy/docroot/hybbx-websocket /usr/local/www/
+   HTTPD_DOCROOT=/srv/www    # your httpd document root
+   cp -r ~/hybbx/reverse-proxy/docroot/hybbx-websocket "$HTTPD_DOCROOT/"
    ```
-4. **httpd snippet** — one of the sections below (`NGINX_DOCROOT` = your www path).
+4. **httpd snippet** — one section below; set paths to match `HTTPD_DOCROOT`.
 
 ## Layout
 
 ```
-~/hybbx/                         HYBBX — data only
+~/hybbx/                              HYBBX install
 ├── hybbx / hybbx.ini / keys/
 └── reverse-proxy/
-    ├── docroot/hybbx-websocket/   → copy to httpd document root
+    ├── docroot/hybbx-websocket/      → copy to HTTPD_DOCROOT
     ├── nginx.conf.example
     ├── apache2.conf.example
     └── lighttpd.conf.example
 
-/usr/local/www/hybbx-websocket/  NGINX_DOCROOT (example)
+$HTTPD_DOCROOT/hybbx-websocket/       served by httpd
 ├── index.php
 └── hybbx-terminal.js
 ```
@@ -56,7 +57,7 @@ ipv6 = no
 
 | Public URL | Handler |
 |------------|---------|
-| `GET /hybbx-websocket/` | files from **httpd docroot** |
+| `GET /hybbx-websocket/` | files from **HTTPD_DOCROOT** |
 | `WS /hybbx-websocket/ws` | forward-proxy → `wss://127.0.0.1:4591/hybbx` |
 
 No OpenSSL in HyBBX → use `http://127.0.0.1:4591/hybbx` in httpd snippets.
@@ -65,7 +66,7 @@ No OpenSSL in HyBBX → use `http://127.0.0.1:4591/hybbx` in httpd snippets.
 
 ## nginx
 
-`NGINX_DOCROOT=/usr/local/www` (FreeBSD default; adjust to match `nginx.conf`).
+Set `root` to `HTTPD_DOCROOT` (examples use `/srv/www`).
 
 ```nginx
 location = /hybbx-websocket/ws {
@@ -81,23 +82,25 @@ location = /hybbx-websocket/ws {
 }
 
 location /hybbx-websocket/ {
-    root /usr/local/www;
+    root /srv/www;
     index index.php;
     location ~ \.php$ {
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_pass unix:/var/run/php-fpm.sock;
+        fastcgi_pass unix:/run/php-fpm/www.sock;
     }
 }
 ```
 
 ```sh
-nginx -t && service nginx reload
+nginx -t && systemctl reload nginx
 ```
+
+PHP-FPM socket path varies — check your `php-fpm` pool config.
 
 ---
 
-## Apache 2.4 (apache24)
+## Apache httpd
 
 ```apache
 <IfModule mod_proxy.c>
@@ -111,8 +114,8 @@ nginx -t && service nginx reload
     ProxyPassReverse "/hybbx-websocket/ws" "wss://127.0.0.1:4591/hybbx"
 </IfModule>
 
-Alias /hybbx-websocket /usr/local/www/hybbx-websocket
-<Directory /usr/local/www/hybbx-websocket>
+Alias /hybbx-websocket /srv/www/hybbx-websocket
+<Directory /srv/www/hybbx-websocket>
     DirectoryIndex index.php
     Require all granted
     <FilesMatch \.php$>
@@ -122,8 +125,10 @@ Alias /hybbx-websocket /usr/local/www/hybbx-websocket
 ```
 
 ```sh
-apachectl configtest && service apache24 reload
+apachectl configtest && systemctl reload httpd
 ```
+
+Service name may be `apache2` on your system.
 
 ---
 
@@ -140,18 +145,18 @@ $HTTP["url"] == "/hybbx-websocket/ws" {
     proxy.header = ( "upgrade" => "enable" )
 }
 
-alias.url += ( "/hybbx-websocket/" => "/usr/local/www/hybbx-websocket/" )
+alias.url += ( "/hybbx-websocket/" => "/srv/www/hybbx-websocket/" )
 index-file.names += ( "index.php" )
 
 fastcgi.server += ( ".php" =>
     ( "localhost" =>
-        ( "socket" => "/var/run/php-fpm.sock" )
+        ( "socket" => "/run/php-fpm/www.sock" )
     )
 )
 ```
 
 ```sh
-service lighttpd reload
+systemctl reload lighttpd
 ```
 
 ---
@@ -159,7 +164,7 @@ service lighttpd reload
 ## Test
 
 ```sh
-sockstat -4 -l | grep 4591
+ss -lntp | grep 4591
 wscat -c wss://127.0.0.1:4591/hybbx --no-check
 wscat -c wss://your-host/hybbx-websocket/ws --no-check
 ```

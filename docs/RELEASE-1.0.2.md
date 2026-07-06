@@ -1,4 +1,4 @@
-# HyBBX v1.0.1
+# HyBBX v1.0.2
 
 Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSocket** (loopback `:4591`). Shared session core — `[auth]`, mail, chat, `/` commands.
 
@@ -45,6 +45,8 @@ cmake --install build --prefix "$HOME"
 
 `<prefix>/hybbx/` — `hybbx`, `hybbx-start`, `hybbx.ini`, `keys/`, `reverse-proxy/`, `data/`, `text/`, `logs/`, `lib/`.
 
+Operator docs assume **generic Linux** — your httpd docroot and init tool; no distro-specific paths. [WEBSOCKET.md](WEBSOCKET.md).
+
 ## See also
 
-[RELEASE-NOTES-1.0.1.txt](RELEASE-NOTES-1.0.1.txt) · [FEATURES.md](FEATURES.md) · [MANUAL.md](MANUAL.md) · [ROADMAP.md](ROADMAP.md)
+[RELEASE-NOTES-1.0.2.txt](RELEASE-NOTES-1.0.2.txt) · [FEATURES.md](FEATURES.md) · [MANUAL.md](MANUAL.md) · [ROADMAP.md](ROADMAP.md)

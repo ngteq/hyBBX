@@ -1,6 +1,6 @@
 # Operator manual
 
-**v1.0.1** — telnet, SSH, WebSocket. Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
+**v1.0.2** — telnet, SSH, WebSocket. Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
 
 Booleans: `yes`/`no` (+ `true`/`false`, `on`/`off`, `1`/`0`).
 
@@ -161,7 +161,7 @@ See `share/THIRD_PARTY_NOTICES.txt` (libssh LGPL).
 |-----|---------|-------------|
 | `enabled` | `yes` | Gated by `[networks] websocket=yes` |
 | `bind` / `bind6` | `127.0.0.1` / `::1` | Loopback — public TLS on reverse proxy |
-| `port` | `4591` | Loopback listen (`sockstat -4 -l \| grep 4591`) |
+| `port` | `4591` | Loopback listen (`ss -lntp \| grep 4591`) |
 | `path` | `/hybbx` | HyBBX upgrade path; httpd proxies `/hybbx-websocket/ws` here |
 | `max_connections` | `10` | Max simultaneous WebSocket clients |
 | `cert_dir` | `keys` | Self-signed `hybbx_ws.*` when OpenSSL linked |
@@ -274,4 +274,4 @@ HyBBX: GPL-3.0 — [LICENSING.md](LICENSING.md). External modems are separate pr
 
 ## See also
 
-[QUICKSTART.md](QUICKSTART.md) · [FEATURES.md](FEATURES.md) · [WEBSOCKET.md](WEBSOCKET.md) · [RELEASE-1.0.1.md](RELEASE-1.0.1.md)
+[QUICKSTART.md](QUICKSTART.md) · [FEATURES.md](FEATURES.md) · [WEBSOCKET.md](WEBSOCKET.md) · [RELEASE-1.0.2.md](RELEASE-1.0.2.md)

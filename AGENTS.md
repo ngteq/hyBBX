@@ -1,6 +1,6 @@
 # HyBBX — agent guide
 
-Humans: [CONTRIBUTING.md](CONTRIBUTING.md). **v1.0.1** — [docs/RELEASE-1.0.1.md](docs/RELEASE-1.0.1.md).
+Humans: [CONTRIBUTING.md](CONTRIBUTING.md). **v1.0.2** — [docs/RELEASE-1.0.2.md](docs/RELEASE-1.0.2.md).
 
 ## Product
 
@@ -21,12 +21,13 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 4. Buffers: [limits.h](include/hybbx/limits.h)
 5. Doc changes: feature → FEATURES.md; INI → MANUAL.md + `share/*.ini.example`
 6. **Version docs:** current release only (`HYBBX_VERSION_STRING`). No prior-version references. As-is software — compact text, no upgrade/history bloat. On bump: replace release docs; remove old `RELEASE-*.md` from tree.
+7. **Operator docs:** generic **Linux** — `HTTPD_DOCROOT`, `systemctl`, `ss`; no distro-specific package managers or layout (no Debian/Ubuntu/FreeBSD paths in operator guides).
 
 ## Doc map
 
 | File | Use |
 |------|-----|
-| [RELEASE-1.0.1.md](docs/RELEASE-1.0.1.md) | Current release |
+| [RELEASE-1.0.2.md](docs/RELEASE-1.0.2.md) | Current release |
 | [FEATURES.md](docs/FEATURES.md) | Shipped vs partial |
 | [MANUAL.md](docs/MANUAL.md) | INI + commands |
 | [WEBSOCKET.md](docs/WEBSOCKET.md) | WebSocket deploy |
