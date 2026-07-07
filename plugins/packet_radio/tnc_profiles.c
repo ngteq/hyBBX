@@ -122,6 +122,40 @@ hybbx_result_t hybbx_tnc_finalize_radio_duplex(hybbx_packet_radio_config_t *cfg)
     return HYBBX_OK;
 }
 
+hybbx_result_t hybbx_tnc_finalize_serial_line(hybbx_packet_radio_config_t *cfg)
+{
+    if (cfg == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (cfg->params.data_bits == 0) {
+        if (cfg->tnc == HYBBX_PACKET_RADIO_TNC_TNC2C) {
+            cfg->params.data_bits = HYBBX_TNC2C_DATA_BITS;
+        } else {
+            cfg->params.data_bits = 8;
+        }
+    }
+
+    if (cfg->params.serial_parity == HYBBX_TNC_SERIAL_PARITY_UNSET) {
+        if (cfg->tnc == HYBBX_PACKET_RADIO_TNC_TNC2C) {
+            cfg->params.serial_parity = HYBBX_TNC_SERIAL_PARITY_EVEN;
+        } else {
+            cfg->params.serial_parity = HYBBX_TNC_SERIAL_PARITY_NONE;
+        }
+    }
+
+    if (cfg->params.stop_bits == 0) {
+        cfg->params.stop_bits = 1;
+    }
+
+    if (cfg->params.assert_modem_lines < 0) {
+        cfg->params.assert_modem_lines =
+            (cfg->tnc == HYBBX_PACKET_RADIO_TNC_TNC2C) ? 1 : 0;
+    }
+
+    return HYBBX_OK;
+}
+
 hybbx_result_t hybbx_tnc_profile_apply_defaults(hybbx_packet_radio_config_t *cfg)
 {
     if (cfg == NULL) {
@@ -207,5 +241,6 @@ hybbx_result_t hybbx_tnc_profile_apply_defaults(hybbx_packet_radio_config_t *cfg
     }
 
     (void)hybbx_tnc_finalize_modulation(cfg);
-    return hybbx_tnc_finalize_radio_duplex(cfg);
+    (void)hybbx_tnc_finalize_radio_duplex(cfg);
+    return hybbx_tnc_finalize_serial_line(cfg);
 }

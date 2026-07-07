@@ -260,6 +260,54 @@ static hybbx_packet_radio_modulation_t parse_modulation(const char *value)
     return HYBBX_PACKET_RADIO_MOD_UNSET;
 }
 
+static hybbx_tnc_serial_parity_t parse_serial_parity(const char *value)
+{
+    if (value == NULL || value[0] == '\0') {
+        return HYBBX_TNC_SERIAL_PARITY_UNSET;
+    }
+
+    if (str_ieq(value, "even") || str_ieq(value, "e")) {
+        return HYBBX_TNC_SERIAL_PARITY_EVEN;
+    }
+
+    if (str_ieq(value, "odd") || str_ieq(value, "o")) {
+        return HYBBX_TNC_SERIAL_PARITY_ODD;
+    }
+
+    if (str_ieq(value, "none") || str_ieq(value, "n") || str_ieq(value, "off")) {
+        return HYBBX_TNC_SERIAL_PARITY_NONE;
+    }
+
+    return HYBBX_TNC_SERIAL_PARITY_UNSET;
+}
+
+static void apply_serial_line(hybbx_packet_radio_config_t *out, const char *value)
+{
+    if (value == NULL || value[0] == '\0') {
+        return;
+    }
+
+    if (str_ieq(value, "7e1")) {
+        out->params.data_bits = 7;
+        out->params.serial_parity = HYBBX_TNC_SERIAL_PARITY_EVEN;
+        out->params.stop_bits = 1;
+        return;
+    }
+
+    if (str_ieq(value, "8n1")) {
+        out->params.data_bits = 8;
+        out->params.serial_parity = HYBBX_TNC_SERIAL_PARITY_NONE;
+        out->params.stop_bits = 1;
+        return;
+    }
+
+    if (str_ieq(value, "7o1")) {
+        out->params.data_bits = 7;
+        out->params.serial_parity = HYBBX_TNC_SERIAL_PARITY_ODD;
+        out->params.stop_bits = 1;
+    }
+}
+
 static unsigned int default_radio_baud_for_modem(hybbx_tnc2c_modem_t modem)
 {
     switch (modem) {
@@ -337,6 +385,7 @@ hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
     out->params.modulation = HYBBX_PACKET_RADIO_MOD_UNSET;
     out->params.kiss_on_startup = 1;
     out->params.host_connect_on_start = 0;
+    out->params.assert_modem_lines = -1;
 
     value = find_kv(config, "device_type", scratch, sizeof(scratch));
     out->device_type = parse_device_type(value);
@@ -448,6 +497,43 @@ hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
     value = find_kv(config, "host_connect", scratch, sizeof(scratch));
     out->params.host_connect_on_start = hybbx_parse_bool(value,
                                                    out->params.host_connect_on_start);
+
+    value = find_kv(config, "serial_line", scratch, sizeof(scratch));
+    if (value != NULL) {
+        apply_serial_line(out, value);
+    }
+
+    value = find_kv(config, "data_bits", scratch, sizeof(scratch));
+    if (value != NULL && value[0] != '\0') {
+        unsigned int data_bits = parse_uint(value, 0);
+        if (data_bits == 7 || data_bits == 8) {
+            out->params.data_bits = data_bits;
+        }
+    }
+
+    value = find_kv(config, "parity", scratch, sizeof(scratch));
+    if (value != NULL) {
+        hybbx_tnc_serial_parity_t parity = parse_serial_parity(value);
+        if (parity != HYBBX_TNC_SERIAL_PARITY_UNSET) {
+            out->params.serial_parity = parity;
+        }
+    }
+
+    value = find_kv(config, "stop_bits", scratch, sizeof(scratch));
+    if (value != NULL && value[0] != '\0') {
+        unsigned int stop_bits = parse_uint(value, 0);
+        if (stop_bits == 1 || stop_bits == 2) {
+            out->params.stop_bits = stop_bits;
+        }
+    }
+
+    value = find_kv(config, "assert_modem_lines", scratch, sizeof(scratch));
+    if (value == NULL) {
+        value = find_kv(config, "rts_dtr", scratch, sizeof(scratch));
+    }
+    if (value != NULL) {
+        out->params.assert_modem_lines = hybbx_parse_bool(value, 0) ? 1 : 0;
+    }
 
     value = find_kv(config, "mycall", scratch, sizeof(scratch));
     if (value != NULL && value[0] != '\0') {

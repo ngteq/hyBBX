@@ -12,9 +12,26 @@ extern "C" {
 
 typedef struct hybbx_serial_port hybbx_serial_port_t;
 
+typedef enum hybbx_serial_parity {
+    HYBBX_SERIAL_PARITY_NONE = 0,
+    HYBBX_SERIAL_PARITY_EVEN = 1,
+    HYBBX_SERIAL_PARITY_ODD = 2
+} hybbx_serial_parity_t;
+
+typedef struct hybbx_serial_params {
+    unsigned int baud;
+    unsigned int data_bits;
+    hybbx_serial_parity_t parity;
+    unsigned int stop_bits;
+    int assert_modem_lines;
+} hybbx_serial_params_t;
+
+void hybbx_serial_params_default(hybbx_serial_params_t *params,
+                               unsigned int baud);
+
 hybbx_result_t hybbx_serial_open(hybbx_serial_port_t **out,
                                  const char *device,
-                                 unsigned int baud);
+                                 const hybbx_serial_params_t *params);
 
 void hybbx_serial_close(hybbx_serial_port_t *port);
 

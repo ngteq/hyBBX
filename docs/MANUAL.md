@@ -213,6 +213,7 @@ On **Secondary**: TNC settings + `circuit_host`, `circuit_port`, matching `link_
 | `protocol` | `kiss`, `tnc2`, `sixpack` |
 | `device` / `device_type` | Serial path |
 | `baud` | Host serial baud |
+| `serial_line` | `7e1` (TNC2C default), `8n1`, or `data_bits` + `parity` |
 | `modem` | `tcm3105`, etc. |
 | `radio_band` | `amateur`, `cb` |
 | `radio_duplex` | `half`, `full` |

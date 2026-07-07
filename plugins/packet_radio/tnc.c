@@ -354,6 +354,41 @@ static hybbx_result_t tnc_build_tx_path(hybbx_tnc_t *tnc)
     return HYBBX_OK;
 }
 
+static const char *serial_parity_letter(hybbx_tnc_serial_parity_t parity)
+{
+    switch (parity) {
+    case HYBBX_TNC_SERIAL_PARITY_EVEN:
+        return "E";
+    case HYBBX_TNC_SERIAL_PARITY_ODD:
+        return "O";
+    case HYBBX_TNC_SERIAL_PARITY_NONE:
+    default:
+        return "N";
+    }
+}
+
+static void tnc_serial_params_from_config(const hybbx_packet_radio_config_t *config,
+                                          hybbx_serial_params_t *out)
+{
+    hybbx_serial_params_default(out, config->baud);
+    out->data_bits = config->params.data_bits;
+    out->stop_bits = config->params.stop_bits;
+    out->assert_modem_lines = config->params.assert_modem_lines;
+
+    switch (config->params.serial_parity) {
+    case HYBBX_TNC_SERIAL_PARITY_EVEN:
+        out->parity = HYBBX_SERIAL_PARITY_EVEN;
+        break;
+    case HYBBX_TNC_SERIAL_PARITY_ODD:
+        out->parity = HYBBX_SERIAL_PARITY_ODD;
+        break;
+    case HYBBX_TNC_SERIAL_PARITY_NONE:
+    default:
+        out->parity = HYBBX_SERIAL_PARITY_NONE;
+        break;
+    }
+}
+
 static const char *tnc_profile_name(hybbx_packet_radio_tnc_t tnc)
 {
     switch (tnc) {
@@ -491,18 +526,28 @@ hybbx_result_t hybbx_tnc_open(hybbx_tnc_t **out,
     hybbx_sixpack_decoder_init(&tnc->sixpack_dec);
     hybbx_tnc_host_init(&tnc->host, on_host_text, on_host_event, tnc);
 
-    rc = hybbx_serial_open(&tnc->serial, config->device, config->baud);
+    hybbx_serial_params_t serial_params;
+
+    tnc_serial_params_from_config(config, &serial_params);
+
+    rc = hybbx_serial_open(&tnc->serial, config->device, &serial_params);
     if (rc != HYBBX_OK) {
-        fprintf(stderr, "[tnc] failed to open %s at %u baud\n",
-                config->device, config->baud);
+        fprintf(stderr, "[tnc] failed to open %s at %u baud (%u%c%u)\n",
+                config->device, config->baud, serial_params.data_bits,
+                *serial_parity_letter(config->params.serial_parity),
+                serial_params.stop_bits);
         free(tnc);
         return rc;
     }
 
-    printf("[tnc] profile=%s protocol=%u device=%s host=%u radio=%u "
-           "modem=%s modulation=%s band=%s duplex=%s\n",
+    printf("[tnc] profile=%s protocol=%u device=%s host=%u %u%c%u rts_dtr=%s "
+           "radio=%u modem=%s modulation=%s band=%s duplex=%s\n",
            tnc_profile_name(config->tnc), (unsigned)config->protocol,
-           config->device, config->baud, config->params.radio_baud,
+           config->device, config->baud, serial_params.data_bits,
+           *serial_parity_letter(config->params.serial_parity),
+           serial_params.stop_bits,
+           serial_params.assert_modem_lines ? "on" : "off",
+           config->params.radio_baud,
            modem_name(config->params.modem),
            hybbx_packet_radio_modulation_name(config->params.modulation),
            hybbx_packet_radio_band_name(config->params.band),

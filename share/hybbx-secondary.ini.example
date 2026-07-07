@@ -47,6 +47,7 @@ protocol = kiss
 device_type = usb
 device = /dev/ttyUSB0
 baud = 2400
+serial_line = 7e1
 modem = tcm3105
 radio_baud = 1200
 clock_mhz = 4.9

@@ -30,6 +30,14 @@ extern "C" {
 #define HYBBX_TNC2C_CLOCK_10_MHZ   10.0f
 #define HYBBX_TNC2C_HOST_BAUD_MIN  300u
 #define HYBBX_TNC2C_HOST_BAUD_MAX  38400u
+#define HYBBX_TNC2C_DATA_BITS      7u
+
+typedef enum hybbx_tnc_serial_parity {
+    HYBBX_TNC_SERIAL_PARITY_UNSET = 0,
+    HYBBX_TNC_SERIAL_PARITY_NONE = 1,
+    HYBBX_TNC_SERIAL_PARITY_EVEN = 2,
+    HYBBX_TNC_SERIAL_PARITY_ODD = 3
+} hybbx_tnc_serial_parity_t;
 
 #define HYBBX_PACKET_RADIO_VIA_MAX 8
 
@@ -103,6 +111,10 @@ typedef struct hybbx_tnc_params {
     int fullduplex;
     int kiss_on_startup;
     int host_connect_on_start;
+    unsigned int data_bits;
+    hybbx_tnc_serial_parity_t serial_parity;
+    unsigned int stop_bits;
+    int assert_modem_lines;
 } hybbx_tnc_params_t;
 
 typedef struct hybbx_packet_radio_config {
@@ -179,6 +191,9 @@ hybbx_result_t hybbx_tnc_finalize_radio_duplex(hybbx_packet_radio_config_t *cfg)
 
 /** Apply profile-specific defaults (TNC2C, BayCom, PC-COM, generic). */
 hybbx_result_t hybbx_tnc_profile_apply_defaults(hybbx_packet_radio_config_t *cfg);
+
+/** Apply host serial line defaults (TNC2C: 7E1 + RTS/DTR). */
+hybbx_result_t hybbx_tnc_finalize_serial_line(hybbx_packet_radio_config_t *cfg);
 
 #ifdef __cplusplus
 }

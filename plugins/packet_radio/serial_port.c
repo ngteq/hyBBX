@@ -9,6 +9,21 @@
 #include <string.h>
 #include <stdio.h>
 
+void hybbx_serial_params_default(hybbx_serial_params_t *params,
+                               unsigned int baud)
+{
+    if (params == NULL) {
+        return;
+    }
+
+    memset(params, 0, sizeof(*params));
+    params->baud = baud;
+    params->data_bits = 8;
+    params->parity = HYBBX_SERIAL_PARITY_NONE;
+    params->stop_bits = 1;
+    params->assert_modem_lines = 0;
+}
+
 #if defined(_WIN32)
 
 #define WIN32_LEAN_AND_MEAN
@@ -60,7 +75,8 @@ static int win32_normalize_device(const char *device, char *out, size_t out_len)
     return (size_t)snprintf(out, out_len, "\\\\.\\COM%u", com_num) < out_len;
 }
 
-static hybbx_result_t win32_configure(HANDLE handle, unsigned int baud)
+static hybbx_result_t win32_configure(HANDLE handle,
+                                      const hybbx_serial_params_t *params)
 {
     DCB dcb;
     COMMTIMEOUTS timeouts;
@@ -71,16 +87,31 @@ static hybbx_result_t win32_configure(HANDLE handle, unsigned int baud)
         return HYBBX_ERR_IO;
     }
 
-    dcb.BaudRate = (DWORD)baud;
-    dcb.ByteSize = 8;
-    dcb.Parity = NOPARITY;
-    dcb.StopBits = ONESTOPBIT;
+    dcb.BaudRate = (DWORD)params->baud;
+    dcb.ByteSize = (BYTE)(params->data_bits == 7 ? 7 : 8);
+    switch (params->parity) {
+    case HYBBX_SERIAL_PARITY_EVEN:
+        dcb.Parity = EVENPARITY;
+        dcb.fParity = TRUE;
+        break;
+    case HYBBX_SERIAL_PARITY_ODD:
+        dcb.Parity = ODDPARITY;
+        dcb.fParity = TRUE;
+        break;
+    case HYBBX_SERIAL_PARITY_NONE:
+    default:
+        dcb.Parity = NOPARITY;
+        dcb.fParity = FALSE;
+        break;
+    }
+    dcb.StopBits = params->stop_bits == 2 ? TWOSTOPBITS : ONESTOPBIT;
     dcb.fBinary = TRUE;
-    dcb.fParity = FALSE;
     dcb.fOutxCtsFlow = FALSE;
     dcb.fOutxDsrFlow = FALSE;
-    dcb.fDtrControl = DTR_CONTROL_ENABLE;
-    dcb.fRtsControl = RTS_CONTROL_ENABLE;
+    dcb.fDtrControl = params->assert_modem_lines ?
+        DTR_CONTROL_ENABLE : DTR_CONTROL_DISABLE;
+    dcb.fRtsControl = params->assert_modem_lines ?
+        RTS_CONTROL_ENABLE : RTS_CONTROL_DISABLE;
     dcb.fOutX = FALSE;
     dcb.fInX = FALSE;
     dcb.fNull = FALSE;
@@ -105,13 +136,13 @@ static hybbx_result_t win32_configure(HANDLE handle, unsigned int baud)
 
 hybbx_result_t hybbx_serial_open(hybbx_serial_port_t **out,
                                  const char *device,
-                                 unsigned int baud)
+                                 const hybbx_serial_params_t *params)
 {
     hybbx_serial_port_t *port;
     char path[64];
     hybbx_result_t rc;
 
-    if (out == NULL || device == NULL || baud == 0) {
+    if (out == NULL || device == NULL || params == NULL || params->baud == 0) {
         return HYBBX_ERR_INVALID;
     }
 
@@ -131,14 +162,14 @@ hybbx_result_t hybbx_serial_open(hybbx_serial_port_t **out,
         return HYBBX_ERR_IO;
     }
 
-    rc = win32_configure(port->handle, baud);
+    rc = win32_configure(port->handle, params);
     if (rc != HYBBX_OK) {
         CloseHandle(port->handle);
         free(port);
         return rc;
     }
 
-    port->baud = baud;
+    port->baud = params->baud;
     *out = port;
     return HYBBX_OK;
 }
@@ -252,15 +283,20 @@ static int amiga_parse_device(const char *device, char *name, size_t name_len,
     return 1;
 }
 
-static hybbx_result_t amiga_configure(struct IOExtSer *io, unsigned int baud)
+static hybbx_result_t amiga_configure(struct IOExtSer *io,
+                                      const hybbx_serial_params_t *params)
 {
     io->IOSer.io_Command = SDCMD_SETPARAMS;
-    io->io_Baud = (ULONG)baud;
-    io->io_ReadLen = 8;
-    io->io_WriteLen = 8;
-    io->io_StopBits = 1;
-    io->io_SerFlags = (UBYTE)((io->io_SerFlags & (UBYTE)~SERF_PARTY_ON) |
-                              SERF_XDISABLED);
+    io->io_Baud = (ULONG)params->baud;
+    io->io_ReadLen = (UBYTE)(params->data_bits == 7 ? 7 : 8);
+    io->io_WriteLen = (UBYTE)(params->data_bits == 7 ? 7 : 8);
+    io->io_StopBits = (UBYTE)(params->stop_bits == 2 ? 2 : 1);
+    io->io_SerFlags = (UBYTE)(io->io_SerFlags & (UBYTE)~SERF_PARTY_ON);
+    if (params->parity == HYBBX_SERIAL_PARITY_EVEN ||
+        params->parity == HYBBX_SERIAL_PARITY_ODD) {
+        io->io_SerFlags |= SERF_PARTY_ON;
+    }
+    io->io_SerFlags |= SERF_XDISABLED;
 
     if (DoIO((struct IORequest *)io) != 0) {
         return HYBBX_ERR_IO;
@@ -271,12 +307,12 @@ static hybbx_result_t amiga_configure(struct IOExtSer *io, unsigned int baud)
 
 hybbx_result_t hybbx_serial_open(hybbx_serial_port_t **out,
                                  const char *device,
-                                 unsigned int baud)
+                                 const hybbx_serial_params_t *params)
 {
     hybbx_serial_port_t *port;
     hybbx_result_t rc;
 
-    if (out == NULL || device == NULL || baud == 0) {
+    if (out == NULL || device == NULL || params == NULL || params->baud == 0) {
         return HYBBX_ERR_INVALID;
     }
 
@@ -314,7 +350,7 @@ hybbx_result_t hybbx_serial_open(hybbx_serial_port_t **out,
         return HYBBX_ERR_IO;
     }
 
-    rc = amiga_configure(port->io, baud);
+    rc = amiga_configure(port->io, params);
     if (rc != HYBBX_OK) {
         CloseDevice((struct IORequest *)port->io);
         DeleteExtIO((struct IORequest *)port->io);
@@ -323,7 +359,7 @@ hybbx_result_t hybbx_serial_open(hybbx_serial_port_t **out,
         return rc;
     }
 
-    port->baud = baud;
+    port->baud = params->baud;
     *out = port;
     return HYBBX_OK;
 }
@@ -390,6 +426,7 @@ hybbx_result_t hybbx_serial_read(hybbx_serial_port_t *port,
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -458,9 +495,33 @@ static hybbx_result_t set_baud_rate(struct termios *tty, unsigned int baud)
     return HYBBX_OK;
 }
 
-static hybbx_result_t configure_port(int fd, unsigned int baud)
+static hybbx_result_t posix_assert_modem_lines(int fd, int on)
+{
+#ifdef TIOCMGET
+    int flags;
+
+    if (ioctl(fd, TIOCMGET, &flags) != 0) {
+        return HYBBX_ERR_IO;
+    }
+    if (on) {
+        flags |= TIOCM_RTS | TIOCM_DTR;
+    } else {
+        flags &= ~(TIOCM_RTS | TIOCM_DTR);
+    }
+    if (ioctl(fd, TIOCMSET, &flags) != 0) {
+        return HYBBX_ERR_IO;
+    }
+#else
+    (void)fd;
+    (void)on;
+#endif
+    return HYBBX_OK;
+}
+
+static hybbx_result_t configure_port(int fd, const hybbx_serial_params_t *params)
 {
     struct termios tty;
+    tcflag_t databits;
 
     if (tcgetattr(fd, &tty) != 0) {
         return HYBBX_ERR_IO;
@@ -468,11 +529,25 @@ static hybbx_result_t configure_port(int fd, unsigned int baud)
 
     cfmakeraw(&tty);
     tty.c_cflag |= (CLOCAL | CREAD);
-    tty.c_cflag &= ~CSTOPB;
+    tty.c_cflag &= ~(CSIZE | PARENB | PARODD | CSTOPB);
+    if (params->data_bits == 7) {
+        databits = CS7;
+    } else {
+        databits = CS8;
+    }
+    tty.c_cflag |= databits;
+    if (params->parity == HYBBX_SERIAL_PARITY_EVEN) {
+        tty.c_cflag |= PARENB;
+    } else if (params->parity == HYBBX_SERIAL_PARITY_ODD) {
+        tty.c_cflag |= PARENB | PARODD;
+    }
+    if (params->stop_bits == 2) {
+        tty.c_cflag |= CSTOPB;
+    }
     tty.c_cc[VMIN] = 0;
     tty.c_cc[VTIME] = 1;
 
-    if (set_baud_rate(&tty, baud) != HYBBX_OK) {
+    if (set_baud_rate(&tty, params->baud) != HYBBX_OK) {
         return HYBBX_ERR_UNSUPPORTED;
     }
 
@@ -481,17 +556,17 @@ static hybbx_result_t configure_port(int fd, unsigned int baud)
     }
 
     tcflush(fd, TCIOFLUSH);
-    return HYBBX_OK;
+    return posix_assert_modem_lines(fd, params->assert_modem_lines);
 }
 
 hybbx_result_t hybbx_serial_open(hybbx_serial_port_t **out,
                                  const char *device,
-                                 unsigned int baud)
+                                 const hybbx_serial_params_t *params)
 {
     hybbx_serial_port_t *port;
     hybbx_result_t rc;
 
-    if (out == NULL || device == NULL || baud == 0) {
+    if (out == NULL || device == NULL || params == NULL || params->baud == 0) {
         return HYBBX_ERR_INVALID;
     }
 
@@ -506,14 +581,14 @@ hybbx_result_t hybbx_serial_open(hybbx_serial_port_t **out,
         return HYBBX_ERR_IO;
     }
 
-    rc = configure_port(port->fd, baud);
+    rc = configure_port(port->fd, params);
     if (rc != HYBBX_OK) {
         close(port->fd);
         free(port);
         return rc;
     }
 
-    port->baud = baud;
+    port->baud = params->baud;
     *out = port;
     return HYBBX_OK;
 }
