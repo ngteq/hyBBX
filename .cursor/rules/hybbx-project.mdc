@@ -9,7 +9,7 @@ Read [AGENTS.md](../../AGENTS.md) and [docs/DEVELOPMENT.md](../../docs/DEVELOPME
 
 ## Product
 
-Plugin-only session daemon; Main + Secondary HBX topology ([ROADMAP.md](../../docs/ROADMAP.md)). **v1.1.0** — [RELEASE-1.1.0.md](../../docs/RELEASE-1.1.0.md). Technical docs in `docs/`; root README is short overview.
+Plugin-only session daemon; Main + Secondary HBX topology ([ROADMAP.md](../../docs/ROADMAP.md)). **v1.1.1** — [RELEASE-1.1.1.md](../../docs/RELEASE-1.1.1.md). Technical docs in `docs/`; root README is short overview.
 
 ## Code
 

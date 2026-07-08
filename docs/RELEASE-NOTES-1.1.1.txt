@@ -1,8 +1,14 @@
-HyBBX v1.1.0
+HyBBX v1.1.1
 ============
 
 Multi-transport session daemon: telnet (:2323), SSH (:3232), WebSocket
 (loopback :4591). Mail, chat, and / commands on every path.
+
+What's new
+----------
+  %time% and %date% tokens in text/*.txt (banner, motd, news, rules)
+  [time] clock, seconds (default yes), date (iso | iso_short | us | eu)
+  Refreshed default text files
 
 Transports
 ----------
@@ -21,7 +27,7 @@ RF / edge
 
 Status
 ------
-  Verified : telnet, mail, chat, commands
+  Verified : telnet, mail, chat, commands, text time/date tokens
   Built    : SSH, WebSocket, packet_radio, baycom (opt-in), ARDOP, CRDOP
 
 Build
@@ -41,5 +47,5 @@ Demo
   Telnet  : telnet hybbx.un1t.me 2323
   SSH     : ssh hybbx.un1t.me -p 3232
 
-docs/RELEASE-1.1.0.md · docs/MANUAL.md · docs/TNCS.md · docs/BAYCOM.md
+docs/RELEASE-1.1.1.md · docs/MANUAL.md · docs/TNCS.md · docs/BAYCOM.md
 License: GPL-3.0

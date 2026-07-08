@@ -1,6 +1,6 @@
 # Operator manual
 
-**v1.1.0** — telnet, SSH, WebSocket. Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
+**v1.1.1** — telnet, SSH, WebSocket. Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
 
 Booleans: `yes`/`no` (+ `true`/`false`, `on`/`off`, `1`/`0`).
 
@@ -40,7 +40,8 @@ Users (telnet :2323, SSH :3232, WebSocket via proxy) ──► Main (storage, ma
 | Key | Default | Description |
 |-----|---------|-------------|
 | `clock` | `24h` | `24h` \| `12h` \| `am_pm` |
-| `seconds` | `no` | Append `:SS` when `yes` |
+| `seconds` | `yes` | Append `:SS` to `%time%` and log stamps when `yes` |
+| `date` | `iso` | `iso` (`YYYY/MM/DD`) \| `iso_short` (`YY/MM/DD`) \| `us` (`MM/DD/YYYY`) \| `eu` (`DD/MM/YYYY`) |
 
 ### `[log]`
 
@@ -94,7 +95,15 @@ First start creates Sysop in `users/users.ini` with a random password (10–14 c
 |-----|---------|-------------|
 | `path` | `text` | `banner.txt`, `motd.txt`, `news.txt`, `rules.txt` |
 
-Tokens: `@version@`, `@service@`, `@username@` in banner/motd.
+Tokens in `banner.txt`, `motd.txt`, `news.txt`, `rules.txt`:
+
+| Token | Expands to |
+|-------|------------|
+| `@version@` | HyBBX version (banner) |
+| `@service@` | `[service] name` (banner) |
+| `@username@` | Session display name (motd) |
+| `%time%` | Local time per `[time]` (default `HH:MM:SS` 24h) |
+| `%date%` | Local date per `[time] date=` (default `YYYY/MM/DD`) |
 
 ### `[chat]`
 
@@ -297,4 +306,4 @@ HyBBX: GPL-3.0 — [LICENSING.md](LICENSING.md). External modems are separate pr
 
 ## See also
 
-[QUICKSTART.md](QUICKSTART.md) · [FEATURES.md](FEATURES.md) · [WEBSOCKET.md](WEBSOCKET.md) · [RELEASE-1.1.0.md](RELEASE-1.1.0.md)
+[QUICKSTART.md](QUICKSTART.md) · [FEATURES.md](FEATURES.md) · [WEBSOCKET.md](WEBSOCKET.md) · [RELEASE-1.1.1.md](RELEASE-1.1.1.md)

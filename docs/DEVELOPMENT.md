@@ -1,6 +1,6 @@
 # Development
 
-[AGENTS.md](../AGENTS.md) · [REPOSITORY.md](REPOSITORY.md) · **v1.1.0**
+[AGENTS.md](../AGENTS.md) · [REPOSITORY.md](REPOSITORY.md) · **v1.1.1**
 
 ## Toolchain
 

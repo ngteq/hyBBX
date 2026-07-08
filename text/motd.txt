@@ -1,2 +1,5 @@
-Welcome, @username@
-Telnet, SSH, and WebSocket — same session and /commands.
+Hello, @username@.
+
+%date%  %time%
+
+/news  /who  /msg

@@ -23,6 +23,10 @@ struct hybbx_session;
 #define HYBBX_BANNER_TOKEN_SERVICE "@service@"
 /** Substituted in motd.txt (current session nickname). */
 #define HYBBX_TEXT_TOKEN_USERNAME "@username@"
+/** Substituted in text files — local time per `[time]` (default HH:MM:SS). */
+#define HYBBX_TEXT_TOKEN_TIME "%time%"
+/** Substituted in text files — local date per `[time] date=` (default YYYY/MM/DD). */
+#define HYBBX_TEXT_TOKEN_DATE "%date%"
 
 #define HYBBX_TEXTS_PATH_MAX 512
 
@@ -42,6 +46,7 @@ hybbx_result_t hybbx_texts_resolve(const hybbx_texts_config_t *texts,
 
 /**
  * Send a text file line-by-line to the session (connection output).
+ * Expands @version@, @service@, @username@, %time%, and %date%.
  * Missing files are skipped silently.
  */
 hybbx_result_t hybbx_texts_send_file(const hybbx_texts_config_t *texts,

@@ -1,3 +1,5 @@
-News — HyBBX
-Telnet, SSH, and WebSocket are available.
-RF bridges: built; live field validation planned.
+News
+
+No announcements.
+
+Edit text/news.txt to post items here.

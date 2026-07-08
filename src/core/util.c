@@ -1,3 +1,7 @@
+#if defined(__linux__)
+#define _DEFAULT_SOURCE
+#endif
+
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
 #include "hybbx/socket.h"
@@ -428,7 +432,78 @@ void hybbx_time_format_defaults(hybbx_time_format_t *fmt)
     }
 
     fmt->clock_12h = 0;
-    fmt->seconds = 0;
+    fmt->seconds = 1;
+    fmt->date_format = HYBBX_DATE_ISO;
+}
+
+const char *hybbx_date_format_name(hybbx_date_format_t fmt)
+{
+    switch (fmt) {
+    case HYBBX_DATE_ISO_SHORT:
+        return "iso_short";
+    case HYBBX_DATE_US:
+        return "us";
+    case HYBBX_DATE_EU:
+        return "eu";
+    case HYBBX_DATE_ISO:
+    default:
+        return "iso";
+    }
+}
+
+static hybbx_date_format_t parse_date_format(const char *value)
+{
+    if (value == NULL || value[0] == '\0') {
+        return HYBBX_DATE_ISO;
+    }
+
+    if (bool_token_ieq(value, "iso") || bool_token_ieq(value, "yyyy_mm_dd") ||
+        bool_token_ieq(value, "yyyy/mm/dd")) {
+        return HYBBX_DATE_ISO;
+    }
+
+    if (bool_token_ieq(value, "iso_short") || bool_token_ieq(value, "yy_mm_dd") ||
+        bool_token_ieq(value, "yy/mm/dd")) {
+        return HYBBX_DATE_ISO_SHORT;
+    }
+
+    if (bool_token_ieq(value, "us") || bool_token_ieq(value, "mm_dd_yyyy") ||
+        bool_token_ieq(value, "mm/dd/yyyy")) {
+        return HYBBX_DATE_US;
+    }
+
+    if (bool_token_ieq(value, "eu") || bool_token_ieq(value, "dd_mm_yyyy") ||
+        bool_token_ieq(value, "dd/mm/yyyy")) {
+        return HYBBX_DATE_EU;
+    }
+
+    return HYBBX_DATE_ISO;
+}
+
+hybbx_result_t hybbx_time_local_now(struct tm *out)
+{
+    time_t now;
+
+    if (out == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    now = time(NULL);
+    if (now == (time_t)-1) {
+        return HYBBX_ERR_IO;
+    }
+
+#if defined(_WIN32)
+    if (localtime_s(out, &now) != 0) {
+        return HYBBX_ERR_IO;
+    }
+#else
+    if (localtime_r(&now, out) == NULL) {
+        return HYBBX_ERR_IO;
+    }
+#endif
+
+    return HYBBX_OK;
 }
 
 const hybbx_time_format_t *hybbx_time_format_get(void)
@@ -467,14 +542,17 @@ void hybbx_time_config_apply(const struct hybbx_config *config)
 
         g_time_format.clock_12h = clock_12h;
         g_time_format.seconds =
-            hybbx_config_get_bool(config, "time", "seconds", 0);
+            hybbx_config_get_bool(config, "time", "seconds", 1);
+        g_time_format.date_format = parse_date_format(
+            hybbx_config_get(config, "time", "date", NULL));
     }
 
     g_time_format_ready = 1;
 
-    printf("[time] clock=%s seconds=%s\n",
+    printf("[time] clock=%s seconds=%s date=%s\n",
            g_time_format.clock_12h ? "12h" : "24h",
-           hybbx_bool_to_string(g_time_format.seconds));
+           hybbx_bool_to_string(g_time_format.seconds),
+           hybbx_date_format_name(g_time_format.date_format));
 }
 #else
 void hybbx_time_config_apply(const struct hybbx_config *config)
@@ -484,6 +562,110 @@ void hybbx_time_config_apply(const struct hybbx_config *config)
     g_time_format_ready = 1;
 }
 #endif
+
+hybbx_result_t hybbx_time_format_time(char *out, size_t out_len,
+                                      const struct tm *tm,
+                                      const hybbx_time_format_t *fmt)
+{
+    int hour;
+    int minute;
+    int second;
+    const char *suffix;
+    int n;
+
+    if (out == NULL || out_len == 0 || tm == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (fmt == NULL) {
+        fmt = hybbx_time_format_get();
+    }
+
+    hour = tm->tm_hour;
+    minute = tm->tm_min;
+    second = tm->tm_sec;
+    suffix = "";
+
+    if (fmt->clock_12h) {
+        if (hour >= 12) {
+            suffix = "pm";
+            if (hour > 12) {
+                hour -= 12;
+            }
+        } else {
+            suffix = "am";
+            if (hour == 0) {
+                hour = 12;
+            }
+        }
+    }
+
+    if (fmt->clock_12h) {
+        if (fmt->seconds) {
+            n = snprintf(out, out_len, "%02d:%02d:%02d %s",
+                         hour, minute, second, suffix);
+        } else {
+            n = snprintf(out, out_len, "%02d:%02d %s", hour, minute, suffix);
+        }
+    } else if (fmt->seconds) {
+        n = snprintf(out, out_len, "%02d:%02d:%02d", hour, minute, second);
+    } else {
+        n = snprintf(out, out_len, "%02d:%02d", hour, minute);
+    }
+
+    if (n < 0 || (size_t)n >= out_len) {
+        out[0] = '\0';
+        return HYBBX_ERR_INVALID;
+    }
+
+    return HYBBX_OK;
+}
+
+hybbx_result_t hybbx_time_format_date(char *out, size_t out_len,
+                                      const struct tm *tm,
+                                      const hybbx_time_format_t *fmt)
+{
+    int year;
+    int month;
+    int day;
+    int n;
+
+    if (out == NULL || out_len == 0 || tm == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (fmt == NULL) {
+        fmt = hybbx_time_format_get();
+    }
+
+    year = tm->tm_year + 1900;
+    month = tm->tm_mon + 1;
+    day = tm->tm_mday;
+
+    switch (fmt->date_format) {
+    case HYBBX_DATE_ISO_SHORT:
+        n = snprintf(out, out_len, "%02d/%02d/%02d",
+                     year % 100, month, day);
+        break;
+    case HYBBX_DATE_US:
+        n = snprintf(out, out_len, "%02d/%02d/%04d", month, day, year);
+        break;
+    case HYBBX_DATE_EU:
+        n = snprintf(out, out_len, "%02d/%02d/%04d", day, month, year);
+        break;
+    case HYBBX_DATE_ISO:
+    default:
+        n = snprintf(out, out_len, "%04d/%02d/%02d", year, month, day);
+        break;
+    }
+
+    if (n < 0 || (size_t)n >= out_len) {
+        out[0] = '\0';
+        return HYBBX_ERR_INVALID;
+    }
+
+    return HYBBX_OK;
+}
 
 hybbx_result_t hybbx_time_format_stamp(char *out, size_t out_len,
                                        const struct tm *tm,

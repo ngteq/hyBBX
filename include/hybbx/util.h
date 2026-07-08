@@ -4,6 +4,7 @@
 #include "hybbx/types.h"
 
 #include <stddef.h>
+#include <time.h>
 
 struct tm;
 
@@ -88,20 +89,47 @@ const char *hybbx_bool_to_string(int value);
 const char *hybbx_result_name(hybbx_result_t rc);
 
 /**
- * HyBBX system-local date/time stamp (yyyymmdd + time).
- * Default: 24-hour clock, minutes only (no seconds).
+ * HyBBX system-local date/time formatting for logs and text/ tokens.
+ * Default: 24-hour clock with seconds, ISO date YYYY/MM/DD.
  */
+typedef enum hybbx_date_format {
+    HYBBX_DATE_ISO = 0,
+    HYBBX_DATE_ISO_SHORT = 1,
+    HYBBX_DATE_US = 2,
+    HYBBX_DATE_EU = 3,
+} hybbx_date_format_t;
+
 typedef struct hybbx_time_format {
     int clock_12h;
     int seconds;
+    hybbx_date_format_t date_format;
 } hybbx_time_format_t;
 
 void hybbx_time_format_defaults(hybbx_time_format_t *fmt);
 const hybbx_time_format_t *hybbx_time_format_get(void);
 void hybbx_time_config_apply(const struct hybbx_config *config);
 
+/** Local wall-clock time for text tokens and stamps. */
+hybbx_result_t hybbx_time_local_now(struct tm *out);
+
+const char *hybbx_date_format_name(hybbx_date_format_t fmt);
+
 /**
- * Format @p tm as @c yyyymmdd HH:MM per @p fmt.
+ * Format @p tm as clock time (default @c HH:MM:SS, 12h when configured).
+ */
+hybbx_result_t hybbx_time_format_time(char *out, size_t out_len,
+                                      const struct tm *tm,
+                                      const hybbx_time_format_t *fmt);
+
+/**
+ * Format @p tm as calendar date (default @c YYYY/MM/DD).
+ */
+hybbx_result_t hybbx_time_format_date(char *out, size_t out_len,
+                                      const struct tm *tm,
+                                      const hybbx_time_format_t *fmt);
+
+/**
+ * Format @p tm as @c yyyymmdd HH:MM per @p fmt (compact log stamp).
  * @return HYBBX_OK on success.
  */
 hybbx_result_t hybbx_time_format_stamp(char *out, size_t out_len,

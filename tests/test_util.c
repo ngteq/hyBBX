@@ -97,6 +97,38 @@ int main(void)
         }
     }
 
+    {
+        struct tm tm_ref = {0};
+        char time_buf[32];
+        char date_buf[32];
+        hybbx_time_format_t fmt;
+
+        tm_ref.tm_year = 126;
+        tm_ref.tm_mon = 6;
+        tm_ref.tm_mday = 8;
+        tm_ref.tm_hour = 15;
+        tm_ref.tm_min = 4;
+        tm_ref.tm_sec = 5;
+
+        hybbx_time_format_defaults(&fmt);
+        if (hybbx_time_format_time(time_buf, sizeof(time_buf), &tm_ref,
+                                   &fmt) == HYBBX_OK) {
+            check_str("time 24h seconds", time_buf, "15:04:05");
+        }
+
+        fmt.date_format = HYBBX_DATE_US;
+        if (hybbx_time_format_date(date_buf, sizeof(date_buf), &tm_ref,
+                                   &fmt) == HYBBX_OK) {
+            check_str("date us", date_buf, "07/08/2026");
+        }
+
+        fmt.date_format = HYBBX_DATE_ISO;
+        if (hybbx_time_format_date(date_buf, sizeof(date_buf), &tm_ref,
+                                   &fmt) == HYBBX_OK) {
+            check_str("date iso", date_buf, "2026/07/08");
+        }
+    }
+
     if (g_failures != 0) {
         fprintf(stderr, "%u test(s) failed\n", g_failures);
         return EXIT_FAILURE;

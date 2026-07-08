@@ -1,12 +1,13 @@
-; HyBBX Main — v1.1.0. Full keys: docs/MANUAL.md
+; HyBBX Main — v1.1.1. Full keys: docs/MANUAL.md
 ; Template: Main datacenter (telnet + HBX hub). RF on Secondary unless standalone.
 
 [service]
 name = hyBBX
 
 [time]
-; clock = 24h | 12h | am_pm
-; seconds = no
+clock = 24h
+seconds = yes
+; date = iso | iso_short | us | eu
 
 [storage]
 backend = flatfile

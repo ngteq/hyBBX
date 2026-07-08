@@ -1,31 +1,28 @@
-HyBBX — Rules and legal notice
+HyBBX — Terms of use
 
-HyBBX is a multi-transport session daemon (telnet, SSH, WebSocket).
-Packet-radio bridges are built but not yet verified in live RF operation.
+HyBBX provides sessions over several transports (telnet, SSH, WebSocket).
+Packet-radio links exist in software; on-air use is not yet field-proven.
 
 1. Your responsibility
-You use this system at your own risk. You are liable for your
-actions, messages, and content. The operator does not assume
-responsibility for user conduct.
+Access is at your own risk. You answer for what you send, post, and do.
+The operator is not responsible for how users behave.
 
 2. Identity
-No legal-name requirement. Use nickname or callsign. Profile
-data for account management may be visible to Sysop/Admin only.
+Real names are not required. A nickname or callsign is enough. Account
+details used for administration may be seen by Sysop/Admin staff only.
 
 3. Data
-This service does not sell user data. Mail and accounts stay on
-this installation unless law requires disclosure.
+User data is not sold. Mail and accounts remain on this host unless
+disclosure is required by law.
 
 4. Logging
-Connections and security events may be logged (e.g. security.log)
-for operation, debugging, and abuse prevention.
+Sessions and security-related events may be recorded (for example in
+security.log) to run the service, fix faults, and deter abuse.
 
 5. Acceptable use
-No unlawful activity, harassment, or attempts to harm the service
-or other users. Staff may restrict or end access.
+Do not break the law, harass others, or try to damage the system or its
+users. Staff may limit or revoke access.
 
 6. Changes
-Operator may update this text in text/rules.txt. Use /rules or
-/legal to read the current version.
-
-Commands: /help
+The operator may revise this notice in text/rules.txt. Read the current
+text anytime with /rules or /legal.

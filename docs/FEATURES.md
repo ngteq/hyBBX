@@ -1,6 +1,6 @@
 # Feature status
 
-**v1.1.0** · [RELEASE-1.1.0.md](RELEASE-1.1.0.md) · INI: [MANUAL.md](MANUAL.md)
+**v1.1.1** · [RELEASE-1.1.1.md](RELEASE-1.1.1.md) · INI: [MANUAL.md](MANUAL.md)
 
 | Status | Meaning |
 |--------|---------|
@@ -20,6 +20,7 @@
 | Flat-file storage | **Verified** |
 | Traffic pacing 2400/80 | **Verified** |
 | Texts (`text/*.txt`) | **Verified** |
+| Text tokens `%time%`, `%date%` | **Verified** |
 | SSH `:3232` | **Built** |
 | WebSocket forward-proxy | **Built** |
 | Browser terminal UI | **Built** |

@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 void hybbx_texts_config_defaults(hybbx_texts_config_t *texts)
 {
@@ -52,7 +53,9 @@ static void expand_text_line(char *out, size_t out_len,
                              const char *line,
                              const char *version,
                              const char *service_name,
-                             const char *username)
+                             const char *username,
+                             const char *time_text,
+                             const char *date_text)
 {
     size_t pos = 0;
     size_t i = 0;
@@ -71,6 +74,12 @@ static void expand_text_line(char *out, size_t out_len,
     }
     if (username == NULL) {
         username = "";
+    }
+    if (time_text == NULL) {
+        time_text = "";
+    }
+    if (date_text == NULL) {
+        date_text = "";
     }
 
     while (line[i] != '\0' && pos + 1 < out_len) {
@@ -95,18 +104,54 @@ static void expand_text_line(char *out, size_t out_len,
             continue;
         }
 
+        if (strncmp(line + i, HYBBX_TEXT_TOKEN_TIME,
+                    strlen(HYBBX_TEXT_TOKEN_TIME)) == 0) {
+            pos = append_token_expanded(out, out_len, pos, time_text);
+            i += strlen(HYBBX_TEXT_TOKEN_TIME);
+            continue;
+        }
+
+        if (strncmp(line + i, HYBBX_TEXT_TOKEN_DATE,
+                    strlen(HYBBX_TEXT_TOKEN_DATE)) == 0) {
+            pos = append_token_expanded(out, out_len, pos, date_text);
+            i += strlen(HYBBX_TEXT_TOKEN_DATE);
+            continue;
+        }
+
         out[pos++] = line[i++];
     }
 
     out[pos] = '\0';
 }
 
+static void format_text_tokens(char *time_text, size_t time_len,
+                               char *date_text, size_t date_len,
+                               const struct tm *tm)
+{
+    if (time_text != NULL && time_len > 0) {
+        time_text[0] = '\0';
+        if (tm != NULL) {
+            (void)hybbx_time_format_time(time_text, time_len, tm, NULL);
+        }
+    }
+
+    if (date_text != NULL && date_len > 0) {
+        date_text[0] = '\0';
+        if (tm != NULL) {
+            (void)hybbx_time_format_date(date_text, date_len, tm, NULL);
+        }
+    }
+}
+
 static void expand_banner_line(char *out, size_t out_len,
                                const char *line,
                                const char *version,
-                               const char *service_name)
+                               const char *service_name,
+                               const char *time_text,
+                               const char *date_text)
 {
-    expand_text_line(out, out_len, line, version, service_name, NULL);
+    expand_text_line(out, out_len, line, version, service_name, NULL,
+                     time_text, date_text);
 }
 
 static hybbx_result_t send_banner_fallback(hybbx_session_t *session,
@@ -138,11 +183,21 @@ hybbx_result_t hybbx_texts_send_banner(const hybbx_texts_config_t *texts,
     char expanded[HYBBX_LINE_MAX];
     FILE *fp;
     char line[HYBBX_LINE_MAX];
+    char time_text[32];
+    char date_text[32];
+    struct tm now_tm;
+    const struct tm *tm_ptr = NULL;
     hybbx_result_t rc;
 
     if (texts == NULL || session == NULL) {
         return HYBBX_ERR_INVALID;
     }
+
+    if (hybbx_time_local_now(&now_tm) == HYBBX_OK) {
+        tm_ptr = &now_tm;
+    }
+    format_text_tokens(time_text, sizeof(time_text),
+                       date_text, sizeof(date_text), tm_ptr);
 
     rc = hybbx_texts_resolve(texts, HYBBX_TEXT_BANNER, path, sizeof(path));
     if (rc != HYBBX_OK) {
@@ -158,7 +213,7 @@ hybbx_result_t hybbx_texts_send_banner(const hybbx_texts_config_t *texts,
         size_t n;
 
         expand_banner_line(expanded, sizeof(expanded), line, version,
-                          service_name);
+                          service_name, time_text, date_text);
         n = strlen(expanded);
         while (n > 0 && (expanded[n - 1] == '\n' || expanded[n - 1] == '\r')) {
             expanded[--n] = '\0';
@@ -182,6 +237,10 @@ hybbx_result_t hybbx_texts_send_motd(const hybbx_texts_config_t *texts,
     char expanded[HYBBX_LINE_MAX];
     FILE *fp;
     char line[HYBBX_LINE_MAX];
+    char time_text[32];
+    char date_text[32];
+    struct tm now_tm;
+    const struct tm *tm_ptr = NULL;
     const char *username;
     hybbx_result_t rc;
 
@@ -193,6 +252,12 @@ hybbx_result_t hybbx_texts_send_motd(const hybbx_texts_config_t *texts,
     if (username[0] == '\0') {
         username = "visitor";
     }
+
+    if (hybbx_time_local_now(&now_tm) == HYBBX_OK) {
+        tm_ptr = &now_tm;
+    }
+    format_text_tokens(time_text, sizeof(time_text),
+                       date_text, sizeof(date_text), tm_ptr);
 
     rc = hybbx_texts_resolve(texts, HYBBX_TEXT_MOTD, path, sizeof(path));
     if (rc != HYBBX_OK) {
@@ -207,7 +272,8 @@ hybbx_result_t hybbx_texts_send_motd(const hybbx_texts_config_t *texts,
     while (fgets(line, sizeof(line), fp) != NULL) {
         size_t n;
 
-        expand_text_line(expanded, sizeof(expanded), line, NULL, NULL, username);
+        expand_text_line(expanded, sizeof(expanded), line, NULL, NULL,
+                         username, time_text, date_text);
         n = strlen(expanded);
         while (n > 0 && (expanded[n - 1] == '\n' || expanded[n - 1] == '\r')) {
             expanded[--n] = '\0';
@@ -229,13 +295,24 @@ hybbx_result_t hybbx_texts_send_file(const hybbx_texts_config_t *texts,
                                      const char *filename)
 {
     char path[HYBBX_PATH_MAX];
+    char expanded[HYBBX_LINE_MAX];
     FILE *fp;
     char line[HYBBX_LINE_MAX];
+    char time_text[32];
+    char date_text[32];
+    struct tm now_tm;
+    const struct tm *tm_ptr = NULL;
     hybbx_result_t rc;
 
     if (texts == NULL || session == NULL || filename == NULL) {
         return HYBBX_ERR_INVALID;
     }
+
+    if (hybbx_time_local_now(&now_tm) == HYBBX_OK) {
+        tm_ptr = &now_tm;
+    }
+    format_text_tokens(time_text, sizeof(time_text),
+                       date_text, sizeof(date_text), tm_ptr);
 
     rc = hybbx_texts_resolve(texts, filename, path, sizeof(path));
     if (rc != HYBBX_OK) {
@@ -248,14 +325,17 @@ hybbx_result_t hybbx_texts_send_file(const hybbx_texts_config_t *texts,
     }
 
     while (fgets(line, sizeof(line), fp) != NULL) {
-        size_t n = strlen(line);
+        size_t n;
 
-        while (n > 0 && (line[n - 1] == '\n' || line[n - 1] == '\r')) {
-            line[--n] = '\0';
+        expand_text_line(expanded, sizeof(expanded), line, NULL, NULL, NULL,
+                         time_text, date_text);
+        n = strlen(expanded);
+        while (n > 0 && (expanded[n - 1] == '\n' || expanded[n - 1] == '\r')) {
+            expanded[--n] = '\0';
         }
 
-        if (line[0] != '\0') {
-            hybbx_session_write_line(session, line);
+        if (expanded[0] != '\0') {
+            hybbx_session_write_line(session, expanded);
         } else {
             hybbx_session_write(session, "\n");
         }

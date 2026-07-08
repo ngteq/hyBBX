@@ -1,8 +1,17 @@
-# HyBBX v1.1.0
+# HyBBX v1.1.1
 
 Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSocket** (loopback `:4591`). Shared session core — `[auth]`, mail, chat, `/` commands.
 
 **Demo:** [README — hybbx.un1t.me](../README.md#live-hybbxun1tme).
+
+## What's new
+
+| Item | Detail |
+|------|--------|
+| `%time%` / `%date%` | Tokens in `text/*.txt` — clock and date per `[time]` |
+| `[time] date` | `iso` (default `YYYY/MM/DD`), `iso_short`, `us`, `eu` |
+| `[time] seconds` | Default `yes` — `HH:MM:SS` (or `12h` / `am_pm`) |
+| Default texts | Refreshed `banner.txt`, `motd.txt`, `news.txt`, `rules.txt` |
 
 ## Transports
 
@@ -37,6 +46,7 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 | Area | Status |
 |------|--------|
 | Telnet, mail, chat, commands | **Verified** |
+| Text tokens (`%time%`, `%date%`) | **Verified** |
 | SSH, WebSocket | **Built** — verify in your deployment |
 | HBX, packet_radio, ARDOP, CRDOP | **Built** — not live RF verified |
 | BayCom PR-Stack | **Built** (opt-in compile) |
@@ -59,4 +69,4 @@ Operator documentation assumes **Linux** — `HTTPD_DOCROOT`, `systemctl`, `ss`.
 
 ## See also
 
-[RELEASE-NOTES-1.1.0.txt](RELEASE-NOTES-1.1.0.txt) · [FEATURES.md](FEATURES.md) · [MANUAL.md](MANUAL.md) · [ROADMAP.md](ROADMAP.md)
+[RELEASE-NOTES-1.1.1.txt](RELEASE-NOTES-1.1.1.txt) · [FEATURES.md](FEATURES.md) · [MANUAL.md](MANUAL.md) · [ROADMAP.md](ROADMAP.md)

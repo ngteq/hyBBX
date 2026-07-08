@@ -1,2 +1,4 @@
-HyBBX @version@ — multi-transport session daemon
-@service@ — /help  /rules  /login  /register
+@service@
+@version@    %date%  %time%
+
+/help  /login  /register
