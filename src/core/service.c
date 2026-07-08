@@ -1069,7 +1069,16 @@ static void apply_transport_cb(const hybbx_transport_plugin_t *plugin,
         return;
     }
 
-    transport_config = hybbx_config_format_section(ctx->config, section);
+    if (strcmp(plugin->name, "packet_radio") == 0 ||
+        strcmp(plugin->name, "baycom") == 0) {
+        transport_config = hybbx_config_format_transport_sections(ctx->config,
+                                                                  plugin->name);
+    } else {
+        transport_config = NULL;
+    }
+    if (transport_config == NULL) {
+        transport_config = hybbx_config_format_section(ctx->config, section);
+    }
     rc = hybbx_service_start_transport(ctx->service, plugin->name,
                                        transport_config);
     free(transport_config);

@@ -45,6 +45,18 @@
 /** Default [circuit] max_links when not set in INI. */
 #define HYBBX_CIRCUIT_DEFAULT_MAX_LINKS 8u
 
+/** Maximum concurrent TNC devices in one packet_radio transport. */
+#define HYBBX_PACKET_RADIO_MAX_INSTANCES 8u
+
+/** Separates multiple INI sections in one packet_radio start config. */
+#define HYBBX_PACKET_RADIO_INSTANCE_SEP '\x1e'
+
+/** Maximum concurrent BayCom modems in one baycom transport. */
+#define HYBBX_BAYCOM_MAX_INSTANCES 4u
+
+/** Separates multiple INI sections in one baycom start config. */
+#define HYBBX_BAYCOM_INSTANCE_SEP '\x1e'
+
 /** Default guest session lifetime before auto-disconnect (minutes). */
 #define HYBBX_DEFAULT_GUEST_TIMEOUT_MINUTES 30u
 

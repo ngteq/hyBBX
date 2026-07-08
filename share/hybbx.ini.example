@@ -61,6 +61,7 @@ path = mail
 
 [networks]
 ax25 = no
+baycom = no
 ardop = no
 crdop = no
 ssh = yes

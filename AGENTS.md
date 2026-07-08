@@ -11,6 +11,7 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 | `src/core/`, `plugins/telnet` | TNC, KISS, sound-card apps |
 | `plugins/ssh`, `plugins/websocket` | libssh; httpd for browser UI |
 | `plugins/packet_radio` | Serial/USB TNC |
+| `plugins/baycom` | BayCom PR-Stack (kernel SER12/PAR96) |
 | `plugins/ardop`, `plugins/crdop` | ARDOPC, CRDOPC |
 
 ## Rules
@@ -30,6 +31,8 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 | [RELEASE-1.0.2.md](docs/RELEASE-1.0.2.md) | Current release |
 | [FEATURES.md](docs/FEATURES.md) | Shipped vs partial |
 | [MANUAL.md](docs/MANUAL.md) | INI + commands |
+| [TNCS.md](docs/TNCS.md) | Supported TNC profiles |
+| [BAYCOM.md](docs/BAYCOM.md) | BayCom PR-Stack plugin |
 | [WEBSOCKET.md](docs/WEBSOCKET.md) | WebSocket deploy |
 | [ROADMAP.md](docs/ROADMAP.md) | Planned work |
 | [BUILD.md](docs/BUILD.md) | CMake |

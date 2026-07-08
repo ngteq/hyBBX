@@ -44,6 +44,7 @@ void hybbx_networks_config_defaults(hybbx_networks_config_t *networks)
     }
 
     networks->ax25 = 0;
+    networks->baycom = 0;
     networks->ardop = 0;
     networks->crdop = 0;
     networks->ssh = 0;
@@ -64,14 +65,10 @@ void hybbx_networks_config_apply(hybbx_networks_config_t *networks,
         return;
     }
 
-    if (networks_has_key(config, "ax25")) {
-        networks->ax25 = hybbx_config_get_bool(config, "networks", "ax25", 0);
-    } else if (networks_has_key(config, "packet_radio")) {
-        networks->ax25 = hybbx_config_get_bool(config, "networks",
-                                              "packet_radio", 0);
-    } else {
-        networks->ax25 = hybbx_config_get_bool(config, "transport.packet_radio",
-                                               "enabled", 0);
+    networks->ax25 = hybbx_config_get_bool(config, "networks", "ax25", 0);
+
+    if (networks_has_key(config, "baycom")) {
+        networks->baycom = hybbx_config_get_bool(config, "networks", "baycom", 0);
     }
 
     if (networks_has_key(config, "ardop")) {
@@ -95,9 +92,10 @@ void hybbx_networks_config_apply(hybbx_networks_config_t *networks,
                                                   1);
     }
 
-    printf("[networks] telnet=static ssh=%s ax25=%s ardop=%s crdop=%s websocket=%s circuit=%s\n",
+    printf("[networks] telnet=static ssh=%s ax25=%s baycom=%s ardop=%s crdop=%s websocket=%s circuit=%s\n",
            hybbx_bool_to_string(networks->ssh),
            hybbx_bool_to_string(networks->ax25),
+           hybbx_bool_to_string(networks->baycom),
            hybbx_bool_to_string(networks->ardop),
            hybbx_bool_to_string(networks->crdop),
            hybbx_bool_to_string(networks->websocket),
@@ -130,6 +128,10 @@ int hybbx_networks_transport_wanted(const char *plugin_name,
 
     if (str_ieq(plugin_name, "packet_radio")) {
         return networks->ax25;
+    }
+
+    if (str_ieq(plugin_name, "baycom")) {
+        return networks->baycom;
     }
 
     if (str_ieq(plugin_name, "ardop")) {

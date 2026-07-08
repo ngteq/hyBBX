@@ -469,6 +469,190 @@ char *hybbx_config_format_section(const hybbx_config_t *config,
     return out;
 }
 
+typedef struct format_transport_ctx {
+    const hybbx_config_t *config;
+    const char *prefix;
+    size_t prefix_len;
+    char **sections;
+    size_t count;
+    size_t cap;
+} format_transport_ctx_t;
+
+static int format_transport_section_seen(format_transport_ctx_t *ctx,
+                                         const char *section)
+{
+    size_t i;
+
+    for (i = 0; i < ctx->count; i++) {
+        if (strcmp(ctx->sections[i], section) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static hybbx_result_t format_transport_section_add(format_transport_ctx_t *ctx,
+                                                 const char *section)
+{
+    char *copy;
+
+    if (format_transport_section_seen(ctx, section)) {
+        return HYBBX_OK;
+    }
+
+    if (ctx->count >= ctx->cap) {
+        size_t new_cap = ctx->cap == 0 ? 4 : ctx->cap * 2;
+        char **grown = realloc(ctx->sections, new_cap * sizeof(*grown));
+
+        if (grown == NULL) {
+            return HYBBX_ERR_NOMEM;
+        }
+        ctx->sections = grown;
+        ctx->cap = new_cap;
+    }
+
+    copy = hybbx_strdup(section);
+    if (copy == NULL) {
+        return HYBBX_ERR_NOMEM;
+    }
+
+    ctx->sections[ctx->count++] = copy;
+    return HYBBX_OK;
+}
+
+char *hybbx_config_format_transport_sections(const hybbx_config_t *config,
+                                             const char *plugin_name)
+{
+    format_transport_ctx_t ctx;
+    char prefix[128];
+    size_t i;
+    size_t len = 0;
+    size_t cap = 64;
+    char *out;
+    hybbx_result_t rc;
+
+    if (config == NULL || plugin_name == NULL) {
+        return NULL;
+    }
+
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.config = config;
+    snprintf(prefix, sizeof(prefix), "transport.%s", plugin_name);
+    ctx.prefix = prefix;
+    ctx.prefix_len = strlen(prefix);
+
+    if (config_section_has_keys(config, prefix)) {
+        rc = format_transport_section_add(&ctx, prefix);
+        if (rc != HYBBX_OK) {
+            goto fail;
+        }
+    }
+
+    for (i = 0; i < config->count; i++) {
+        const char *sec = config->entries[i].section;
+        const char *suffix;
+
+        if (sec == NULL || strncmp(sec, prefix, ctx.prefix_len) != 0) {
+            continue;
+        }
+
+        suffix = sec + ctx.prefix_len;
+        if (!config_suffix_is_digits(suffix)) {
+            continue;
+        }
+        if (!config_section_has_keys(config, sec)) {
+            continue;
+        }
+
+        rc = format_transport_section_add(&ctx, sec);
+        if (rc != HYBBX_OK) {
+            goto fail;
+        }
+    }
+
+    if (ctx.count == 0) {
+        for (i = 0; i < ctx.count; i++) {
+            free(ctx.sections[i]);
+        }
+        free(ctx.sections);
+        return hybbx_config_format_section(config, prefix);
+    }
+
+    out = malloc(cap);
+    if (out == NULL) {
+        rc = HYBBX_ERR_NOMEM;
+        goto fail;
+    }
+    out[0] = '\0';
+
+    for (i = 0; i < ctx.count; i++) {
+        char *section_cfg = hybbx_config_format_section(config, ctx.sections[i]);
+        size_t part_len;
+
+        if (section_cfg == NULL) {
+            free(out);
+            rc = HYBBX_ERR_NOMEM;
+            goto fail;
+        }
+
+        part_len = strlen(section_cfg);
+        if (len > 0) {
+            if (len + 1 + part_len + 1 > cap) {
+                while (len + 1 + part_len + 1 > cap) {
+                    cap *= 2;
+                }
+                {
+                    char *grown = realloc(out, cap);
+
+                    if (grown == NULL) {
+                        free(section_cfg);
+                        free(out);
+                        rc = HYBBX_ERR_NOMEM;
+                        goto fail;
+                    }
+                    out = grown;
+                }
+            }
+            out[len++] = HYBBX_PACKET_RADIO_INSTANCE_SEP;
+            out[len] = '\0';
+        }
+
+        if (len + part_len + 1 > cap) {
+            while (len + part_len + 1 > cap) {
+                cap *= 2;
+            }
+            {
+                char *grown = realloc(out, cap);
+
+                if (grown == NULL) {
+                    free(section_cfg);
+                    free(out);
+                    rc = HYBBX_ERR_NOMEM;
+                    goto fail;
+                }
+                out = grown;
+            }
+        }
+
+        memcpy(out + len, section_cfg, part_len + 1);
+        len += part_len;
+        free(section_cfg);
+    }
+
+    for (i = 0; i < ctx.count; i++) {
+        free(ctx.sections[i]);
+    }
+    free(ctx.sections);
+    return out;
+
+fail:
+    for (i = 0; i < ctx.count; i++) {
+        free(ctx.sections[i]);
+    }
+    free(ctx.sections);
+    return NULL;
+}
+
 void hybbx_config_foreach(const hybbx_config_t *config,
                           hybbx_config_iter_fn fn, void *ctx)
 {

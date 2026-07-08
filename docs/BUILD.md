@@ -19,6 +19,7 @@ Tests: `-DHYBBX_BUILD_TESTS=ON` → `ctest --test-dir build`
 | `HYBBX_BUILD_PLUGINS` | ON | Transport plugins |
 | `HYBBX_PLUGIN_TELNET` | ON | Telnet |
 | `HYBBX_PLUGIN_PACKET_RADIO` | ON | Packet radio |
+| `HYBBX_PLUGIN_BAYCOM` | OFF | BayCom PR-Stack plugin (opt-in; [BAYCOM.md](BAYCOM.md)) |
 | `HYBBX_PLUGIN_ARDOP` | ON | ARDOP plugin |
 | `HYBBX_PLUGIN_CRDOP` | ON | CRDOP plugin |
 | `HYBBX_PLUGIN_SSH` | ON | SSH (requires libssh) |

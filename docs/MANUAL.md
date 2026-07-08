@@ -120,6 +120,7 @@ Tokens: `@version@`, `@service@`, `@username@` in banner/motd.
 | Key | Main default | Description |
 |-----|--------------|-------------|
 | `ax25` | `no` | Packet radio plugin |
+| `baycom` | `no` | BayCom PR-Stack plugin ([BAYCOM.md](BAYCOM.md)) |
 | `ardop` | `no` | ARDOP host client |
 | `crdop` | `no` | CRDOP host client |
 | `ssh` | `no` | SSH plugin (libssh, port 3232) |
@@ -205,22 +206,43 @@ MHz list for operator reference (`frequency1`, `frequency1_label`, …). Tune ra
 
 On **Main**: metadata per remote Secondary (`link_id`, `link_password`, `link_role`, `frequency_mhz`).
 
-On **Secondary**: TNC settings + `circuit_host`, `circuit_port`, matching `link_id` / password.
+On **Secondary**: TNC settings + `circuit_host`, `circuit_port`, matching `link_id` / password. Multiple `[transport.packet_radioN]` sections start multiple TNC devices (unique `device` + `link_id` each). See [TNCS.md](TNCS.md).
 
 | TNC key | Notes |
 |---------|-------|
-| `tnc` | `tnc2c`, `baycom`, `pccom`, `generic` |
-| `protocol` | `kiss`, `tnc2`, `sixpack` |
+| `tnc` | `tnc2c`, `tnc2`, `pktnc2`, `pk232`, `mfj1278`, `kantronics`, `baycom`, `pccom`, `generic` — [TNCS.md](TNCS.md) |
+| `protocol` | `kiss`, `hostmode` (`tnc2` = host mode only), `sixpack` |
 | `device` / `device_type` | Serial path |
 | `baud` | Host serial baud |
 | `serial_line` | `7e1` (TNC2C default), `8n1`, or `data_bits` + `parity` |
+| `kiss_entry` | `kiss_on`, `esc_at_k`, `auto`, `none` |
+| `kiss_exit` | `kiss_off`, `kiss_frame`, `auto`, `none` |
 | `modem` | `tcm3105`, etc. |
 | `radio_band` | `amateur`, `cb` |
 | `radio_duplex` | `half`, `full` |
 | `g3ruh_fsk` | `yes` for 9600 FSK |
 | `mycall`, `dest`, `via` | AX.25 addresses |
 
-Full Secondary example: `share/hybbx-secondary.ini.example`. ARDOP/CRDOP sections: [ARDOP.md](ARDOP.md), [CRDOP.md](CRDOP.md).
+Full Secondary example: `share/hybbx-secondary.ini.example`. TNC profiles: [TNCS.md](TNCS.md). BayCom PR-Stack: [BAYCOM.md](BAYCOM.md). ARDOP/CRDOP sections: [ARDOP.md](ARDOP.md), [CRDOP.md](CRDOP.md).
+
+### `[transport.baycomN]` (BayCom PR-Stack)
+
+On **Main**: bridge registry (`link_id`, `link_password`, `link_role`, `frequency_mhz`).
+
+On **Secondary**: kernel SER12/PAR96/EPP or serial KISS + HBX circuit. Up to 4 instances. See [BAYCOM.md](BAYCOM.md).
+
+| Key | Default | Notes |
+|-----|---------|-------|
+| `backend` | `kernel` | `kernel` (hdlcdrv) or `kiss` (serial firmware) |
+| `mode` | `ser12*` | `ser12`, `ser12*`, `ser12+`, `ser12hdx`, `par96`, `par96*`, `epp` |
+| `interface` | per mode | `bcsf0`, `bcsh0`, `bcp0`, `bce0` |
+| `kernel_module` | per mode | `baycom_ser_fdx`, `baycom_ser_hdx`, `baycom_par`, `baycom_epp` |
+| `iobase` / `irq` | `0x3f8` / `4` | SER12 UART (kernel backend) |
+| `radio_baud` | `1200` | On-air baud |
+| `kernel_autoload` | `no` | `modprobe` on start (root) |
+| `txdelay`, `slot`, `persist`, `txtail` | see [BAYCOM.md](BAYCOM.md) | Channel access (10 ms units) |
+| `device` / `serial_baud` | `/dev/ttyS0` / `1200` | KISS backend only |
+| `circuit_host`, `circuit_port`, `link_id`, `link_password` | — | HBX to Main |
 
 ---
 

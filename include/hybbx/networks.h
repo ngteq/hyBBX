@@ -17,6 +17,8 @@ extern "C" {
 typedef struct hybbx_networks_config {
     /** AX.25 / packet radio link adapter (`transport.packet_radio`). */
     int ax25;
+    /** BayCom PR-Stack (`transport.baycom`) — kernel SER12/PAR96 or KISS serial. */
+    int baycom;
     /** ARDOP host-client (`transport.ardop`) — external ARDOPC. */
     int ardop;
     /** CRDOP CB host-client (`transport.crdop`) — external CRDOPC (github.com/ngteq/CRDOP). */

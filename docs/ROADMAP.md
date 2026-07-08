@@ -21,6 +21,5 @@ Current status: [FEATURES.md](FEATURES.md).
 |------|-------|
 | User-files / public-files areas | Planned |
 | HBX APRS / NETROM protos | Reserved IDs |
-| BayCom `ser12` | Via KISS until native path |
 
 Topology: [MANUAL.md — Topology](MANUAL.md#topology).

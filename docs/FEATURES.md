@@ -34,7 +34,8 @@
 | Feature | Status |
 |---------|--------|
 | HBX circuit hub `:7323` | **Built** |
-| Packet radio / AX.25 | **Built** — not live RF verified |
+| Packet radio / AX.25 | **Built** — [TNCS.md](TNCS.md); not live RF verified |
+| BayCom PR-Stack (`baycom`) | **Built** (opt-in) — [BAYCOM.md](BAYCOM.md); `HYBBX_PLUGIN_BAYCOM=OFF` default |
 | Multi-link hub | **Built** |
 | ARDOP / CRDOP plugins | **Built** — [ARDOP.md](ARDOP.md), [CRDOP.md](CRDOP.md) |
 

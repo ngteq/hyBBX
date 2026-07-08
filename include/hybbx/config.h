@@ -58,6 +58,15 @@ char *hybbx_config_format_section(const hybbx_config_t *config,
                                   const char *section);
 
 /**
+ * Format all @c transport.&lt;plugin&gt; and @c transport.&lt;plugin&gt;N
+ * sections (in file order) into one start string. Multiple sections are
+ * joined with @ref HYBBX_PACKET_RADIO_INSTANCE_SEP (packet_radio only).
+ * Caller must free the returned string.
+ */
+char *hybbx_config_format_transport_sections(const hybbx_config_t *config,
+                                             const char *plugin_name);
+
+/**
  * Resolve INI section for a transport plugin: @c transport.&lt;plugin&gt; first,
  * else the first @c transport.&lt;plugin&gt;&lt;digits&gt; section with keys
  * (e.g. @c transport.packet_radio1). Writes the chosen name to @p out_section.
