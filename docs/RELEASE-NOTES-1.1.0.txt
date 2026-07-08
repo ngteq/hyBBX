@@ -37,9 +37,9 @@ Docs
 
 Demo
 ----
-  Browser : https://un1t.me/hybbx-websocket/
-  Telnet  : telnet un1t.me 2323
-  SSH     : ssh un1t.me -p 3232
+  Browser : https://hybbx.un1t.me/
+  Telnet  : telnet hybbx.un1t.me 2323
+  SSH     : ssh hybbx.un1t.me -p 3232
 
 docs/RELEASE-1.1.0.md · docs/MANUAL.md · docs/TNCS.md · docs/BAYCOM.md
 License: GPL-3.0

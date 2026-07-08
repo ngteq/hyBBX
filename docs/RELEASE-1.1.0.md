@@ -2,7 +2,7 @@
 
 Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSocket** (loopback `:4591`). Shared session core — `[auth]`, mail, chat, `/` commands.
 
-**Demo:** [README — un1t.me](../README.md#live-un1tme).
+**Demo:** [README — hybbx.un1t.me](../README.md#live-hybbxun1tme).
 
 ## Transports
 

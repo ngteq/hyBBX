@@ -4,13 +4,13 @@ C99 **session daemon** for low-bandwidth links: mail, chat, and `/` commands ove
 
 **v1.1.0** — telnet, SSH, and WebSocket. [docs/RELEASE-1.1.0.md](docs/RELEASE-1.1.0.md).
 
-## Live (un1t.me)
+## Live (hybbx.un1t.me)
 
 | Access | How |
 |--------|-----|
-| **Browser** | [https://un1t.me/hybbx-websocket/](https://un1t.me/hybbx-websocket/) |
-| **Telnet** | `telnet un1t.me 2323` — guest auto-login |
-| **SSH** | `ssh un1t.me -p 3232` — wire username/password only; guest or `/login` per INI |
+| **Browser** | [https://hybbx.un1t.me/](https://hybbx.un1t.me/) |
+| **Telnet** | `telnet hybbx.un1t.me 2323` — guest auto-login |
+| **SSH** | `ssh hybbx.un1t.me -p 3232` — wire username/password only; guest or `/login` per INI |
 
 ## What it is
 
