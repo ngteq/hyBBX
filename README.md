@@ -2,7 +2,7 @@
 
 C99 **session daemon** for low-bandwidth links: mail, chat, and `/` commands over line-oriented transports.
 
-**v1.0.3** — telnet, SSH, and WebSocket. [docs/RELEASE-1.0.3.md](docs/RELEASE-1.0.3.md).
+**v1.1.0** — telnet, SSH, and WebSocket. [docs/RELEASE-1.1.0.md](docs/RELEASE-1.1.0.md).
 
 ## Live (un1t.me)
 

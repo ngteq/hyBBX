@@ -1,6 +1,6 @@
 # HyBBX — agent guide
 
-Humans: [CONTRIBUTING.md](CONTRIBUTING.md). **v1.0.3** — [docs/RELEASE-1.0.3.md](docs/RELEASE-1.0.3.md).
+Humans: [CONTRIBUTING.md](CONTRIBUTING.md). **v1.1.0** — [docs/RELEASE-1.1.0.md](docs/RELEASE-1.1.0.md).
 
 ## Product
 
@@ -28,7 +28,7 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 
 | File | Use |
 |------|-----|
-| [RELEASE-1.0.3.md](docs/RELEASE-1.0.3.md) | Current release |
+| [RELEASE-1.1.0.md](docs/RELEASE-1.1.0.md) | Current release |
 | [FEATURES.md](docs/FEATURES.md) | Shipped vs partial |
 | [MANUAL.md](docs/MANUAL.md) | INI + commands |
 | [TNCS.md](docs/TNCS.md) | Supported TNC profiles |

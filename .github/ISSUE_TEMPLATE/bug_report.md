@@ -30,6 +30,6 @@ labels: bug
 
 ## Documentation checked
 
-- [ ] [docs/RELEASE-1.0.3.md](../../docs/RELEASE-1.0.3.md)
+- [ ] [docs/RELEASE-1.1.0.md](../../docs/RELEASE-1.1.0.md)
 - [ ] [docs/MANUAL.md](../../docs/MANUAL.md)
 - [ ] [docs/FEATURES.md](../../docs/FEATURES.md)

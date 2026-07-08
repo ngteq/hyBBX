@@ -1,4 +1,4 @@
-# HyBBX v1.0.3
+# HyBBX v1.1.0
 
 Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSocket** (loopback `:4591`). Shared session core — `[auth]`, mail, chat, `/` commands.
 
@@ -49,7 +49,7 @@ cmake --build build
 cmake --install build --prefix "$HOME"
 ```
 
-**libssh** required for SSH (`HYBBX_PLUGIN_SSH=ON`, default). AmigaOS 3.9+ cross-build: [BUILD.md](BUILD.md). Options: [BUILD.md](BUILD.md).
+Full-featured (incl. baycom): `-DHYBBX_PLUGIN_BAYCOM=ON`. **libssh** required for SSH. AmigaOS 3.9+ cross-build: [BUILD.md](BUILD.md). Options: [BUILD.md](BUILD.md).
 
 ## Install layout
 
@@ -59,4 +59,4 @@ Operator documentation assumes **Linux** — `HTTPD_DOCROOT`, `systemctl`, `ss`.
 
 ## See also
 
-[RELEASE-NOTES-1.0.3.txt](RELEASE-NOTES-1.0.3.txt) · [FEATURES.md](FEATURES.md) · [MANUAL.md](MANUAL.md) · [ROADMAP.md](ROADMAP.md)
+[RELEASE-NOTES-1.1.0.txt](RELEASE-NOTES-1.1.0.txt) · [FEATURES.md](FEATURES.md) · [MANUAL.md](MANUAL.md) · [ROADMAP.md](ROADMAP.md)

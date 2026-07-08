@@ -1,4 +1,4 @@
-HyBBX v1.0.3
+HyBBX v1.1.0
 ============
 
 Multi-transport session daemon: telnet (:2323), SSH (:3232), WebSocket
@@ -28,6 +28,7 @@ Build
 -----
   cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
   libssh required for SSH plugin (default ON)
+  Full-featured: -DHYBBX_PLUGIN_BAYCOM=ON
   AmigaOS 3.9+ cross-GCC: see docs/BUILD.md
 
 Docs
@@ -40,5 +41,5 @@ Demo
   Telnet  : telnet un1t.me 2323
   SSH     : ssh un1t.me -p 3232
 
-docs/RELEASE-1.0.3.md · docs/MANUAL.md · docs/TNCS.md · docs/BAYCOM.md
+docs/RELEASE-1.1.0.md · docs/MANUAL.md · docs/TNCS.md · docs/BAYCOM.md
 License: GPL-3.0

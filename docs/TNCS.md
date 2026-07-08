@@ -1,6 +1,6 @@
 # Supported TNCs — packet_radio plugin
 
-**v1.0.3** · INI: [MANUAL.md](MANUAL.md) · one plugin: `packet_radio`
+**v1.1.0** · INI: [MANUAL.md](MANUAL.md) · one plugin: `packet_radio`
 
 HyBBX uses a single configurable `packet_radio` transport. Each `[transport.packet_radioN]` section on a **Secondary** opens one serial (or USB) TNC and one HBX link to Main. Up to **8** instances per process (`HYBBX_PACKET_RADIO_MAX_INSTANCES`).
 

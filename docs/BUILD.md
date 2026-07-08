@@ -1,6 +1,6 @@
 # Build
 
-[PLATFORMS.md](PLATFORMS.md) · [QUICKSTART.md](QUICKSTART.md) · **v1.0.3**
+[PLATFORMS.md](PLATFORMS.md) · [QUICKSTART.md](QUICKSTART.md) · **v1.1.0**
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
