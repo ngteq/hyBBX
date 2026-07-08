@@ -1,0 +1,44 @@
+HyBBX v1.0.3
+============
+
+Multi-transport session daemon: telnet (:2323), SSH (:3232), WebSocket
+(loopback :4591). Mail, chat, and / commands on every path.
+
+Transports
+----------
+  Telnet        :2323 — primary verified path
+  SSH           :3232 — libssh; wire auth separate from HyBBX accounts
+  WebSocket     :127.0.0.1:4591/hybbx — reverse-proxy + httpd docroot UI
+  packet_radio  — multi-TNC edge; kiss_entry/exit; TNCS.md
+  baycom        — opt-in BayCom PR-Stack (HYBBX_PLUGIN_BAYCOM=OFF default)
+  ARDOP / CRDOP — external modem host clients
+
+RF / edge
+---------
+  Up to 8 packet_radio instances per Secondary
+  TNC2C 7E1 + RTS/DTR; tnc2, pk232, mfj1278, kantronics profiles
+  HBX AX.25 bridge to Main
+
+Status
+------
+  Verified : telnet, mail, chat, commands
+  Built    : SSH, WebSocket, packet_radio, baycom (opt-in), ARDOP, CRDOP
+
+Build
+-----
+  cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
+  libssh required for SSH plugin (default ON)
+  AmigaOS 3.9+ cross-GCC: see docs/BUILD.md
+
+Docs
+----
+  Operator documentation assumes Linux (HTTPD_DOCROOT, systemctl, ss).
+
+Demo
+----
+  Browser : https://un1t.me/hybbx-websocket/
+  Telnet  : telnet un1t.me 2323
+  SSH     : ssh un1t.me -p 3232
+
+docs/RELEASE-1.0.3.md · docs/MANUAL.md · docs/TNCS.md · docs/BAYCOM.md
+License: GPL-3.0

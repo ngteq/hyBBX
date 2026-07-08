@@ -1,4 +1,4 @@
-; HyBBX Main — v1.0.2. Full keys: docs/MANUAL.md
+; HyBBX Main — v1.0.3. Full keys: docs/MANUAL.md
 ; Template: Main datacenter (telnet + HBX hub). RF on Secondary unless standalone.
 
 [service]

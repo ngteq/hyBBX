@@ -377,7 +377,11 @@ hybbx_result_t baycom_kernel_poll(baycom_kernel_modem_t *km)
     for (;;) {
         n = recv(km->pkt_fd, buf, sizeof(buf), MSG_DONTWAIT);
         if (n < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            if (errno == EAGAIN
+#if EAGAIN != EWOULDBLOCK
+                || errno == EWOULDBLOCK
+#endif
+            ) {
                 return HYBBX_OK;
             }
             return HYBBX_ERR_IO;

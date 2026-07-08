@@ -29,7 +29,7 @@ if(NOT DEFINED ENV{CC} AND NOT CMAKE_C_COMPILER)
 endif()
 
 project(HyBBX
-    VERSION 1.0.2
+    VERSION 1.0.3
     DESCRIPTION "C99 transport service: centralized daemon + link/repeater edge"
     LANGUAGES C
 )
@@ -142,6 +142,15 @@ endif()
 
 if(NOT DEFINED HYBBX_PLATFORM_AMIGAOS)
     set(HYBBX_PLATFORM_AMIGAOS FALSE)
+endif()
+
+if(HYBBX_PLATFORM_AMIGAOS)
+    set(HYBBX_PLUGIN_SSH OFF CACHE BOOL "AmigaOS build" FORCE)
+    set(HYBBX_PLUGIN_WEBSOCKET OFF CACHE BOOL "AmigaOS build" FORCE)
+    set(HYBBX_PLUGIN_BAYCOM OFF CACHE BOOL "AmigaOS build" FORCE)
+    set(HYBBX_PLUGIN_ARDOP OFF CACHE BOOL "AmigaOS build" FORCE)
+    set(HYBBX_PLUGIN_CRDOP OFF CACHE BOOL "AmigaOS build" FORCE)
+    message(STATUS "HyBBX: AmigaOS — telnet + packet_radio plugins only")
 endif()
 
 # ---------------------------------------------------------------------------

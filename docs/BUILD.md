@@ -1,6 +1,6 @@
 # Build
 
-[PLATFORMS.md](PLATFORMS.md) · [QUICKSTART.md](QUICKSTART.md) · **v1.0.2**
+[PLATFORMS.md](PLATFORMS.md) · [QUICKSTART.md](QUICKSTART.md) · **v1.0.3**
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -30,6 +30,10 @@ Tests: `-DHYBBX_BUILD_TESTS=ON` → `ctest --test-dir build`
 | `HYBBX_CRYPTO_LIBSODIUM` | OFF | Optional libsodium |
 
 Clients-only: `-DHYBBX_CLIENTS_ONLY=ON` or `./scripts/build-clients.sh`.
+
+## AmigaOS cross-build
+
+See [PLATFORMS.md](PLATFORMS.md#amigaos-39). Only telnet and packet_radio are built on AmigaOS.
 
 ## Install
 

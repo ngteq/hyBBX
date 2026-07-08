@@ -1,6 +1,6 @@
 # BayCom PR-Stack — baycom plugin
 
-**v1.0.2** · INI: [MANUAL.md](MANUAL.md) · transport: `baycom`
+**v1.0.3** · INI: [MANUAL.md](MANUAL.md) · transport: `baycom`
 
 **Opt-in:** not built or started by default. Enable at compile time (`-DHYBBX_PLUGIN_BAYCOM=ON`) and in INI (`[networks] baycom=yes`).
 

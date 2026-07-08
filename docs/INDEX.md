@@ -1,6 +1,6 @@
 # Documentation index
 
-[README.md](../README.md) · **v1.0.2** [RELEASE-1.0.2.md](RELEASE-1.0.2.md) · [RELEASE-NOTES-1.0.2.txt](RELEASE-NOTES-1.0.2.txt)
+[README.md](../README.md) · **v1.0.3** [RELEASE-1.0.3.md](RELEASE-1.0.3.md) · [RELEASE-NOTES-1.0.3.txt](RELEASE-NOTES-1.0.3.txt)
 
 ## Operators
 

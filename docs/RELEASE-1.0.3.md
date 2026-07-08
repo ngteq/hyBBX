@@ -1,4 +1,4 @@
-# HyBBX v1.0.2
+# HyBBX v1.0.3
 
 Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSocket** (loopback `:4591`). Shared session core — `[auth]`, mail, chat, `/` commands.
 
@@ -11,7 +11,17 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 | Telnet | Primary user path `:2323` |
 | SSH | libssh; Ed25519 keys in `hostkey_dir`; wire auth ≠ HyBBX accounts |
 | WebSocket | RFC6455 forward-proxy; public TLS via reverse proxy — [WEBSOCKET.md](WEBSOCKET.md) |
-| Browser UI | PHP/JS in httpd docroot (not served by `hybbx`) |
+| Packet radio | Multi-instance TNC edge — [TNCS.md](TNCS.md) |
+| BayCom PR-Stack | Opt-in plugin (`HYBBX_PLUGIN_BAYCOM=OFF`) — [BAYCOM.md](BAYCOM.md) |
+| ARDOP / CRDOP | External ARDOPC / CRDOPC |
+
+## RF / edge
+
+| Item | Detail |
+|------|--------|
+| `packet_radio` | Up to 8 TNCs; `kiss_entry` / `kiss_exit`; TNC2C 7E1; profiles in [TNCS.md](TNCS.md) |
+| `baycom` | Linux kernel SER12/PAR96 or serial KISS; not built by default |
+| HBX circuit | Secondary → Main AX.25 bridge |
 
 ## Session
 
@@ -21,7 +31,6 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 | WebSocket TX | UTF-8-safe buffering |
 | `max_connections` | WebSocket slot limit (default `10`) |
 | One session per account | `/login` rejected if already online |
-| fail2ban | `hybbx-ssh` examples (port 3232) |
 
 ## Status
 
@@ -30,6 +39,7 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 | Telnet, mail, chat, commands | **Verified** |
 | SSH, WebSocket | **Built** — verify in your deployment |
 | HBX, packet_radio, ARDOP, CRDOP | **Built** — not live RF verified |
+| BayCom PR-Stack | **Built** (opt-in compile) |
 
 ## Build
 
@@ -39,14 +49,14 @@ cmake --build build
 cmake --install build --prefix "$HOME"
 ```
 
-**libssh** required for SSH (`HYBBX_PLUGIN_SSH=ON`, default). Options: [BUILD.md](BUILD.md). LGPL notice: [share/THIRD_PARTY_NOTICES.txt](../share/THIRD_PARTY_NOTICES.txt).
+**libssh** required for SSH (`HYBBX_PLUGIN_SSH=ON`, default). AmigaOS 3.9+ cross-build: [BUILD.md](BUILD.md). Options: [BUILD.md](BUILD.md).
 
 ## Install layout
 
-`<prefix>/hybbx/` — `hybbx`, `hybbx-start`, `hybbx.ini`, `keys/`, `reverse-proxy/`, `data/`, `text/`, `logs/`, `lib/`.
+`<prefix>/hybbx/` — `hybbx`, `hybbx-start`, `hybbx.ini`, `keys/`, `data/`, `text/`, `logs/`, `lib/`.
 
-Documentation assumes **Linux** — `HTTPD_DOCROOT`, `systemctl`, `ss`. [WEBSOCKET.md](WEBSOCKET.md).
+Operator documentation assumes **Linux** — `HTTPD_DOCROOT`, `systemctl`, `ss`. [WEBSOCKET.md](WEBSOCKET.md).
 
 ## See also
 
-[RELEASE-NOTES-1.0.2.txt](RELEASE-NOTES-1.0.2.txt) · [FEATURES.md](FEATURES.md) · [MANUAL.md](MANUAL.md) · [ROADMAP.md](ROADMAP.md)
+[RELEASE-NOTES-1.0.3.txt](RELEASE-NOTES-1.0.3.txt) · [FEATURES.md](FEATURES.md) · [MANUAL.md](MANUAL.md) · [ROADMAP.md](ROADMAP.md)
