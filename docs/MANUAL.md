@@ -259,6 +259,22 @@ On **Secondary**: kernel SER12/PAR96/EPP or serial KISS + HBX circuit. Up to 4 i
 
 Input: `/command` … · `;` and `#` lines ignored · other text → area handler.
 
+### Guests
+
+With `auto_login = yes`, guests may use:
+
+| Command | Description |
+|---------|-------------|
+| `/help` | List or `/help <cmd>` |
+| `/news` | System news (`news.txt`) |
+| `/motd` | Message of the day |
+| `/rules`, `/legal` | Terms of use |
+| `/login` | Registered login |
+| `/register` | Self-registration |
+| `/clear`, `/echo`, `/exit` | Screen, echo, disconnect |
+
+Mail, chat, conference, and `/who` require a registered account.
+
 ### All users
 
 | Command | Description |

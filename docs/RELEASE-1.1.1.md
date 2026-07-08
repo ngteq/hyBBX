@@ -12,6 +12,7 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 | `[time] date` | `iso` (default `YYYY/MM/DD`), `iso_short`, `us`, `eu` |
 | `[time] seconds` | Default `yes` — `HH:MM:SS` (or `12h` / `am_pm`) |
 | Default texts | Refreshed `banner.txt`, `motd.txt`, `news.txt`, `rules.txt` |
+| Guest commands | `/news`, `/motd`, `/rules`, `/legal` without registered login |
 
 ## Transports
 
