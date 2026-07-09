@@ -426,8 +426,8 @@ static hybbx_result_t telnet_start(const char *config)
     if (g_config.ipv4) {
         g_listen_v4 = create_listen_socket(AF_INET, g_config.bind_v4, g_config.port);
         if (g_listen_v4 < 0) {
-            fprintf(stderr, "[telnet] failed to bind IPv4 %s:%u (%s)\n",
-                    g_config.bind_v4, g_config.port, strerror(errno));
+            hybbx_socket_log_bind_failure("telnet", g_config.bind_v4,
+                                          g_config.port);
             return HYBBX_ERR_IO;
         }
     }

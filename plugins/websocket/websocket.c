@@ -141,9 +141,10 @@ static int create_listen_socket(int family, const char *bind_addr, unsigned port
 
 static void log_bind_failure(const char *bind_addr, unsigned port)
 {
-    fprintf(stderr, "[websocket] failed to bind IPv4 %s:%u (%s)\n", bind_addr,
-            port, strerror(errno));
-    if (errno == EACCES && port < 1024u) {
+    int err = errno;
+
+    hybbx_socket_log_bind_failure("websocket", bind_addr, port);
+    if (err == EACCES && port < 1024u) {
         fprintf(stderr,
                 "[websocket] port %u is privileged — run as root, grant "
                 "bind permission, or set port >= 1024 in hybbx.ini\n",

@@ -24,6 +24,10 @@ void hybbx_socket_nosigpipe(int fd);
  */
 hybbx_result_t hybbx_socket_peer_name(int fd, char *buf, size_t buf_len);
 
+/** Log bind(2) failure; hints when @c EADDRINUSE (HyBBX already running). */
+void hybbx_socket_log_bind_failure(const char *component, const char *addr,
+                                   unsigned port);
+
 #ifdef __cplusplus
 }
 #endif

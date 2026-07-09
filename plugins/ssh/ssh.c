@@ -636,8 +636,8 @@ static hybbx_result_t ssh_plugin_start(const char *config)
         g_listen_v4 = create_listen_socket(AF_INET, g_config.bind_v4,
                                            g_config.port);
         if (g_listen_v4 < 0) {
-            fprintf(stderr, "[ssh] failed to bind IPv4 %s:%u (%s)\n",
-                    g_config.bind_v4, g_config.port, strerror(errno));
+            hybbx_socket_log_bind_failure("ssh", g_config.bind_v4,
+                                          g_config.port);
             return HYBBX_ERR_IO;
         }
     }

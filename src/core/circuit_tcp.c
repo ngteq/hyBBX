@@ -1284,8 +1284,7 @@ hybbx_result_t hybbx_circuit_hub_start(hybbx_circuit_hub_t *hub,
         hub->listen_v4 = create_listen_socket(AF_INET, cfg->bind4, cfg->port,
                                               backlog);
         if (hub->listen_v4 < 0) {
-            fprintf(stderr, "[circuit] IPv4 bind %s:%u failed\n",
-                    cfg->bind4, cfg->port);
+            hybbx_socket_log_bind_failure("circuit", cfg->bind4, cfg->port);
             hybbx_circuit_hub_stop(hub);
             return HYBBX_ERR_IO;
         }

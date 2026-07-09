@@ -7,6 +7,7 @@
 #include "hybbx/socket.h"
 
 #include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +16,7 @@
 
 #if !defined(_WIN32) && !defined(__AMIGA__)
 #include <arpa/inet.h>
+#include <errno.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #endif
@@ -745,6 +747,25 @@ void hybbx_socket_nosigpipe(int fd)
 #else
     (void)fd;
 #endif
+}
+
+void hybbx_socket_log_bind_failure(const char *component, const char *addr,
+                                   unsigned port)
+{
+    int err = errno;
+
+    if (component == NULL || addr == NULL) {
+        return;
+    }
+
+    fprintf(stderr, "[%s] failed to bind %s:%u (%s)\n", component, addr, port,
+            strerror(err));
+    if (err == EADDRINUSE) {
+        fprintf(stderr,
+                "[%s] port %u already in use — another HyBBX instance may "
+                "already be running (ss -tlnp | grep %u)\n",
+                component, port, port);
+    }
 }
 
 hybbx_result_t hybbx_socket_peer_name(int fd, char *buf, size_t buf_len)
