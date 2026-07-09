@@ -1,6 +1,6 @@
 # Development
 
-[AGENTS.md](../AGENTS.md) · [REPOSITORY.md](REPOSITORY.md) · **v1.2.0**
+[AGENTS.md](../AGENTS.md) · [REPOSITORY.md](REPOSITORY.md) · **v1.5.0**
 
 ## Toolchain
 
@@ -13,11 +13,13 @@ CMake 3.16+, GCC or Clang, pthread.
 ## Architecture
 
 ```
-Session core ←→ telnet | ssh | websocket | HBX circuit ←→ packet_radio | ardop | crdop
+Users → telnet | ssh | websocket → Main (sessions, storage)
+Secondary / mains_proxy / RF plugins → HBX circuit :7323 only
 ```
 
 - No wire-protocol parsing in `src/core/`
-- No modem DSP in HyBBX — external TNC / ARDOPC / CRDOPC
+- Inter-node: HBX/Circuit + `LINK_AUTH` only
+- Built-in `[security]` ban engine in `src/core/security_ban.c`
 - Plugins: `hybbx_transport_plugin_t` — register in `src/main.c`
 
 ## Conventions

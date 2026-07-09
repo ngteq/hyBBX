@@ -5,6 +5,7 @@
 #include "hybbx/auth.h"
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
+#include "mail_sql.h"
 
 #include <ctype.h>
 #include <dirent.h>
@@ -304,6 +305,44 @@ static hybbx_result_t load_inbox(const char *inbox_path,
     return HYBBX_OK;
 }
 
+static int mail_uses_sqlite(hybbx_service_t *service)
+{
+    hybbx_storage_t *storage;
+
+    if (service == NULL) {
+        return 0;
+    }
+
+    storage = hybbx_service_get_storage(service);
+    return storage != NULL &&
+           hybbx_storage_backend(storage) == HYBBX_STORAGE_SQLITE;
+}
+
+static hybbx_result_t mail_load_inbox(hybbx_service_t *service,
+                                      const hybbx_mail_config_t *mail,
+                                      const char *username,
+                                      hybbx_mail_entry_t *entries,
+                                      size_t max_entries,
+                                      size_t *out_count)
+{
+    hybbx_storage_t *storage;
+    char inbox[HYBBX_PATH_MAX];
+    hybbx_result_t rc;
+
+    if (mail_uses_sqlite(service)) {
+        storage = hybbx_service_get_storage(service);
+        return hybbx_mail_sql_load_inbox(storage, username, entries,
+                                         max_entries, out_count);
+    }
+
+    rc = mail_user_inbox_path(mail, username, inbox, sizeof(inbox));
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    return load_inbox(inbox, entries, max_entries, out_count);
+}
+
 static hybbx_result_t msg_file_path(const char *inbox_path, uint64_t id,
                                     char *out, size_t out_len)
 {
@@ -382,8 +421,12 @@ static hybbx_result_t mail_ensure_root(const hybbx_mail_config_t *mail)
 {
     char next_path[HYBBX_PATH_MAX];
 
-    if (mail == NULL || !mail->enabled || mail->root[0] == '\0') {
+    if (mail == NULL || !mail->enabled) {
         return HYBBX_ERR_UNSUPPORTED;
+    }
+
+    if (mail->root[0] == '\0') {
+        return HYBBX_ERR_IO;
     }
 
     if (mkdir_p(mail->root) != 0) {
@@ -434,15 +477,27 @@ static hybbx_result_t mail_next_id(const hybbx_mail_config_t *mail,
     return HYBBX_OK;
 }
 
-static hybbx_result_t mail_trim_inbox(const char *inbox_path,
+static hybbx_result_t mail_trim_inbox(hybbx_service_t *service,
+                                      const hybbx_mail_config_t *mail,
+                                      const char *username,
                                       unsigned max_messages)
 {
     hybbx_mail_entry_t entries[HYBBX_MAIL_MAX_MESSAGES];
     size_t count;
     size_t i;
     hybbx_result_t rc;
+    char inbox[HYBBX_PATH_MAX];
 
-    rc = load_inbox(inbox_path, entries, HYBBX_MAIL_MAX_MESSAGES, &count);
+    if (mail_uses_sqlite(service)) {
+        return HYBBX_OK;
+    }
+
+    rc = mail_user_inbox_path(mail, username, inbox, sizeof(inbox));
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    rc = load_inbox(inbox, entries, HYBBX_MAIL_MAX_MESSAGES, &count);
     if (rc != HYBBX_OK) {
         return rc;
     }
@@ -454,13 +509,27 @@ static hybbx_result_t mail_trim_inbox(const char *inbox_path,
     for (i = max_messages; i < count; i++) {
         char path[HYBBX_PATH_MAX];
 
-        if (msg_file_path(inbox_path, entries[i].id, path, sizeof(path)) ==
+        if (msg_file_path(inbox, entries[i].id, path, sizeof(path)) ==
             HYBBX_OK) {
             remove(path);
         }
     }
 
     return HYBBX_OK;
+}
+
+static hybbx_result_t mail_ensure_storage(hybbx_service_t *service,
+                                          const hybbx_mail_config_t *mail)
+{
+    if (mail == NULL || !mail->enabled) {
+        return HYBBX_ERR_UNSUPPORTED;
+    }
+
+    if (mail_uses_sqlite(service)) {
+        return HYBBX_OK;
+    }
+
+    return mail_ensure_root(mail);
 }
 
 void hybbx_mail_list_inbox(hybbx_service_t *service, hybbx_session_t *session)
@@ -670,10 +739,17 @@ static hybbx_result_t mail_move_id_to_recycle(const char *inbox_path,
     return HYBBX_OK;
 }
 
-static hybbx_result_t mail_purge_user_recycle(const hybbx_mail_config_t *mail,
+static hybbx_result_t mail_purge_user_recycle(hybbx_service_t *service,
+                                              const hybbx_mail_config_t *mail,
                                               const char *username)
 {
     char recycle[HYBBX_PATH_MAX];
+
+    if (mail_uses_sqlite(service)) {
+        (void)hybbx_mail_sql_purge_recycle(hybbx_service_get_storage(service),
+                                           mail, username);
+        return HYBBX_OK;
+    }
 
     if (mail_user_recycle_path(mail, username, recycle, sizeof(recycle)) !=
         HYBBX_OK) {
@@ -710,22 +786,25 @@ void hybbx_mail_list_inbox_range(hybbx_service_t *service,
         return;
     }
 
-    rc = mail_ensure_root(mail);
+    rc = mail_ensure_storage(service, mail);
     if (rc != HYBBX_OK) {
         hybbx_session_write_line(session, "Mail storage unavailable.");
         return;
     }
 
-    rc = mail_user_inbox_path(mail, hybbx_session_username(session),
-                              inbox, sizeof(inbox));
-    if (rc != HYBBX_OK) {
-        hybbx_session_write_line(session, "Mail path error.");
-        return;
+    if (!mail_uses_sqlite(service)) {
+        rc = mail_user_inbox_path(mail, hybbx_session_username(session),
+                                  inbox, sizeof(inbox));
+        if (rc != HYBBX_OK) {
+            hybbx_session_write_line(session, "Mail path error.");
+            return;
+        }
     }
 
-    (void)mail_purge_user_recycle(mail, hybbx_session_username(session));
+    (void)mail_purge_user_recycle(service, mail, hybbx_session_username(session));
 
-    rc = load_inbox(inbox, entries, HYBBX_MAIL_MAX_MESSAGES, &count);
+    rc = mail_load_inbox(service, mail, hybbx_session_username(session),
+                         entries, HYBBX_MAIL_MAX_MESSAGES, &count);
     if (rc != HYBBX_OK) {
         hybbx_session_write_line(session, "Cannot read inbox.");
         return;
@@ -760,20 +839,23 @@ void hybbx_mail_announce_since_last_login(hybbx_service_t *service,
         return;
     }
 
-    rc = mail_ensure_root(mail);
+    rc = mail_ensure_storage(service, mail);
     if (rc != HYBBX_OK) {
         return;
     }
 
-    rc = mail_user_inbox_path(mail, hybbx_session_username(session),
-                              inbox, sizeof(inbox));
-    if (rc != HYBBX_OK) {
-        return;
+    if (!mail_uses_sqlite(service)) {
+        rc = mail_user_inbox_path(mail, hybbx_session_username(session),
+                                  inbox, sizeof(inbox));
+        if (rc != HYBBX_OK) {
+            return;
+        }
     }
 
-    (void)mail_purge_user_recycle(mail, hybbx_session_username(session));
+    (void)mail_purge_user_recycle(service, mail, hybbx_session_username(session));
 
-    rc = load_inbox(inbox, entries, HYBBX_MAIL_MAX_MESSAGES, &count);
+    rc = mail_load_inbox(service, mail, hybbx_session_username(session),
+                         entries, HYBBX_MAIL_MAX_MESSAGES, &count);
     if (rc != HYBBX_OK || count == 0) {
         return;
     }
@@ -864,18 +946,21 @@ static hybbx_result_t mail_resolve_index(hybbx_service_t *service,
         return HYBBX_ERR_UNSUPPORTED;
     }
 
-    rc = mail_ensure_root(mail);
+    rc = mail_ensure_storage(service, mail);
     if (rc != HYBBX_OK) {
         return rc;
     }
 
-    rc = mail_user_inbox_path(mail, hybbx_session_username(session),
-                              inbox_path, inbox_len);
-    if (rc != HYBBX_OK) {
-        return rc;
+    if (!mail_uses_sqlite(service)) {
+        rc = mail_user_inbox_path(mail, hybbx_session_username(session),
+                                  inbox_path, inbox_len);
+        if (rc != HYBBX_OK) {
+            return rc;
+        }
     }
 
-    rc = load_inbox(inbox_path, entries, HYBBX_MAIL_MAX_MESSAGES, &count);
+    rc = mail_load_inbox(service, mail, hybbx_session_username(session),
+                         entries, HYBBX_MAIL_MAX_MESSAGES, &count);
     if (rc != HYBBX_OK) {
         return rc;
     }
@@ -951,7 +1036,14 @@ hybbx_result_t hybbx_mail_read(hybbx_service_t *service,
         return HYBBX_ERR_DENIED;
     }
 
-    (void)mail_purge_user_recycle(hybbx_service_get_mail(service),
+    if (mail_uses_sqlite(service)) {
+        (void)hybbx_mail_sql_purge_recycle(hybbx_service_get_storage(service),
+                                           hybbx_service_get_mail(service),
+                                           hybbx_session_username(session));
+        return hybbx_mail_sql_read(service, session, list_index);
+    }
+
+    (void)mail_purge_user_recycle(service, hybbx_service_get_mail(service),
                                   hybbx_session_username(session));
 
     rc = mail_resolve_index(service, session, list_index, &id,
@@ -1065,6 +1157,10 @@ hybbx_result_t hybbx_mail_delete_range(hybbx_service_t *service,
         return HYBBX_OK;
     }
 
+    if (mail_uses_sqlite(service)) {
+        return hybbx_mail_sql_delete_range(service, session, from, to);
+    }
+
     rc = mail_ensure_root(mail);
     if (rc != HYBBX_OK) {
         return rc;
@@ -1082,9 +1178,10 @@ hybbx_result_t hybbx_mail_delete_range(hybbx_service_t *service,
         return rc;
     }
 
-    (void)mail_purge_user_recycle(mail, hybbx_session_username(session));
+    (void)mail_purge_user_recycle(service, mail, hybbx_session_username(session));
 
-    rc = load_inbox(inbox, entries, HYBBX_MAIL_MAX_MESSAGES, &count);
+    rc = mail_load_inbox(service, mail, hybbx_session_username(session),
+                         entries, HYBBX_MAIL_MAX_MESSAGES, &count);
     if (rc != HYBBX_OK) {
         return rc;
     }
@@ -1145,6 +1242,10 @@ hybbx_result_t hybbx_mail_recycle_empty(hybbx_service_t *service,
     if (mail == NULL || !mail->enabled) {
         hybbx_session_write_line(session, "Mail is disabled.");
         return HYBBX_ERR_UNSUPPORTED;
+    }
+
+    if (mail_uses_sqlite(service)) {
+        return hybbx_mail_sql_recycle_empty(service, session);
     }
 
     rc = mail_ensure_root(mail);
@@ -1379,6 +1480,11 @@ hybbx_result_t hybbx_mail_deliver(hybbx_service_t *service,
         return HYBBX_ERR_DENIED;
     }
 
+    if (mail_uses_sqlite(service)) {
+        return hybbx_mail_sql_deliver(storage, mail, from_user, to_norm,
+                                      subject, body);
+    }
+
     rc = mail_ensure_root(mail);
     if (rc != HYBBX_OK) {
         return rc;
@@ -1420,6 +1526,6 @@ hybbx_result_t hybbx_mail_deliver(hybbx_service_t *service,
     }
     fclose(fp);
 
-    (void)mail_trim_inbox(inbox, mail->max_messages);
+    (void)mail_trim_inbox(service, mail, to_norm, mail->max_messages);
     return HYBBX_OK;
 }

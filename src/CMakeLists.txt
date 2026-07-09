@@ -21,10 +21,14 @@ if(HYBBX_BUILD_DAEMON)
         core/storage.c
         core/storage_flatfile.c
         core/storage_sql.c
+        core/mail_sql.c
+        core/proxymail.c
+        core/proxychat.c
         core/session.c
         core/chat.c
         core/conference.c
         core/mail.c
+        core/mains_proxy.c
         core/networks.c
         core/crdop.c
         core/terminal.c
@@ -32,6 +36,7 @@ if(HYBBX_BUILD_DAEMON)
         core/util.c
         core/log.c
         core/security.c
+        core/security_ban.c
         clients/circuit_client.c
         clients/link_auth.c
         ${CMAKE_SOURCE_DIR}/third_party/tinysha256/tinysha256.c
@@ -82,6 +87,12 @@ if(HYBBX_BUILD_DAEMON)
         target_compile_definitions(hybbx_core PRIVATE HYBBX_HAVE_LIBSODIUM)
         target_include_directories(hybbx_core PRIVATE ${LIBSODIUM_INCLUDE_DIRS})
         target_link_libraries(hybbx_core PRIVATE ${LIBSODIUM_LIBRARIES})
+    endif()
+
+    if(HYBBX_HAVE_SQLITE)
+        target_compile_definitions(hybbx_core PRIVATE HYBBX_HAVE_SQLITE)
+        target_include_directories(hybbx_core PRIVATE ${SQLITE3_INCLUDE_DIRS})
+        target_link_libraries(hybbx_core PRIVATE ${SQLITE3_LIBRARIES})
     endif()
 
     add_executable(hybbx main.c)

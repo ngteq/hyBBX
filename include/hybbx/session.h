@@ -3,6 +3,8 @@
 
 #include "hybbx/plugin.h"
 #include "hybbx/storage.h"
+#include "hybbx/mail.h"
+#include "hybbx/proxymail.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,7 +16,11 @@ typedef enum hybbx_session_area {
     HYBBX_AREA_MAIN = 1,
     HYBBX_AREA_MAIL = 2,
     HYBBX_AREA_CHAT = 3,
-    HYBBX_AREA_CONFERENCE = 4
+    HYBBX_AREA_CONFERENCE = 4,
+    /** Inter-Main mail sub-area under mail (`/proxymail`, `/mail proxymail`). */
+    HYBBX_AREA_PROXYMAIL = 5,
+    /** Inter-Main chat sub-area under chat (`/proxychat`, `/chat proxychat`). */
+    HYBBX_AREA_PROXYCHAT = 6
 } hybbx_session_area_t;
 
 /** Maximum nested area depth (main + sub-areas). */
@@ -131,6 +137,18 @@ const char *hybbx_session_conference_invite_from(const hybbx_session_t *session)
 const char *hybbx_session_conference_invite_topic(const hybbx_session_t *session);
 const char *hybbx_session_conference_partner(const hybbx_session_t *session);
 
+/** Enter local mail area (does not enter proxymail). */
+hybbx_result_t hybbx_session_enter_mail(hybbx_session_t *session);
+
+/** Enter proxymail sub-area (pushes mail when needed). */
+hybbx_result_t hybbx_session_enter_proxymail(hybbx_session_t *session);
+
+/** Enter local chat area without joining a channel. */
+hybbx_result_t hybbx_session_enter_chat(hybbx_session_t *session);
+
+/** Enter proxychat sub-area (pushes chat when needed). */
+hybbx_result_t hybbx_session_enter_proxychat(hybbx_session_t *session);
+
 /** Non-zero when composing an outbound mail message. */
 int hybbx_session_mail_composing(const hybbx_session_t *session);
 
@@ -147,6 +165,20 @@ const char *hybbx_session_mail_compose_body(const hybbx_session_t *session);
 
 const char *hybbx_session_mail_compose_to(const hybbx_session_t *session);
 const char *hybbx_session_mail_compose_subject(const hybbx_session_t *session);
+
+/** Non-zero when composing proxymail (`user@remote-main` recipient). */
+int hybbx_session_proxymail_composing(const hybbx_session_t *session);
+
+hybbx_result_t hybbx_session_proxymail_compose_start(hybbx_session_t *session,
+                                                     const char *to_address,
+                                                     const char *subject);
+
+void hybbx_session_proxymail_compose_cancel(hybbx_session_t *session);
+
+const char *hybbx_session_proxymail_compose_body(const hybbx_session_t *session);
+const char *hybbx_session_proxymail_compose_to(const hybbx_session_t *session);
+const char *hybbx_session_proxymail_compose_subject(
+    const hybbx_session_t *session);
 
 /** Wall-clock time when this session connected (for bandwidth policy ordering). */
 time_t hybbx_session_connected_at(const hybbx_session_t *session);

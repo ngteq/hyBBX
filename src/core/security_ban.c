@@ -1,0 +1,646 @@
+#if defined(__linux__)
+#define _DEFAULT_SOURCE
+#endif
+
+#include "hybbx/security_ban.h"
+#include "hybbx/security.h"
+#include "hybbx/config.h"
+#include "hybbx/limits.h"
+#include "hybbx/socket.h"
+#include "hybbx/storage.h"
+#include "hybbx/util.h"
+
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <time.h>
+
+typedef struct hybbx_security_cfg {
+    int enabled;
+    unsigned maxretry;
+    unsigned findtime_sec;
+    unsigned bantime_sec;
+    int telnet;
+    int ssh;
+    int websocket;
+    int circuit;
+    unsigned rate_limit;
+    unsigned rate_window_sec;
+    hybbx_ban_backend_t backend;
+} hybbx_security_cfg_t;
+
+typedef struct ban_entry {
+    char ip[HYBBX_REMOTE_ADDR_MAX];
+    time_t expire_at;
+    int active;
+} ban_entry_t;
+
+typedef struct fail_entry {
+    char ip[HYBBX_REMOTE_ADDR_MAX];
+    time_t stamps[HYBBX_SECURITY_DEFAULT_MAXRETRY];
+    unsigned count;
+    int active;
+} fail_entry_t;
+
+typedef struct rate_entry {
+    char ip[HYBBX_REMOTE_ADDR_MAX];
+    time_t stamps[32];
+    unsigned count;
+    int active;
+} rate_entry_t;
+
+static hybbx_security_cfg_t g_cfg;
+static ban_entry_t g_bans[HYBBX_SECURITY_BAN_MAX];
+static fail_entry_t g_fails[HYBBX_SECURITY_TRACK_MAX];
+static rate_entry_t g_rates[HYBBX_SECURITY_TRACK_MAX];
+static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static void security_cfg_defaults(hybbx_security_cfg_t *cfg)
+{
+    if (cfg == NULL) {
+        return;
+    }
+
+    cfg->enabled = 1;
+    cfg->maxretry = HYBBX_SECURITY_DEFAULT_MAXRETRY;
+    cfg->findtime_sec = HYBBX_SECURITY_DEFAULT_FINDTIME_SEC;
+    cfg->bantime_sec = HYBBX_SECURITY_DEFAULT_BANTIME_SEC;
+    cfg->telnet = 1;
+    cfg->ssh = 1;
+    cfg->websocket = 1;
+    cfg->circuit = 1;
+    cfg->rate_limit = HYBBX_SECURITY_DEFAULT_RATE_LIMIT;
+    cfg->rate_window_sec = HYBBX_SECURITY_DEFAULT_RATE_WINDOW_SEC;
+    cfg->backend = HYBBX_BAN_BACKEND_INTERNAL;
+}
+
+static hybbx_ban_backend_t parse_ban_backend(const char *value)
+{
+    if (value == NULL || value[0] == '\0') {
+        return HYBBX_BAN_BACKEND_INTERNAL;
+    }
+
+    if (strcasecmp(value, "log") == 0) {
+        return HYBBX_BAN_BACKEND_LOG;
+    }
+    if (strcasecmp(value, "iptables") == 0) {
+        return HYBBX_BAN_BACKEND_IPTABLES;
+    }
+    if (strcasecmp(value, "nftables") == 0) {
+        return HYBBX_BAN_BACKEND_NFTABLES;
+    }
+    if (strcasecmp(value, "hosts") == 0) {
+        return HYBBX_BAN_BACKEND_HOSTS;
+    }
+
+    return HYBBX_BAN_BACKEND_INTERNAL;
+}
+
+static unsigned parse_uint_clamp(const char *value, unsigned default_value,
+                               unsigned max_value)
+{
+    char *end = NULL;
+    unsigned long n;
+
+    if (value == NULL || value[0] == '\0') {
+        return default_value;
+    }
+
+    n = strtoul(value, &end, 10);
+    if (end == value || (end != NULL && *end != '\0')) {
+        return default_value;
+    }
+
+    if (n > max_value) {
+        return max_value;
+    }
+
+    return (unsigned)n;
+}
+
+static int ip_valid(const char *ip)
+{
+    return ip != NULL && ip[0] != '\0' && strcmp(ip, "?") != 0;
+}
+
+static int transport_enabled(const char *transport)
+{
+    if (!g_cfg.enabled || transport == NULL || transport[0] == '\0') {
+        return 0;
+    }
+
+    if (strcmp(transport, "telnet") == 0) {
+        return g_cfg.telnet;
+    }
+    if (strcmp(transport, "ssh") == 0) {
+        return g_cfg.ssh;
+    }
+    if (strcmp(transport, "websocket") == 0) {
+        return g_cfg.websocket;
+    }
+    if (strcmp(transport, "circuit") == 0) {
+        return g_cfg.circuit;
+    }
+
+    return 1;
+}
+
+static ban_entry_t *ban_find(const char *ip)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_BAN_MAX; i++) {
+        if (g_bans[i].active && strcmp(g_bans[i].ip, ip) == 0) {
+            return &g_bans[i];
+        }
+    }
+
+    return NULL;
+}
+
+static ban_entry_t *ban_alloc(const char *ip)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_BAN_MAX; i++) {
+        if (!g_bans[i].active) {
+            hybbx_strlcpy(g_bans[i].ip, ip, sizeof(g_bans[i].ip));
+            g_bans[i].active = 1;
+            return &g_bans[i];
+        }
+    }
+
+    return NULL;
+}
+
+static fail_entry_t *fail_find(const char *ip)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_TRACK_MAX; i++) {
+        if (g_fails[i].active && strcmp(g_fails[i].ip, ip) == 0) {
+            return &g_fails[i];
+        }
+    }
+
+    return NULL;
+}
+
+static fail_entry_t *fail_alloc(const char *ip)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_TRACK_MAX; i++) {
+        if (!g_fails[i].active) {
+            hybbx_strlcpy(g_fails[i].ip, ip, sizeof(g_fails[i].ip));
+            g_fails[i].count = 0;
+            g_fails[i].active = 1;
+            return &g_fails[i];
+        }
+    }
+
+    return NULL;
+}
+
+static rate_entry_t *rate_find(const char *ip)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_TRACK_MAX; i++) {
+        if (g_rates[i].active && strcmp(g_rates[i].ip, ip) == 0) {
+            return &g_rates[i];
+        }
+    }
+
+    return NULL;
+}
+
+static rate_entry_t *rate_alloc(const char *ip)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_TRACK_MAX; i++) {
+        if (!g_rates[i].active) {
+            hybbx_strlcpy(g_rates[i].ip, ip, sizeof(g_rates[i].ip));
+            g_rates[i].count = 0;
+            g_rates[i].active = 1;
+            return &g_rates[i];
+        }
+    }
+
+    return NULL;
+}
+
+static void prune_fail_window(fail_entry_t *entry, time_t now)
+{
+    unsigned i;
+    unsigned kept = 0;
+
+    if (entry == NULL) {
+        return;
+    }
+
+    for (i = 0; i < entry->count; i++) {
+        if ((time_t)(now - entry->stamps[i]) <= (time_t)g_cfg.findtime_sec) {
+            entry->stamps[kept++] = entry->stamps[i];
+        }
+    }
+
+    entry->count = kept;
+    if (entry->count == 0) {
+        entry->active = 0;
+        entry->ip[0] = '\0';
+    }
+}
+
+static void prune_rate_window(rate_entry_t *entry, time_t now)
+{
+    unsigned i;
+    unsigned kept = 0;
+
+    if (entry == NULL) {
+        return;
+    }
+
+    for (i = 0; i < entry->count; i++) {
+        if ((time_t)(now - entry->stamps[i]) <= (time_t)g_cfg.rate_window_sec) {
+            entry->stamps[kept++] = entry->stamps[i];
+        }
+    }
+
+    entry->count = kept;
+    if (entry->count == 0) {
+        entry->active = 0;
+        entry->ip[0] = '\0';
+    }
+}
+
+static int run_backend_cmd(const char *cmd)
+{
+    int rc;
+
+    if (cmd == NULL || cmd[0] == '\0') {
+        return -1;
+    }
+
+    rc = system(cmd);
+    return rc;
+}
+
+static void backend_apply(const char *ip, const char *reason)
+{
+    char cmd[HYBBX_PATH_MAX];
+
+    switch (g_cfg.backend) {
+    case HYBBX_BAN_BACKEND_LOG:
+        hybbx_security_log_write("ban ip=%s reason=%s backend=log",
+                               ip, reason != NULL ? reason : "abuse");
+        break;
+
+    case HYBBX_BAN_BACKEND_IPTABLES:
+        snprintf(cmd, sizeof(cmd),
+                 "iptables -I INPUT -s %s -j DROP 2>/dev/null", ip);
+        if (run_backend_cmd(cmd) != 0) {
+            hybbx_security_log_write(
+                "ban_backend_fail ip=%s backend=iptables", ip);
+        } else {
+            hybbx_security_log_write(
+                "ban ip=%s reason=%s backend=iptables",
+                ip, reason != NULL ? reason : "abuse");
+        }
+        break;
+
+    case HYBBX_BAN_BACKEND_NFTABLES:
+        snprintf(cmd, sizeof(cmd),
+                 "nft add rule inet filter input ip saddr %s drop "
+                 "2>/dev/null",
+                 ip);
+        if (run_backend_cmd(cmd) != 0) {
+            hybbx_security_log_write(
+                "ban_backend_fail ip=%s backend=nftables", ip);
+        } else {
+            hybbx_security_log_write(
+                "ban ip=%s reason=%s backend=nftables",
+                ip, reason != NULL ? reason : "abuse");
+        }
+        break;
+
+    case HYBBX_BAN_BACKEND_HOSTS:
+        hybbx_security_log_write(
+            "ban ip=%s reason=%s backend=hosts (stub — internal only)",
+            ip, reason != NULL ? reason : "abuse");
+        break;
+
+    case HYBBX_BAN_BACKEND_INTERNAL:
+    default:
+        hybbx_security_log_write("ban ip=%s reason=%s backend=internal",
+                               ip, reason != NULL ? reason : "abuse");
+        break;
+    }
+}
+
+static void apply_ban_locked(const char *ip, const char *reason, time_t now)
+{
+    ban_entry_t *ban;
+
+    ban = ban_find(ip);
+    if (ban == NULL) {
+        ban = ban_alloc(ip);
+    }
+
+    if (ban == NULL) {
+        return;
+    }
+
+    ban->expire_at = now + (time_t)g_cfg.bantime_sec;
+    backend_apply(ip, reason);
+}
+
+static void record_failure_locked(const char *ip, time_t now)
+{
+    fail_entry_t *entry;
+
+    entry = fail_find(ip);
+    if (entry == NULL) {
+        entry = fail_alloc(ip);
+    }
+
+    if (entry == NULL) {
+        return;
+    }
+
+    prune_fail_window(entry, now);
+
+    if (!entry->active) {
+        entry = fail_alloc(ip);
+        if (entry == NULL) {
+            return;
+        }
+    }
+
+    if (entry->count < HYBBX_SECURITY_DEFAULT_MAXRETRY) {
+        entry->stamps[entry->count++] = now;
+    } else {
+        memmove(entry->stamps, entry->stamps + 1,
+                (entry->count - 1) * sizeof(entry->stamps[0]));
+        entry->stamps[entry->count - 1] = now;
+    }
+
+    if (entry->count >= g_cfg.maxretry) {
+        apply_ban_locked(ip, "login_fail", now);
+        entry->active = 0;
+        entry->count = 0;
+        entry->ip[0] = '\0';
+    }
+}
+
+static void record_rate_locked(const char *ip, time_t now)
+{
+    rate_entry_t *entry;
+
+    entry = rate_find(ip);
+    if (entry == NULL) {
+        entry = rate_alloc(ip);
+    }
+
+    if (entry == NULL) {
+        return;
+    }
+
+    prune_rate_window(entry, now);
+
+    if (!entry->active) {
+        entry = rate_alloc(ip);
+        if (entry == NULL) {
+            return;
+        }
+    }
+
+    if (entry->count < (unsigned)(sizeof(entry->stamps) / sizeof(entry->stamps[0]))) {
+        entry->stamps[entry->count++] = now;
+    }
+}
+
+void hybbx_security_ban_config_apply(const struct hybbx_config *config)
+{
+    const char *value;
+
+    pthread_mutex_lock(&g_lock);
+
+    security_cfg_defaults(&g_cfg);
+
+    if (config != NULL) {
+        value = hybbx_config_get(config, "security", "enabled", NULL);
+        if (value != NULL) {
+            g_cfg.enabled = hybbx_parse_bool(value, g_cfg.enabled);
+        }
+
+        value = hybbx_config_get(config, "security", "maxretry", NULL);
+        g_cfg.maxretry = parse_uint_clamp(value, g_cfg.maxretry, 100u);
+        if (g_cfg.maxretry < 1u) {
+            g_cfg.maxretry = 1u;
+        }
+
+        value = hybbx_config_get(config, "security", "findtime", NULL);
+        g_cfg.findtime_sec =
+            parse_uint_clamp(value, g_cfg.findtime_sec, 86400u);
+
+        value = hybbx_config_get(config, "security", "bantime", NULL);
+        g_cfg.bantime_sec =
+            parse_uint_clamp(value, g_cfg.bantime_sec, 86400u);
+
+        value = hybbx_config_get(config, "security", "telnet", NULL);
+        if (value != NULL) {
+            g_cfg.telnet = hybbx_parse_bool(value, g_cfg.telnet);
+        }
+
+        value = hybbx_config_get(config, "security", "ssh", NULL);
+        if (value != NULL) {
+            g_cfg.ssh = hybbx_parse_bool(value, g_cfg.ssh);
+        }
+
+        value = hybbx_config_get(config, "security", "websocket", NULL);
+        if (value != NULL) {
+            g_cfg.websocket = hybbx_parse_bool(value, g_cfg.websocket);
+        }
+
+        value = hybbx_config_get(config, "security", "circuit", NULL);
+        if (value != NULL) {
+            g_cfg.circuit = hybbx_parse_bool(value, g_cfg.circuit);
+        }
+
+        value = hybbx_config_get(config, "security", "rate_limit", NULL);
+        g_cfg.rate_limit =
+            parse_uint_clamp(value, g_cfg.rate_limit, 10000u);
+
+        value = hybbx_config_get(config, "security", "rate_window", NULL);
+        g_cfg.rate_window_sec =
+            parse_uint_clamp(value, g_cfg.rate_window_sec, 3600u);
+
+        value = hybbx_config_get(config, "security", "ban_backend", NULL);
+        g_cfg.backend = parse_ban_backend(value);
+    }
+
+    pthread_mutex_unlock(&g_lock);
+
+    if (g_cfg.enabled) {
+        printf("[security] ban enabled maxretry=%u findtime=%us bantime=%us "
+               "rate_limit=%u/%us backend=%d\n",
+               g_cfg.maxretry, g_cfg.findtime_sec, g_cfg.bantime_sec,
+               g_cfg.rate_limit, g_cfg.rate_window_sec, (int)g_cfg.backend);
+    }
+}
+
+void hybbx_security_ban_shutdown(void)
+{
+    pthread_mutex_lock(&g_lock);
+
+    memset(g_bans, 0, sizeof(g_bans));
+    memset(g_fails, 0, sizeof(g_fails));
+    memset(g_rates, 0, sizeof(g_rates));
+    security_cfg_defaults(&g_cfg);
+
+    pthread_mutex_unlock(&g_lock);
+}
+
+void hybbx_security_ban_tick(void)
+{
+    time_t now = time(NULL);
+    size_t i;
+
+    if (!g_cfg.enabled) {
+        return;
+    }
+
+    pthread_mutex_lock(&g_lock);
+
+    for (i = 0; i < HYBBX_SECURITY_BAN_MAX; i++) {
+        if (g_bans[i].active && now >= g_bans[i].expire_at) {
+            hybbx_security_log_write("unban ip=%s", g_bans[i].ip);
+            g_bans[i].active = 0;
+            g_bans[i].ip[0] = '\0';
+        }
+    }
+
+    for (i = 0; i < HYBBX_SECURITY_TRACK_MAX; i++) {
+        if (g_fails[i].active) {
+            prune_fail_window(&g_fails[i], now);
+        }
+        if (g_rates[i].active) {
+            prune_rate_window(&g_rates[i], now);
+        }
+    }
+
+    pthread_mutex_unlock(&g_lock);
+}
+
+int hybbx_security_ban_is_banned(const char *ip)
+{
+    ban_entry_t *ban;
+    time_t now = time(NULL);
+    int banned = 0;
+
+    if (!g_cfg.enabled || !ip_valid(ip)) {
+        return 0;
+    }
+
+    pthread_mutex_lock(&g_lock);
+
+    ban = ban_find(ip);
+    if (ban != NULL) {
+        if (now < ban->expire_at) {
+            banned = 1;
+        } else {
+            ban->active = 0;
+            ban->ip[0] = '\0';
+        }
+    }
+
+    pthread_mutex_unlock(&g_lock);
+    return banned;
+}
+
+int hybbx_security_ban_accept(const char *ip)
+{
+    rate_entry_t *entry;
+    ban_entry_t *ban;
+    time_t now = time(NULL);
+    int allow = 1;
+
+    if (!g_cfg.enabled || !ip_valid(ip)) {
+        return 1;
+    }
+
+    pthread_mutex_lock(&g_lock);
+
+    ban = ban_find(ip);
+    if (ban != NULL) {
+        if (now < ban->expire_at) {
+            allow = 0;
+        } else {
+            ban->active = 0;
+            ban->ip[0] = '\0';
+        }
+    }
+
+    if (allow && g_cfg.rate_limit > 0u && g_cfg.rate_window_sec > 0u) {
+        entry = rate_find(ip);
+        if (entry != NULL) {
+            prune_rate_window(entry, now);
+        }
+
+        if (entry != NULL && entry->active &&
+            entry->count >= g_cfg.rate_limit) {
+            apply_ban_locked(ip, "rate_limit", now);
+            allow = 0;
+        } else {
+            record_rate_locked(ip, now);
+        }
+    }
+
+    pthread_mutex_unlock(&g_lock);
+    return allow;
+}
+
+int hybbx_security_ban_accept_fd(int fd)
+{
+    char ip[HYBBX_REMOTE_ADDR_MAX];
+
+    if (fd < 0) {
+        return 1;
+    }
+
+    if (hybbx_socket_peer_name(fd, ip, sizeof(ip)) != HYBBX_OK) {
+        return 1;
+    }
+
+    return hybbx_security_ban_accept(ip);
+}
+
+void hybbx_security_ban_login_fail(const char *ip, const char *transport)
+{
+    time_t now = time(NULL);
+
+    if (!g_cfg.enabled || !ip_valid(ip) || !transport_enabled(transport)) {
+        return;
+    }
+
+    pthread_mutex_lock(&g_lock);
+    record_failure_locked(ip, now);
+    pthread_mutex_unlock(&g_lock);
+}
+
+void hybbx_security_ban_link_auth_fail(const char *ip)
+{
+    time_t now = time(NULL);
+
+    if (!g_cfg.enabled || !ip_valid(ip) || !g_cfg.circuit) {
+        return;
+    }
+
+    pthread_mutex_lock(&g_lock);
+    record_failure_locked(ip, now);
+    pthread_mutex_unlock(&g_lock);
+}

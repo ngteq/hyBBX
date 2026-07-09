@@ -6,6 +6,8 @@
  * Secondaries are separate edge machines (extenders/repeaters), not telnet users
  * or local [transport.*] adapters on Main.
  * Hub: [circuit] bind/port. Client: hybbx_circuit_link_* + LINK_AUTH.
+ * All inter-node paths (Secondary, mains_proxy mesh, future relays) use this
+ * client pattern only — never a direct socket to a remote HyBBX Main.
  */
 
 #include "hybbx/circuit.h"

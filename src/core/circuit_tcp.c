@@ -11,6 +11,7 @@
 #include "hybbx/session.h"
 #include "hybbx/service.h"
 #include "hybbx/security.h"
+#include "hybbx/security_ban.h"
 #include "hybbx/storage.h"
 #include "hybbx/traffic.h"
 #include "hybbx/link.h"
@@ -749,6 +750,7 @@ static void circuit_log_auth_fail(int fd, const char *reason, const char *id)
                 "link_auth_fail ip=%s reason=%s transport=circuit",
                 ip, reason);
         }
+        hybbx_security_ban_link_auth_fail(ip);
     } else {
         hybbx_security_log_write(
             "link_auth_fail ip=? reason=%s transport=circuit", reason);
@@ -1161,6 +1163,11 @@ static void *circuit_accept_thread(void *arg)
                 }
 
                 (void)set_socket_options(client, 0);
+
+                if (!hybbx_security_ban_accept_fd(client)) {
+                    close(client);
+                    continue;
+                }
 
                 pthread_mutex_lock(&hub->lock);
                 if (circuit_count_used_slots(hub) >= hub->max_links) {

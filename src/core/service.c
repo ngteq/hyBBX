@@ -18,9 +18,14 @@
 #include "hybbx/chat.h"
 #include "hybbx/mail.h"
 #include "hybbx/broadcast.h"
+
+#ifdef HYBBX_HAVE_PLUGIN_MAINS_PROXY
+void hybbx_mains_proxy_plugin_tick(void);
+#endif
 #include "hybbx/networks.h"
 #include "hybbx/log.h"
 #include "hybbx/security.h"
+#include "hybbx/security_ban.h"
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
 
@@ -158,6 +163,7 @@ void hybbx_service_destroy(hybbx_service_t *service)
 
     hybbx_log_shutdown();
     hybbx_security_log_shutdown();
+    hybbx_security_ban_shutdown();
 
     {
         hybbx_attached_session_t *node = svc->sessions;
@@ -624,6 +630,7 @@ static hybbx_result_t service_open_storage(struct hybbx_service_internal *svc,
                                            const hybbx_config_t *config)
 {
     hybbx_storage_options_t options;
+    hybbx_storage_sql_config_t sql_cfg;
     const char *backend_str;
     const char *path_raw;
     char path_resolved[HYBBX_PATH_MAX];
@@ -651,6 +658,12 @@ static hybbx_result_t service_open_storage(struct hybbx_service_internal *svc,
     options.path = path_resolved;
     options.guest_prefix = guest_prefix != NULL ? guest_prefix :
                                                   svc->auth.guest_prefix;
+    options.sql_cfg = NULL;
+
+    if (options.backend == HYBBX_STORAGE_SQLITE) {
+        hybbx_storage_sql_config_apply(&sql_cfg, config, path_resolved);
+        options.sql_cfg = &sql_cfg;
+    }
 
     svc->storage = hybbx_storage_open(&options);
     if (svc->storage == NULL) {
@@ -911,7 +924,14 @@ hybbx_result_t hybbx_service_run(hybbx_service_t *service)
         static unsigned prune_tick;
 
         sleep(1);
+        hybbx_security_ban_tick();
         hybbx_broadcast_ax25_tick(service);
+#ifdef HYBBX_HAVE_PLUGIN_MAINS_PROXY
+        hybbx_mains_proxy_plugin_tick();
+#endif
+        if (svc->storage != NULL) {
+            hybbx_storage_backup_tick(svc->storage);
+        }
         prune_tick++;
         if (prune_tick >= 3600u) {
             prune_tick = 0;
@@ -1071,7 +1091,8 @@ static void apply_transport_cb(const hybbx_transport_plugin_t *plugin,
     }
 
     if (strcmp(plugin->name, "packet_radio") == 0 ||
-        strcmp(plugin->name, "baycom") == 0) {
+        strcmp(plugin->name, "baycom") == 0 ||
+        strcmp(plugin->name, "mains_proxy") == 0) {
         transport_config = hybbx_config_format_transport_sections(ctx->config,
                                                                   plugin->name);
     } else {
@@ -1127,6 +1148,7 @@ hybbx_result_t hybbx_service_apply_config(hybbx_service_t *service,
     hybbx_time_config_apply(config);
     hybbx_log_config_apply(config);
     hybbx_security_log_config_apply(config);
+    hybbx_security_ban_config_apply(config);
     service_apply_texts(svc, config);
     hybbx_chat_config_apply(&svc->chat, config);
     hybbx_broadcast_config_apply(&svc->broadcast, config);

@@ -1,6 +1,6 @@
 # Operator manual
 
-**v1.2.0** — telnet, SSH, WebSocket. Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
+**v1.5.0** — telnet, SSH, WebSocket. Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
 
 Booleans: `yes`/`no` (+ `true`/`false`, `on`/`off`, `1`/`0`).
 
@@ -8,20 +8,15 @@ Booleans: `yes`/`no` (+ `true`/`false`, `on`/`off`, `1`/`0`).
 
 ## Topology
 
-```
-Users (telnet :2323, SSH :3232, WebSocket via proxy) ──► Main (storage, mail)
-                                                              ▲
-                                                              │ HBX/TCP :7323
-                                                         Secondary (packet_radio / ardop / crdop)
-```
+Full guide: [TOPOLOGY.md](TOPOLOGY.md).
 
-| Role | `[networks]` typical | Hosts |
-|------|----------------------|-------|
-| **Main** | `circuit=yes`, `ax25=no` | Users, HBX hub |
-| **Secondary** | `circuit=no`, `ax25=yes` | TNC/RF; `circuit_host` → Main |
-| **Standalone Main** | `ax25=yes` on same box | Lab / single-host |
+| Role | Purpose |
+|------|---------|
+| **Main** | Users, storage, HBX hub `:7323`, optional `mains_proxy` |
+| **Secondary** | RF edge — HBX client to Main; no public logins |
+| **mains_proxy** | Main ↔ Main mesh (stub); HBX circuit peers only |
 
-**Secondary** = separate HyBBX process (infrastructure), not a telnet user. Multiple Secondaries: unique `link_id` per active link; `max_links` on Main (default 8, max 16).
+Inter-node traffic (Secondary, RF plugins, mesh) uses **HBX/Circuit** only. User sessions use telnet, SSH, or WebSocket on Main.
 
 ---
 
@@ -53,14 +48,46 @@ Users (telnet :2323, SSH :3232, WebSocket via proxy) ──► Main (storage, ma
 
 `security.log` is always written to the same directory (independent of `enabled`).
 
-### `[storage]`
+### `[security]`
+
+Built-in ban and rate-limit (replaces external fail2ban for HyBBX-specific events). Policy: **short cool-down bans** (default 10 minutes), not permanent blocks.
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `backend` | `flatfile` | `sqlite`/`mysql` planned |
-| `path` | `data` | User shards under `users/` |
+| `enabled` | `yes` | Master switch |
+| `maxretry` | `5` | Failures before ban |
+| `findtime` | `600` | Failure window (seconds) |
+| `bantime` | `600` | Ban duration (seconds) |
+| `telnet` | `yes` | Track telnet login failures |
+| `ssh` | `yes` | Track SSH login failures |
+| `websocket` | `yes` | Track WebSocket login failures |
+| `circuit` | `yes` | Track HBX `link_auth` failures |
+| `rate_limit` | `30` | Max new connections per IP per window |
+| `rate_window` | `60` | Rate-limit window (seconds) |
+| `ban_backend` | `internal` | `internal` \| `log` \| `iptables` \| `nftables` \| `hosts` |
 
-First start creates Sysop in `users/users.ini` with a random password (10–14 chars, `a-z` `0-9`); printed once on the console.
+Events: `login_fail` (user transports), `link_auth_fail` (circuit). Optional `share/fail2ban/` filters for site-wide firewall integration.
+
+### `[storage]`
+
+Default **`backend = flatfile`** — no host packages; works out of the box. Built-in crypto (see `[crypto]`) matches this: zero extra dependencies.
+
+**Recommended when available:** `backend = sqlite` (requires libsqlite3 at build time) for better query performance and automatic DB backups. Set `HYBBX_STORAGE_SQLITE=ON` (default) and install `libsqlite3-dev` (or distro equivalent) before building.
+
+MySQL/MariaDB backends are planned for **v2.0.0** only.
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `backend` | `flatfile` | `flatfile` or `sqlite` |
+| `path` | `data` | Data root (`users/` for flatfile) |
+| `user_db` | `users.db` | SQLite users/sessions file (under `path`) |
+| `mail_db` | `mail.db` | SQLite mail file (under `path`) |
+| `backup_interval` | `300` | Seconds between SQLite DB copies |
+| `backup_path` | *(empty)* | Backup directory; empty = same dir as DB, `.flb` suffix |
+
+SQLite creates `user_db` / `mail_db` on first start only; existing files are never overwritten on reinstall. Delete or move them to recreate. Backups copy to `users.db.flb` and `mail.db.flb` by default.
+
+Flatfile: first start creates Sysop in `users/users.ini` with a random password (10–14 chars, `a-z` `0-9`); printed once on the console. SQLite: same Sysop bootstrap in `users.db`.
 
 ### `[auth]`
 
@@ -71,6 +98,10 @@ First start creates Sysop in `users/users.ini` with a random password (10–14 c
 | `guest_timeout_minutes` | `30` | Guest disconnect |
 
 ### `[crypto]`
+
+Defaults use **built-in** backends (`tinysha256`, `tinyaes`, `monocypher`, system random) — no host package dependencies.
+
+**Recommended when available:** OpenSSL (`-DHYBBX_CRYPTO_OPENSSL=ON`, requires libssl) for `password_hash` and `aes_gcm`; libsodium for `chacha` / `x25519`.
 
 | Key | Default | Options |
 |-----|---------|---------|
@@ -135,6 +166,7 @@ Tokens in `banner.txt`, `motd.txt`, `news.txt`, `rules.txt`:
 | `ssh` | `no` | SSH plugin (libssh, port 3232) |
 | `websocket` | `no` | WebSocket forward-proxy (port 4591) |
 | `circuit` | `yes` | HBX hub (Main) |
+| `mains_proxy` | `no` | Main-to-Main mesh proxy ([MAINS_PROXY.md](MAINS_PROXY.md); stub) |
 
 Telnet is always started when built (not gated here).
 
@@ -258,6 +290,23 @@ On **Secondary**: kernel SER12/PAR96/EPP or serial KISS + HBX circuit. Up to 4 i
 | `device` / `serial_baud` | `/dev/ttyS0` / `1200` | KISS backend only |
 | `circuit_host`, `circuit_port`, `link_id`, `link_password` | — | HBX to Main |
 
+### `[transport.mains_proxyN]` (Main-to-Main mesh)
+
+Stub — links Mains via **HBX/Circuit** only. See [MAINS_PROXY.md](MAINS_PROXY.md).
+
+| Key | Default | Notes |
+|-----|---------|-------|
+| `peer_id` | (empty) | Logical peer name |
+| `circuit_host` | — | Remote Main HBX hub |
+| `circuit_port` | `7323` | Remote HBX port |
+| `link_id` | — | Bridge id (match peer) |
+| `link_password` | — | `LINK_AUTH` secret |
+| `wire` | `circuit` | `circuit` or `ax25` (reserved) |
+| `duplex` | `full` | `full` or `half` |
+| `use_secondary` | `yes` | Prefer Secondary path when available |
+
+Deprecated: `host` / `port` (use `circuit_host` / `circuit_port`).
+
 ---
 
 ## Commands
@@ -299,7 +348,11 @@ Mail, chat, conference, and `/who` require a registered account.
 | `/leave` | Up one area |
 | `/chat` | Chat channels |
 | `/conference` | Two-user conference |
-| `/mail` | Mailbox (registered) |
+| `/mail` | Local mailbox (registered) |
+| `/mail proxymail` | Enter inter-Main mail sub-area (stub) |
+| `/proxymail` | Same as `/mail proxymail` |
+| `/chat proxychat` | Enter inter-Main chat sub-area (stub) |
+| `/proxychat` | Same as `/chat proxychat` |
 | `/login <user> <pass>` | Registered login (one active session per account) |
 | `/register` | Self-registration (guest) |
 | `/changeme` | Own profile/password |
@@ -327,4 +380,4 @@ HyBBX: GPL-3.0 — [LICENSING.md](LICENSING.md). External modems are separate pr
 
 ## See also
 
-[QUICKSTART.md](QUICKSTART.md) · [FEATURES.md](FEATURES.md) · [WEBSOCKET.md](WEBSOCKET.md) · [RELEASE-1.2.0.md](RELEASE-1.2.0.md)
+[QUICKSTART.md](QUICKSTART.md) · [FEATURES.md](FEATURES.md) · [TOPOLOGY.md](TOPOLOGY.md) · [WEBSOCKET.md](WEBSOCKET.md) · [RELEASE-1.5.0.md](RELEASE-1.5.0.md)

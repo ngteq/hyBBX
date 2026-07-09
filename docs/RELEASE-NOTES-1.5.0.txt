@@ -1,0 +1,24 @@
+HyBBX v1.5.0 (testing)
+
+Multi-transport session daemon with HBX-centric inter-node architecture.
+
+Highlights
+----------
+- Topology guide: Main, Secondary, mains_proxy (docs/TOPOLOGY.md)
+- mains_proxy plugin (Main-to-Main mesh stub; HYBBX_PLUGIN_MAINS_PROXY)
+- /proxymail and /proxychat inter-Main stubs
+- HBX/Circuit hub as sole inter-node transport
+- Built-in [security] ban/rate-limit (short cool-down bans)
+- SQLite storage (opt-in backend = sqlite)
+- AX.25 auto-broadcast, hybbx-ssh client, command history
+
+Transports: telnet :2323, SSH :3232, WebSocket, HBX :7323,
+packet_radio, mains_proxy (stub), ARDOP, CRDOP, BayCom (opt-in).
+
+Clients: hybbx-telnet, hybbx-ssh, hybbx-terminal.
+
+Build:
+  cmake -B build -DCMAKE_BUILD_TYPE=Release
+  cmake --build build
+
+docs/RELEASE-1.5.0.md · docs/TOPOLOGY.md · docs/MANUAL.md

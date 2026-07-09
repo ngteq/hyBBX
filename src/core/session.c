@@ -7,6 +7,8 @@
 #include "hybbx/chat.h"
 #include "hybbx/conference.h"
 #include "hybbx/mail.h"
+#include "hybbx/proxymail.h"
+#include "hybbx/proxychat.h"
 #include "hybbx/terminal.h"
 #include "hybbx/traffic.h"
 #include "hybbx/log.h"
@@ -77,6 +79,11 @@ typedef struct hybbx_session_core {
     char mail_compose_subject[HYBBX_MAIL_SUBJECT_MAX + 1];
     char mail_compose_body[HYBBX_MAIL_BODY_MAX + 1];
     size_t mail_compose_body_len;
+    int proxymail_composing;
+    char proxymail_compose_to[HYBBX_PROXYMAIL_ADDRESS_MAX];
+    char proxymail_compose_subject[HYBBX_MAIL_SUBJECT_MAX + 1];
+    char proxymail_compose_body[HYBBX_MAIL_BODY_MAX + 1];
+    size_t proxymail_compose_body_len;
     unsigned out_col;
     int input_echo;
     int bandwidth_paused;
@@ -135,9 +142,12 @@ static size_t session_line_max_len(const hybbx_session_core_t *core)
         return HYBBX_LINE_MAX - 1;
     }
 
-    if (core->area == HYBBX_AREA_CHAT || core->area == HYBBX_AREA_CONFERENCE) {
+    if (core->area == HYBBX_AREA_CHAT || core->area == HYBBX_AREA_CONFERENCE ||
+        core->area == HYBBX_AREA_PROXYCHAT) {
         line_max = session_chat_message_max(core);
     } else if (core->area == HYBBX_AREA_MAIL && core->mail_composing) {
+        line_max = HYBBX_LINE_MAX - 1;
+    } else if (core->area == HYBBX_AREA_PROXYMAIL && core->proxymail_composing) {
         line_max = HYBBX_LINE_MAX - 1;
     }
 
@@ -663,6 +673,14 @@ static void session_area_clear_state(hybbx_session_core_t *core,
         core->mail_compose_to[0] = '\0';
         core->mail_compose_subject[0] = '\0';
     }
+
+    if (area == HYBBX_AREA_PROXYMAIL) {
+        core->proxymail_composing = 0;
+        core->proxymail_compose_body[0] = '\0';
+        core->proxymail_compose_body_len = 0;
+        core->proxymail_compose_to[0] = '\0';
+        core->proxymail_compose_subject[0] = '\0';
+    }
 }
 
 static void session_area_sync(hybbx_session_core_t *core)
@@ -926,7 +944,9 @@ static void session_submit_line(hybbx_session_core_t *core)
     if ((core->logged_in || core->login_prompt) &&
         core->area != HYBBX_AREA_CHAT &&
         core->area != HYBBX_AREA_CONFERENCE &&
-        !(core->area == HYBBX_AREA_MAIL && core->mail_composing)) {
+        core->area != HYBBX_AREA_PROXYCHAT &&
+        !(core->area == HYBBX_AREA_MAIL && core->mail_composing) &&
+        !(core->area == HYBBX_AREA_PROXYMAIL && core->proxymail_composing)) {
         hybbx_session_show_prompt(&core->pub);
     }
 }
@@ -1055,6 +1075,46 @@ static void session_process_line(hybbx_session_core_t *core, const char *line)
         memcpy(core->mail_compose_body + core->mail_compose_body_len,
                line, line_len + 1);
         core->mail_compose_body_len += line_len;
+        return;
+    }
+
+    if (core->area == HYBBX_AREA_PROXYMAIL && core->proxymail_composing &&
+        scope == HYBBX_CMD_SCOPE_LOCAL) {
+        const hybbx_mail_config_t *mail;
+        size_t line_len;
+        size_t body_max;
+
+        mail = hybbx_service_get_mail(core->service);
+        body_max = mail != NULL ? mail->body_max : HYBBX_MAIL_BODY_MAX;
+        line_len = strlen(line);
+
+        if (core->proxymail_compose_body_len + line_len + 2 > body_max) {
+            hybbx_session_write_line(&core->pub, "Message body too long.");
+            return;
+        }
+
+        if (core->proxymail_compose_body_len > 0) {
+            core->proxymail_compose_body[core->proxymail_compose_body_len++] =
+                '\n';
+        }
+        memcpy(core->proxymail_compose_body + core->proxymail_compose_body_len,
+               line, line_len + 1);
+        core->proxymail_compose_body_len += line_len;
+        return;
+    }
+
+    if (core->area == HYBBX_AREA_PROXYCHAT && scope == HYBBX_CMD_SCOPE_LOCAL) {
+        if (hybbx_session_is_guest(&core->pub)) {
+            hybbx_session_write_line(&core->pub, "Guests cannot use proxychat.");
+            return;
+        }
+
+        if (strlen(line) > session_chat_message_max(core)) {
+            hybbx_session_write_line(&core->pub, "Message too long.");
+            return;
+        }
+
+        (void)hybbx_proxychat_post_stub(&core->pub, line);
         return;
     }
 
@@ -1542,6 +1602,10 @@ const char *hybbx_session_area_name(hybbx_session_area_t area)
         return "chat";
     case HYBBX_AREA_CONFERENCE:
         return "conference";
+    case HYBBX_AREA_PROXYMAIL:
+        return "proxymail";
+    case HYBBX_AREA_PROXYCHAT:
+        return "proxychat";
     default:
         return "main";
     }
@@ -1567,6 +1631,14 @@ hybbx_session_area_t hybbx_session_area_parse(const char *name)
 
     if (session_str_ieq(name, "conference")) {
         return HYBBX_AREA_CONFERENCE;
+    }
+
+    if (session_str_ieq(name, "proxymail")) {
+        return HYBBX_AREA_PROXYMAIL;
+    }
+
+    if (session_str_ieq(name, "proxychat")) {
+        return HYBBX_AREA_PROXYCHAT;
     }
 
     return HYBBX_AREA_MAIN;
@@ -2130,6 +2202,189 @@ const char *hybbx_session_mail_compose_subject(const hybbx_session_t *session)
     }
 
     return core->mail_compose_subject;
+}
+
+hybbx_result_t hybbx_session_enter_mail(hybbx_session_t *session)
+{
+    return hybbx_session_enter_area(session, HYBBX_AREA_MAIL);
+}
+
+hybbx_result_t hybbx_session_enter_chat(hybbx_session_t *session)
+{
+    return hybbx_session_enter_area(session, HYBBX_AREA_CHAT);
+}
+
+hybbx_result_t hybbx_session_enter_proxymail(hybbx_session_t *session)
+{
+    hybbx_session_core_t *core;
+    hybbx_result_t rc;
+
+    if (session == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (core->area != HYBBX_AREA_MAIL &&
+        core->area != HYBBX_AREA_PROXYMAIL) {
+        rc = session_area_push(core, HYBBX_AREA_MAIL);
+        if (rc != HYBBX_OK) {
+            return rc;
+        }
+    }
+
+    return session_area_push(core, HYBBX_AREA_PROXYMAIL);
+}
+
+hybbx_result_t hybbx_session_enter_proxychat(hybbx_session_t *session)
+{
+    hybbx_session_core_t *core;
+    hybbx_result_t rc;
+
+    if (session == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (core->area != HYBBX_AREA_CHAT &&
+        core->area != HYBBX_AREA_PROXYCHAT) {
+        rc = session_area_push(core, HYBBX_AREA_CHAT);
+        if (rc != HYBBX_OK) {
+            return rc;
+        }
+    }
+
+    return session_area_push(core, HYBBX_AREA_PROXYCHAT);
+}
+
+int hybbx_session_proxymail_composing(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return 0;
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return 0;
+    }
+
+    return core->proxymail_composing;
+}
+
+hybbx_result_t hybbx_session_proxymail_compose_start(hybbx_session_t *session,
+                                                     const char *to_address,
+                                                     const char *subject)
+{
+    hybbx_session_core_t *core;
+    const hybbx_mail_config_t *mail;
+    size_t subject_len;
+
+    if (session == NULL || to_address == NULL || subject == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (!hybbx_proxymail_parse_address(to_address, NULL, 0, NULL, 0)) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    mail = hybbx_service_get_mail(core->service);
+    subject_len = strlen(subject);
+    if (mail != NULL && subject_len > mail->subject_max) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    hybbx_strlcpy(core->proxymail_compose_to, to_address,
+                  sizeof(core->proxymail_compose_to));
+    hybbx_strlcpy(core->proxymail_compose_subject, subject,
+                  sizeof(core->proxymail_compose_subject));
+    core->proxymail_compose_body[0] = '\0';
+    core->proxymail_compose_body_len = 0;
+    core->proxymail_composing = 1;
+
+    return hybbx_session_enter_proxymail(session);
+}
+
+void hybbx_session_proxymail_compose_cancel(hybbx_session_t *session)
+{
+    hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return;
+    }
+
+    core = (hybbx_session_core_t *)session->core_data;
+    if (core == NULL) {
+        return;
+    }
+
+    core->proxymail_composing = 0;
+    core->proxymail_compose_body[0] = '\0';
+    core->proxymail_compose_body_len = 0;
+    core->proxymail_compose_to[0] = '\0';
+    core->proxymail_compose_subject[0] = '\0';
+}
+
+const char *hybbx_session_proxymail_compose_body(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return "";
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL || !core->proxymail_composing) {
+        return "";
+    }
+
+    return core->proxymail_compose_body;
+}
+
+const char *hybbx_session_proxymail_compose_to(const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return "";
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL || !core->proxymail_composing) {
+        return "";
+    }
+
+    return core->proxymail_compose_to;
+}
+
+const char *hybbx_session_proxymail_compose_subject(
+    const hybbx_session_t *session)
+{
+    const hybbx_session_core_t *core;
+
+    if (session == NULL) {
+        return "";
+    }
+
+    core = (const hybbx_session_core_t *)session->core_data;
+    if (core == NULL || !core->proxymail_composing) {
+        return "";
+    }
+
+    return core->proxymail_compose_subject;
 }
 
 time_t hybbx_session_connected_at(const hybbx_session_t *session)

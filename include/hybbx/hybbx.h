@@ -2,9 +2,9 @@
 #define HYBBX_H
 
 #define HYBBX_VERSION_MAJOR 1
-#define HYBBX_VERSION_MINOR 2
+#define HYBBX_VERSION_MINOR 5
 #define HYBBX_VERSION_PATCH 0
 
-#define HYBBX_VERSION_STRING "1.2.0"
+#define HYBBX_VERSION_STRING "1.5.0"
 
 #endif /* HYBBX_H */

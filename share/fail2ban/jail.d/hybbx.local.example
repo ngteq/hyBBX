@@ -1,10 +1,12 @@
 # Example fail2ban jails for HyBBX security.log
 #
+# HyBBX v1.5.0+ includes built-in [security] bans — these filters are optional
+# for site-wide iptables/nftables integration alongside the daemon.
+#
 # 1. Copy filter.d/*.conf to /etc/fail2ban/filter.d/
 # 2. Copy this file to /etc/fail2ban/jail.d/hybbx.local
-# 3. Set logpath to your HyBBX logs directory (same as [log] dir in hybbx.ini)
-# 4. Adjust port, maxretry, findtime, bantime for your site
-# 5. sudo fail2ban-client reload
+# 3. Set logpath to your HyBBX logs directory ([log] dir in hybbx.ini)
+# 4. sudo fail2ban-client reload
 
 [hybbx-telnet]
 enabled = true
@@ -13,7 +15,7 @@ port = 2323
 logpath = /usr/local/hybbx/logs/security.log
 maxretry = 5
 findtime = 600
-bantime = 3600
+bantime = 600
 
 [hybbx-circuit]
 enabled = true
@@ -22,9 +24,8 @@ port = 7323
 logpath = /usr/local/hybbx/logs/security.log
 maxretry = 5
 findtime = 600
-bantime = 3600
+bantime = 600
 
-# SSH transport — enable when [networks] ssh=yes and plugin is built (libssh).
 [hybbx-ssh]
 enabled = false
 filter = hybbx-ssh
@@ -32,9 +33,8 @@ port = 3232
 logpath = /usr/local/hybbx/logs/security.log
 maxretry = 5
 findtime = 600
-bantime = 3600
+bantime = 600
 
-# WebSocket transport — enable when [networks] websocket=yes.
 [hybbx-websocket]
 enabled = false
 filter = hybbx-websocket
@@ -42,4 +42,4 @@ port = 4591
 logpath = /usr/local/hybbx/logs/security.log
 maxretry = 5
 findtime = 600
-bantime = 3600
+bantime = 600

@@ -50,6 +50,7 @@ void hybbx_networks_config_defaults(hybbx_networks_config_t *networks)
     networks->ssh = 0;
     networks->websocket = 0;
     networks->circuit = 1;
+    networks->mains_proxy = 0;
 }
 
 void hybbx_networks_config_apply(hybbx_networks_config_t *networks,
@@ -92,14 +93,21 @@ void hybbx_networks_config_apply(hybbx_networks_config_t *networks,
                                                   1);
     }
 
-    printf("[networks] telnet=static ssh=%s ax25=%s baycom=%s ardop=%s crdop=%s websocket=%s circuit=%s\n",
+    if (networks_has_key(config, "mains_proxy")) {
+        networks->mains_proxy = hybbx_config_get_bool(config, "networks",
+                                                        "mains_proxy", 0);
+    }
+
+    printf("[networks] telnet=static ssh=%s ax25=%s baycom=%s ardop=%s crdop=%s "
+           "websocket=%s circuit=%s mains_proxy=%s\n",
            hybbx_bool_to_string(networks->ssh),
            hybbx_bool_to_string(networks->ax25),
            hybbx_bool_to_string(networks->baycom),
            hybbx_bool_to_string(networks->ardop),
            hybbx_bool_to_string(networks->crdop),
            hybbx_bool_to_string(networks->websocket),
-           hybbx_bool_to_string(networks->circuit));
+           hybbx_bool_to_string(networks->circuit),
+           hybbx_bool_to_string(networks->mains_proxy));
 }
 
 int hybbx_networks_is_static_transport(const char *plugin_name)
@@ -148,6 +156,10 @@ int hybbx_networks_transport_wanted(const char *plugin_name,
 
     if (str_ieq(plugin_name, "websocket")) {
         return networks->websocket;
+    }
+
+    if (str_ieq(plugin_name, "mains_proxy")) {
+        return networks->mains_proxy;
     }
 
     return 0;

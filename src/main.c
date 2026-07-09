@@ -42,6 +42,9 @@ extern const hybbx_transport_plugin_t hybbx_plugin_websocket;
 #ifdef HYBBX_HAVE_PLUGIN_BAYCOM
 extern const hybbx_transport_plugin_t hybbx_plugin_baycom;
 #endif
+#ifdef HYBBX_HAVE_PLUGIN_MAINS_PROXY
+extern const hybbx_transport_plugin_t hybbx_plugin_mains_proxy;
+#endif
 
 static void register_builtin_plugins(void)
 {
@@ -65,6 +68,9 @@ static void register_builtin_plugins(void)
 #endif
 #ifdef HYBBX_HAVE_PLUGIN_BAYCOM
     hybbx_registry_register(&hybbx_plugin_baycom);
+#endif
+#ifdef HYBBX_HAVE_PLUGIN_MAINS_PROXY
+    hybbx_registry_register(&hybbx_plugin_mains_proxy);
 #endif
 }
 

@@ -29,7 +29,7 @@ if(NOT DEFINED ENV{CC} AND NOT CMAKE_C_COMPILER)
 endif()
 
 project(HyBBX
-    VERSION 1.2.0
+    VERSION 1.5.0
     DESCRIPTION "C99 transport service: centralized daemon + link/repeater edge"
     LANGUAGES C
 )
@@ -56,12 +56,14 @@ option(HYBBX_PLUGIN_ARDOP       "Build ARDOP host-client transport"  ON)
 option(HYBBX_PLUGIN_CRDOP       "Build CRDOP CB host-client transport" ON)
 option(HYBBX_PLUGIN_SSH         "Build SSH transport (requires libssh)" ON)
 option(HYBBX_PLUGIN_BAYCOM       "Build BayCom PR-Stack transport"    OFF)
+option(HYBBX_PLUGIN_MAINS_PROXY  "Build Main-to-Main mesh proxy"    OFF)
 option(HYBBX_PLUGIN_WEBSOCKET   "Build WebSocket forward-proxy transport" ON)
 option(HYBBX_BUILD_TESTS        "Build unit tests"                  OFF)
 option(HYBBX_HARDENING          "Enable compiler security hardening" ON)
 option(HYBBX_WARNINGS_AS_ERRORS "Treat warnings as errors"           OFF)
 option(HYBBX_CRYPTO_OPENSSL     "Optional OpenSSL crypto backends"   OFF)
 option(HYBBX_CRYPTO_LIBSODIUM   "Optional libsodium crypto backends" OFF)
+option(HYBBX_STORAGE_SQLITE     "Optional SQLite storage backend"  ON)
 
 cmake_dependent_option(HYBBX_BUILD_CLIENT_TELNET
     "Build hybbx-telnet standalone client" ON "HYBBX_BUILD_CLIENTS" OFF)
@@ -126,6 +128,20 @@ if(HYBBX_CRYPTO_LIBSODIUM)
     endif()
 endif()
 
+set(HYBBX_HAVE_SQLITE FALSE)
+if(HYBBX_STORAGE_SQLITE AND HYBBX_BUILD_DAEMON)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(SQLITE3 QUIET sqlite3)
+    endif()
+    if(SQLITE3_FOUND)
+        set(HYBBX_HAVE_SQLITE TRUE)
+        message(STATUS "HyBBX: sqlite3 ${SQLITE3_VERSION} — SQLite storage enabled")
+    else()
+        message(WARNING "HYBBX_STORAGE_SQLITE=ON but libsqlite3 was not found")
+    endif()
+endif()
+
 # ---------------------------------------------------------------------------
 # Platform detection (see docs/PLATFORMS.md)
 # ---------------------------------------------------------------------------
@@ -158,6 +174,7 @@ if(HYBBX_PLATFORM_AMIGAOS)
     set(HYBBX_BUILD_CLIENT_TERMINAL OFF CACHE BOOL "AmigaOS build" FORCE)
     set(HYBBX_PLUGIN_WEBSOCKET OFF CACHE BOOL "AmigaOS build" FORCE)
     set(HYBBX_PLUGIN_BAYCOM OFF CACHE BOOL "AmigaOS build" FORCE)
+    set(HYBBX_PLUGIN_MAINS_PROXY OFF CACHE BOOL "AmigaOS build" FORCE)
     set(HYBBX_PLUGIN_ARDOP OFF CACHE BOOL "AmigaOS build" FORCE)
     set(HYBBX_PLUGIN_CRDOP OFF CACHE BOOL "AmigaOS build" FORCE)
     message(STATUS "HyBBX: AmigaOS — hybbx-telnet client (clib2); telnet + packet_radio plugins")

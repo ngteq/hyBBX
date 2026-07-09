@@ -8,6 +8,7 @@
 #include "hybbx/service.h"
 #include "hybbx/session.h"
 #include "hybbx/socket.h"
+#include "hybbx/security_ban.h"
 #include "hybbx/websocket.h"
 #include "hybbx/util.h"
 #include "ws_proto.h"
@@ -562,6 +563,10 @@ static void *ws_accept_thread(void *arg)
                 int client_fd = accept(fds[i].fd, NULL, NULL);
 
                 if (client_fd >= 0) {
+                    if (!hybbx_security_ban_accept_fd(client_fd)) {
+                        close(client_fd);
+                        continue;
+                    }
                     accept_client(client_fd);
                 }
             }

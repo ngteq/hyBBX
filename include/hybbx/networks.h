@@ -29,6 +29,8 @@ typedef struct hybbx_networks_config {
     int websocket;
     /** Internal HBX circuit hub for edge link/repeater daemons. */
     int circuit;
+    /** Main-to-Main mesh proxy (`transport.mains_proxy`). */
+    int mains_proxy;
 } hybbx_networks_config_t;
 
 void hybbx_networks_config_defaults(hybbx_networks_config_t *networks);

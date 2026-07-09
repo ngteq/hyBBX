@@ -57,6 +57,9 @@
 /** Separates multiple INI sections in one baycom start config. */
 #define HYBBX_BAYCOM_INSTANCE_SEP '\x1e'
 
+/** Separates multiple INI sections in one mains_proxy start config. */
+#define HYBBX_MAINS_PROXY_INSTANCE_SEP '\x1e'
+
 /** Default guest session lifetime before auto-disconnect (minutes). */
 #define HYBBX_DEFAULT_GUEST_TIMEOUT_MINUTES 30u
 
@@ -68,5 +71,20 @@
 
 /** AX.25 on-air payload cap (1200 baud; keep UI frames short). */
 #define HYBBX_BROADCAST_AX25_MESSAGE_MAX 48u
+
+/** SQLite fallback copy suffix (see `[storage] backup_path`). */
+#define HYBBX_STORAGE_BACKUP_SUFFIX ".flb"
+
+/** Default seconds between SQLite DB fallback copies. */
+#define HYBBX_STORAGE_BACKUP_INTERVAL_DEFAULT_SEC 300u
+
+/** [security] defaults — short cool-down bans (seconds). */
+#define HYBBX_SECURITY_DEFAULT_MAXRETRY 5u
+#define HYBBX_SECURITY_DEFAULT_FINDTIME_SEC 600u
+#define HYBBX_SECURITY_DEFAULT_BANTIME_SEC 600u
+#define HYBBX_SECURITY_DEFAULT_RATE_LIMIT 30u
+#define HYBBX_SECURITY_DEFAULT_RATE_WINDOW_SEC 60u
+#define HYBBX_SECURITY_BAN_MAX 256u
+#define HYBBX_SECURITY_TRACK_MAX 512u
 
 #endif /* HYBBX_LIMITS_H */

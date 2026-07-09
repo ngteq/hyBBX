@@ -1,10 +1,10 @@
 # Quick start
 
-**v1.2.0** — telnet, SSH, WebSocket. INI: [MANUAL.md](MANUAL.md).
+**v1.5.0** (testing) — telnet, SSH, WebSocket, built-in security bans. Topology: [TOPOLOGY.md](TOPOLOGY.md).
 
 ## Requirements
 
-CMake 3.16+, GCC or Clang — [PLATFORMS.md](PLATFORMS.md). **libssh** for SSH plugin.
+CMake 3.16+, GCC or Clang — [PLATFORMS.md](PLATFORMS.md). **libssh** for SSH plugin. **libsqlite3** optional for SQLite storage.
 
 ## Build and run
 
@@ -27,11 +27,19 @@ cmake --install build --prefix "$HOME"
 "$HOME/hybbx/hybbx-start"
 ```
 
-`<prefix>/hybbx/` — `hybbx`, `hybbx-start`, `hybbx.ini`, `keys/`, `reverse-proxy/`, `data/`.
+`<prefix>/hybbx/` — `hybbx`, `hybbx-start`, `hybbx.ini`, `keys/`, `reverse-proxy/`, `data/`, `logs/`.
 
 ## First login
 
 Empty data dir → **Sysop** with a random password (printed on first start; change with `/changeme`). `auto_login = yes` → guest; `/login` for registered users.
+
+## Layouts
+
+| Site | Config |
+|------|--------|
+| Main only | `share/hybbx.ini.example` |
+| Main + remote RF | Main + `share/hybbx-secondary.ini.example` on edge host |
+| Linked BBS (future) | Two Mains + `mains_proxy` — [MAINS_PROXY.md](MAINS_PROXY.md) |
 
 ## Commands
 
@@ -39,4 +47,4 @@ Empty data dir → **Sysop** with a random password (printed on first start; cha
 
 ## Next
 
-[FEATURES.md](FEATURES.md) · [RELEASE-1.2.0.md](RELEASE-1.2.0.md) · [BUILD.md](BUILD.md)
+[FEATURES.md](FEATURES.md) · [RELEASE-1.5.0.md](RELEASE-1.5.0.md) · [BUILD.md](BUILD.md)

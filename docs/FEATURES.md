@@ -1,6 +1,6 @@
 # Feature status
 
-**v1.2.0** · [RELEASE-1.2.0.md](RELEASE-1.2.0.md) · INI: [MANUAL.md](MANUAL.md)
+**v1.5.0** (testing) · [RELEASE-1.5.0.md](RELEASE-1.5.0.md) · INI: [MANUAL.md](MANUAL.md)
 
 | Status | Meaning |
 |--------|---------|
@@ -16,6 +16,7 @@
 | Telnet `:2323` | **Verified** |
 | Guest + registered auth | **Verified** |
 | Mail, chat, conference | **Verified** |
+| `/proxymail`, `/proxychat` | **Partial** (stub) — inter-Main via mains_proxy |
 | `/` commands | **Verified** |
 | Flat-file storage | **Verified** |
 | Traffic pacing 2400/80 | **Verified** |
@@ -29,17 +30,32 @@
 | SSH/telnet/client history | **Built** — last 25 commands, up/down arrows |
 | `hybbx-ssh` client | **Built** — libssh, no host-key prompt |
 | `hybbx-telnet` AmigaOS client | **Verified** — A1200, AmigaOS 3.2 |
-| TCP `/broadcast` | Partial |
+| TCP `/broadcast` | **Partial** |
 | AX.25 auto-broadcast (1200 baud) | **Built** — max 48 chars; min 5 min interval |
-| SQL storage | Planned |
+| SQLite storage | **Built** — opt-in `backend = sqlite` |
+| MySQL/MariaDB storage | **Planned** — v2.0.0 |
+
+## Security
+
+| Feature | Status |
+|---------|--------|
+| `security.log` audit trail | **Built** |
+| Built-in `[security]` ban/rate-limit | **Built** — short cool-down bans |
+| Login brute-force (telnet/ssh/ws) | **Built** |
+| Circuit `link_auth` ban | **Built** |
+| Per-IP connection rate limit | **Built** |
+| Optional `iptables`/`nftables` backend | **Built** — needs root |
+| External fail2ban filters (`share/fail2ban/`) | **Built** — optional adjunct |
 
 ## RF / HBX
 
 | Feature | Status |
 |---------|--------|
 | HBX circuit hub `:7323` | **Built** |
-| Packet radio / AX.25 | **Built** — [TNCS.md](TNCS.md); not live RF verified |
-| BayCom PR-Stack (`baycom`) | **Built** (opt-in) — [BAYCOM.md](BAYCOM.md); `HYBBX_PLUGIN_BAYCOM=OFF` default |
+| HBX-only inter-node policy | **Built** — Secondary, RF, mesh |
+| Packet radio / AX.25 | **Built** — [TNCS.md](TNCS.md); live RF TBD |
+| BayCom PR-Stack (`baycom`) | **Built** (opt-in) — [BAYCOM.md](BAYCOM.md) |
+| Main-to-Main proxy (`mains_proxy`) | **Partial** (stub) — [MAINS_PROXY.md](MAINS_PROXY.md) |
 | Multi-link hub | **Built** |
 | ARDOP / CRDOP plugins | **Built** — [ARDOP.md](ARDOP.md), [CRDOP.md](CRDOP.md) |
 

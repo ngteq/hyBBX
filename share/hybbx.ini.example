@@ -1,4 +1,4 @@
-; HyBBX Main — v1.1.1. Full keys: docs/MANUAL.md
+; HyBBX Main — v1.5.0. Full keys: docs/MANUAL.md
 ; Template: Main datacenter (telnet + HBX hub). RF on Secondary unless standalone.
 
 [service]
@@ -10,14 +10,20 @@ seconds = yes
 ; date = iso | iso_short | us | eu
 
 [storage]
+; flatfile = default, no host packages. sqlite = opt-in (libsqlite3 at build time).
 backend = flatfile
 path = data
+; user_db = users.db
+; mail_db = mail.db
+; backup_interval = 300
+; backup_path =
 
 [auth]
 auto_login = yes
 guest_prefix = Guest
 
 [crypto]
+; Built-in defaults need no host packages. OpenSSL recommended when available.
 password_hash = tinysha256
 aes_gcm = tinyaes
 chacha = monocypher
@@ -37,6 +43,19 @@ path = text
 [log]
 enabled = yes
 level = warn
+
+[security]
+enabled = yes
+maxretry = 5
+findtime = 600
+bantime = 600
+telnet = yes
+ssh = yes
+websocket = yes
+circuit = yes
+rate_limit = 30
+rate_window = 60
+ban_backend = internal
 
 [chat]
 channels = 10
@@ -68,6 +87,7 @@ crdop = no
 ssh = yes
 websocket = no
 circuit = yes
+mains_proxy = no
 
 [transport.telnet]
 bind = 0.0.0.0
@@ -144,3 +164,14 @@ frequency_mhz = 27.205
 ; Optional digital bridges (external modem on Secondary):
 ; [transport.ardop1]  — docs/ARDOP.md
 ; [transport.crdop1]  — docs/CRDOP.md
+
+; Main-to-Main mesh (opt-in; stub — docs/MAINS_PROXY.md):
+; [transport.mains_proxy1]
+; peer_id = main-peer
+; circuit_host = 192.0.2.10
+; circuit_port = 7323
+; link_id = main-peer
+; link_password = changeme
+; wire = circuit
+; duplex = full
+; use_secondary = yes

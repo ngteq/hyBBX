@@ -18,6 +18,11 @@ if(HYBBX_PLUGIN_BAYCOM)
     add_subdirectory(baycom)
 endif()
 
+if(HYBBX_PLUGIN_MAINS_PROXY)
+    add_subdirectory(mains_proxy)
+    target_compile_definitions(hybbx_core PRIVATE HYBBX_HAVE_PLUGIN_MAINS_PROXY)
+endif()
+
 if(HYBBX_PLUGIN_SSH AND HYBBX_HAVE_LIBSSH)
     add_subdirectory(ssh)
 endif()

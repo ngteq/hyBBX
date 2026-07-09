@@ -1,25 +1,26 @@
 # Roadmap
 
-Current status: [FEATURES.md](FEATURES.md).
+Current status: [FEATURES.md](FEATURES.md). Topology: [TOPOLOGY.md](TOPOLOGY.md).
 
 ## Priority
 
 | Item | Notes |
 |------|-------|
-| AX.25 field validation | Secondary→Main HBX, packet_radio — local tests exist; live RF TBD |
+| v1.5.0 field testing | Mesh stubs, proxymail delivery, live RF |
+| AX.25 field validation | Secondary→Main HBX — live RF TBD |
 | ARDOP / CRDOP live modem tests | External ARDOPC/CRDOPC |
-| SQL storage | SQLite / MySQL on Main |
-| `link_role` routing | Metadata today; semantics later |
-| Circuit reconnect / heartbeat | Planned |
+| mains_proxy live relay | HBX circuit mesh I/O |
+| `/proxymail` delivery | Inter-Main mail over mesh |
 | TCP `/broadcast` fan-out | Stub today |
-| SSH / telnet client polish | General client work later |
+| Circuit reconnect / heartbeat | Planned |
+| `link_role` routing | Metadata today; semantics later |
 
 ## Later
 
 | Item | Notes |
 |------|-------|
-| WebSocket line editing | Browser UI — deferred (service use; unlike native clients) |
+| MySQL/MariaDB storage | v2.0.0 |
+| WebSocket line editing | Browser UI |
 | User-files / public-files areas | Planned |
 | HBX APRS / NETROM protos | Reserved IDs |
-
-Topology: [MANUAL.md — Topology](MANUAL.md#topology).
+| Register/guest abuse rules | Optional `[security]` extension |

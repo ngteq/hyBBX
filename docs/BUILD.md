@@ -1,6 +1,6 @@
 # Build
 
-[PLATFORMS.md](PLATFORMS.md) · [QUICKSTART.md](QUICKSTART.md) · **v1.2.0**
+[PLATFORMS.md](PLATFORMS.md) · [QUICKSTART.md](QUICKSTART.md) · **v1.5.0**
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -21,14 +21,23 @@ Tests: `-DHYBBX_BUILD_TESTS=ON` → `ctest --test-dir build`
 | `HYBBX_PLUGIN_TELNET` | ON | Telnet |
 | `HYBBX_PLUGIN_PACKET_RADIO` | ON | Packet radio |
 | `HYBBX_PLUGIN_BAYCOM` | OFF | BayCom PR-Stack plugin (opt-in; [BAYCOM.md](BAYCOM.md)) |
+| `HYBBX_PLUGIN_MAINS_PROXY` | OFF | Main-to-Main mesh proxy (opt-in; [MAINS_PROXY.md](MAINS_PROXY.md)) |
 | `HYBBX_PLUGIN_ARDOP` | ON | ARDOP plugin |
 | `HYBBX_PLUGIN_CRDOP` | ON | CRDOP plugin |
 | `HYBBX_PLUGIN_SSH` | ON | SSH (requires libssh) |
 | `HYBBX_PLUGIN_WEBSOCKET` | ON | WebSocket forward-proxy (port 4591; OpenSSL → wss) |
 | `HYBBX_BUILD_TESTS` | OFF | Unit tests |
 | `HYBBX_HARDENING` | ON | Stack protector, RELRO/PIE |
-| `HYBBX_CRYPTO_OPENSSL` | OFF | Optional OpenSSL |
+| `HYBBX_CRYPTO_OPENSSL` | OFF | Optional OpenSSL (`libssl`) |
 | `HYBBX_CRYPTO_LIBSODIUM` | OFF | Optional libsodium |
+| `HYBBX_STORAGE_SQLITE` | ON | Optional SQLite storage (`libsqlite3`) |
+
+**Defaults (no host deps):** flatfile storage + built-in crypto (`tinysha256`, `tinyaes`, `monocypher`). **Recommended when packages are available:** `-DHYBBX_CRYPTO_OPENSSL=ON` and `[storage] backend = sqlite` in `hybbx.ini` (after building with libsqlite3).
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release \
+  -DHYBBX_CRYPTO_OPENSSL=ON -DHYBBX_STORAGE_SQLITE=ON
+```
 
 Clients-only: `-DHYBBX_CLIENTS_ONLY=ON` or `./scripts/build-clients.sh`.
 

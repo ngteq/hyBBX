@@ -8,8 +8,11 @@
 #include "hybbx/chat.h"
 #include "hybbx/conference.h"
 #include "hybbx/mail.h"
+#include "hybbx/proxymail.h"
+#include "hybbx/proxychat.h"
 #include "hybbx/broadcast.h"
 #include "hybbx/security.h"
+#include "hybbx/security_ban.h"
 #include "hybbx/service.h"
 #include "hybbx/password.h"
 #include "hybbx/traffic.h"
@@ -19,6 +22,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+static hybbx_result_t cmd_proxymail(hybbx_service_t *service,
+                                    hybbx_session_t *session,
+                                    const hybbx_parsed_command_t *cmd);
+static hybbx_result_t cmd_proxychat(hybbx_service_t *service,
+                                    hybbx_session_t *session,
+                                    const hybbx_parsed_command_t *cmd);
 
 static int str_ieq(const char *a, const char *b)
 {
@@ -107,6 +117,14 @@ static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
     }
 
     if (str_ieq(verb, "mail")) {
+        return !hybbx_user_level_is_guest(level);
+    }
+
+    if (str_ieq(verb, "proxymail")) {
+        return !hybbx_user_level_is_guest(level);
+    }
+
+    if (str_ieq(verb, "proxychat")) {
         return !hybbx_user_level_is_guest(level);
     }
 
@@ -299,7 +317,8 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
                    "/help  /news  /motd  /rules  /who  /users  /session  /version");
     cmd_help_group(session, "Screen", "/clear  /echo");
     cmd_help_group(session, "Areas",
-                   "/leave  /main  /chat  /conference  /mail  /exit");
+                   "/leave  /main  /chat  /conference  /mail  /proxymail  "
+                   "/proxychat  /exit");
     if (cmd_help_shows_deleteme(level)) {
         cmd_help_group(session, "Account",
                        "/login  /changeme  /deleteme");
@@ -451,6 +470,8 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         cmd_help_topic_detail(session,
             "  /chat showall      all users@ChannelN (80 columns)");
         cmd_help_topic_detail(session,
+            "  /chat proxychat    inter-Main chat stub (HBX mesh)");
+        cmd_help_topic_detail(session,
             "  registered users only — /leave or /main to exit");
         return HYBBX_OK;
     }
@@ -474,6 +495,30 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
             "  read <n>  |  delete <n|from-to>  |  recycle");
         cmd_help_topic_detail(session,
             "  send <user> <subj>  —  body lines, then /mail done");
+        cmd_help_topic_detail(session,
+            "  proxymail  —  inter-Main mail (stub; /proxymail for details)");
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(canonical, "proxymail")) {
+        cmd_help_topic_title(session, "/proxymail",
+                             "inter-Main mail via HBX mesh (stub)");
+        cmd_help_topic_detail(session,
+            "  list [<from>-<to>]  |  read <n>  |  delete <n|from-to>");
+        cmd_help_topic_detail(session,
+            "  send <user>@<main> <subj>  —  body lines, then /proxymail done");
+        cmd_help_topic_detail(session,
+            "  alias: /mail proxymail …");
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(canonical, "proxychat")) {
+        cmd_help_topic_title(session, "/proxychat",
+                             "inter-Main chat via HBX mesh (stub)");
+        cmd_help_topic_detail(session,
+            "  /proxychat  —  enter area; type lines to post (stubbed)");
+        cmd_help_topic_detail(session,
+            "  alias: /chat proxychat");
         return HYBBX_OK;
     }
 
@@ -1794,6 +1839,9 @@ static hybbx_result_t cmd_login(hybbx_service_t *service,
                                  username,
                                  rec != NULL && rec->transport[0] != '\0' ?
                                  rec->transport : "?");
+        if (rec != NULL && rec->remote[0] != '\0') {
+            hybbx_security_ban_login_fail(rec->remote, rec->transport);
+        }
         hybbx_session_write_line(session, "Invalid password.");
         return HYBBX_OK;
     }
@@ -1843,6 +1891,14 @@ static hybbx_result_t cmd_chat(hybbx_service_t *service,
     if (hybbx_session_is_guest(session)) {
         hybbx_session_write_line(session, "Guests cannot use chat.");
         return HYBBX_ERR_DENIED;
+    }
+
+    if (cmd->argc > 0 && str_ieq(cmd->argv[0], "proxychat")) {
+        hybbx_parsed_command_t proxy_cmd;
+
+        memset(&proxy_cmd, 0, sizeof(proxy_cmd));
+        proxy_cmd.verb = "proxychat";
+        return cmd_proxychat(service, session, &proxy_cmd);
     }
 
     chat = hybbx_service_get_chat(service);
@@ -1992,6 +2048,201 @@ static void mail_join_subject(const hybbx_parsed_command_t *cmd,
     }
 }
 
+static hybbx_result_t cmd_proxymail(hybbx_service_t *service,
+                                    hybbx_session_t *session,
+                                    const hybbx_parsed_command_t *cmd)
+{
+    char subject[HYBBX_MAIL_SUBJECT_MAX + 1];
+    hybbx_result_t rc;
+
+    if (hybbx_session_is_guest(session)) {
+        hybbx_session_write_line(session, "Guests cannot use proxymail.");
+        return HYBBX_ERR_DENIED;
+    }
+
+    if (cmd->argc == 0) {
+        (void)hybbx_session_enter_proxymail(session);
+        hybbx_proxymail_list_inbox(service, session);
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(cmd->argv[0], "list")) {
+        unsigned from = 1;
+        unsigned to = 0;
+
+        if (cmd->argc >= 2) {
+            if (!hybbx_mail_parse_list_range(cmd->argv[1], &from, &to)) {
+                hybbx_session_write_line(session,
+                    "Usage: /proxymail list [<from>-<to>]");
+                return HYBBX_OK;
+            }
+        }
+
+        (void)hybbx_session_enter_proxymail(session);
+        hybbx_proxymail_list_inbox_range(service, session, from, to);
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(cmd->argv[0], "delete") || str_ieq(cmd->argv[0], "del")) {
+        unsigned from = 1;
+        unsigned to = 0;
+
+        if (cmd->argc < 2 || cmd->argv[1] == NULL) {
+            hybbx_session_write_line(session,
+                "Usage: /proxymail delete <n|from-to>");
+            return HYBBX_OK;
+        }
+
+        if (!hybbx_mail_parse_list_range(cmd->argv[1], &from, &to)) {
+            hybbx_session_write_line(session,
+                "Usage: /proxymail delete <n|from-to>");
+            return HYBBX_OK;
+        }
+
+        (void)hybbx_session_enter_proxymail(session);
+        return hybbx_proxymail_delete_range(service, session, from, to);
+    }
+
+    if (str_ieq(cmd->argv[0], "recycle")) {
+        (void)hybbx_session_enter_proxymail(session);
+        return hybbx_proxymail_recycle_empty(service, session);
+    }
+
+    if (str_ieq(cmd->argv[0], "read")) {
+        unsigned index;
+
+        if (cmd->argc < 2 || cmd->argv[1] == NULL) {
+            hybbx_session_write_line(session, "Usage: /proxymail read <n>");
+            return HYBBX_OK;
+        }
+
+        index = (unsigned)strtoul(cmd->argv[1], NULL, 10);
+        if (index == 0) {
+            hybbx_session_write_line(session, "Usage: /proxymail read <n>");
+            return HYBBX_OK;
+        }
+
+        (void)hybbx_session_enter_proxymail(session);
+        return hybbx_proxymail_read(service, session, index);
+    }
+
+    if (str_ieq(cmd->argv[0], "send")) {
+        if (cmd->argc < 3) {
+            hybbx_session_write_line(session,
+                "Usage: /proxymail send <user>@<main> <subject>");
+            return HYBBX_OK;
+        }
+
+        mail_join_subject(cmd, subject, sizeof(subject));
+        if (subject[0] == '\0') {
+            hybbx_session_write_line(session,
+                "Usage: /proxymail send <user>@<main> <subject>");
+            return HYBBX_OK;
+        }
+
+        rc = hybbx_session_proxymail_compose_start(session, cmd->argv[1],
+                                                   subject);
+        if (rc == HYBBX_ERR_INVALID) {
+            hybbx_session_write_line(session,
+                "Invalid address or subject. Use user@remote-main.");
+            return HYBBX_OK;
+        }
+        if (rc != HYBBX_OK) {
+            return rc;
+        }
+
+        hybbx_session_write_line(session,
+            "Compose body. /proxymail done to send.");
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(cmd->argv[0], "done")) {
+        const char *body;
+        const char *to_address;
+        const char *mail_subject;
+
+        if (!hybbx_session_proxymail_composing(session)) {
+            hybbx_session_write_line(session, "Not composing proxymail.");
+            return HYBBX_OK;
+        }
+
+        to_address = hybbx_session_proxymail_compose_to(session);
+        mail_subject = hybbx_session_proxymail_compose_subject(session);
+        body = hybbx_session_proxymail_compose_body(session);
+
+        rc = hybbx_proxymail_deliver(service, hybbx_session_display_name(session),
+                                     to_address, mail_subject, body);
+
+        if (rc == HYBBX_ERR_INVALID) {
+            hybbx_session_write_line(session, "Invalid proxymail address.");
+            return HYBBX_OK;
+        }
+        if (rc == HYBBX_ERR_UNSUPPORTED) {
+            hybbx_session_write_line(session,
+                "Proxymail queued (stub) — HBX mesh delivery not active.");
+            hybbx_session_proxymail_compose_cancel(session);
+            hybbx_session_leave_area(session);
+            hybbx_session_show_prompt(session);
+            return HYBBX_OK;
+        }
+        if (rc != HYBBX_OK) {
+            hybbx_session_write_line(session, "Send failed.");
+            return rc;
+        }
+
+        hybbx_session_write_line(session, "Proxymail sent.");
+        hybbx_session_proxymail_compose_cancel(session);
+        hybbx_session_leave_area(session);
+        hybbx_session_show_prompt(session);
+        return HYBBX_OK;
+    }
+
+    if (str_ieq(cmd->argv[0], "cancel")) {
+        if (hybbx_session_proxymail_composing(session)) {
+            hybbx_session_proxymail_compose_cancel(session);
+            hybbx_session_leave_area(session);
+            hybbx_session_write_line(session, "Compose cancelled.");
+        } else {
+            hybbx_session_write_line(session, "Not composing proxymail.");
+        }
+        return HYBBX_OK;
+    }
+
+    hybbx_session_write_line(session,
+        "Unknown /proxymail subcommand. Try /help proxymail.");
+    return HYBBX_OK;
+}
+
+static hybbx_result_t cmd_proxychat(hybbx_service_t *service,
+                                    hybbx_session_t *session,
+                                    const hybbx_parsed_command_t *cmd)
+{
+    hybbx_result_t rc;
+
+    (void)service;
+
+    if (hybbx_session_is_guest(session)) {
+        hybbx_session_write_line(session, "Guests cannot use proxychat.");
+        return HYBBX_ERR_DENIED;
+    }
+
+    if (cmd->argc > 0) {
+        hybbx_session_write_line(session,
+            "Usage: /proxychat  —  enter inter-Main chat area (stub).");
+        return HYBBX_OK;
+    }
+
+    rc = hybbx_session_enter_proxychat(session);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    hybbx_proxychat_show_banner(session);
+    hybbx_session_write_line(session,
+        "Type chat lines; /leave or /main to exit.");
+    return HYBBX_OK;
+}
+
 static hybbx_result_t cmd_mail(hybbx_service_t *service,
                                hybbx_session_t *session,
                                const hybbx_parsed_command_t *cmd)
@@ -2002,6 +2253,19 @@ static hybbx_result_t cmd_mail(hybbx_service_t *service,
     if (hybbx_session_is_guest(session)) {
         hybbx_session_write_line(session, "Guests cannot use mail.");
         return HYBBX_ERR_DENIED;
+    }
+
+    if (cmd->argc > 0 && str_ieq(cmd->argv[0], "proxymail")) {
+        hybbx_parsed_command_t proxy_cmd;
+        unsigned i;
+
+        memset(&proxy_cmd, 0, sizeof(proxy_cmd));
+        proxy_cmd.verb = "proxymail";
+        proxy_cmd.argc = cmd->argc > 0 ? cmd->argc - 1 : 0;
+        for (i = 0; i < proxy_cmd.argc && i < HYBBX_CMD_TOKEN_MAX; i++) {
+            proxy_cmd.argv[i] = cmd->argv[i + 1];
+        }
+        return cmd_proxymail(service, session, &proxy_cmd);
     }
 
     if (cmd->argc == 0) {
@@ -2484,6 +2748,14 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
 
     if (str_ieq(cmd->verb, "mail")) {
         return cmd_mail(service, session, cmd);
+    }
+
+    if (str_ieq(cmd->verb, "proxymail")) {
+        return cmd_proxymail(service, session, cmd);
+    }
+
+    if (str_ieq(cmd->verb, "proxychat")) {
+        return cmd_proxychat(service, session, cmd);
     }
 
     if (str_ieq(cmd->verb, "login")) {

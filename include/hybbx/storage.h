@@ -2,6 +2,7 @@
 #define HYBBX_STORAGE_H
 
 #include "hybbx/auth.h"
+#include "hybbx/limits.h"
 #include "hybbx/types.h"
 
 #include <stddef.h>
@@ -81,11 +82,35 @@ typedef struct hybbx_session_record {
 
 typedef struct hybbx_storage hybbx_storage_t;
 
+/** Paths and backup settings for SQLite (`[storage]`). */
+typedef struct hybbx_storage_sql_config {
+    char user_db[HYBBX_PATH_MAX];
+    char mail_db[HYBBX_PATH_MAX];
+    unsigned backup_interval_sec;
+    char backup_path[HYBBX_PATH_MAX];
+} hybbx_storage_sql_config_t;
+
 typedef struct hybbx_storage_options {
     hybbx_storage_backend_kind_t backend;
     const char *path;
     const char *guest_prefix;
+    const hybbx_storage_sql_config_t *sql_cfg;
 } hybbx_storage_options_t;
+
+struct hybbx_config;
+
+void hybbx_storage_sql_config_defaults(hybbx_storage_sql_config_t *cfg);
+
+/** Resolve `user_db` / `mail_db` under @p storage_path from INI `[storage]`. */
+void hybbx_storage_sql_config_apply(hybbx_storage_sql_config_t *cfg,
+                                    const struct hybbx_config *config,
+                                    const char *storage_path);
+
+const hybbx_storage_sql_config_t *hybbx_storage_sql_config(
+    const hybbx_storage_t *storage);
+
+/** Copy SQLite DB files to fallback paths (no-op when not SQLite). */
+void hybbx_storage_backup_tick(hybbx_storage_t *storage);
 
 hybbx_storage_t *hybbx_storage_open(const hybbx_storage_options_t *options);
 void hybbx_storage_close(hybbx_storage_t *storage);
