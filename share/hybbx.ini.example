@@ -23,7 +23,11 @@ auto_login = yes
 guest_prefix = Guest
 
 [crypto]
-; Built-in defaults need no host packages. OpenSSL recommended when available.
+; Built-in defaults need no host packages.
+; OpenSSL (build with -DHYBBX_CRYPTO_OPENSSL=ON, libssl-dev):
+;   password_hash = openssl
+;   aes_gcm = openssl
+;   random = openssl
 password_hash = tinysha256
 aes_gcm = tinyaes
 chacha = monocypher
