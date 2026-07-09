@@ -11,6 +11,9 @@
 #include "hybbx/circuit_balance.h"
 #include "hybbx/traffic.h"
 #include "hybbx/limits.h"
+#include "hybbx/security_ban.h"
+#include "hybbx/ax25.h"
+#include "hybbx/util.h"
 
 #include <pthread.h>
 #include <stdio.h>
@@ -72,6 +75,45 @@ static int instance_circuit_uplink_allowed(const packet_radio_instance_t *inst)
     return inst != NULL && !inst->flow_paused && !inst->flow_cancel;
 }
 
+static int packet_radio_source_banned(const hybbx_ax25_path_t *path)
+{
+    char raw[HYBBX_CALLID_MAX];
+    char norm[HYBBX_CALLID_MAX];
+
+    if (path == NULL || path->source.call[0] == '\0') {
+        return 0;
+    }
+
+    if (path->source.ssid > 0u) {
+        snprintf(raw, sizeof(raw), "%s-%u", path->source.call,
+                 path->source.ssid);
+    } else {
+        hybbx_strlcpy(raw, path->source.call, sizeof(raw));
+    }
+
+    if (!hybbx_security_callid_normalize(raw, norm, sizeof(norm))) {
+        return 0;
+    }
+
+    return hybbx_security_ban_callid_is_banned(norm);
+}
+
+static int packet_radio_frame_source_banned(const uint8_t *frame, size_t len)
+{
+    hybbx_ax25_path_t path;
+    uint8_t scratch[HYBBX_AX25_FRAME_MAX];
+
+    if (frame == NULL || len == 0) {
+        return 0;
+    }
+
+    if (hybbx_ax25_parse_ui(frame, len, &path, scratch, sizeof(scratch)) == 0) {
+        return 0;
+    }
+
+    return packet_radio_source_banned(&path);
+}
+
 static hybbx_result_t instance_circuit_uplink(packet_radio_instance_t *inst,
                                               const uint8_t *frame,
                                               size_t frame_len)
@@ -109,6 +151,10 @@ static void on_tnc_ax25_frame(const uint8_t *frame, size_t len, void *userdata)
         return;
     }
 
+    if (packet_radio_frame_source_banned(frame, len)) {
+        return;
+    }
+
     (void)instance_circuit_uplink(inst, frame, len);
 }
 
@@ -122,6 +168,10 @@ static void on_tnc_host_ui(const uint8_t *payload, size_t len,
     (void)path;
 
     if (inst == NULL || inst->circuit_fd < 0 || len == 0) {
+        return;
+    }
+
+    if (path != NULL && packet_radio_source_banned(path)) {
         return;
     }
 

@@ -10,7 +10,7 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 |---------|----------|
 | `src/core/`, `plugins/telnet` | TNC, KISS, sound-card apps |
 | `plugins/ssh`, `plugins/websocket` | libssh; httpd for browser UI |
-| Built-in `[security]` ban/rate-limit | Optional external fail2ban filters in `share/fail2ban/` |
+| Built-in `[security]` (network + abuse) | Optional external fail2ban filters in `share/fail2ban/` |
 | `plugins/packet_radio` | Serial/USB TNC |
 | `plugins/baycom` | BayCom PR-Stack (kernel SER12/PAR96) |
 | `plugins/ardop`, `plugins/crdop` | ARDOPC, CRDOPC |
@@ -33,6 +33,7 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 | [RELEASE-1.5.0.md](docs/RELEASE-1.5.0.md) | Current release |
 | [FEATURES.md](docs/FEATURES.md) | Shipped vs partial |
 | [MANUAL.md](docs/MANUAL.md) | INI + commands |
+| [SECURITY.md](docs/SECURITY.md) | Security + spam policy |
 | [TNCS.md](docs/TNCS.md) | Supported TNC profiles |
 | [BAYCOM.md](docs/BAYCOM.md) | BayCom PR-Stack plugin |
 | [TOPOLOGY.md](docs/TOPOLOGY.md) | Main, Secondary, mains-proxy |

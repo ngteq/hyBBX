@@ -19,7 +19,7 @@ Secondary / mains_proxy / RF plugins → HBX circuit :7323 only
 
 - No wire-protocol parsing in `src/core/`
 - Inter-node: HBX/Circuit + `LINK_AUTH` only
-- Built-in `[security]` ban engine in `src/core/security_ban.c`
+- Built-in `[security]` in `src/core/security_ban.c` — network abuse + excessive spam; policy in [SECURITY.md](SECURITY.md)
 - Plugins: `hybbx_transport_plugin_t` — register in `src/main.c`
 
 ## Conventions

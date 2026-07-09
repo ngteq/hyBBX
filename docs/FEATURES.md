@@ -40,10 +40,14 @@
 | Feature | Status |
 |---------|--------|
 | `security.log` audit trail | **Built** |
-| Built-in `[security]` ban/rate-limit | **Built** — short cool-down bans |
+| Unified `[security]` (network + abuse) | **Built** — [SECURITY.md](SECURITY.md) |
+| Soft spam limits (chat/mail/traffic) | **Built** — no bans |
 | Login brute-force (telnet/ssh/ws) | **Built** |
 | Circuit `link_auth` ban | **Built** |
-| Per-IP connection rate limit | **Built** |
+| Per-IP connection flood ban | **Built** |
+| CALLID ban (AX.25, `link_id`) | **Built** — `ban_callid`, dynamic abuse |
+| `abuse_maxretry` excessive-flood hook | **Built** — call sites TBD |
+| Content moderation (illegal/non-social) | **Planned** — [ROADMAP.md](ROADMAP.md) |
 | Optional `iptables`/`nftables` backend | **Built** — needs root |
 | External fail2ban filters (`share/fail2ban/`) | **Built** — optional adjunct |
 

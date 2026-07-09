@@ -45,10 +45,14 @@ enabled = yes
 level = warn
 
 [security]
+; Network + abuse (see docs/SECURITY.md). Normal chat/mail limits are in [chat]/[mail] — no bans.
 enabled = yes
 maxretry = 5
 findtime = 600
 bantime = 600
+abuse_maxretry = 30
+abuse_findtime = 600
+; ban_callid = SPAM-1, FOOL
 telnet = yes
 ssh = yes
 websocket = yes

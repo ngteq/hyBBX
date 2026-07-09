@@ -53,7 +53,11 @@ All HyBBX-to-HyBBX paths use **HBX v1** frames on the circuit hub. The core neve
 
 ### Security
 
-Built-in `[security]` ban and rate-limit (short cool-down bans, not permanent by default): login brute-force on telnet/SSH/WebSocket, circuit `link_auth` failures, per-IP connection flood. Writes `security.log`; optional `iptables`/`nftables` backend. External fail2ban filters in `share/fail2ban/` remain optional. See [docs/MANUAL.md](docs/MANUAL.md#security).
+Built-in `[security]` covers **network protection** and **abuse** (same subsystem — see [docs/SECURITY.md](docs/SECURITY.md)):
+
+- **No bans for normal spam** — `[traffic]`, `[chat]`, `[mail]` soft limits only (pace, truncate, caps).
+- **Bans for abuse** — IP: login brute-force, connection flood; **CALLID** (AX.25 callsign, HBX `link_id`): circuit auth failures, `ban_callid=`; *(future)* excessive flood via `abuse_maxretry`.
+- Short cool-down bans (default 10 min); `security.log`; optional `iptables`/`nftables`. External fail2ban in `share/fail2ban/` optional.
 
 ## Quick start
 

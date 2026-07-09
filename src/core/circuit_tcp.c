@@ -751,6 +751,9 @@ static void circuit_log_auth_fail(int fd, const char *reason, const char *id)
                 ip, reason);
         }
         hybbx_security_ban_link_auth_fail(ip);
+        if (id != NULL && id[0] != '\0' && strcmp(reason, "banned") != 0) {
+            hybbx_security_ban_link_auth_fail_callid(id);
+        }
     } else {
         hybbx_security_log_write(
             "link_auth_fail ip=? reason=%s transport=circuit", reason);
@@ -857,6 +860,13 @@ static void circuit_on_auth_frame(hybbx_circuit_proto_t proto, uint16_t flags,
 
     if (hybbx_link_auth_parse((const char *)payload, len, &ctx->auth) != HYBBX_OK) {
         circuit_log_auth_fail(fd, "invalid", NULL);
+        ctx->done = 1;
+        ctx->ok = 0;
+        return;
+    }
+
+    if (!hybbx_security_ban_callid_accept(ctx->auth.id)) {
+        circuit_log_auth_fail(fd, "banned", ctx->auth.id);
         ctx->done = 1;
         ctx->ok = 0;
         return;

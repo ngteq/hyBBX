@@ -22,10 +22,13 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 ## Security
 
 - **Inter-node:** HBX v1 + `link_password` on `:7323` only — no HyBBX-to-HyBBX bypass paths
-- **User-facing:** Built-in `[security]` — login failures, circuit auth failures, per-IP rate limit
+- **Unified `[security]`:** network abuse + excessive spam — [SECURITY.md](SECURITY.md)
+- **Soft limits:** `[traffic]` / `[chat]` / `[mail]` — pace and caps; **no bans** for normal use
+- **Bans:** login failures, circuit auth failures, connection flood; `abuse_maxretry` for excessive flood (hook)
 - **Policy:** Short `bantime` (default 10 min), repeated cool-downs — not permanent bans
 - **Backends:** `internal` (default), `log`, optional `iptables` / `nftables`
 - External fail2ban filters in `share/fail2ban/` optional for site-wide firewall integration
+- **Content moderation** (non-social / illegal): planned — [ROADMAP.md](ROADMAP.md)
 
 ## Transports
 

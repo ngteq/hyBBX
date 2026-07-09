@@ -23,4 +23,6 @@ Current status: [FEATURES.md](FEATURES.md). Topology: [TOPOLOGY.md](TOPOLOGY.md)
 | WebSocket line editing | Browser UI |
 | User-files / public-files areas | Planned |
 | HBX APRS / NETROM protos | Reserved IDs |
-| Register/guest abuse rules | Optional `[security]` extension |
+| Content moderation design | Non-social / illegal behaviour — sysop tools, reports, policy; see [SECURITY.md](SECURITY.md) |
+| Abuse flood call sites | Wire `hybbx_security_ban_abuse_report` for chat/register spam |
+| Register/guest abuse rules | `[security]` extension |

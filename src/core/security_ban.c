@@ -10,6 +10,7 @@
 #include "hybbx/storage.h"
 #include "hybbx/util.h"
 
+#include <ctype.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +23,8 @@ typedef struct hybbx_security_cfg {
     unsigned maxretry;
     unsigned findtime_sec;
     unsigned bantime_sec;
+    unsigned abuse_maxretry;
+    unsigned abuse_findtime_sec;
     int telnet;
     int ssh;
     int websocket;
@@ -51,9 +54,27 @@ typedef struct rate_entry {
     int active;
 } rate_entry_t;
 
+typedef struct ban_callid_entry {
+    char callid[HYBBX_CALLID_MAX];
+    time_t expire_at;
+    int active;
+    int permanent;
+} ban_callid_entry_t;
+
+typedef struct callid_track_entry {
+    char callid[HYBBX_CALLID_MAX];
+    time_t stamps[HYBBX_SECURITY_DEFAULT_ABUSE_MAXRETRY];
+    unsigned count;
+    int active;
+} callid_track_entry_t;
+
 static hybbx_security_cfg_t g_cfg;
 static ban_entry_t g_bans[HYBBX_SECURITY_BAN_MAX];
+static ban_callid_entry_t g_callid_bans[HYBBX_SECURITY_BAN_MAX];
 static fail_entry_t g_fails[HYBBX_SECURITY_TRACK_MAX];
+static fail_entry_t g_abuse[HYBBX_SECURITY_TRACK_MAX];
+static callid_track_entry_t g_callid_fails[HYBBX_SECURITY_TRACK_MAX];
+static callid_track_entry_t g_callid_abuse[HYBBX_SECURITY_TRACK_MAX];
 static rate_entry_t g_rates[HYBBX_SECURITY_TRACK_MAX];
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -67,6 +88,8 @@ static void security_cfg_defaults(hybbx_security_cfg_t *cfg)
     cfg->maxretry = HYBBX_SECURITY_DEFAULT_MAXRETRY;
     cfg->findtime_sec = HYBBX_SECURITY_DEFAULT_FINDTIME_SEC;
     cfg->bantime_sec = HYBBX_SECURITY_DEFAULT_BANTIME_SEC;
+    cfg->abuse_maxretry = HYBBX_SECURITY_DEFAULT_ABUSE_MAXRETRY;
+    cfg->abuse_findtime_sec = HYBBX_SECURITY_DEFAULT_ABUSE_FINDTIME_SEC;
     cfg->telnet = 1;
     cfg->ssh = 1;
     cfg->websocket = 1;
@@ -123,6 +146,352 @@ static unsigned parse_uint_clamp(const char *value, unsigned default_value,
 static int ip_valid(const char *ip)
 {
     return ip != NULL && ip[0] != '\0' && strcmp(ip, "?") != 0;
+}
+
+int hybbx_security_callid_normalize(const char *in, char *out, size_t out_cap)
+{
+    size_t len;
+    size_t i;
+    int has_alpha = 0;
+
+    if (in == NULL || out == NULL || out_cap < 2u) {
+        return 0;
+    }
+
+    while (*in == ' ' || *in == '\t') {
+        in++;
+    }
+
+    len = 0;
+    for (i = 0; in[i] != '\0'; i++) {
+        unsigned char ch = (unsigned char)in[i];
+
+        if (ch == ' ' || ch == '\t') {
+            break;
+        }
+
+        if (len + 1 >= out_cap) {
+            return 0;
+        }
+
+        if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
+            out[len++] = (char)toupper(ch);
+            has_alpha = 1;
+        } else if (ch >= '0' && ch <= '9') {
+            out[len++] = (char)ch;
+        } else if (ch == '-' || ch == '_' || ch == '.') {
+            out[len++] = (char)ch;
+        } else {
+            return 0;
+        }
+    }
+
+    out[len] = '\0';
+    return len > 0 && has_alpha;
+}
+
+static ban_callid_entry_t *callid_ban_find(const char *callid)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_BAN_MAX; i++) {
+        if (g_callid_bans[i].active &&
+            strcmp(g_callid_bans[i].callid, callid) == 0) {
+            return &g_callid_bans[i];
+        }
+    }
+
+    return NULL;
+}
+
+static ban_callid_entry_t *callid_ban_alloc(const char *callid)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_BAN_MAX; i++) {
+        if (!g_callid_bans[i].active) {
+            hybbx_strlcpy(g_callid_bans[i].callid, callid,
+                          sizeof(g_callid_bans[i].callid));
+            g_callid_bans[i].active = 1;
+            return &g_callid_bans[i];
+        }
+    }
+
+    return NULL;
+}
+
+static callid_track_entry_t *callid_fail_find(const char *callid)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_TRACK_MAX; i++) {
+        if (g_callid_fails[i].active &&
+            strcmp(g_callid_fails[i].callid, callid) == 0) {
+            return &g_callid_fails[i];
+        }
+    }
+
+    return NULL;
+}
+
+static callid_track_entry_t *callid_fail_alloc(const char *callid)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_TRACK_MAX; i++) {
+        if (!g_callid_fails[i].active) {
+            hybbx_strlcpy(g_callid_fails[i].callid, callid,
+                          sizeof(g_callid_fails[i].callid));
+            g_callid_fails[i].count = 0;
+            g_callid_fails[i].active = 1;
+            return &g_callid_fails[i];
+        }
+    }
+
+    return NULL;
+}
+
+static callid_track_entry_t *callid_abuse_find(const char *callid)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_TRACK_MAX; i++) {
+        if (g_callid_abuse[i].active &&
+            strcmp(g_callid_abuse[i].callid, callid) == 0) {
+            return &g_callid_abuse[i];
+        }
+    }
+
+    return NULL;
+}
+
+static callid_track_entry_t *callid_abuse_alloc(const char *callid)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_TRACK_MAX; i++) {
+        if (!g_callid_abuse[i].active) {
+            hybbx_strlcpy(g_callid_abuse[i].callid, callid,
+                          sizeof(g_callid_abuse[i].callid));
+            g_callid_abuse[i].count = 0;
+            g_callid_abuse[i].active = 1;
+            return &g_callid_abuse[i];
+        }
+    }
+
+    return NULL;
+}
+
+static void prune_callid_fail_window(callid_track_entry_t *entry, time_t now)
+{
+    unsigned i;
+    unsigned kept = 0;
+
+    if (entry == NULL) {
+        return;
+    }
+
+    for (i = 0; i < entry->count; i++) {
+        if ((time_t)(now - entry->stamps[i]) <= (time_t)g_cfg.findtime_sec) {
+            entry->stamps[kept++] = entry->stamps[i];
+        }
+    }
+
+    entry->count = kept;
+    if (entry->count == 0) {
+        entry->active = 0;
+        entry->callid[0] = '\0';
+    }
+}
+
+static void prune_callid_abuse_window(callid_track_entry_t *entry, time_t now)
+{
+    unsigned i;
+    unsigned kept = 0;
+
+    if (entry == NULL) {
+        return;
+    }
+
+    for (i = 0; i < entry->count; i++) {
+        if ((time_t)(now - entry->stamps[i]) <=
+            (time_t)g_cfg.abuse_findtime_sec) {
+            entry->stamps[kept++] = entry->stamps[i];
+        }
+    }
+
+    entry->count = kept;
+    if (entry->count == 0) {
+        entry->active = 0;
+        entry->callid[0] = '\0';
+    }
+}
+
+static void backend_apply_callid(const char *callid, const char *reason)
+{
+    hybbx_security_log_write("ban callid=%s reason=%s backend=internal",
+                             callid, reason != NULL ? reason : "abuse");
+    (void)g_cfg.backend;
+}
+
+static void apply_callid_ban_locked(const char *callid, const char *reason,
+                                    time_t now, int permanent)
+{
+    ban_callid_entry_t *ban;
+
+    ban = callid_ban_find(callid);
+    if (ban == NULL) {
+        ban = callid_ban_alloc(callid);
+    }
+
+    if (ban == NULL) {
+        return;
+    }
+
+    ban->permanent = permanent ? 1 : 0;
+    ban->expire_at = permanent ? (time_t)0 :
+                     now + (time_t)g_cfg.bantime_sec;
+    backend_apply_callid(callid, reason);
+}
+
+static void config_clear_permanent_callid_bans_locked(void)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_BAN_MAX; i++) {
+        if (g_callid_bans[i].active && g_callid_bans[i].permanent) {
+            g_callid_bans[i].active = 0;
+            g_callid_bans[i].callid[0] = '\0';
+            g_callid_bans[i].permanent = 0;
+        }
+    }
+}
+
+static void config_load_callid_bans_locked(const char *list)
+{
+    char buf[HYBBX_PATH_MAX];
+    char norm[HYBBX_CALLID_MAX];
+    char *save = NULL;
+    char *token;
+
+    if (list == NULL || list[0] == '\0') {
+        return;
+    }
+
+    hybbx_strlcpy(buf, list, sizeof(buf));
+    token = strtok_r(buf, ",", &save);
+    while (token != NULL) {
+        while (*token == ' ' || *token == '\t') {
+            token++;
+        }
+        if (hybbx_security_callid_normalize(token, norm, sizeof(norm))) {
+            apply_callid_ban_locked(norm, "config", time(NULL), 1);
+        }
+        token = strtok_r(NULL, ",", &save);
+    }
+}
+
+static void record_callid_failure_locked(const char *callid, time_t now)
+{
+    callid_track_entry_t *entry;
+
+    entry = callid_fail_find(callid);
+    if (entry == NULL) {
+        entry = callid_fail_alloc(callid);
+    }
+
+    if (entry == NULL) {
+        return;
+    }
+
+    prune_callid_fail_window(entry, now);
+
+    if (!entry->active) {
+        entry = callid_fail_alloc(callid);
+        if (entry == NULL) {
+            return;
+        }
+    }
+
+    if (entry->count < HYBBX_SECURITY_DEFAULT_MAXRETRY) {
+        entry->stamps[entry->count++] = now;
+    } else {
+        memmove(entry->stamps, entry->stamps + 1,
+                (entry->count - 1) * sizeof(entry->stamps[0]));
+        entry->stamps[entry->count - 1] = now;
+    }
+
+    if (entry->count >= g_cfg.maxretry) {
+        apply_callid_ban_locked(callid, "link_auth_fail", now, 0);
+        entry->active = 0;
+        entry->count = 0;
+        entry->callid[0] = '\0';
+    }
+}
+
+static void record_callid_abuse_locked(const char *callid, const char *category,
+                                       time_t now)
+{
+    callid_track_entry_t *entry;
+    char reason[64];
+
+    entry = callid_abuse_find(callid);
+    if (entry == NULL) {
+        entry = callid_abuse_alloc(callid);
+    }
+
+    if (entry == NULL) {
+        return;
+    }
+
+    prune_callid_abuse_window(entry, now);
+
+    if (!entry->active) {
+        entry = callid_abuse_alloc(callid);
+        if (entry == NULL) {
+            return;
+        }
+    }
+
+    if (entry->count < HYBBX_SECURITY_DEFAULT_ABUSE_MAXRETRY) {
+        entry->stamps[entry->count++] = now;
+    } else {
+        memmove(entry->stamps, entry->stamps + 1,
+                (entry->count - 1) * sizeof(entry->stamps[0]));
+        entry->stamps[entry->count - 1] = now;
+    }
+
+    if (entry->count >= g_cfg.abuse_maxretry) {
+        snprintf(reason, sizeof(reason), "abuse:%s",
+                 category != NULL && category[0] != '\0' ? category : "flood");
+        apply_callid_ban_locked(callid, reason, now, 0);
+        entry->active = 0;
+        entry->count = 0;
+        entry->callid[0] = '\0';
+    }
+}
+
+static int callid_is_banned_locked(const char *callid, time_t now)
+{
+    ban_callid_entry_t *ban;
+
+    ban = callid_ban_find(callid);
+    if (ban == NULL) {
+        return 0;
+    }
+
+    if (ban->permanent) {
+        return 1;
+    }
+
+    if (now < ban->expire_at) {
+        return 1;
+    }
+
+    ban->active = 0;
+    ban->callid[0] = '\0';
+    ban->permanent = 0;
+    return 0;
 }
 
 static int transport_enabled(const char *transport)
@@ -204,6 +573,35 @@ static fail_entry_t *fail_alloc(const char *ip)
     return NULL;
 }
 
+static fail_entry_t *abuse_find(const char *ip)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_TRACK_MAX; i++) {
+        if (g_abuse[i].active && strcmp(g_abuse[i].ip, ip) == 0) {
+            return &g_abuse[i];
+        }
+    }
+
+    return NULL;
+}
+
+static fail_entry_t *abuse_alloc(const char *ip)
+{
+    size_t i;
+
+    for (i = 0; i < HYBBX_SECURITY_TRACK_MAX; i++) {
+        if (!g_abuse[i].active) {
+            hybbx_strlcpy(g_abuse[i].ip, ip, sizeof(g_abuse[i].ip));
+            g_abuse[i].count = 0;
+            g_abuse[i].active = 1;
+            return &g_abuse[i];
+        }
+    }
+
+    return NULL;
+}
+
 static rate_entry_t *rate_find(const char *ip)
 {
     size_t i;
@@ -244,6 +642,29 @@ static void prune_fail_window(fail_entry_t *entry, time_t now)
 
     for (i = 0; i < entry->count; i++) {
         if ((time_t)(now - entry->stamps[i]) <= (time_t)g_cfg.findtime_sec) {
+            entry->stamps[kept++] = entry->stamps[i];
+        }
+    }
+
+    entry->count = kept;
+    if (entry->count == 0) {
+        entry->active = 0;
+        entry->ip[0] = '\0';
+    }
+}
+
+static void prune_abuse_window(fail_entry_t *entry, time_t now)
+{
+    unsigned i;
+    unsigned kept = 0;
+
+    if (entry == NULL) {
+        return;
+    }
+
+    for (i = 0; i < entry->count; i++) {
+        if ((time_t)(now - entry->stamps[i]) <=
+            (time_t)g_cfg.abuse_findtime_sec) {
             entry->stamps[kept++] = entry->stamps[i];
         }
     }
@@ -396,6 +817,47 @@ static void record_failure_locked(const char *ip, time_t now)
     }
 }
 
+static void record_abuse_locked(const char *ip, const char *category, time_t now)
+{
+    fail_entry_t *entry;
+    char reason[64];
+
+    entry = abuse_find(ip);
+    if (entry == NULL) {
+        entry = abuse_alloc(ip);
+    }
+
+    if (entry == NULL) {
+        return;
+    }
+
+    prune_abuse_window(entry, now);
+
+    if (!entry->active) {
+        entry = abuse_alloc(ip);
+        if (entry == NULL) {
+            return;
+        }
+    }
+
+    if (entry->count < HYBBX_SECURITY_DEFAULT_ABUSE_MAXRETRY) {
+        entry->stamps[entry->count++] = now;
+    } else {
+        memmove(entry->stamps, entry->stamps + 1,
+                (entry->count - 1) * sizeof(entry->stamps[0]));
+        entry->stamps[entry->count - 1] = now;
+    }
+
+    if (entry->count >= g_cfg.abuse_maxretry) {
+        snprintf(reason, sizeof(reason), "abuse:%s",
+                 category != NULL && category[0] != '\0' ? category : "flood");
+        apply_ban_locked(ip, reason, now);
+        entry->active = 0;
+        entry->count = 0;
+        entry->ip[0] = '\0';
+    }
+}
+
 static void record_rate_locked(const char *ip, time_t now)
 {
     rate_entry_t *entry;
@@ -451,6 +913,17 @@ void hybbx_security_ban_config_apply(const struct hybbx_config *config)
         g_cfg.bantime_sec =
             parse_uint_clamp(value, g_cfg.bantime_sec, 86400u);
 
+        value = hybbx_config_get(config, "security", "abuse_maxretry", NULL);
+        g_cfg.abuse_maxretry =
+            parse_uint_clamp(value, g_cfg.abuse_maxretry, 1000u);
+        if (g_cfg.abuse_maxretry < 1u) {
+            g_cfg.abuse_maxretry = 1u;
+        }
+
+        value = hybbx_config_get(config, "security", "abuse_findtime", NULL);
+        g_cfg.abuse_findtime_sec =
+            parse_uint_clamp(value, g_cfg.abuse_findtime_sec, 86400u);
+
         value = hybbx_config_get(config, "security", "telnet", NULL);
         if (value != NULL) {
             g_cfg.telnet = hybbx_parse_bool(value, g_cfg.telnet);
@@ -481,14 +954,20 @@ void hybbx_security_ban_config_apply(const struct hybbx_config *config)
 
         value = hybbx_config_get(config, "security", "ban_backend", NULL);
         g_cfg.backend = parse_ban_backend(value);
+
+        config_clear_permanent_callid_bans_locked();
+        value = hybbx_config_get(config, "security", "ban_callid", NULL);
+        config_load_callid_bans_locked(value);
     }
 
     pthread_mutex_unlock(&g_lock);
 
     if (g_cfg.enabled) {
         printf("[security] ban enabled maxretry=%u findtime=%us bantime=%us "
+               "abuse_maxretry=%u abuse_findtime=%us "
                "rate_limit=%u/%us backend=%d\n",
                g_cfg.maxretry, g_cfg.findtime_sec, g_cfg.bantime_sec,
+               g_cfg.abuse_maxretry, g_cfg.abuse_findtime_sec,
                g_cfg.rate_limit, g_cfg.rate_window_sec, (int)g_cfg.backend);
     }
 }
@@ -498,7 +977,11 @@ void hybbx_security_ban_shutdown(void)
     pthread_mutex_lock(&g_lock);
 
     memset(g_bans, 0, sizeof(g_bans));
+    memset(g_callid_bans, 0, sizeof(g_callid_bans));
     memset(g_fails, 0, sizeof(g_fails));
+    memset(g_abuse, 0, sizeof(g_abuse));
+    memset(g_callid_fails, 0, sizeof(g_callid_fails));
+    memset(g_callid_abuse, 0, sizeof(g_callid_abuse));
     memset(g_rates, 0, sizeof(g_rates));
     security_cfg_defaults(&g_cfg);
 
@@ -522,11 +1005,28 @@ void hybbx_security_ban_tick(void)
             g_bans[i].active = 0;
             g_bans[i].ip[0] = '\0';
         }
+        if (g_callid_bans[i].active && !g_callid_bans[i].permanent &&
+            g_callid_bans[i].expire_at > (time_t)0 &&
+            now >= g_callid_bans[i].expire_at) {
+            hybbx_security_log_write("unban callid=%s", g_callid_bans[i].callid);
+            g_callid_bans[i].active = 0;
+            g_callid_bans[i].callid[0] = '\0';
+            g_callid_bans[i].permanent = 0;
+        }
     }
 
     for (i = 0; i < HYBBX_SECURITY_TRACK_MAX; i++) {
         if (g_fails[i].active) {
             prune_fail_window(&g_fails[i], now);
+        }
+        if (g_abuse[i].active) {
+            prune_abuse_window(&g_abuse[i], now);
+        }
+        if (g_callid_fails[i].active) {
+            prune_callid_fail_window(&g_callid_fails[i], now);
+        }
+        if (g_callid_abuse[i].active) {
+            prune_callid_abuse_window(&g_callid_abuse[i], now);
         }
         if (g_rates[i].active) {
             prune_rate_window(&g_rates[i], now);
@@ -642,5 +1142,71 @@ void hybbx_security_ban_link_auth_fail(const char *ip)
 
     pthread_mutex_lock(&g_lock);
     record_failure_locked(ip, now);
+    pthread_mutex_unlock(&g_lock);
+}
+
+void hybbx_security_ban_abuse_report(const char *ip, const char *category)
+{
+    time_t now = time(NULL);
+
+    if (!g_cfg.enabled || !ip_valid(ip)) {
+        return;
+    }
+
+    pthread_mutex_lock(&g_lock);
+    record_abuse_locked(ip, category, now);
+    pthread_mutex_unlock(&g_lock);
+}
+
+int hybbx_security_ban_callid_is_banned(const char *callid)
+{
+    char norm[HYBBX_CALLID_MAX];
+    time_t now = time(NULL);
+    int banned = 0;
+
+    if (!g_cfg.enabled || !hybbx_security_callid_normalize(callid, norm,
+                                                           sizeof(norm))) {
+        return 0;
+    }
+
+    pthread_mutex_lock(&g_lock);
+    banned = callid_is_banned_locked(norm, now);
+    pthread_mutex_unlock(&g_lock);
+    return banned;
+}
+
+int hybbx_security_ban_callid_accept(const char *callid)
+{
+    return !hybbx_security_ban_callid_is_banned(callid);
+}
+
+void hybbx_security_ban_link_auth_fail_callid(const char *callid)
+{
+    char norm[HYBBX_CALLID_MAX];
+    time_t now = time(NULL);
+
+    if (!g_cfg.enabled || !g_cfg.circuit ||
+        !hybbx_security_callid_normalize(callid, norm, sizeof(norm))) {
+        return;
+    }
+
+    pthread_mutex_lock(&g_lock);
+    record_callid_failure_locked(norm, now);
+    pthread_mutex_unlock(&g_lock);
+}
+
+void hybbx_security_ban_callid_abuse_report(const char *callid,
+                                            const char *category)
+{
+    char norm[HYBBX_CALLID_MAX];
+    time_t now = time(NULL);
+
+    if (!g_cfg.enabled || !hybbx_security_callid_normalize(callid, norm,
+                                                           sizeof(norm))) {
+        return;
+    }
+
+    pthread_mutex_lock(&g_lock);
+    record_callid_abuse_locked(norm, category, now);
     pthread_mutex_unlock(&g_lock);
 }

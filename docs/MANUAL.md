@@ -50,23 +50,28 @@ Inter-node traffic (Secondary, RF plugins, mesh) uses **HBX/Circuit** only. User
 
 ### `[security]`
 
-Built-in ban and rate-limit (replaces external fail2ban for HyBBX-specific events). Policy: **short cool-down bans** (default 10 minutes), not permanent blocks.
+Built-in protection for **network abuse** and **excessive spam** — one subsystem (`security.log`, `src/core/security_ban.c`). See [SECURITY.md](SECURITY.md).
+
+**Policy:** short cool-down bans (default 10 minutes). **Normal** chat/mail traffic uses soft limits in `[traffic]` / `[chat]` / `[mail]` — no bans. **Bans** apply to brute-force, connection flood, and repeated abuse above `abuse_maxretry`.
 
 | Key | Default | Description |
 |-----|---------|-------------|
 | `enabled` | `yes` | Master switch |
-| `maxretry` | `5` | Failures before ban |
-| `findtime` | `600` | Failure window (seconds) |
+| `maxretry` | `5` | Login / link-auth failures before ban |
+| `findtime` | `600` | Login failure window (seconds) |
 | `bantime` | `600` | Ban duration (seconds) |
+| `abuse_maxretry` | `30` | Excessive abuse events before ban |
+| `abuse_findtime` | `600` | Abuse event window (seconds) |
 | `telnet` | `yes` | Track telnet login failures |
 | `ssh` | `yes` | Track SSH login failures |
 | `websocket` | `yes` | Track WebSocket login failures |
 | `circuit` | `yes` | Track HBX `link_auth` failures |
 | `rate_limit` | `30` | Max new connections per IP per window |
-| `rate_window` | `60` | Rate-limit window (seconds) |
+| `rate_window` | `60` | Connection flood window (seconds) |
 | `ban_backend` | `internal` | `internal` \| `log` \| `iptables` \| `nftables` \| `hosts` |
+| `ban_callid` | *(empty)* | Comma-separated AX.25 callsigns or HBX `link_id` values (permanent until removed from INI) |
 
-Events: `login_fail` (user transports), `link_auth_fail` (circuit). Optional `share/fail2ban/` filters for site-wide firewall integration.
+Events: `login_fail`, `link_auth_fail`, `rate_limit`, `abuse:*` (hook for excessive flood — not normal messages). **CALLID bans** apply to AX.25 source addresses and circuit `link_id`; logged as `ban callid=…` (internal only — no firewall rule). Optional `share/fail2ban/` for site-wide firewall integration.
 
 ### `[storage]`
 

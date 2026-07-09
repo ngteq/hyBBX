@@ -9,6 +9,7 @@
 | [QUICKSTART.md](QUICKSTART.md) | Build, run, first login |
 | [TOPOLOGY.md](TOPOLOGY.md) | Main, Secondary, mains-proxy, HBX |
 | [MANUAL.md](MANUAL.md) | INI (`[security]`, storage, commands) |
+| [SECURITY.md](SECURITY.md) | Security + spam policy, bans vs soft limits |
 | [WEBSOCKET.md](WEBSOCKET.md) | WebSocket proxy + browser UI |
 | [CLIENTS.md](CLIENTS.md) | `hybbx-telnet`, `hybbx-ssh`, `hybbx-terminal` |
 | [FEATURES.md](FEATURES.md) | Shipped vs partial |
