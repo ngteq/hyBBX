@@ -317,8 +317,8 @@ static void cmd_help_list_for_level(hybbx_session_t *session)
                    "/help  /news  /motd  /rules  /who  /users  /session  /version");
     cmd_help_group(session, "Screen", "/clear  /echo");
     cmd_help_group(session, "Areas",
-                   "/leave  /main  /chat  /conference  /mail  /proxymail  "
-                   "/proxychat  /exit");
+                   "/leave  /main  /chat  /conference  /mail");
+    cmd_help_continuation(session, "/proxymail  /proxychat  /exit");
     if (cmd_help_shows_deleteme(level)) {
         cmd_help_group(session, "Account",
                        "/login  /changeme  /deleteme");
@@ -1895,9 +1895,10 @@ static hybbx_result_t cmd_chat(hybbx_service_t *service,
 
     if (cmd->argc > 0 && str_ieq(cmd->argv[0], "proxychat")) {
         hybbx_parsed_command_t proxy_cmd;
+        char proxy_verb[] = "proxychat";
 
         memset(&proxy_cmd, 0, sizeof(proxy_cmd));
-        proxy_cmd.verb = "proxychat";
+        proxy_cmd.verb = proxy_verb;
         return cmd_proxychat(service, session, &proxy_cmd);
     }
 
@@ -2257,10 +2258,11 @@ static hybbx_result_t cmd_mail(hybbx_service_t *service,
 
     if (cmd->argc > 0 && str_ieq(cmd->argv[0], "proxymail")) {
         hybbx_parsed_command_t proxy_cmd;
+        char proxy_verb[] = "proxymail";
         unsigned i;
 
         memset(&proxy_cmd, 0, sizeof(proxy_cmd));
-        proxy_cmd.verb = "proxymail";
+        proxy_cmd.verb = proxy_verb;
         proxy_cmd.argc = cmd->argc > 0 ? cmd->argc - 1 : 0;
         for (i = 0; i < proxy_cmd.argc && i < HYBBX_CMD_TOKEN_MAX; i++) {
             proxy_cmd.argv[i] = cmd->argv[i + 1];

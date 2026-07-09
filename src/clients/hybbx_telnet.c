@@ -474,7 +474,7 @@ int main(int argc, char *argv[])
         cfg.port = (unsigned)strtoul(env, NULL, 10);
     }
 
-    while ((opt = getopt_long(argc, (const char **)argv, "H:p:u:P:6t:vh",
+    while ((opt = getopt_long(argc, argv, "H:p:u:P:6t:vh",
                               long_opts, NULL)) != -1) {
         switch (opt) {
         case 'H':
