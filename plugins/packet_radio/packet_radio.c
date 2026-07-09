@@ -536,6 +536,7 @@ static hybbx_result_t packet_radio_start(const char *config)
     const char *cursor = config;
     hybbx_result_t rc = HYBBX_OK;
     unsigned started = 0;
+    unsigned section_num = 0;
 
     (void)g_service;
 
@@ -565,6 +566,17 @@ static hybbx_result_t packet_radio_start(const char *config)
 
         memcpy(scratch, cursor, len);
         scratch[len] = '\0';
+        section_num++;
+
+        if (!hybbx_packet_radio_section_is_local_edge(scratch)) {
+            printf("[packet_radio%u] bridge registry only — no local TNC\n",
+                   section_num);
+            cursor = sep != NULL ? sep + 1 : cursor + len;
+            if (sep == NULL) {
+                break;
+            }
+            continue;
+        }
 
         rc = instance_start(&g_instances[g_instance_count], scratch,
                             g_instance_count);
@@ -582,7 +594,7 @@ static hybbx_result_t packet_radio_start(const char *config)
     }
 
     if (started == 0) {
-        return HYBBX_ERR_INVALID;
+        return HYBBX_OK;
     }
 
     g_radio_running = 1;

@@ -255,7 +255,7 @@ MHz list for operator reference (`frequency1`, `frequency1_label`, …). Tune ra
 
 ### `[transport.packet_radioN]` (bridge registry)
 
-On **Main**: metadata per remote Secondary (`link_id`, `link_password`, `link_role`, `frequency_mhz`).
+On **Main**: metadata per remote Secondary (`link_id`, `link_password`, `link_role`, `frequency_mhz`) — no `device` / `tnc` keys. Or add those keys on Main for a **local TNC** (standalone).
 
 On **Secondary**: TNC settings + `circuit_host`, `circuit_port`, matching `link_id` / password. Multiple `[transport.packet_radioN]` sections start multiple TNC devices (unique `device` + `link_id` each). See [TNCS.md](TNCS.md).
 

@@ -636,7 +636,9 @@ hybbx_result_t hybbx_tnc_open(hybbx_tnc_t **out,
 
     rc = hybbx_serial_open(&tnc->serial, config->device, &serial_params);
     if (rc != HYBBX_OK) {
-        fprintf(stderr, "[tnc] failed to open %s at %u baud (%u%c%u)\n",
+        fprintf(stderr,
+                "[tnc] cannot open %s at %u baud (%u%c%u) — "
+                "device not available or permission denied\n",
                 config->device, config->baud, serial_params.data_bits,
                 *serial_parity_letter(config->params.serial_parity),
                 serial_params.stop_bits);

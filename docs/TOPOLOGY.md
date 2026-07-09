@@ -12,6 +12,15 @@
 
 **Secondary** is infrastructure (link adapter), not a telnet user. Multiple Secondaries need unique `link_id` per active link; `max_links` on Main (default 8, max 16).
 
+### RF attachment (both valid)
+
+| Layout | TNC host | Main `[transport.packet_radioN]` |
+|--------|----------|--------------------------------|
+| **Remote Secondary** | Secondary (`device`, `tnc`, `circuit_host`) | Bridge registry only (`link_id`, password) |
+| **Local TNC on Main** | Same box as users | Full TNC keys (`device`, `tnc`, …) |
+
+Bridge-registry rows on Main are skipped at start (no serial open). A missing or unplugged TNC logs a warning and that edge instance does not start; other transports keep running.
+
 ## Default layout
 
 ```

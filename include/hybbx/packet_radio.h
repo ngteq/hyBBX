@@ -39,6 +39,12 @@ hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
 void hybbx_packet_radio_config_free(struct hybbx_packet_radio_config *config);
 
 /**
+ * Non-zero when @p config starts a local TNC (device/tnc/protocol/circuit_host).
+ * Main bridge-registry rows (link_id only) return zero.
+ */
+int hybbx_packet_radio_section_is_local_edge(const char *config);
+
+/**
  * Return non-zero when @p baud is valid for packet radio configuration.
  * HyBBX accepts any positive host baud rate; TNC2C documents 300..38400.
  */

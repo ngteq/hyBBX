@@ -4,7 +4,7 @@
 
 HyBBX uses a single configurable `packet_radio` transport. Each `[transport.packet_radioN]` section on a **Secondary** opens one serial (or USB) TNC and one HBX link to Main. Up to **8** instances per process (`HYBBX_PACKET_RADIO_MAX_INSTANCES`).
 
-On **Main**, the same section names are bridge-registry entries (`link_id`, password, frequency) — no serial device.
+On **Main**, sections without `device` / `tnc` / `protocol` are bridge-registry rows only (`link_id`, password, frequency). Add those keys on Main for a **local TNC** (standalone).
 
 ## Host protocols
 

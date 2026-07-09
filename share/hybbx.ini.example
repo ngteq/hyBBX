@@ -156,7 +156,8 @@ frequency1 = 27.205
 frequency1_label = local-A
 frequency2 = 27.215
 
-; Bridge registry — one section per remote Secondary (name must match Secondary INI):
+; Bridge registry — remote Secondary (link_id only; no device/tnc here).
+; For a local TNC on Main, add tnc=, device=, protocol= to the same section shape.
 [transport.packet_radio1]
 link_id = secondary-1
 link_password = changeme

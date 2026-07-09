@@ -80,6 +80,30 @@ static const char *find_kv(const char *config, const char *key,
     return NULL;
 }
 
+int hybbx_packet_radio_section_is_local_edge(const char *config)
+{
+    char scratch[64];
+
+    if (config == NULL) {
+        return 0;
+    }
+
+    if (find_kv(config, "circuit_host", scratch, sizeof(scratch)) != NULL) {
+        return 1;
+    }
+    if (find_kv(config, "device", scratch, sizeof(scratch)) != NULL) {
+        return 1;
+    }
+    if (find_kv(config, "tnc", scratch, sizeof(scratch)) != NULL) {
+        return 1;
+    }
+    if (find_kv(config, "protocol", scratch, sizeof(scratch)) != NULL) {
+        return 1;
+    }
+
+    return 0;
+}
+
 static hybbx_packet_radio_device_type_t parse_device_type(const char *value)
 {
     if (value == NULL) {
