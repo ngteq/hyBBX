@@ -22,15 +22,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
-#define WS_CLIENT_POLL_MS 30000
+#define WS_CLIENT_POLL_MS 5000
+#define WS_CLIENT_PING_IDLE_SEC 20
 
 typedef struct ws_client {
     hybbx_ws_connection_t ws;
     hybbx_session_t *hbx_session;
     hybbx_result_t last_rc;
     int slot_held;
+    time_t last_io_at;
     uint8_t tx_buf[HYBBX_WS_FRAME_PAYLOAD_MAX];
     size_t tx_len;
 } ws_client_t;
@@ -222,6 +225,7 @@ static hybbx_result_t ws_tx_flush(ws_client_t *client, int force_tail)
     if (rc != HYBBX_OK) {
         return rc;
     }
+    client->last_io_at = time(NULL);
 
     if (n < client->tx_len) {
         memmove(client->tx_buf, client->tx_buf + n, client->tx_len - n);
@@ -398,6 +402,7 @@ static void *ws_client_thread(void *arg)
 
     wctx.client = client;
     client->last_rc = HYBBX_OK;
+    client->last_io_at = time(NULL);
 
     while (g_ws_running && client->ws.established) {
         struct pollfd pfd;
@@ -415,6 +420,18 @@ static void *ws_client_thread(void *arg)
             break;
         }
         if (pr == 0) {
+            time_t now = time(NULL);
+
+            if (now != (time_t)-1 &&
+                (client->last_io_at == 0 ||
+                 now - client->last_io_at >= WS_CLIENT_PING_IDLE_SEC)) {
+                rc = hybbx_ws_ping(&client->ws);
+                if (rc != HYBBX_OK) {
+                    break;
+                }
+                client->last_io_at = now;
+            }
+
             rc = hybbx_session_tick(client->hbx_session);
             if (rc == HYBBX_SESSION_END) {
                 client->last_rc = HYBBX_SESSION_END;
@@ -436,6 +453,7 @@ static void *ws_client_thread(void *arg)
             }
             break;
         }
+        client->last_io_at = time(NULL);
 
         if (client->last_rc == HYBBX_SESSION_END) {
             break;

@@ -50,6 +50,9 @@ hybbx_result_t hybbx_ws_read_frames(hybbx_ws_connection_t *ws,
 hybbx_result_t hybbx_ws_write_text(hybbx_ws_connection_t *ws,
                                    const char *data, size_t len);
 
+/** Send one server ping frame (unmasked, empty payload). */
+hybbx_result_t hybbx_ws_ping(hybbx_ws_connection_t *ws);
+
 /** Send WebSocket close frame. */
 hybbx_result_t hybbx_ws_close(hybbx_ws_connection_t *ws);
 

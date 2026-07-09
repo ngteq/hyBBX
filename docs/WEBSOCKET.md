@@ -61,6 +61,8 @@ ipv6 = no
 | `WS /hybbx-websocket/ws` | forward-proxy → `wss://127.0.0.1:4591/hybbx` |
 
 No OpenSSL in HyBBX → use `http://127.0.0.1:4591/hybbx` in httpd snippets.
+HyBBX sends WebSocket ping keepalives on idle connections; keep proxy idle
+timeouts at `3600s` or similar to avoid premature disconnects.
 
 ---
 
@@ -73,6 +75,7 @@ location = /hybbx-websocket/ws {
     proxy_pass https://127.0.0.1:4591/hybbx;
     proxy_ssl_verify off;
     proxy_http_version 1.1;
+    proxy_socket_keepalive on;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
     proxy_set_header Host $host;
@@ -105,12 +108,13 @@ PHP-FPM socket path varies — check your `php-fpm` pool config.
 ```apache
 <IfModule mod_proxy.c>
     ProxyPreserveHost On
+    ProxyTimeout 3600
     SSLProxyEngine On
     SSLProxyVerify none
     SSLProxyCheckPeerCN off
     SSLProxyCheckPeerName off
 
-    ProxyPass "/hybbx-websocket/ws" "wss://127.0.0.1:4591/hybbx"
+    ProxyPass "/hybbx-websocket/ws" "wss://127.0.0.1:4591/hybbx" timeout=3600 keepalive=On
     ProxyPassReverse "/hybbx-websocket/ws" "wss://127.0.0.1:4591/hybbx"
 </IfModule>
 
@@ -135,6 +139,10 @@ Service name may be `apache2` on your system.
 ## lighttpd
 
 ```lighttpd
+# Raise idle limits for upgraded WebSocket connections.
+server.max-read-idle = 3600
+server.max-write-idle = 3600
+
 $HTTP["url"] == "/hybbx-websocket/ws" {
     proxy.server = ( "" => (
         "hybbx" => (
@@ -170,5 +178,8 @@ wscat -c wss://your-host/hybbx-websocket/ws --no-check
 ```
 
 Browser: `https://your-host/hybbx-websocket/`
+
+The browser UI shows WebSocket close codes/reasons and retries automatically
+after short disconnects.
 
 See [MANUAL.md](MANUAL.md#transportwebsocket)

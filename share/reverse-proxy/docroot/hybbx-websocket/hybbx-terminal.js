@@ -7,6 +7,9 @@
   var input = document.getElementById('cmd');
   var wsUrl = window.HYBBX_WS_URL;
   var ws = null;
+  var reconnectTimer = null;
+  var reconnectDelayMs = 2000;
+  var reconnectAttempt = 0;
 
   function append(text) {
     term.textContent += text;
@@ -15,6 +18,19 @@
 
   function setStatus(s) {
     status.textContent = s;
+  }
+
+  function scheduleReconnect() {
+    if (reconnectTimer) {
+      return;
+    }
+
+    reconnectAttempt += 1;
+    setStatus('reconnecting in ' + (reconnectDelayMs / 1000) + 's');
+    reconnectTimer = window.setTimeout(function () {
+      reconnectTimer = null;
+      connect();
+    }, reconnectDelayMs);
   }
 
   function setInputEnabled(enabled) {
@@ -38,6 +54,7 @@
     ws = new WebSocket(wsUrl);
 
     ws.onopen = function () {
+      reconnectAttempt = 0;
       setStatus('connected');
       setInputEnabled(true);
     };
@@ -46,10 +63,14 @@
       append(ev.data);
     };
 
-    ws.onclose = function () {
-      setStatus('disconnected');
+    ws.onclose = function (ev) {
+      var reason = ev.reason ? ' (' + ev.reason + ')' : '';
+
+      append('\n[websocket disconnected: code ' + ev.code + reason + ']\n');
+      setStatus('disconnected: ' + ev.code);
       ws = null;
       setInputEnabled(false);
+      scheduleReconnect();
     };
 
     ws.onerror = function () {

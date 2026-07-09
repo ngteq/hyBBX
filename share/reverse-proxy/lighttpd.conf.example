@@ -1,5 +1,9 @@
 # HyBBX — lighttpd 1.4. HTTPD_DOCROOT example: /srv/www
 
+# Raise idle limits for upgraded WebSocket connections.
+server.max-read-idle = 3600
+server.max-write-idle = 3600
+
 $HTTP["url"] == "/hybbx-websocket/ws" {
     proxy.server = ( "" => (
         "hybbx" => (

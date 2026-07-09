@@ -531,6 +531,24 @@ hybbx_result_t hybbx_ws_write_text(hybbx_ws_connection_t *ws,
     return HYBBX_OK;
 }
 
+hybbx_result_t hybbx_ws_ping(hybbx_ws_connection_t *ws)
+{
+    uint8_t frame[2];
+
+    if (ws == NULL || !ws->established) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    frame[0] = 0x89;
+    frame[1] = 0x00;
+
+    if (ws_send_all(ws, frame, sizeof(frame)) < 0) {
+        return HYBBX_ERR_IO;
+    }
+
+    return HYBBX_OK;
+}
+
 hybbx_result_t hybbx_ws_close(hybbx_ws_connection_t *ws)
 {
     uint8_t frame[2];

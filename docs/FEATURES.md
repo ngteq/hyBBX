@@ -22,8 +22,8 @@
 | Texts (`text/*.txt`) | **Verified** |
 | Text tokens `%time%`, `%date%` | **Verified** |
 | SSH `:3232` | **Built** |
-| WebSocket forward-proxy | **Built** |
-| Browser terminal UI | **Built** |
+| WebSocket forward-proxy | **Built** — idle ping keepalive |
+| Browser terminal UI | **Built** — close diagnostics + auto-reconnect |
 | `max_connections` (WebSocket) | **Built** |
 | One session per registered user | **Built** |
 | SSH line editor | **Built** |

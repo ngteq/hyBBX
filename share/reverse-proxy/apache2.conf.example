@@ -2,12 +2,13 @@
 
 <IfModule mod_proxy.c>
     ProxyPreserveHost On
+    ProxyTimeout 3600
     SSLProxyEngine On
     SSLProxyVerify none
     SSLProxyCheckPeerCN off
     SSLProxyCheckPeerName off
 
-    ProxyPass "/hybbx-websocket/ws" "wss://127.0.0.1:4591/hybbx"
+    ProxyPass "/hybbx-websocket/ws" "wss://127.0.0.1:4591/hybbx" timeout=3600 keepalive=On
     ProxyPassReverse "/hybbx-websocket/ws" "wss://127.0.0.1:4591/hybbx"
 </IfModule>
 
