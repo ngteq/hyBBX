@@ -48,6 +48,11 @@ typedef struct hybbx_session_core {
     char line_buf[HYBBX_LINE_MAX];
     size_t line_len;
     size_t line_cursor;
+    char history[HYBBX_HISTORY_MAX][HYBBX_LINE_MAX];
+    unsigned history_count;
+    unsigned history_next;
+    int history_view;
+    char history_saved_line[HYBBX_LINE_MAX];
     int expect_lf;
     int logged_in;
     int login_prompt;
@@ -104,6 +109,8 @@ static hybbx_result_t session_line_backspace(hybbx_session_core_t *core);
 static hybbx_result_t session_line_delete_forward(hybbx_session_core_t *core);
 static hybbx_result_t session_line_insert_char(hybbx_session_core_t *core,
                                                char ch);
+static hybbx_result_t session_history_up(hybbx_session_core_t *core);
+static hybbx_result_t session_history_down(hybbx_session_core_t *core);
 
 static void session_escape_reset(hybbx_session_core_t *core)
 {
@@ -378,6 +385,115 @@ static hybbx_result_t session_line_insert_char(hybbx_session_core_t *core,
     return session_line_refresh_suffix(core);
 }
 
+static int session_history_should_store(const char *line)
+{
+    if (line == NULL || line[0] == '\0') {
+        return 0;
+    }
+
+    return strncmp(line, "/login ", 7) != 0 &&
+           strncmp(line, "/register ", 10) != 0 &&
+           strncmp(line, "/changeme ", 10) != 0 &&
+           strncmp(line, "/userchange ", 12) != 0;
+}
+
+static void session_history_add(hybbx_session_core_t *core, const char *line)
+{
+    if (core == NULL || !session_history_should_store(line)) {
+        return;
+    }
+
+    hybbx_strlcpy(core->history[core->history_next], line,
+                  sizeof(core->history[0]));
+    core->history_next = (core->history_next + 1u) % HYBBX_HISTORY_MAX;
+    if (core->history_count < HYBBX_HISTORY_MAX) {
+        core->history_count++;
+    }
+    core->history_view = -1;
+    core->history_saved_line[0] = '\0';
+}
+
+static hybbx_result_t session_line_replace(hybbx_session_core_t *core,
+                                           const char *line)
+{
+    size_t len;
+    hybbx_result_t rc;
+
+    if (core == NULL || line == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    len = strlen(line);
+    if (len >= sizeof(core->line_buf)) {
+        len = sizeof(core->line_buf) - 1;
+    }
+
+    if (core->input_echo) {
+        rc = session_line_move_back(core, core->line_cursor);
+        if (rc != HYBBX_OK) {
+            return rc;
+        }
+        if (len > 0) {
+            rc = session_write_transport(core, line, len);
+            if (rc != HYBBX_OK) {
+                return rc;
+            }
+        }
+        rc = session_write_transport(core, "\x1b[K", 3);
+        if (rc != HYBBX_OK) {
+            return rc;
+        }
+    }
+
+    memcpy(core->line_buf, line, len);
+    core->line_buf[len] = '\0';
+    core->line_len = len;
+    core->line_cursor = len;
+    return HYBBX_OK;
+}
+
+static hybbx_result_t session_history_up(hybbx_session_core_t *core)
+{
+    unsigned slot;
+
+    if (core == NULL || core->history_count == 0) {
+        return HYBBX_OK;
+    }
+
+    if (core->history_view < 0) {
+        hybbx_strlcpy(core->history_saved_line, core->line_buf,
+                      sizeof(core->history_saved_line));
+        core->history_view = 0;
+    } else if ((unsigned)(core->history_view + 1) < core->history_count) {
+        core->history_view++;
+    } else {
+        return HYBBX_OK;
+    }
+
+    slot = (core->history_next + HYBBX_HISTORY_MAX - 1u -
+            (unsigned)core->history_view) % HYBBX_HISTORY_MAX;
+    return session_line_replace(core, core->history[slot]);
+}
+
+static hybbx_result_t session_history_down(hybbx_session_core_t *core)
+{
+    unsigned slot;
+
+    if (core == NULL || core->history_view < 0) {
+        return HYBBX_OK;
+    }
+
+    if (core->history_view == 0) {
+        core->history_view = -1;
+        return session_line_replace(core, core->history_saved_line);
+    }
+
+    core->history_view--;
+    slot = (core->history_next + HYBBX_HISTORY_MAX - 1u -
+            (unsigned)core->history_view) % HYBBX_HISTORY_MAX;
+    return session_line_replace(core, core->history[slot]);
+}
+
 static hybbx_result_t session_apply_csi(hybbx_session_core_t *core,
                                         const char *params, char final_ch)
 {
@@ -385,8 +501,12 @@ static hybbx_result_t session_apply_csi(hybbx_session_core_t *core,
         return HYBBX_ERR_INVALID;
     }
 
-    if (final_ch == 'A' || final_ch == 'B') {
-        return HYBBX_OK;
+    if (final_ch == 'A') {
+        return session_history_up(core);
+    }
+
+    if (final_ch == 'B') {
+        return session_history_down(core);
     }
 
     if (final_ch == 'C') {
@@ -798,9 +918,11 @@ hybbx_result_t hybbx_session_set_input_echo(hybbx_session_t *session, int enable
 static void session_submit_line(hybbx_session_core_t *core)
 {
     core->line_buf[core->line_len] = '\0';
+    session_history_add(core, core->line_buf);
     session_process_line(core, core->line_buf);
     core->line_len = 0;
     core->line_cursor = 0;
+    core->history_view = -1;
     if ((core->logged_in || core->login_prompt) &&
         core->area != HYBBX_AREA_CHAT &&
         core->area != HYBBX_AREA_CONFERENCE &&

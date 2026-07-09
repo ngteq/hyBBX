@@ -9,7 +9,7 @@
 | [QUICKSTART.md](QUICKSTART.md) | Build, run, first login |
 | [MANUAL.md](MANUAL.md) | INI reference, commands, topology |
 | [WEBSOCKET.md](WEBSOCKET.md) | WebSocket proxy + browser UI |
-| [CLIENTS.md](CLIENTS.md) | `hybbx-telnet`, `hybbx-terminal` |
+| [CLIENTS.md](CLIENTS.md) | `hybbx-telnet`, `hybbx-ssh`, `hybbx-terminal` |
 | [FEATURES.md](FEATURES.md) | What works vs partial |
 
 ## Developers

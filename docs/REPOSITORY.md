@@ -6,7 +6,7 @@ API: `include/hybbx/`. Config templates: `share/`. Full INI keys: [MANUAL.md](MA
 hyBBX/
   include/hybbx/         Public C API
   src/core/              Session, storage, circuit, commands
-  src/clients/           hybbx-telnet, hybbx-terminal
+  src/clients/           hybbx-telnet, hybbx-ssh, hybbx-terminal
   src/main.c             Daemon entry
   plugins/telnet/        Telnet (verified path)
   plugins/ssh/           SSH transport (libssh)

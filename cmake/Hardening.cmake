@@ -14,7 +14,9 @@ function(hybbx_apply_hardening target)
     endif()
 
     if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-        target_compile_definitions(${target} PRIVATE _FORTIFY_SOURCE=2)
+        if(NOT HYBBX_PLATFORM_AMIGAOS)
+            target_compile_definitions(${target} PRIVATE _FORTIFY_SOURCE=2)
+        endif()
     endif()
 
     if(NOT HYBBX_PLATFORM_AMIGAOS AND CMAKE_SYSTEM_NAME STREQUAL "Linux")

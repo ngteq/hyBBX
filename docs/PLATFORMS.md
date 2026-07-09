@@ -23,17 +23,43 @@ CI: Linux GCC — [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
 ## AmigaOS 3.9+
 
-Cross-compile with m68k-amigaos-gcc. Amiga builds enable **telnet** and **packet_radio** only; SSH, WebSocket, ARDOP, CRDOP, and baycom are disabled automatically.
+Cross-compile `hybbx-telnet` with bebbo-gcc (`m68k-amigaos-gcc`). Uses clib2
+(`-mcrt=clib2`) and links `libnet` (bsdsocket). Copy the binary to your Amiga;
+TCP/IP stack (MiamiDX, Genesis, Roadshow, …) must be running.
 
 ```bash
+./scripts/build-amiga-telnet.sh
+# or:
 cmake -B build-amiga \
   -DCMAKE_TOOLCHAIN_FILE=cmake/Toolchain-AmigaOS.cmake \
   -DAMIGA_SDK_PATH=/opt/amiga \
+  -DHYBBX_CLIENTS_ONLY=ON \
   -DCMAKE_BUILD_TYPE=Release
-cmake --build build-amiga
+cmake --build build-amiga --target hybbx-telnet
 ```
 
-Set `AMIGA_SDK_PATH` to your cross-compiler prefix. Serial devices use Amiga `serial.device` unit numbers (see `device=` in [MANUAL.md](MANUAL.md)).
+Set `AMIGA_SDK_PATH` to your bebbo-gcc prefix (default `/opt/amiga` when
+present). The cross-build uses headers and libs from that prefix
+(`m68k-amigaos/clib2`, `m68k-amigaos/ndk-include`) — not a manual merge of
+NDK trees.
+
+**NDK layout:** under `/opt/amiga/NDKs/` you typically find developer-kit
+trees such as `32/` and `39/` (kit generations, not “the AmigaOS 3.2 NDK” /
+“the AmigaOS 3.9 NDK”). **AmigaOS 3.1.4 has no dedicated NDK**; classic
+development combines headers and docs from `32`, `39`, and other kits as
+needed. HyBBX does not require you to wire those paths into CMake.
+
+**Version labels:** AmigaOS version numbers do not follow release order.
+**3.9** (Haage & Partner) shipped first among these; **3.1.4** and **3.2**
+(Hyperion) followed later — roughly the same era, both younger than 3.9
+despite the lower-looking numbers. HyBBX targets **3.9+** as the minimum
+baseline; the client should also run on 3.1.4 and 3.2 with a TCP stack.
+
+Amiga builds enable **hybbx-telnet** and **packet_radio** only; SSH,
+WebSocket, ARDOP, CRDOP, baycom, and `hybbx-terminal` are disabled automatically.
+
+On Amiga: `hybbx-telnet -H host -p 2323` from Shell. IPv6 (`-6`) is not
+supported on AmigaOS.
 
 Hardening: stack protector where supported; no Linux PIE/RELRO on Amiga.
 

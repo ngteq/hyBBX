@@ -52,8 +52,11 @@ function(hybbx_collect_supported_c_flags)
         -Wwrite-strings
         -Wshadow
         -fno-strict-aliasing
-        -fstack-protector-strong
     )
+
+    if(NOT HYBBX_PLATFORM_AMIGAOS)
+        list(APPEND _candidates -fstack-protector-strong)
+    endif()
 
     if(HYBBX_COMPILER_GCC)
         list(APPEND _candidates
@@ -62,7 +65,7 @@ function(hybbx_collect_supported_c_flags)
             -Wlogical-op
             -Wformat-signedness
         )
-        if(NOT CMAKE_C_COMPILER_VERSION VERSION_LESS 8.0)
+        if(NOT CMAKE_C_COMPILER_VERSION VERSION_LESS 8.0 AND NOT HYBBX_PLATFORM_AMIGAOS)
             list(APPEND _candidates -fstack-clash-protection)
         endif()
     endif()

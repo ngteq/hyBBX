@@ -15,6 +15,7 @@ Tests: `-DHYBBX_BUILD_TESTS=ON` → `ctest --test-dir build`
 |--------|---------|-------------|
 | `HYBBX_BUILD_DAEMON` | ON | `hybbx` + core |
 | `HYBBX_BUILD_CLIENTS` | ON | CLI clients |
+| `HYBBX_BUILD_CLIENT_SSH` | ON | `hybbx-ssh` (requires libssh) |
 | `HYBBX_CLIENTS_ONLY` | OFF | Clients without daemon |
 | `HYBBX_BUILD_PLUGINS` | ON | Transport plugins |
 | `HYBBX_PLUGIN_TELNET` | ON | Telnet |
@@ -33,7 +34,8 @@ Clients-only: `-DHYBBX_CLIENTS_ONLY=ON` or `./scripts/build-clients.sh`.
 
 ## AmigaOS cross-build
 
-See [PLATFORMS.md](PLATFORMS.md#amigaos-39). Only telnet and packet_radio are built on AmigaOS.
+See [PLATFORMS.md](PLATFORMS.md#amigaos-39). `hybbx-telnet` only: `./scripts/build-amiga-telnet.sh`.
+Only telnet and packet_radio plugins build on AmigaOS for the full daemon.
 
 ## Install
 

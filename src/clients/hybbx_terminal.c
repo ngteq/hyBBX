@@ -9,6 +9,7 @@
 #define _DEFAULT_SOURCE 1
 #endif
 
+#include "client_line.h"
 #include "client_display.h"
 #include "hybbx/ax25.h"
 #include "hybbx/circuit.h"
@@ -215,8 +216,14 @@ static hybbx_result_t send_ax25_ui_line(terminal_session_t *sess,
 
 static int run_session(terminal_session_t *sess)
 {
+    hybbx_client_line_editor_t editor;
     char inbuf[HYBBX_LINE_MAX + 2];
     int running = 1;
+    int editor_ready = 0;
+
+    if (hybbx_client_line_editor_start(&editor, STDIN_FILENO) == 0) {
+        editor_ready = 1;
+    }
 
     while (running) {
         struct pollfd pfds[2];
@@ -239,15 +246,17 @@ static int run_session(terminal_session_t *sess)
         }
 
         if ((pfds[0].revents & POLLIN) != 0) {
-            if (fgets(inbuf, sizeof(inbuf), stdin) == NULL) {
-                running = 0;
-            } else {
-                size_t len = strlen(inbuf);
-                hybbx_result_t rc;
+            int have_line = 0;
+            int eof_seen = 0;
 
-                if (len > 0 && inbuf[len - 1] == '\n') {
-                    inbuf[len - 1] = '\0';
-                }
+            if (!editor_ready ||
+                hybbx_client_line_editor_poll(&editor, inbuf, sizeof(inbuf),
+                                              &have_line, &eof_seen) != HYBBX_OK) {
+                running = 0;
+            } else if (eof_seen) {
+                running = 0;
+            } else if (have_line) {
+                hybbx_result_t rc;
 
                 if (sess->cfg->ax25_ui && sess->path_ready) {
                     rc = send_ax25_ui_line(sess, inbuf);
@@ -278,6 +287,10 @@ static int run_session(terminal_session_t *sess)
             hybbx_circuit_decoder_feed(&sess->dec, buf, read_len,
                                        on_circuit_frame, sess);
         }
+    }
+
+    if (editor_ready) {
+        hybbx_client_line_editor_stop(&editor);
     }
 
     return 0;

@@ -12,8 +12,7 @@ Current status: [FEATURES.md](FEATURES.md).
 | `link_role` routing | Metadata today; semantics later |
 | Circuit reconnect / heartbeat | Planned |
 | TCP `/broadcast` fan-out | Stub today |
-| Command history (SSH) | Up/down arrows not yet handled |
-| WebSocket browser line editing | Arrow keys in JS input field |
+| SSH / telnet client polish | General client work later |
 
 ## Later
 

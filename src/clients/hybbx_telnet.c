@@ -9,6 +9,7 @@
 #define _DEFAULT_SOURCE 1
 #endif
 
+#include "client_line.h"
 #include "client_display.h"
 #include "hybbx/limits.h"
 #include "hybbx/socket.h"
@@ -18,14 +19,22 @@
 
 #include <errno.h>
 #include <getopt.h>
-#include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#if defined(__AMIGA__)
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <sys/select.h>
+#include <sys/socket.h>
+#else
+#include <netdb.h>
+#include <poll.h>
+#endif
 
 #define HYBBX_TELNET_DEFAULT_PORT 2323u
 #define HYBBX_TELNET_POLL_MS      50
@@ -83,6 +92,50 @@ static void print_usage(const char *prog)
 
 static int tcp_connect(const hybbx_telnet_client_config_t *cfg, int *out_fd)
 {
+#if defined(__AMIGA__)
+    struct sockaddr_in addr;
+    struct hostent *he;
+    int fd;
+    int on = 1;
+
+    if (cfg->ipv6) {
+        fprintf(stderr, "hybbx-telnet: IPv6 is not supported on AmigaOS\n");
+        return -1;
+    }
+
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) {
+        fprintf(stderr, "hybbx-telnet: socket failed for %s:%u\n",
+                cfg->host, cfg->port);
+        return -1;
+    }
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons((uint16_t)cfg->port);
+
+    if (inet_aton(cfg->host, &addr.sin_addr) == 0) {
+        he = gethostbyname(cfg->host);
+        if (he == NULL || he->h_addrtype != AF_INET || he->h_length == 0) {
+            fprintf(stderr, "hybbx-telnet: unknown host %s\n", cfg->host);
+            close(fd);
+            return -1;
+        }
+        memcpy(&addr.sin_addr, he->h_addr, (size_t)he->h_length);
+    }
+
+    (void)setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
+    hybbx_socket_nosigpipe(fd);
+    if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+        fprintf(stderr, "hybbx-telnet: could not connect to %s:%u\n",
+                cfg->host, cfg->port);
+        close(fd);
+        return -1;
+    }
+
+    *out_fd = fd;
+    return 0;
+#else
     char portbuf[16];
     struct addrinfo hints;
     struct addrinfo *res = NULL;
@@ -129,6 +182,7 @@ static int tcp_connect(const hybbx_telnet_client_config_t *cfg, int *out_fd)
 
     *out_fd = fd;
     return 0;
+#endif
 }
 
 typedef struct display_ctx {
@@ -223,9 +277,11 @@ static int run_session(int fd, const hybbx_telnet_client_config_t *cfg)
 {
     hybbx_telnet_parser_t parser;
     display_ctx_t display;
+    hybbx_client_line_editor_t editor;
     hybbx_traffic_config_t traffic;
     char inbuf[HYBBX_LINE_MAX + 2];
     int running = 1;
+    int editor_ready = 0;
 
     hybbx_traffic_config_defaults(&traffic);
     traffic.baud = cfg->baud;
@@ -234,11 +290,83 @@ static int run_session(int fd, const hybbx_telnet_client_config_t *cfg)
     traffic.ansi = cfg->ansi;
     hybbx_client_display_init(&display.display, &traffic);
     hybbx_telnet_parser_init(&parser);
+    if (hybbx_client_line_editor_start(&editor, STDIN_FILENO) == 0) {
+        editor_ready = 1;
+    }
 
     (void)hybbx_telnet_send_greeting(fd);
     maybe_auto_login(fd, cfg);
 
     while (running) {
+#if defined(__AMIGA__)
+        fd_set rfds;
+        struct timeval tv;
+        int maxfd;
+        int pr;
+
+        FD_ZERO(&rfds);
+        FD_SET(STDIN_FILENO, &rfds);
+        FD_SET(fd, &rfds);
+        maxfd = fd;
+        if (STDIN_FILENO > maxfd) {
+            maxfd = STDIN_FILENO;
+        }
+        tv.tv_sec = HYBBX_TELNET_POLL_MS / 1000;
+#if defined(__AMIGA__)
+        tv.tv_usec = (unsigned long)((HYBBX_TELNET_POLL_MS % 1000) * 1000);
+#else
+        tv.tv_usec = (HYBBX_TELNET_POLL_MS % 1000) * 1000;
+#endif
+
+        pr = select(maxfd + 1, &rfds, NULL, NULL, &tv);
+        if (pr < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            break;
+        }
+
+        if (FD_ISSET(STDIN_FILENO, &rfds)) {
+            int have_line = 0;
+            int eof_seen = 0;
+
+            if (!editor_ready ||
+                hybbx_client_line_editor_poll(&editor, inbuf, sizeof(inbuf),
+                                              &have_line, &eof_seen) != HYBBX_OK) {
+                running = 0;
+            } else if (eof_seen) {
+                running = 0;
+            } else if (have_line) {
+                if (send_line(fd, inbuf) != HYBBX_OK) {
+                    break;
+                }
+            }
+        }
+
+        if (FD_ISSET(fd, &rfds)) {
+            uint8_t buf[512];
+            ssize_t n = recv(fd, buf, sizeof(buf), 0);
+
+            if (n < 0) {
+                if (errno == EINTR) {
+                    continue;
+                }
+                break;
+            }
+            if (n == 0) {
+                break;
+            }
+
+            if (cfg->verbose) {
+                fprintf(stderr, "hybbx-telnet: recv %zd bytes\n", n);
+            }
+
+            if (hybbx_telnet_parser_feed(&parser, fd, buf, (size_t)n,
+                                         on_telnet_data, &display) != HYBBX_OK) {
+                break;
+            }
+        }
+#else
         struct pollfd pfds[2];
         int pr;
 
@@ -258,13 +386,16 @@ static int run_session(int fd, const hybbx_telnet_client_config_t *cfg)
         }
 
         if ((pfds[0].revents & POLLIN) != 0) {
-            if (fgets(inbuf, sizeof(inbuf), stdin) == NULL) {
+            int have_line = 0;
+            int eof_seen = 0;
+
+            if (!editor_ready ||
+                hybbx_client_line_editor_poll(&editor, inbuf, sizeof(inbuf),
+                                              &have_line, &eof_seen) != HYBBX_OK) {
                 running = 0;
-            } else {
-                size_t len = strlen(inbuf);
-                if (len > 0 && inbuf[len - 1] == '\n') {
-                    inbuf[len - 1] = '\0';
-                }
+            } else if (eof_seen) {
+                running = 0;
+            } else if (have_line) {
                 if (send_line(fd, inbuf) != HYBBX_OK) {
                     break;
                 }
@@ -298,6 +429,11 @@ static int run_session(int fd, const hybbx_telnet_client_config_t *cfg)
                 break;
             }
         }
+#endif
+    }
+
+    if (editor_ready) {
+        hybbx_client_line_editor_stop(&editor);
     }
 
     return 0;
@@ -338,7 +474,8 @@ int main(int argc, char *argv[])
         cfg.port = (unsigned)strtoul(env, NULL, 10);
     }
 
-    while ((opt = getopt_long(argc, argv, "H:p:u:P:6t:vh", long_opts, NULL)) != -1) {
+    while ((opt = getopt_long(argc, (const char **)argv, "H:p:u:P:6t:vh",
+                              long_opts, NULL)) != -1) {
         switch (opt) {
         case 'H':
             hybbx_strlcpy(cfg.host, optarg, sizeof(cfg.host));

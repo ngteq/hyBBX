@@ -13,6 +13,7 @@
 #include <windows.h>
 #else
 #include <sys/select.h>
+#include <sys/time.h>
 #endif
 
 static hybbx_traffic_config_t g_traffic_config;
@@ -127,7 +128,11 @@ static hybbx_result_t emit_raw(struct hybbx_session *session, char ch)
             struct timeval tv;
 
             tv.tv_sec = (time_t)(delay / 1000000u);
+#if defined(__AMIGA__)
+            tv.tv_usec = (unsigned long)(delay % 1000000u);
+#else
             tv.tv_usec = (suseconds_t)(delay % 1000000u);
+#endif
             (void)select(0, NULL, NULL, NULL, &tv);
 #endif
         }

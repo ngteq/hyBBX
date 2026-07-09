@@ -60,4 +60,7 @@
 /** Default guest session lifetime before auto-disconnect (minutes). */
 #define HYBBX_DEFAULT_GUEST_TIMEOUT_MINUTES 30u
 
+/** Command history depth for interactive line editors. */
+#define HYBBX_HISTORY_MAX 25u
+
 #endif /* HYBBX_LIMITS_H */

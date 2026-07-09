@@ -22,11 +22,13 @@
 | Texts (`text/*.txt`) | **Verified** |
 | Text tokens `%time%`, `%date%` | **Verified** |
 | SSH `:3232` | **Built** |
-| WebSocket forward-proxy | **Built** — idle ping keepalive |
-| Browser terminal UI | **Built** — close diagnostics + auto-reconnect |
+| WebSocket forward-proxy | **Verified** — idle ping keepalive |
+| Browser terminal UI | **Verified** — close diagnostics + auto-reconnect |
 | `max_connections` (WebSocket) | **Built** |
 | One session per registered user | **Built** |
-| SSH line editor | **Built** |
+| SSH/telnet/client history | **Built** — last 25 commands, up/down arrows |
+| `hybbx-ssh` client | **Built** — libssh, no host-key prompt |
+| `hybbx-telnet` AmigaOS client | **Verified** — A1200, AmigaOS 3.2 |
 | TCP `/broadcast` | Partial |
 | SQL storage | Planned |
 

@@ -37,7 +37,7 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 
 | Item | Detail |
 |------|--------|
-| Line input (SSH) | ANSI filter; arrows, Home/End, backspace/delete |
+| Line input | ANSI filter; history (25), arrows, Home/End, backspace/delete |
 | WebSocket TX | UTF-8-safe buffering |
 | `max_connections` | WebSocket slot limit (default `10`) |
 | One session per account | `/login` rejected if already online |
@@ -48,7 +48,8 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 |------|--------|
 | Telnet, mail, chat, commands | **Verified** |
 | Text tokens (`%time%`, `%date%`) | **Verified** |
-| SSH, WebSocket | **Built** — verify in your deployment |
+| WebSocket | **Verified** |
+| SSH | **Built** — verify in your deployment |
 | HBX, packet_radio, ARDOP, CRDOP | **Built** — not live RF verified |
 | BayCom PR-Stack | **Built** (opt-in compile) |
 
