@@ -1,6 +1,6 @@
 # HyBBX v1.5.0
 
-**Testing release** — feature-complete for lab use; mesh and proxymail/proxychat paths remain stubs.
+**Testing release — nearly complete.** Lab-ready without RF hardware; formal GitHub Release after field tests. Mesh and proxymail/proxychat paths remain stubs.
 
 Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSocket** (loopback `:4591`), **HBX circuit hub** (`:7323`). Clients: **hybbx-telnet**, **hybbx-ssh**, **hybbx-terminal**, **hybbx-telnet** (AmigaOS).
 
