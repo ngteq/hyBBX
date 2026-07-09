@@ -18,6 +18,7 @@ Current status: [FEATURES.md](FEATURES.md).
 
 | Item | Notes |
 |------|-------|
+| WebSocket line editing | Browser UI — deferred (service use; unlike native clients) |
 | User-files / public-files areas | Planned |
 | HBX APRS / NETROM protos | Reserved IDs |
 

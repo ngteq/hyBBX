@@ -2,7 +2,7 @@
 
 C99 **session daemon** for low-bandwidth links: mail, chat, and `/` commands over line-oriented transports.
 
-**v1.1.1** — telnet, SSH, and WebSocket. [docs/RELEASE-1.1.1.md](docs/RELEASE-1.1.1.md).
+**v1.2.0** — telnet, SSH, and WebSocket. [docs/RELEASE-1.2.0.md](docs/RELEASE-1.2.0.md).
 
 ## Live (hybbx.un1t.me)
 

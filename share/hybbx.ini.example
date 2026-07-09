@@ -116,6 +116,9 @@ balance_queue_cancel = 65536
 [broadcast]
 enabled = yes
 ax25 = yes
+ax25_auto = yes
+ax25_auto_interval = 300
+ax25_auto_message = Broadcast: @service@ online
 tcp = yes
 ax25_mycall = HYBBX
 ax25_dest = QST

@@ -1,6 +1,6 @@
 # Feature status
 
-**v1.1.1** · [RELEASE-1.1.1.md](RELEASE-1.1.1.md) · INI: [MANUAL.md](MANUAL.md)
+**v1.2.0** · [RELEASE-1.2.0.md](RELEASE-1.2.0.md) · INI: [MANUAL.md](MANUAL.md)
 
 | Status | Meaning |
 |--------|---------|
@@ -30,6 +30,7 @@
 | `hybbx-ssh` client | **Built** — libssh, no host-key prompt |
 | `hybbx-telnet` AmigaOS client | **Verified** — A1200, AmigaOS 3.2 |
 | TCP `/broadcast` | Partial |
+| AX.25 auto-broadcast (1200 baud) | **Built** — max 48 chars; min 5 min interval |
 | SQL storage | Planned |
 
 ## RF / HBX

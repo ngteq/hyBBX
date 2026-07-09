@@ -12,6 +12,7 @@
 
 #include "hybbx/ax25.h"
 #include "hybbx/config.h"
+#include "hybbx/limits.h"
 #include "hybbx/types.h"
 
 #ifdef __cplusplus
@@ -19,7 +20,10 @@ extern "C" {
 #endif
 
 #define HYBBX_AX25_FREQUENCY_MAX      40u
+/** TCP broadcast message cap (AX.25 uses @ref HYBBX_BROADCAST_AX25_MESSAGE_MAX). */
 #define HYBBX_BROADCAST_MESSAGE_MAX   240u
+
+#define HYBBX_BROADCAST_AUTO_MESSAGE_DEFAULT "Broadcast: @service@ online"
 
 typedef struct hybbx_ax25_frequency_table {
     unsigned count;
@@ -31,8 +35,11 @@ typedef struct hybbx_broadcast_config {
     int enabled;
     int tcp_enabled;
     int ax25_enabled;
+    int ax25_auto;
+    unsigned ax25_auto_interval_sec;
     char ax25_mycall[HYBBX_AX25_CALL_MAX + 1];
     char ax25_dest[HYBBX_AX25_CALL_MAX + 1];
+    char ax25_auto_message[HYBBX_BROADCAST_AX25_MESSAGE_MAX + 1];
     hybbx_ax25_frequency_table_t frequencies;
 } hybbx_broadcast_config_t;
 
@@ -73,6 +80,12 @@ hybbx_result_t hybbx_broadcast_tcp_stub(struct hybbx_service *service,
 
 void hybbx_broadcast_list_ax25_frequencies(struct hybbx_session *session,
                                            const hybbx_broadcast_config_t *cfg);
+
+/**
+ * Periodic AX.25 auto-beacon (call once per second from Main service loop).
+ * Sends when @c ax25_auto is enabled and interval elapsed.
+ */
+void hybbx_broadcast_ax25_tick(struct hybbx_service *service);
 
 #ifdef __cplusplus
 }

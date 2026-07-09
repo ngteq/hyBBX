@@ -911,6 +911,7 @@ hybbx_result_t hybbx_service_run(hybbx_service_t *service)
         static unsigned prune_tick;
 
         sleep(1);
+        hybbx_broadcast_ax25_tick(service);
         prune_tick++;
         if (prune_tick >= 3600u) {
             prune_tick = 0;

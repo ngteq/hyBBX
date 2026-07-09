@@ -29,7 +29,7 @@ if(NOT DEFINED ENV{CC} AND NOT CMAKE_C_COMPILER)
 endif()
 
 project(HyBBX
-    VERSION 1.1.1
+    VERSION 1.2.0
     DESCRIPTION "C99 transport service: centralized daemon + link/repeater edge"
     LANGUAGES C
 )

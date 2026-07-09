@@ -1,6 +1,6 @@
 # Operator manual
 
-**v1.1.1** — telnet, SSH, WebSocket. Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
+**v1.2.0** — telnet, SSH, WebSocket. Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
 
 Booleans: `yes`/`no` (+ `true`/`false`, `on`/`off`, `1`/`0`).
 
@@ -203,9 +203,14 @@ httpd document root. See [WEBSOCKET.md](WEBSOCKET.md).
 |-----|---------|-------------|
 | `enabled` | `yes` | |
 | `ax25` | `yes` | QST UI to low/half-duplex links |
+| `ax25_auto` | `yes` | Periodic AX.25 beacon when a qualifying link is up |
+| `ax25_auto_interval` | `300` | Seconds between AX.25 sends (minimum 300) |
+| `ax25_auto_message` | `Broadcast: @service@ online` | UI payload; `@service@` expands from `[service] name` |
 | `tcp` | `yes` | **Stub** — log only |
 | `ax25_mycall` | `HYBBX` | |
 | `ax25_dest` | `QST` | |
+
+AX.25 payloads are capped at **48 characters** (1200 baud). Manual `/broadcast ax25` and auto beacons share the same minimum interval.
 
 ### `[ax25]`
 
@@ -322,4 +327,4 @@ HyBBX: GPL-3.0 — [LICENSING.md](LICENSING.md). External modems are separate pr
 
 ## See also
 
-[QUICKSTART.md](QUICKSTART.md) · [FEATURES.md](FEATURES.md) · [WEBSOCKET.md](WEBSOCKET.md) · [RELEASE-1.1.1.md](RELEASE-1.1.1.md)
+[QUICKSTART.md](QUICKSTART.md) · [FEATURES.md](FEATURES.md) · [WEBSOCKET.md](WEBSOCKET.md) · [RELEASE-1.2.0.md](RELEASE-1.2.0.md)

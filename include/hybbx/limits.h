@@ -63,4 +63,10 @@
 /** Command history depth for interactive line editors. */
 #define HYBBX_HISTORY_MAX 25u
 
+/** AX.25 broadcast minimum interval (seconds); INI may only increase this. */
+#define HYBBX_BROADCAST_AX25_INTERVAL_MIN_SEC 300u
+
+/** AX.25 on-air payload cap (1200 baud; keep UI frames short). */
+#define HYBBX_BROADCAST_AX25_MESSAGE_MAX 48u
+
 #endif /* HYBBX_LIMITS_H */

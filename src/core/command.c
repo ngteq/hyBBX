@@ -637,7 +637,8 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
         cmd_help_topic_detail(session,
             "  /broadcast ax25 list");
         cmd_help_topic_detail(session,
-            "  /broadcast ax25 <MHz|all> <message>  (low+half-duplex QoS)");
+            "  /broadcast ax25 <MHz|all> <message>  (low+half-duplex QoS; "
+            "max 48 chars; 5 min minimum between AX.25 sends)");
         cmd_help_topic_detail(session,
             "  /broadcast tcp <message>   (stub — logged only)");
         return HYBBX_OK;
@@ -2187,7 +2188,7 @@ static hybbx_result_t cmd_broadcast(hybbx_service_t *service,
                                     const hybbx_parsed_command_t *cmd)
 {
     const hybbx_broadcast_config_t *cfg;
-    char message[HYBBX_BROADCAST_MESSAGE_MAX + 1];
+    char message[HYBBX_BROADCAST_AX25_MESSAGE_MAX + 1];
     double frequency_mhz = 0.0;
     int msg_start;
     int i;
@@ -2257,8 +2258,13 @@ static hybbx_result_t cmd_broadcast(hybbx_service_t *service,
         }
         message[off] = '\0';
         rc = hybbx_broadcast_ax25(service, frequency_mhz, message);
-        if (rc == HYBBX_ERR_BUSY) {
-            hybbx_session_write_line(session, "No circuit link attached.");
+        if (rc == HYBBX_ERR_INVALID) {
+            hybbx_session_write_line(session,
+                "AX.25 message too long (max 48 characters for 1200 baud).");
+        } else if (rc == HYBBX_ERR_BUSY) {
+            hybbx_session_write_line(session,
+                "AX.25 broadcast not sent (5+ min rate limit or no "
+                "low+half-duplex link).");
         } else if (rc == HYBBX_ERR_DENIED) {
             hybbx_session_write_line(session,
                 "AX.25 broadcast requires low-bandwidth half-duplex link (QoS).");

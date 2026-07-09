@@ -4,11 +4,13 @@
 #include "hybbx/circuit_tcp.h"
 #include "hybbx/circuit.h"
 #include "hybbx/ax25.h"
+#include "hybbx/texts.h"
 #include "hybbx/util.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 void hybbx_ax25_frequency_table_clear(hybbx_ax25_frequency_table_t *table)
 {
@@ -116,8 +118,12 @@ void hybbx_broadcast_config_defaults(hybbx_broadcast_config_t *cfg)
     cfg->enabled = 1;
     cfg->tcp_enabled = 1;
     cfg->ax25_enabled = 1;
+    cfg->ax25_auto = 1;
+    cfg->ax25_auto_interval_sec = HYBBX_BROADCAST_AX25_INTERVAL_MIN_SEC;
     hybbx_strlcpy(cfg->ax25_mycall, "HYBBX", sizeof(cfg->ax25_mycall));
     hybbx_strlcpy(cfg->ax25_dest, "QST", sizeof(cfg->ax25_dest));
+    hybbx_strlcpy(cfg->ax25_auto_message, HYBBX_BROADCAST_AUTO_MESSAGE_DEFAULT,
+                  sizeof(cfg->ax25_auto_message));
     hybbx_ax25_frequency_table_clear(&cfg->frequencies);
 }
 
@@ -126,6 +132,8 @@ void hybbx_broadcast_config_apply(hybbx_broadcast_config_t *cfg,
 {
     const char *mycall;
     const char *dest;
+    const char *auto_msg;
+    unsigned interval;
 
     if (cfg == NULL || config == NULL) {
         return;
@@ -136,21 +144,37 @@ void hybbx_broadcast_config_apply(hybbx_broadcast_config_t *cfg,
     cfg->enabled = hybbx_config_get_bool(config, "broadcast", "enabled", 1);
     cfg->tcp_enabled = hybbx_config_get_bool(config, "broadcast", "tcp", 1);
     cfg->ax25_enabled = hybbx_config_get_bool(config, "broadcast", "ax25", 1);
+    cfg->ax25_auto = hybbx_config_get_bool(config, "broadcast", "ax25_auto", 1);
+
+    interval = hybbx_config_get_uint(config, "broadcast", "ax25_auto_interval",
+                                     HYBBX_BROADCAST_AX25_INTERVAL_MIN_SEC,
+                                     HYBBX_BROADCAST_AX25_INTERVAL_MIN_SEC,
+                                     86400u);
+    cfg->ax25_auto_interval_sec = interval;
 
     mycall = hybbx_config_get(config, "broadcast", "ax25_mycall", NULL);
     dest = hybbx_config_get(config, "broadcast", "ax25_dest", NULL);
+    auto_msg = hybbx_config_get(config, "broadcast", "ax25_auto_message", NULL);
     if (mycall != NULL && mycall[0] != '\0') {
         hybbx_strlcpy(cfg->ax25_mycall, mycall, sizeof(cfg->ax25_mycall));
     }
     if (dest != NULL && dest[0] != '\0') {
         hybbx_strlcpy(cfg->ax25_dest, dest, sizeof(cfg->ax25_dest));
     }
+    if (auto_msg != NULL && auto_msg[0] != '\0') {
+        hybbx_strlcpy(cfg->ax25_auto_message, auto_msg,
+                      sizeof(cfg->ax25_auto_message));
+    }
 
     hybbx_ax25_frequency_apply(&cfg->frequencies, config);
 
-    printf("[broadcast] enabled=%s ax25=%s (low+half-duplex QoS only) tcp=%s (stub)\n",
+    printf("[broadcast] enabled=%s ax25=%s auto=%s interval=%us (min %us) "
+           "tcp=%s (stub)\n",
            cfg->enabled ? "yes" : "no",
            cfg->ax25_enabled ? "yes" : "no",
+           cfg->ax25_auto ? "yes" : "no",
+           cfg->ax25_auto_interval_sec,
+           (unsigned)HYBBX_BROADCAST_AX25_INTERVAL_MIN_SEC,
            cfg->tcp_enabled ? "yes" : "no");
 }
 
@@ -171,6 +195,78 @@ static hybbx_result_t broadcast_build_path(const hybbx_broadcast_config_t *cfg,
     }
 
     return HYBBX_OK;
+}
+
+static time_t g_ax25_last_sent;
+static unsigned g_ax25_auto_tick;
+
+static int broadcast_ax25_rate_ok(unsigned interval_sec)
+{
+    time_t now;
+    time_t elapsed;
+
+    if (g_ax25_last_sent == 0) {
+        return 1;
+    }
+
+    now = time(NULL);
+    if (now == (time_t)-1) {
+        return 0;
+    }
+
+    elapsed = now - g_ax25_last_sent;
+    if (elapsed < 0) {
+        return 1;
+    }
+
+    return (unsigned)elapsed >= interval_sec;
+}
+
+static void broadcast_ax25_mark_sent(void)
+{
+    time_t now = time(NULL);
+
+    if (now != (time_t)-1) {
+        g_ax25_last_sent = now;
+    }
+}
+
+static size_t broadcast_expand_service_token(char *out, size_t out_len,
+                                             const char *tmpl,
+                                             const char *service_name)
+{
+    size_t pos = 0;
+    size_t i = 0;
+
+    if (out == NULL || out_len == 0 || tmpl == NULL) {
+        return 0;
+    }
+
+    if (service_name == NULL || service_name[0] == '\0') {
+        service_name = HYBBX_DEFAULT_SERVICE_NAME;
+    }
+
+    out[0] = '\0';
+
+    while (tmpl[i] != '\0' && pos + 1 < out_len) {
+        if (strncmp(tmpl + i, HYBBX_BANNER_TOKEN_SERVICE,
+                    strlen(HYBBX_BANNER_TOKEN_SERVICE)) == 0) {
+            size_t n = strlen(service_name);
+
+            if (pos + n >= out_len) {
+                n = out_len - pos - 1;
+            }
+            memcpy(out + pos, service_name, n);
+            pos += n;
+            i += strlen(HYBBX_BANNER_TOKEN_SERVICE);
+            continue;
+        }
+
+        out[pos++] = tmpl[i++];
+    }
+
+    out[pos] = '\0';
+    return pos;
 }
 
 hybbx_result_t hybbx_broadcast_ax25(hybbx_service_t *service,
@@ -195,13 +291,21 @@ hybbx_result_t hybbx_broadcast_ax25(hybbx_service_t *service,
         return HYBBX_ERR_UNSUPPORTED;
     }
 
+    if (!broadcast_ax25_rate_ok(cfg->ax25_auto_interval_sec)) {
+        return HYBBX_ERR_BUSY;
+    }
+
     msg_len = strlen(message);
-    if (msg_len > HYBBX_BROADCAST_MESSAGE_MAX) {
+    if (msg_len > HYBBX_BROADCAST_AX25_MESSAGE_MAX) {
         return HYBBX_ERR_INVALID;
     }
 
     hub = hybbx_service_circuit_hub(service);
     if (hub == NULL || !hybbx_circuit_hub_running(hub)) {
+        return HYBBX_ERR_BUSY;
+    }
+
+    if (!hybbx_circuit_hub_link_broadcast_qos(hub)) {
         return HYBBX_ERR_BUSY;
     }
 
@@ -224,6 +328,7 @@ hybbx_result_t hybbx_broadcast_ax25(hybbx_service_t *service,
         return rc;
     }
 
+    broadcast_ax25_mark_sent();
     sent_links = hybbx_circuit_hub_active_link_count(hub);
     if (frequency_mhz > 0.0) {
         printf("[broadcast] ax25 %.3f MHz (%u link(s), low+half): %s\n",
@@ -234,6 +339,50 @@ hybbx_result_t hybbx_broadcast_ax25(hybbx_service_t *service,
     }
 
     return HYBBX_OK;
+}
+
+void hybbx_broadcast_ax25_tick(hybbx_service_t *service)
+{
+    const hybbx_broadcast_config_t *cfg;
+    char message[HYBBX_BROADCAST_AX25_MESSAGE_MAX + 1];
+    hybbx_circuit_hub_t *hub;
+
+    if (service == NULL) {
+        return;
+    }
+
+    cfg = hybbx_service_get_broadcast(service);
+    if (cfg == NULL || !cfg->enabled || !cfg->ax25_enabled || !cfg->ax25_auto) {
+        return;
+    }
+
+    hub = hybbx_service_circuit_hub(service);
+    if (hub == NULL || !hybbx_circuit_hub_running(hub)) {
+        return;
+    }
+
+    g_ax25_auto_tick++;
+    if (g_ax25_auto_tick < cfg->ax25_auto_interval_sec) {
+        return;
+    }
+    g_ax25_auto_tick = 0;
+
+    if (!hybbx_circuit_hub_link_broadcast_qos(hub)) {
+        return;
+    }
+
+    if (!broadcast_ax25_rate_ok(cfg->ax25_auto_interval_sec)) {
+        return;
+    }
+
+    broadcast_expand_service_token(message, sizeof(message),
+                                   cfg->ax25_auto_message,
+                                   hybbx_service_get_name(service));
+    if (message[0] == '\0') {
+        return;
+    }
+
+    (void)hybbx_broadcast_ax25(service, 0.0, message);
 }
 
 hybbx_result_t hybbx_broadcast_tcp_stub(hybbx_service_t *service,
