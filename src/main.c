@@ -88,7 +88,7 @@ static void print_usage(const char *prog)
             "  -V, --version        Show version\n"
             "\n"
             "Commands (at runtime):\n"
-            "  /help [/command]   HyBBX commands (leading / required)\n"
+            "  /help [/command|/cmd|/commands]   HyBBX commands (leading / required)\n"
             "  ; or # ...         Ignored (comment)\n"
             "  other input        Ignored (local, not HyBBX)\n"
             "\n",

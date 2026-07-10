@@ -154,6 +154,46 @@ static void expand_banner_line(char *out, size_t out_len,
                      time_text, date_text);
 }
 
+typedef struct texts_line_emitter {
+    hybbx_session_t *session;
+    unsigned pending_blank;
+} texts_line_emitter_t;
+
+static void texts_emit_expanded_line(texts_line_emitter_t *emitter,
+                                     const char *expanded)
+{
+    unsigned i;
+
+    if (emitter == NULL || emitter->session == NULL || expanded == NULL) {
+        return;
+    }
+
+    if (expanded[0] == '\0') {
+        emitter->pending_blank++;
+        return;
+    }
+
+    for (i = 0; i < emitter->pending_blank; i++) {
+        hybbx_session_write(emitter->session, "\n");
+    }
+    emitter->pending_blank = 0;
+    hybbx_session_write_line(emitter->session, expanded);
+}
+
+static void texts_trim_trailing_cr(char *expanded)
+{
+    size_t n;
+
+    if (expanded == NULL) {
+        return;
+    }
+
+    n = strlen(expanded);
+    while (n > 0 && (expanded[n - 1] == '\n' || expanded[n - 1] == '\r')) {
+        expanded[--n] = '\0';
+    }
+}
+
 static hybbx_result_t send_banner_fallback(hybbx_session_t *session,
                                            const char *version,
                                            const char *service_name)
@@ -209,20 +249,17 @@ hybbx_result_t hybbx_texts_send_banner(const hybbx_texts_config_t *texts,
         return send_banner_fallback(session, version, service_name);
     }
 
-    while (fgets(line, sizeof(line), fp) != NULL) {
-        size_t n;
+    {
+        texts_line_emitter_t emitter;
 
-        expand_banner_line(expanded, sizeof(expanded), line, version,
-                          service_name, time_text, date_text);
-        n = strlen(expanded);
-        while (n > 0 && (expanded[n - 1] == '\n' || expanded[n - 1] == '\r')) {
-            expanded[--n] = '\0';
-        }
+        emitter.session = session;
+        emitter.pending_blank = 0;
 
-        if (expanded[0] != '\0') {
-            hybbx_session_write_line(session, expanded);
-        } else {
-            hybbx_session_write(session, "\n");
+        while (fgets(line, sizeof(line), fp) != NULL) {
+            expand_banner_line(expanded, sizeof(expanded), line, version,
+                              service_name, time_text, date_text);
+            texts_trim_trailing_cr(expanded);
+            texts_emit_expanded_line(&emitter, expanded);
         }
     }
 
@@ -269,20 +306,17 @@ hybbx_result_t hybbx_texts_send_motd(const hybbx_texts_config_t *texts,
         return HYBBX_ERR_NOT_FOUND;
     }
 
-    while (fgets(line, sizeof(line), fp) != NULL) {
-        size_t n;
+    {
+        texts_line_emitter_t emitter;
 
-        expand_text_line(expanded, sizeof(expanded), line, NULL, NULL,
-                         username, time_text, date_text);
-        n = strlen(expanded);
-        while (n > 0 && (expanded[n - 1] == '\n' || expanded[n - 1] == '\r')) {
-            expanded[--n] = '\0';
-        }
+        emitter.session = session;
+        emitter.pending_blank = 0;
 
-        if (expanded[0] != '\0') {
-            hybbx_session_write_line(session, expanded);
-        } else {
-            hybbx_session_write(session, "\n");
+        while (fgets(line, sizeof(line), fp) != NULL) {
+            expand_text_line(expanded, sizeof(expanded), line, NULL, NULL,
+                             username, time_text, date_text);
+            texts_trim_trailing_cr(expanded);
+            texts_emit_expanded_line(&emitter, expanded);
         }
     }
 
@@ -324,20 +358,17 @@ hybbx_result_t hybbx_texts_send_file(const hybbx_texts_config_t *texts,
         return HYBBX_ERR_NOT_FOUND;
     }
 
-    while (fgets(line, sizeof(line), fp) != NULL) {
-        size_t n;
+    {
+        texts_line_emitter_t emitter;
 
-        expand_text_line(expanded, sizeof(expanded), line, NULL, NULL, NULL,
-                         time_text, date_text);
-        n = strlen(expanded);
-        while (n > 0 && (expanded[n - 1] == '\n' || expanded[n - 1] == '\r')) {
-            expanded[--n] = '\0';
-        }
+        emitter.session = session;
+        emitter.pending_blank = 0;
 
-        if (expanded[0] != '\0') {
-            hybbx_session_write_line(session, expanded);
-        } else {
-            hybbx_session_write(session, "\n");
+        while (fgets(line, sizeof(line), fp) != NULL) {
+            expand_text_line(expanded, sizeof(expanded), line, NULL, NULL, NULL,
+                             time_text, date_text);
+            texts_trim_trailing_cr(expanded);
+            texts_emit_expanded_line(&emitter, expanded);
         }
     }
 

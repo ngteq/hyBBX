@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define HYBBX_CMD_ALIAS "command"
-
 static char *hybbx_strdup(const char *s)
 {
     size_t len;
@@ -77,19 +75,49 @@ static int str_ieq(const char *a, const char *b)
     return *a == '\0' && *b == '\0';
 }
 
-static int strip_command_alias(char *rest)
+static int strip_one_command_alias(char *rest, const char *alias)
 {
-    size_t alias_len = strlen(HYBBX_CMD_ALIAS);
+    size_t alias_len;
 
-    if (rest[0] == '\0' || str_ieq(rest, HYBBX_CMD_ALIAS)) {
+    if (alias == NULL || rest == NULL) {
+        return -1;
+    }
+
+    alias_len = strlen(alias);
+
+    if (str_ieq(rest, alias)) {
         return 1;
     }
 
-    if (strncmp(rest, HYBBX_CMD_ALIAS, alias_len) == 0 &&
+    if (strncmp(rest, alias, alias_len) == 0 &&
         isspace((unsigned char)rest[alias_len])) {
         memmove(rest, rest + alias_len, strlen(rest + alias_len) + 1);
         ltrim_copy(rest);
-        return rest[0] == '\0';
+        return rest[0] == '\0' ? 1 : 0;
+    }
+
+    return -1;
+}
+
+static int strip_command_alias(char *rest)
+{
+    static const char *aliases[] = { "commands", "command", "cmd", NULL };
+    int rc;
+    size_t i;
+
+    if (rest == NULL) {
+        return 0;
+    }
+
+    if (rest[0] == '\0') {
+        return 1;
+    }
+
+    for (i = 0; aliases[i] != NULL; i++) {
+        rc = strip_one_command_alias(rest, aliases[i]);
+        if (rc >= 0) {
+            return rc;
+        }
     }
 
     return 0;

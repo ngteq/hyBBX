@@ -14,9 +14,9 @@ struct hybbx_session;
  * Input line routing scope.
  *
  * HyBBX accepts only lines starting with '/'. Valid forms:
- *   /              or /command     → /help
- *   /<verb>        or / <verb>      → command
- *   /command <verb>                 → same as / <verb>
+ *   /              or /command /cmd /commands → /help
+ *   /<verb>        or / <verb>              → command
+ *   /command <verb> or /cmd <verb>          → same as / <verb>
  *
  * - COMMENT: starts with ';' or '#' — ignored (like empty line)
  * - LOCAL: anything else — not HyBBX; silently ignored
