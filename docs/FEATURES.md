@@ -16,7 +16,7 @@
 | Telnet `:2323` | **Verified** |
 | Guest + registered auth | **Verified** |
 | Mail, chat, conference | **Verified** |
-| `/proxymail`, `/proxychat` | **Partial** (stub) — inter-Main via mains_proxy |
+| `/proxymail`, `/proxychat` | **Partial** — proxy network; delivery not available yet |
 | `/` commands | **Verified** |
 | Flat-file storage | **Verified** |
 | Traffic pacing 2400/80 | **Verified** |
@@ -30,7 +30,7 @@
 | SSH/telnet/client history | **Built** — last 25 commands, up/down arrows |
 | `hybbx-ssh` client | **Built** — libssh, no host-key prompt |
 | `hybbx-telnet` AmigaOS client | **Verified** — A1200, AmigaOS 3.2 |
-| TCP `/broadcast` | **Built** — Sysop announce to all local sessions |
+| `/broadcast`, `/announce` | **Built** — Sysop; all online users on local Main |
 | AX.25 auto-beacon (1200 baud) | **Built** — INI `ax25_auto`; max 48 chars; min 5 min interval |
 | SQLite storage | **Built** — opt-in `backend = sqlite` |
 | MySQL/MariaDB storage | **Planned** — v2.0.0 |
@@ -59,7 +59,7 @@
 | HBX-only inter-node policy | **Built** — Secondary, RF, mesh |
 | Packet radio / AX.25 | **Built** — [TNCS.md](TNCS.md); live RF TBD |
 | BayCom PR-Stack (`baycom`) | **Built** (opt-in) — [BAYCOM.md](BAYCOM.md) |
-| Main-to-Main proxy (`mains_proxy`) | **Partial** (stub) — [MAINS_PROXY.md](MAINS_PROXY.md) |
+| Proxy network (`mains_proxy`) | **Partial** — user services only — [MAINS_PROXY.md](MAINS_PROXY.md) |
 | Multi-link hub | **Built** |
 | ARDOP / CRDOP plugins | **Built** — [ARDOP.md](ARDOP.md), [CRDOP.md](CRDOP.md) |
 

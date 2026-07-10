@@ -43,15 +43,15 @@ All paths between HyBBX processes use **HBX v1** on the internal circuit hub. Th
 | Packet radio / BayCom / ARDOP / CRDOP | Plugin edge → HBX client |
 | AX.25 auto-beacon (INI) | Main → HBX → Secondary extenders |
 | `/broadcast` (Sysop) | All online users on local Main only |
-| mains_proxy mesh (stub) | Main ↔ Main via HBX circuit client |
+| Proxy network (`mains_proxy`) | Main ↔ Main via HBX circuit client |
 
 Edge daemons authenticate with per-link `link_password`. User wire auth (telnet/SSH) is separate from HBX link auth.
 
 Protocol: `include/hybbx/circuit.h` — default port `7323`, max 16 concurrent links.
 
-## Main-to-Main mesh (`mains_proxy`)
+## Proxy network (`mains_proxy`)
 
-Link two or more Main instances. **Status: stub** — API and plugin skeleton; no live relay yet.
+Link two or more Main instances for **user services** (mail, chat, future). **Status: partial** — API and plugin skeleton; no live relay yet. **No Sysop, Admin, or Mod actions cross proxy links.**
 
 ```
 Main-A  <--- HBX circuit :7323 + LINK_AUTH --->  Main-B
@@ -65,7 +65,7 @@ Main-A  <--- HBX circuit :7323 + LINK_AUTH --->  Main-B
 - `wire=circuit` (default); `wire=ax25` reserved for RF-carried mesh
 - Secondary edge recommended for RF but optional — configure reciprocal `[transport.mains_proxyN]` on each Main
 
-Inter-Main mail and chat: `/proxymail` and `/proxychat` (stubs). INI keys: [MAINS_PROXY.md](MAINS_PROXY.md).
+Inter-Main mail and chat: `/proxymail` and `/proxychat` (delivery not available yet). INI keys: [MAINS_PROXY.md](MAINS_PROXY.md). `/broadcast` stays on each local Main only.
 
 ## Choosing a layout
 

@@ -6,12 +6,11 @@ Current status: [FEATURES.md](FEATURES.md). Topology: [TOPOLOGY.md](TOPOLOGY.md)
 
 | Item | Notes |
 |------|-------|
-| v1.5.0 field testing | Mesh stubs, proxymail delivery, live RF |
+| v1.5.0 field testing | Proxy relay, proxymail delivery, live RF |
 | AX.25 field validation | Secondary→Main HBX — live RF TBD |
 | ARDOP / CRDOP live modem tests | External ARDOPC/CRDOPC |
-| mains_proxy live relay | HBX circuit mesh I/O |
-| `/proxymail` delivery | Inter-Main mail over mesh |
-| `/broadcast` local announce | **Built** — Sysop, all online sessions on Main |
+| mains_proxy live relay | Proxy network HBX circuit I/O |
+| `/proxymail` delivery | Inter-Main mail over proxy |
 | Circuit reconnect / heartbeat | Planned |
 | `link_role` routing | Metadata today; semantics later |
 
