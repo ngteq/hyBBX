@@ -14,7 +14,7 @@ CMake 3.16+, GCC or Clang, pthread.
 
 ```
 Users → telnet | ssh | websocket → Main (sessions, storage)
-Secondary / mains_proxy / RF plugins → HBX circuit :7323 only
+Secondary / proxy network / RF plugins → HBX circuit :7323 only
 ```
 
 - No wire-protocol parsing in `src/core/`
@@ -22,12 +22,23 @@ Secondary / mains_proxy / RF plugins → HBX circuit :7323 only
 - Built-in `[security]` in `src/core/security_ban.c` — network abuse + excessive spam; policy in [SECURITY.md](SECURITY.md)
 - Plugins: `hybbx_transport_plugin_t` — register in `src/main.c`
 
+## Commands
+
+Registry: [share/commands.yaml](../share/commands.yaml). Layout: [COMMANDS.md](COMMANDS.md).
+
+- User groups: Sysop, Admin, Mod, User, Guest — never “Staff”
+- `/help` and `/menu` (no args): filtered menu for this session
+- `/index`: full command-index for every account
+- `/alias`: alias map
+- Help topics: two lines, ≤80 cols, no square brackets in session text
+- `/broadcast` / `/announce`: Sysop → all online sessions on local Main (`hybbx_broadcast_announce`)
+- Proxy network: user services only; no admin commands over proxy links
+
 ## Conventions
 
 - C99, `hybbx_` prefix, `hybbx_result_t`
 - INI booleans: `hybbx_parse_bool()`
 - Limits: `include/hybbx/limits.h`
-- Commands: [share/commands.yaml](../share/commands.yaml) + [COMMANDS.md](COMMANDS.md) — user groups Sysop, Admin, Mod, User, Guest only
 
 ## Testing
 
@@ -43,8 +54,8 @@ ctest --test-dir build --output-on-failure
 | Change | Update |
 |--------|--------|
 | Behavior | FEATURES.md |
+| Commands | commands.yaml, COMMANDS.md, MANUAL.md, command.c |
 | INI/operator | MANUAL.md + `share/*.ini.example` (Linux-based paths) |
-| Commands | COMMANDS.md + `share/commands.yaml` |
 | Build | BUILD.md |
 | Planned | ROADMAP.md |
 

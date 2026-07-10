@@ -1,6 +1,6 @@
 # HyBBX v1.5.0
 
-**Testing release — nearly complete.** Lab-ready without RF hardware; formal GitHub Release after field tests. Mesh and proxymail/proxychat paths remain stubs.
+**Testing release — nearly complete.** Lab-ready without RF hardware; formal GitHub Release after field tests. Proxy relay and proxymail delivery not available yet.
 
 Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSocket** (loopback `:4591`), **HBX circuit hub** (`:7323`). Clients: **hybbx-telnet**, **hybbx-ssh**, **hybbx-terminal**, **hybbx-telnet** (AmigaOS).
 
@@ -11,8 +11,8 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 | Item | Detail |
 |------|--------|
 | **Topology** | [TOPOLOGY.md](TOPOLOGY.md) — Main, Secondary, mains-proxy |
-| `mains_proxy` | Main-to-Main mesh stub; HBX/Circuit peers only |
-| `/proxymail`, `/proxychat` | Inter-Main mail/chat sub-areas (stubs) |
+| `mains_proxy` | Proxy network; HBX/Circuit peers; user services only |
+| `/proxymail`, `/proxychat` | Inter-Main mail/chat (delivery not available yet) |
 | **HBX/Circuit** | Sole inter-node transport — Secondary, RF, mesh |
 | **Built-in security** | `[security]` ban/rate-limit — short cool-down bans |
 | **SQLite storage** | Opt-in `[storage] backend = sqlite`; periodic backups |
@@ -40,7 +40,7 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 | WebSocket | RFC6455 forward-proxy — [WEBSOCKET.md](WEBSOCKET.md) |
 | HBX circuit | Internal hub `:7323`; link adapters only |
 | Packet radio | Multi-instance TNC edge — [TNCS.md](TNCS.md) |
-| mains_proxy | Main-to-Main mesh stub — [MAINS_PROXY.md](MAINS_PROXY.md) |
+| mains_proxy | Proxy network — [MAINS_PROXY.md](MAINS_PROXY.md) |
 | BayCom | Opt-in (`HYBBX_PLUGIN_BAYCOM=OFF`) — [BAYCOM.md](BAYCOM.md) |
 | ARDOP / CRDOP | External ARDOPC / CRDOPC |
 
@@ -53,8 +53,8 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 | Built-in security bans | **Built** |
 | SQLite storage | **Built** — opt-in |
 | `hybbx-telnet` AmigaOS | **Verified** |
-| mains_proxy mesh | **Partial** — stub |
-| `/proxymail`, `/proxychat` | **Partial** — stub |
+| mains_proxy mesh | **Partial** — user services only |
+| `/proxymail`, `/proxychat` | **Partial** — delivery not available yet |
 | `/broadcast` / `/announce` | **Built** — local Main only |
 | HBX, packet_radio, ARDOP, CRDOP | **Built** — live RF TBD |
 

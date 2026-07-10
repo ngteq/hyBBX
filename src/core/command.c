@@ -2523,7 +2523,7 @@ static hybbx_result_t cmd_echo(hybbx_session_t *session,
         return hybbx_session_set_input_echo(session, 0);
     }
 
-    hybbx_session_write_line(session, "Usage: /echo [yes|no]");
+    hybbx_session_write_line(session, "Usage: /echo yes|no");
     return HYBBX_ERR_INVALID;
 }
 

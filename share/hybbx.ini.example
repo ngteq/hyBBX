@@ -173,7 +173,7 @@ frequency_mhz = 27.205
 ; [transport.ardop1]  — docs/ARDOP.md
 ; [transport.crdop1]  — docs/CRDOP.md
 
-; Main-to-Main mesh (opt-in; stub — docs/MAINS_PROXY.md):
+; Proxy network (opt-in; partial — docs/MAINS_PROXY.md):
 ; [transport.mains_proxy1]
 ; peer_id = main-peer
 ; circuit_host = 192.0.2.10

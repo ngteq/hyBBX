@@ -317,13 +317,28 @@ Deprecated: `host` / `port` (use `circuit_host` / `circuit_port`).
 
 Input: `/command` … · `;` and `#` lines ignored · other text → area handler.
 
+Registry and help layout: [COMMANDS.md](COMMANDS.md) · [share/commands.yaml](../share/commands.yaml).
+
+| Surface | Role |
+|---------|------|
+| `/help`, `/menu` | Commands this session can use |
+| `/index` | Full command-index (same for every account) |
+| `/alias` | Alternate command names |
+| `/help cmd` | Two-line topic help |
+
+Headers: `HyBBX commands /help <cmd> for more` · `HyBBX command-index …` · `HyBBX aliases …`
+
+Menu groups: **General**, **Screen**, **Areas**, **Account**, **Admin**, **Sysop**. User groups: **Sysop**, **Admin**, **Mod**, **User**, **Guest**.
+
 ### Guests
 
 With `auto_login = yes`, guests may use:
 
 | Command | Description |
 |---------|-------------|
-| `/help` | List or `/help <cmd>` |
+| `/help`, `/menu` | Command menu |
+| `/index` | Full command-index |
+| `/alias` | Alias map |
 | `/news` | System news (`news.txt`) |
 | `/motd` | Message of the day |
 | `/rules`, `/legal` | Terms of use |
@@ -337,7 +352,9 @@ Mail, chat, conference, and `/who` require a registered account.
 
 | Command | Description |
 |---------|-------------|
-| `/help` | List or `/help <cmd>` |
+| `/help`, `/menu` | Command menu |
+| `/index` | Full command-index |
+| `/alias` | Alias map |
 | `/motd` | Message of the day |
 | `/news` | System news |
 | `/rules`, `/legal` | `text/rules.txt` |

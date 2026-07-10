@@ -23,8 +23,8 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 4. Booleans: `hybbx_parse_bool()` — `yes`/`no`
 5. Buffers: [limits.h](include/hybbx/limits.h)
 6. Doc changes: feature → FEATURES.md; INI → MANUAL.md + `share/*.ini.example`
-7. **Commands:** user groups are Sysop, Admin, Mod, User, Guest only (no “Staff”). Registry: [share/commands.yaml](share/commands.yaml). Help: two lines (`/<verb> …` + `Help: …`); headers use `/help <cmd> for more`.
-8. **Proxy network:** links user services only (`proxymail`, `proxychat`, future). No Sysop/Admin/Mod commands cross proxy links. `/broadcast` (alias `/announce`) is local Main only — instant message to all online sessions.
+7. **Commands:** user groups are Sysop, Admin, Mod, User, Guest only (no “Staff”). Registry: [share/commands.yaml](share/commands.yaml), layout: [docs/COMMANDS.md](docs/COMMANDS.md). Help: two lines (`/<verb> …` + `Help: …`); headers use `/help <cmd> for more`. `/broadcast` (alias `/announce`) = Sysop → all online users on **local Main** only.
+8. **Proxy network** (`mains_proxy`): user services (`proxymail`, `proxychat`, future) only — no Sysop/Admin/Mod actions across proxy links.
 9. **Version docs:** current release only (`HYBBX_VERSION_STRING`). No prior-version references. As-is software — compact text, no upgrade/history bloat. On bump: replace release docs; remove old `RELEASE-*.md` from tree.
 10. **Documentation — Linux-based.** All docs in `docs/`, `text/`, README, and share examples assume Linux. Use `HTTPD_DOCROOT`, `systemctl`, `ss`. Do not name other OSes (BSD, macOS, Windows, …) or distro-specific package paths unless unavoidable in third-party license names.
 
@@ -35,12 +35,13 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 | [RELEASE-1.5.0.md](docs/RELEASE-1.5.0.md) | Current release |
 | [FEATURES.md](docs/FEATURES.md) | Shipped vs partial |
 | [MANUAL.md](docs/MANUAL.md) | INI + commands |
-| [commands.yaml](share/commands.yaml) | Command registry (/help /menu /index /alias) |
+| [COMMANDS.md](docs/COMMANDS.md) | Command registry, help layout |
+| [commands.yaml](share/commands.yaml) | Command registry data |
 | [SECURITY.md](docs/SECURITY.md) | Security + spam policy |
 | [TNCS.md](docs/TNCS.md) | Supported TNC profiles |
 | [BAYCOM.md](docs/BAYCOM.md) | BayCom PR-Stack plugin |
 | [TOPOLOGY.md](docs/TOPOLOGY.md) | Main, Secondary, mains-proxy |
-| [MAINS_PROXY.md](docs/MAINS_PROXY.md) | Main-to-Main mesh proxy INI |
+| [MAINS_PROXY.md](docs/MAINS_PROXY.md) | Proxy network INI |
 | [WEBSOCKET.md](docs/WEBSOCKET.md) | WebSocket deploy |
 | [ROADMAP.md](docs/ROADMAP.md) | Planned work |
 | [BUILD.md](docs/BUILD.md) | CMake |

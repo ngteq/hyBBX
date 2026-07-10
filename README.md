@@ -1,16 +1,20 @@
 # HyBBX
 
-C99 **session daemon** for low-bandwidth links: local mail, chat, conference, and `/` commands over telnet, SSH, or WebSocket.
+C99 mailbox inspired **session daemon** for low-bandwidth links: local mail, chat, conference, and `/` commands over telnet, AX.25, SSH, WebSocket and more.
 
 **v1.5.0** (testing) — [docs/RELEASE-1.5.0.md](docs/RELEASE-1.5.0.md) · [docs/TOPOLOGY.md](docs/TOPOLOGY.md)
 
 ## Live (hybbx.un1t.me)
 
-| Access | How |
-|--------|-----|
-| **Browser** | [https://hybbx.un1t.me/](https://hybbx.un1t.me/) |
-| **Telnet** | `telnet hybbx.un1t.me 2323` — guest auto-login |
-| **SSH** | `ssh hybbx.un1t.me -p 3232` — wire auth only; `/login` for HyBBX accounts |
+
+| Access      | How                                                                       |
+| ----------- | ------------------------------------------------------------------------- |
+| **Browser** | [https://hybbx.un1t.me/](https://hybbx.un1t.me/)                          |
+| **Telnet**  | `telnet hybbx.un1t.me 2323` — guest auto-login                            |
+| **SSH**     | `ssh hybbx.un1t.me -p 3232` — wire auth only; `/login` for HyBBX accounts |
+
+
+
 
 ## Architecture
 
@@ -28,8 +32,10 @@ HyBBX splits **user sessions** from **RF / mesh infrastructure**.
                     │  packet_radio · ardop · crdop · …   │
                     └─────────────────────────────────────┘
 
-  Optional (stub):  Main-A ◄── HBX circuit ──► Main-B   (mains_proxy)
+  Optional (partial):  Main-A ◄── HBX circuit ──► Main-B   (proxy network)
 ```
+
+
 
 ### Main
 
@@ -41,9 +47,9 @@ Remote **edge** only — no public user logins. Runs `hybbx` with `circuit=no`, 
 
 Multiple Secondaries on one Main need unique `link_id` values (up to 16 links).
 
-### mains_proxy (Main-to-Main mesh)
+### mains_proxy (proxy network)
 
-**Stub in v1.5.0** — links two or more **Main** instances for shared `/proxymail` and `/proxychat` (also stubs). Opt-in: `-DHYBBX_PLUGIN_MAINS_PROXY=ON`, `[networks] mains_proxy=yes`.
+**Partial in v1.5.0** — links two or more **Main** instances for `/proxymail` and `/proxychat` (delivery not available yet). User services only — no Sysop/Admin/Mod actions over proxy. Opt-in: `-DHYBBX_PLUGIN_MAINS_PROXY=ON`, `[networks] mains_proxy=yes`.
 
 Peers connect **only via HBX/Circuit** (`circuit_host`, `circuit_port`, `link_id`, `link_password`) — same security model as Secondary. No raw Main-to-Main TCP bypass. RF between sites may use a Secondary on each side; direct Main↔Main circuit is also allowed (full or half duplex). Detail: [docs/MAINS_PROXY.md](docs/MAINS_PROXY.md).
 
@@ -59,6 +65,8 @@ Built-in `[security]` covers **network protection** and **abuse** (same subsyste
 - **Bans for abuse** — IP: login brute-force, connection flood; **CALLID** (AX.25 callsign, HBX `link_id`): circuit auth failures, `ban_callid=`; *(future)* excessive flood via `abuse_maxretry`.
 - Short cool-down bans (default 10 min); `security.log`; optional `iptables`/`nftables`. External fail2ban in `share/fail2ban/` optional.
 
+
+
 ## Quick start
 
 ```bash
@@ -71,13 +79,15 @@ telnet 127.0.0.1 2323
 
 ## Documentation
 
-| Audience | Start here |
-|----------|------------|
-| Operator | [docs/QUICKSTART.md](docs/QUICKSTART.md) → [docs/MANUAL.md](docs/MANUAL.md) |
-| Topology | [docs/TOPOLOGY.md](docs/TOPOLOGY.md) |
-| Features | [docs/FEATURES.md](docs/FEATURES.md) |
-| WebSocket | [docs/WEBSOCKET.md](docs/WEBSOCKET.md) |
+
+| Audience  | Start here                                                                  |
+| --------- | --------------------------------------------------------------------------- |
+| Operator  | [docs/QUICKSTART.md](docs/QUICKSTART.md) → [docs/MANUAL.md](docs/MANUAL.md) |
+| Topology  | [docs/TOPOLOGY.md](docs/TOPOLOGY.md)                                        |
+| Features  | [docs/FEATURES.md](docs/FEATURES.md)                                        |
+| WebSocket | [docs/WEBSOCKET.md](docs/WEBSOCKET.md)                                      |
 | Developer | [docs/BUILD.md](docs/BUILD.md) → [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
-| Index | [docs/INDEX.md](docs/INDEX.md) |
+| Index     | [docs/INDEX.md](docs/INDEX.md)                                              |
+
 
 GPL-3.0 — [LICENSE.txt](LICENSE.txt)

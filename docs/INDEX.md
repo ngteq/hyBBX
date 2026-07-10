@@ -18,7 +18,7 @@
 
 | Doc | Contents |
 |-----|----------|
-| [MAINS_PROXY.md](MAINS_PROXY.md) | Main-to-Main mesh (stub) |
+| [MAINS_PROXY.md](MAINS_PROXY.md) | Proxy network (mains_proxy) |
 | [TNCS.md](TNCS.md) | Packet radio TNC profiles |
 | [BAYCOM.md](BAYCOM.md) | BayCom PR-Stack |
 | [ARDOP.md](ARDOP.md) | ARDOP + ARDOPC |
@@ -30,6 +30,7 @@
 |-----|----------|
 | [BUILD.md](BUILD.md) | CMake options |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Code rules, layout |
+| [COMMANDS.md](COMMANDS.md) | Command registry, help layout |
 | [COMMANDS.md](COMMANDS.md) | Command registry, help/menu format |
 | [REPOSITORY.md](REPOSITORY.md) | Source tree |
 | [PLATFORMS.md](PLATFORMS.md) | Linux build requirements |
