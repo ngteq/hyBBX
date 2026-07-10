@@ -27,6 +27,7 @@ Secondary / mains_proxy / RF plugins → HBX circuit :7323 only
 - C99, `hybbx_` prefix, `hybbx_result_t`
 - INI booleans: `hybbx_parse_bool()`
 - Limits: `include/hybbx/limits.h`
+- Commands: [share/commands.yaml](../share/commands.yaml) + [COMMANDS.md](COMMANDS.md) — user groups Sysop, Admin, Mod, User, Guest only
 
 ## Testing
 
@@ -43,6 +44,7 @@ ctest --test-dir build --output-on-failure
 |--------|--------|
 | Behavior | FEATURES.md |
 | INI/operator | MANUAL.md + `share/*.ini.example` (Linux-based paths) |
+| Commands | COMMANDS.md + `share/commands.yaml` |
 | Build | BUILD.md |
 | Planned | ROADMAP.md |
 

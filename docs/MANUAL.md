@@ -14,7 +14,7 @@ Full guide: [TOPOLOGY.md](TOPOLOGY.md).
 |------|---------|
 | **Main** | Users, storage, HBX hub `:7323`, optional `mains_proxy` |
 | **Secondary** | RF edge — HBX client to Main; no public logins |
-| **mains_proxy** | Main ↔ Main mesh (stub); HBX circuit peers only |
+| **mains_proxy** | Main ↔ Main mesh (not active yet); HBX circuit peers only |
 
 Inter-node traffic (Secondary, RF plugins, mesh) uses **HBX/Circuit** only. User sessions use telnet, SSH, or WebSocket on Main.
 
@@ -171,7 +171,7 @@ Tokens in `banner.txt`, `motd.txt`, `news.txt`, `rules.txt`:
 | `ssh` | `no` | SSH plugin (libssh, port 3232) |
 | `websocket` | `no` | WebSocket forward-proxy (port 4591) |
 | `circuit` | `yes` | HBX hub (Main) |
-| `mains_proxy` | `no` | Main-to-Main mesh proxy ([MAINS_PROXY.md](MAINS_PROXY.md); stub) |
+| `mains_proxy` | `no` | Main-to-Main mesh proxy ([MAINS_PROXY.md](MAINS_PROXY.md); relay not active yet) |
 
 Telnet is always started when built (not gated here).
 
@@ -238,16 +238,15 @@ httpd document root. See [WEBSOCKET.md](WEBSOCKET.md).
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `enabled` | `yes` | |
-| `ax25` | `yes` | QST UI to low/half-duplex links |
-| `ax25_auto` | `yes` | Periodic AX.25 beacon when a qualifying link is up |
+| `enabled` | `yes` | `/broadcast` and `/announce` (Sysop → all online users on this Main) |
+| `ax25` | `yes` | AX.25 auto-beacon over HBX (internal; not `/broadcast`) |
+| `ax25_auto` | `yes` | Periodic AX.25 QST UI when a qualifying link is up |
 | `ax25_auto_interval` | `300` | Seconds between AX.25 sends (minimum 300) |
 | `ax25_auto_message` | `Broadcast: @service@ online` | UI payload; `@service@` expands from `[service] name` |
-| `tcp` | `yes` | **Stub** — log only |
 | `ax25_mycall` | `HYBBX` | |
 | `ax25_dest` | `QST` | |
 
-AX.25 payloads are capped at **48 characters** (1200 baud). Manual `/broadcast ax25` and auto beacons share the same minimum interval.
+AX.25 auto-beacon payloads are capped at **48 characters** (1200 baud). This is separate from `/broadcast message`, which reaches every connected session on the local Main (max 240 characters).
 
 ### `[ax25]`
 
@@ -297,7 +296,7 @@ On **Secondary**: kernel SER12/PAR96/EPP or serial KISS + HBX circuit. Up to 4 i
 
 ### `[transport.mains_proxyN]` (Main-to-Main mesh)
 
-Stub — links Mains via **HBX/Circuit** only. See [MAINS_PROXY.md](MAINS_PROXY.md).
+Links Mains via **HBX/Circuit** only; relay not active yet. See [MAINS_PROXY.md](MAINS_PROXY.md).
 
 | Key | Default | Notes |
 |-----|---------|-------|
@@ -354,26 +353,34 @@ Mail, chat, conference, and `/who` require a registered account.
 | `/chat` | Chat channels |
 | `/conference` | Two-user conference |
 | `/mail` | Local mailbox (registered) |
-| `/mail proxymail` | Enter inter-Main mail sub-area (stub) |
+| `/mail proxymail` | Enter inter-Main mail sub-area (delivery not available yet) |
 | `/proxymail` | Same as `/mail proxymail` |
-| `/chat proxychat` | Enter inter-Main chat sub-area (stub) |
+| `/chat proxychat` | Enter inter-Main chat sub-area (not available yet) |
 | `/proxychat` | Same as `/chat proxychat` |
 | `/login <user> <pass>` | Registered login (one active session per account) |
 | `/register` | Self-registration (guest) |
 | `/changeme` | Own profile/password |
+| `/deleteme` | Delete own account (User) |
 
-### Staff
+### Admin
 
-| Command | Role |
-|---------|------|
-| `/usercreate` | Admin+ |
-| `/activate` | Staff+ |
-| `/promote`, `/demote` | Admin+ |
-| `/delete`, `/deleteuser` | Admin+ |
-| `/changeuser` | Admin+ |
-| `/deleteme` | User (own account) |
+| Command | Min level |
+|---------|-----------|
+| `/usercreate` | Admin |
+| `/activate` | Admin |
+| `/promote`, `/demote` | Admin |
+| `/delete` | Admin |
+| `/changeuser` | Admin |
+
+### Sysop
+
+| Command | Min level |
+|---------|-----------|
+| `/deleteuser` | Sysop |
 | `/shutdown`, `/restart` | Sysop |
-| `/broadcast ax25\|tcp <msg>` | Sysop (tcp = stub) |
+| `/broadcast message`, `/announce` | Sysop — all online users on this Main |
+
+User groups: **Sysop**, **Admin**, **Mod**, **User**, **Guest** — see [share/commands.yaml](../share/commands.yaml).
 
 ---
 

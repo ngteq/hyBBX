@@ -116,7 +116,6 @@ void hybbx_broadcast_config_defaults(hybbx_broadcast_config_t *cfg)
 
     memset(cfg, 0, sizeof(*cfg));
     cfg->enabled = 1;
-    cfg->tcp_enabled = 1;
     cfg->ax25_enabled = 1;
     cfg->ax25_auto = 1;
     cfg->ax25_auto_interval_sec = HYBBX_BROADCAST_AX25_INTERVAL_MIN_SEC;
@@ -142,7 +141,6 @@ void hybbx_broadcast_config_apply(hybbx_broadcast_config_t *cfg,
     hybbx_broadcast_config_defaults(cfg);
 
     cfg->enabled = hybbx_config_get_bool(config, "broadcast", "enabled", 1);
-    cfg->tcp_enabled = hybbx_config_get_bool(config, "broadcast", "tcp", 1);
     cfg->ax25_enabled = hybbx_config_get_bool(config, "broadcast", "ax25", 1);
     cfg->ax25_auto = hybbx_config_get_bool(config, "broadcast", "ax25_auto", 1);
 
@@ -168,14 +166,11 @@ void hybbx_broadcast_config_apply(hybbx_broadcast_config_t *cfg,
 
     hybbx_ax25_frequency_apply(&cfg->frequencies, config);
 
-    printf("[broadcast] enabled=%s ax25=%s auto=%s interval=%us (min %us) "
-           "tcp=%s (stub)\n",
+    printf("[broadcast] announce=%s ax25_auto=%s interval=%us (min %us)\n",
            cfg->enabled ? "yes" : "no",
-           cfg->ax25_enabled ? "yes" : "no",
            cfg->ax25_auto ? "yes" : "no",
            cfg->ax25_auto_interval_sec,
-           (unsigned)HYBBX_BROADCAST_AX25_INTERVAL_MIN_SEC,
-           cfg->tcp_enabled ? "yes" : "no");
+           (unsigned)HYBBX_BROADCAST_AX25_INTERVAL_MIN_SEC);
 }
 
 static hybbx_result_t broadcast_build_path(const hybbx_broadcast_config_t *cfg,
@@ -385,60 +380,53 @@ void hybbx_broadcast_ax25_tick(hybbx_service_t *service)
     (void)hybbx_broadcast_ax25(service, 0.0, message);
 }
 
-hybbx_result_t hybbx_broadcast_tcp_stub(hybbx_service_t *service,
-                                          const char *message)
+typedef struct broadcast_announce_ctx {
+    const char *from_name;
+    const char *message;
+} broadcast_announce_ctx_t;
+
+static void broadcast_announce_visitor(hybbx_session_t *session, void *userdata)
 {
+    broadcast_announce_ctx_t *ctx = (broadcast_announce_ctx_t *)userdata;
+    char line[HYBBX_LINE_MAX];
+
+    if (session == NULL || ctx == NULL || ctx->message == NULL) {
+        return;
+    }
+
+    snprintf(line, sizeof(line), "*** %s: %s ***",
+             ctx->from_name != NULL ? ctx->from_name : "Announce",
+             ctx->message);
+    hybbx_session_write_line(session, line);
+}
+
+hybbx_result_t hybbx_broadcast_announce(hybbx_service_t *service,
+                                        hybbx_session_t *from,
+                                        const char *message)
+{
+    broadcast_announce_ctx_t ctx;
     const hybbx_broadcast_config_t *cfg;
-    hybbx_circuit_hub_t *hub;
-    unsigned links;
+    size_t msg_len;
 
     if (service == NULL || message == NULL || message[0] == '\0') {
         return HYBBX_ERR_INVALID;
     }
 
     cfg = hybbx_service_get_broadcast(service);
-    if (cfg == NULL || !cfg->enabled || !cfg->tcp_enabled) {
+    if (cfg == NULL || !cfg->enabled) {
         return HYBBX_ERR_UNSUPPORTED;
     }
 
-    hub = hybbx_service_circuit_hub(service);
-    links = (hub != NULL) ? hybbx_circuit_hub_active_link_count(hub) : 0u;
+    msg_len = strlen(message);
+    if (msg_len > HYBBX_BROADCAST_MESSAGE_MAX) {
+        return HYBBX_ERR_INVALID;
+    }
 
-    printf("[broadcast] tcp stub (%u circuit link(s); not on wire yet): %s\n",
-           links, message);
+    ctx.from_name = (from != NULL) ? hybbx_session_display_name(from) : "Announce";
+    ctx.message = message;
+    hybbx_service_visit_sessions(service, broadcast_announce_visitor, &ctx);
+
+    printf("[broadcast] announce to local Main (%zu bytes): %s\n",
+           msg_len, message);
     return HYBBX_OK;
-}
-
-void hybbx_broadcast_list_ax25_frequencies(hybbx_session_t *session,
-                                           const hybbx_broadcast_config_t *cfg)
-{
-    unsigned i;
-    char line[96];
-
-    if (session == NULL || cfg == NULL) {
-        return;
-    }
-
-    if (cfg->frequencies.count == 0) {
-        hybbx_session_write_line(session,
-            "No AX.25 frequencies configured ([ax25] frequency1 = MHz …).");
-        return;
-    }
-
-    hybbx_session_write_line(session,
-        "AX.25 broadcast frequencies (MHz only — tune radio manually):");
-
-    for (i = 0; i < cfg->frequencies.count; i++) {
-        if (cfg->frequencies.labels[i][0] != '\0') {
-            snprintf(line, sizeof(line), "  %.3f MHz  %s",
-                     cfg->frequencies.mhz[i], cfg->frequencies.labels[i]);
-        } else {
-            snprintf(line, sizeof(line), "  %.3f MHz",
-                     cfg->frequencies.mhz[i]);
-        }
-        hybbx_session_write_line(session, line);
-    }
-
-    hybbx_session_write_line(session,
-        "Broadcast uses low-bandwidth + half-duplex links only (QoS).");
 }

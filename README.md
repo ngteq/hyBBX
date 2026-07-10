@@ -33,7 +33,7 @@ HyBBX splits **user sessions** from **RF / mesh infrastructure**.
 
 ### Main
 
-Central site: registered users, flat-file or SQLite storage, telnet/SSH/WebSocket listeners, internal **HBX circuit hub** on `:7323`. Sysop mail, chat channels, `/broadcast` to RF extenders. Template: [share/hybbx.ini.example](share/hybbx.ini.example).
+Central site: registered users, flat-file or SQLite storage, telnet/SSH/WebSocket listeners, internal **HBX circuit hub** on `:7323`. Sysop mail, chat channels, `/broadcast` to all online users on this Main. Template: [share/hybbx.ini.example](share/hybbx.ini.example).
 
 ### Secondary
 

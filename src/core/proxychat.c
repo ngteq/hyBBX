@@ -11,7 +11,7 @@ hybbx_result_t hybbx_proxychat_post_stub(hybbx_session_t *session,
     }
 
     hybbx_session_write_line(session,
-        "Proxychat stub — message not relayed (HBX/mains_proxy mesh inactive).");
+        "Your message was not sent — chat across mains is not available yet.");
     return HYBBX_OK;
 }
 
@@ -22,7 +22,9 @@ void hybbx_proxychat_show_banner(hybbx_session_t *session)
     }
 
     hybbx_session_write_line(session,
-        "Proxychat (stub) — inter-Main chat via HBX/mains_proxy; not active.");
+        "Proxychat — talk with users on other mains.");
     hybbx_session_write_line(session,
-        "Type chat lines here; delivery is stubbed until mesh is implemented.");
+        "Chat across mains is not available yet.");
+    hybbx_session_write_line(session,
+        "Type a line to try; /leave or /main to exit.");
 }

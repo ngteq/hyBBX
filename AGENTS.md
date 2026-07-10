@@ -18,13 +18,15 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 ## Rules
 
 1. Core = sessions + HBX/TCP only — no KISS/AX.25/telnet wire parsing in `src/core/`
-2. **Inter-node transport:** Secondary→Main, Main↔Main (`mains_proxy`), and mesh relay (`proxymail`/`proxychat`) MUST use HBX/Circuit (`hybbx_circuit_link_connect` + `LINK_AUTH`) — never raw TCP/AX.25 sockets between HyBBX processes. User sessions (telnet/SSH/WebSocket) are separate.
+2. **Inter-node transport:** Secondary→Main, Main↔Main (`mains_proxy`), and proxy relay (`proxymail`/`proxychat`) MUST use HBX/Circuit (`hybbx_circuit_link_connect` + `LINK_AUTH`) — never raw TCP/AX.25 sockets between HyBBX processes. User sessions (telnet/SSH/WebSocket) are separate. Proxy carries user services only — no admin actions.
 3. Plugins: `hybbx_transport_plugin_t` in `plugins/`
 4. Booleans: `hybbx_parse_bool()` — `yes`/`no`
 5. Buffers: [limits.h](include/hybbx/limits.h)
 6. Doc changes: feature → FEATURES.md; INI → MANUAL.md + `share/*.ini.example`
-7. **Version docs:** current release only (`HYBBX_VERSION_STRING`). No prior-version references. As-is software — compact text, no upgrade/history bloat. On bump: replace release docs; remove old `RELEASE-*.md` from tree.
-8. **Documentation — Linux-based.** All docs in `docs/`, `text/`, README, and share examples assume Linux. Use `HTTPD_DOCROOT`, `systemctl`, `ss`. Do not name other OSes (BSD, macOS, Windows, …) or distro-specific package paths unless unavoidable in third-party license names.
+7. **Commands:** user groups are Sysop, Admin, Mod, User, Guest only (no “Staff”). Registry: [share/commands.yaml](share/commands.yaml). Help: two lines (`/<verb> …` + `Help: …`); headers use `/help <cmd> for more`.
+8. **Proxy network:** links user services only (`proxymail`, `proxychat`, future). No Sysop/Admin/Mod commands cross proxy links. `/broadcast` (alias `/announce`) is local Main only — instant message to all online sessions.
+9. **Version docs:** current release only (`HYBBX_VERSION_STRING`). No prior-version references. As-is software — compact text, no upgrade/history bloat. On bump: replace release docs; remove old `RELEASE-*.md` from tree.
+10. **Documentation — Linux-based.** All docs in `docs/`, `text/`, README, and share examples assume Linux. Use `HTTPD_DOCROOT`, `systemctl`, `ss`. Do not name other OSes (BSD, macOS, Windows, …) or distro-specific package paths unless unavoidable in third-party license names.
 
 ## Doc map
 
@@ -33,6 +35,7 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 | [RELEASE-1.5.0.md](docs/RELEASE-1.5.0.md) | Current release |
 | [FEATURES.md](docs/FEATURES.md) | Shipped vs partial |
 | [MANUAL.md](docs/MANUAL.md) | INI + commands |
+| [commands.yaml](share/commands.yaml) | Command registry (/help /menu /index /alias) |
 | [SECURITY.md](docs/SECURITY.md) | Security + spam policy |
 | [TNCS.md](docs/TNCS.md) | Supported TNC profiles |
 | [BAYCOM.md](docs/BAYCOM.md) | BayCom PR-Stack plugin |

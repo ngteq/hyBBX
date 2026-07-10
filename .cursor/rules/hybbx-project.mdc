@@ -21,6 +21,7 @@ Plugin-only session daemon; Main + Secondary HBX topology ([TOPOLOGY.md](../../d
 ## Docs
 
 - Feature changes → FEATURES.md. Config → MANUAL.md + `share/hybbx.ini.example` (keep INI comments short).
+- Commands → [COMMANDS.md](../../docs/COMMANDS.md) + [share/commands.yaml](../../share/commands.yaml); help format in [AGENTS.md](../../AGENTS.md).
 - **Current version only** — no prior-version references in docs, `text/`, or user-facing comments.
 - **As-is software** — compact prose; no upgrade/migration/history sections.
 - **Linux-based documentation** — `docs/`, `text/`, README, share examples. `HTTPD_DOCROOT`, `systemctl`, `ss`. No other OS names (BSD, macOS, Windows, …) or distro-specific package paths.

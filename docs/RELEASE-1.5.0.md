@@ -16,7 +16,8 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 | **HBX/Circuit** | Sole inter-node transport — Secondary, RF, mesh |
 | **Built-in security** | `[security]` ban/rate-limit — short cool-down bans |
 | **SQLite storage** | Opt-in `[storage] backend = sqlite`; periodic backups |
-| AX.25 auto-broadcast | 1200 baud, max 48 chars, min 5 min interval |
+| `/broadcast` / `/announce` | Sysop — all online users on local Main |
+| AX.25 auto-beacon | 1200 baud, max 48 chars, min 5 min interval (INI only) |
 | `hybbx-ssh` client | libssh; command history |
 
 ## Security
@@ -54,7 +55,7 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 | `hybbx-telnet` AmigaOS | **Verified** |
 | mains_proxy mesh | **Partial** — stub |
 | `/proxymail`, `/proxychat` | **Partial** — stub |
-| TCP `/broadcast` fan-out | **Partial** — stub |
+| `/broadcast` / `/announce` | **Built** — local Main only |
 | HBX, packet_radio, ARDOP, CRDOP | **Built** — live RF TBD |
 
 ## Build

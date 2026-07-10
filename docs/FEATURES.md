@@ -30,8 +30,8 @@
 | SSH/telnet/client history | **Built** — last 25 commands, up/down arrows |
 | `hybbx-ssh` client | **Built** — libssh, no host-key prompt |
 | `hybbx-telnet` AmigaOS client | **Verified** — A1200, AmigaOS 3.2 |
-| TCP `/broadcast` | **Partial** |
-| AX.25 auto-broadcast (1200 baud) | **Built** — max 48 chars; min 5 min interval |
+| TCP `/broadcast` | **Built** — Sysop announce to all local sessions |
+| AX.25 auto-beacon (1200 baud) | **Built** — INI `ax25_auto`; max 48 chars; min 5 min interval |
 | SQLite storage | **Built** — opt-in `backend = sqlite` |
 | MySQL/MariaDB storage | **Planned** — v2.0.0 |
 

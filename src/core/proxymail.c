@@ -53,20 +53,22 @@ int hybbx_proxymail_parse_address(const char *address,
     return 1;
 }
 
-static void proxymail_stub_notice(hybbx_session_t *session)
+static void proxymail_unavailable_notice(hybbx_session_t *session)
 {
     hybbx_session_write_line(session,
-        "Proxymail (stub) — inter-Main mail via HBX/mains_proxy; mesh not active.");
+        "Proxymail — send mail to user@another-main.");
+    hybbx_session_write_line(session,
+        "Remote delivery is not available yet.");
 }
 
 void hybbx_proxymail_list_inbox(hybbx_service_t *service,
                                 hybbx_session_t *session)
 {
     (void)service;
-    proxymail_stub_notice(session);
-    hybbx_session_write_line(session, "Inbox empty.");
+    proxymail_unavailable_notice(session);
+    hybbx_session_write_line(session, "Inbox is empty.");
     hybbx_session_write_line(session,
-        "Use /proxymail send <user>@<main> <subject> to compose.");
+        "Try: /proxymail send user@mainname Your subject");
 }
 
 void hybbx_proxymail_list_inbox_range(hybbx_service_t *service,
@@ -88,7 +90,7 @@ hybbx_result_t hybbx_proxymail_read(hybbx_service_t *service,
         return HYBBX_ERR_INVALID;
     }
 
-    proxymail_stub_notice(session);
+    proxymail_unavailable_notice(session);
     hybbx_session_write_line(session, "No message at that index.");
     return HYBBX_ERR_NOT_FOUND;
 }
@@ -100,7 +102,7 @@ hybbx_result_t hybbx_proxymail_delete_range(hybbx_service_t *service,
     (void)service;
     (void)from;
     (void)to;
-    proxymail_stub_notice(session);
+    proxymail_unavailable_notice(session);
     hybbx_session_write_line(session, "Nothing to delete.");
     return HYBBX_OK;
 }
@@ -109,7 +111,7 @@ hybbx_result_t hybbx_proxymail_recycle_empty(hybbx_service_t *service,
                                              hybbx_session_t *session)
 {
     (void)service;
-    proxymail_stub_notice(session);
+    proxymail_unavailable_notice(session);
     hybbx_session_write_line(session, "Recycle bin empty.");
     return HYBBX_OK;
 }

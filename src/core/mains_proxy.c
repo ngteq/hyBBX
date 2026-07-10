@@ -289,21 +289,21 @@ static hybbx_result_t mains_proxy_peer_connect_stub(
 
     if (peer->circuit_host[0] == '\0') {
         fprintf(stderr,
-                "[mains_proxy] stub: peer '%s' missing circuit_host — "
-                "skipped\n",
+                "[mains_proxy] peer '%s' missing circuit_host — skipped\n",
                 peer_label);
         return HYBBX_ERR_INVALID;
     }
 
     if (peer->link_id[0] == '\0') {
         fprintf(stderr,
-                "[mains_proxy] stub: peer '%s' missing link_id — skipped\n",
+                "[mains_proxy] peer '%s' missing link_id — skipped\n",
                 peer_label);
         return HYBBX_ERR_INVALID;
     }
 
-    printf("[mains_proxy] stub: would link via HBX circuit %s:%u "
-           "link_id=%s peer=%s wire=%s duplex=%s secondary=%s\n",
+    printf("[mains_proxy] would link via HBX circuit %s:%u "
+           "link_id=%s peer=%s wire=%s duplex=%s secondary=%s "
+           "(relay not active yet)\n",
            peer->circuit_host, peer->circuit_port, peer->link_id, peer_label,
            hybbx_mains_proxy_wire_name(peer->wire),
            hybbx_mains_proxy_duplex_name(peer->duplex),
@@ -337,12 +337,12 @@ hybbx_result_t hybbx_mains_proxy_mesh_start(hybbx_service_t *service,
     }
 
     if (active == 0) {
-        printf("[mains_proxy] stub: no active peers configured\n");
+        printf("[mains_proxy] no active peers configured\n");
         return HYBBX_ERR_NOT_FOUND;
     }
 
     mesh->running = 1;
-    printf("[mains_proxy] stub: mesh started (%u peer(s); HBX circuit path "
+    printf("[mains_proxy] mesh started (%u peer(s); HBX circuit relay "
            "not active yet)\n", active);
 
     return HYBBX_OK;
@@ -355,7 +355,7 @@ void hybbx_mains_proxy_mesh_stop(hybbx_mains_proxy_mesh_t *mesh)
     }
 
     if (mesh->running) {
-        printf("[mains_proxy] stub: mesh stopped\n");
+        printf("[mains_proxy] mesh stopped\n");
     }
 
     mesh->running = 0;

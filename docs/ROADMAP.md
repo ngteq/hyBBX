@@ -11,7 +11,7 @@ Current status: [FEATURES.md](FEATURES.md). Topology: [TOPOLOGY.md](TOPOLOGY.md)
 | ARDOP / CRDOP live modem tests | External ARDOPC/CRDOPC |
 | mains_proxy live relay | HBX circuit mesh I/O |
 | `/proxymail` delivery | Inter-Main mail over mesh |
-| TCP `/broadcast` fan-out | Stub today |
+| `/broadcast` local announce | **Built** — Sysop, all online sessions on Main |
 | Circuit reconnect / heartbeat | Planned |
 | `link_role` routing | Metadata today; semantics later |
 

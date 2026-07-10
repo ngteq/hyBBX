@@ -1,8 +1,12 @@
 # Main-to-Main proxy (`mains_proxy`)
 
-**Status:** stub — mesh API and plugin skeleton; no live relay yet. Topology: [TOPOLOGY.md](TOPOLOGY.md).
+**Status:** partial — proxy API and plugin skeleton; no live relay yet. Topology: [TOPOLOGY.md](TOPOLOGY.md).
 
-Link two or more HyBBX **Main** instances. All peer traffic uses **HBX/Circuit** (`circuit_host`, `link_id`, `link_password`) — the same model as Secondary edge links. Never open a raw TCP socket between Main processes.
+The **proxy network** links HyBBX **Main** instances for **user services only** — mail (`proxymail`), chat (`proxychat`), and future services when technically correct. All peer traffic uses **HBX/Circuit** (`circuit_host`, `link_id`, `link_password`). Never open a raw TCP socket between Main processes.
+
+**No Sysop, Admin, or Mod actions cross proxy links** — no remote administration, `/broadcast`, shutdown, or account management over proxy.
+
+Local `/mail`, `/chat`, and `/broadcast` stay on each Main only.
 
 A **Secondary** on each site is recommended for RF paths but optional. Peers may attach Main ↔ Main directly (full or half duplex).
 
@@ -49,13 +53,13 @@ use_secondary = yes
 
 Legacy keys `host` / `port` are deprecated (mapped to `circuit_host` only when unset); mesh connect never uses a separate mesh TCP port.
 
-## User commands (stubs)
+## User commands
 
 | Command | Role |
 |---------|------|
 | `/proxymail` or `/mail proxymail` | Inter-Main mailbox sub-area |
-| `/proxymail send user@remote-main subject` | Compose; `/proxymail done` to send (stub) |
-| `/proxychat` or `/chat proxychat` | Inter-Main chat sub-area (stub) |
+| `/proxymail send user@remote-main subject` | Compose; `/proxymail done` to send (delivery not available yet) |
+| `/proxychat` or `/chat proxychat` | Inter-Main chat sub-area (not available yet) |
 
 Local `/mail` and `/chat` stay on this Main only.
 

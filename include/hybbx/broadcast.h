@@ -2,12 +2,14 @@
 #define HYBBX_BROADCAST_H
 
 /**
- * HyBBX broadcasting — Main instance only.
+ * HyBBX broadcast — Main instance only.
  *
- * AX.25: QST UI over HBX to Secondary extenders on links that are
- * low-bandwidth AND half-duplex (HyBBX QoS). Frequencies are MHz only —
- * no CB channel numbers (those differ by region).
- * TCP/IP: stub (logged; wire path reserved).
+ * User command `/broadcast` (alias `/announce`): instant message to every
+ * online session on this Main (local telnet/SSH/WebSocket users).
+ *
+ * INI `[broadcast]` ax25_auto: periodic AX.25 QST UI beacon over HBX to
+ * Secondary extenders (low-bandwidth + half-duplex links). Separate from
+ * `/broadcast`; not a user command.
  */
 
 #include "hybbx/ax25.h"
@@ -20,7 +22,7 @@ extern "C" {
 #endif
 
 #define HYBBX_AX25_FREQUENCY_MAX      40u
-/** TCP broadcast message cap (AX.25 uses @ref HYBBX_BROADCAST_AX25_MESSAGE_MAX). */
+/** Local Main announce message cap. */
 #define HYBBX_BROADCAST_MESSAGE_MAX   240u
 
 #define HYBBX_BROADCAST_AUTO_MESSAGE_DEFAULT "Broadcast: @service@ online"
@@ -33,7 +35,6 @@ typedef struct hybbx_ax25_frequency_table {
 
 typedef struct hybbx_broadcast_config {
     int enabled;
-    int tcp_enabled;
     int ax25_enabled;
     int ax25_auto;
     unsigned ax25_auto_interval_sec;
@@ -65,25 +66,22 @@ const hybbx_broadcast_config_t *hybbx_service_get_broadcast(
     const struct hybbx_service *service);
 
 /**
- * AX.25 broadcast from Main over HBX (dest=QST UI).
+ * Send @p message to every online session on this Main (Sysop `/broadcast`).
+ */
+hybbx_result_t hybbx_broadcast_announce(struct hybbx_service *service,
+                                        struct hybbx_session *from,
+                                        const char *message);
+
+/**
+ * AX.25 auto-beacon over HBX (INI ax25_auto only).
  * Link must be low-bandwidth and half-duplex (QoS).
- * @p frequency_mhz 0.0 = any frequency on the connected qualifying link;
- *                    else must match the link's reported frequency_mhz.
  */
 hybbx_result_t hybbx_broadcast_ax25(struct hybbx_service *service,
                                     double frequency_mhz,
                                     const char *message);
 
-/** TCP/IP broadcast stub — logs only until telnet fan-out is implemented. */
-hybbx_result_t hybbx_broadcast_tcp_stub(struct hybbx_service *service,
-                                          const char *message);
-
-void hybbx_broadcast_list_ax25_frequencies(struct hybbx_session *session,
-                                           const hybbx_broadcast_config_t *cfg);
-
 /**
  * Periodic AX.25 auto-beacon (call once per second from Main service loop).
- * Sends when @c ax25_auto is enabled and interval elapsed.
  */
 void hybbx_broadcast_ax25_tick(struct hybbx_service *service);
 

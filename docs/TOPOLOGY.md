@@ -41,7 +41,8 @@ All paths between HyBBX processes use **HBX v1** on the internal circuit hub. Th
 | Localhost Secondary | TCP → Main `:7323`, `LINK_AUTH` |
 | Remote Secondary | TCP → Main `:7323` |
 | Packet radio / BayCom / ARDOP / CRDOP | Plugin edge → HBX client |
-| AX.25 broadcast (Sysop) | Main → HBX → Secondary extenders |
+| AX.25 auto-beacon (INI) | Main → HBX → Secondary extenders |
+| `/broadcast` (Sysop) | All online users on local Main only |
 | mains_proxy mesh (stub) | Main ↔ Main via HBX circuit client |
 
 Edge daemons authenticate with per-link `link_password`. User wire auth (telnet/SSH) is separate from HBX link auth.

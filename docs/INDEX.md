@@ -30,6 +30,7 @@
 |-----|----------|
 | [BUILD.md](BUILD.md) | CMake options |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Code rules, layout |
+| [COMMANDS.md](COMMANDS.md) | Command registry, help/menu format |
 | [REPOSITORY.md](REPOSITORY.md) | Source tree |
 | [PLATFORMS.md](PLATFORMS.md) | Linux build requirements |
 
@@ -47,6 +48,7 @@
 | File | Role |
 |------|------|
 | [share/hybbx.ini.example](../share/hybbx.ini.example) | Main |
+| [commands.yaml](../share/commands.yaml) | Command registry |
 | [share/hybbx-secondary.ini.example](../share/hybbx-secondary.ini.example) | Secondary |
 | [share/fail2ban/](../share/fail2ban/) | Optional external fail2ban filters |
 
