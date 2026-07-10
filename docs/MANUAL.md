@@ -1,6 +1,6 @@
 # Operator manual
 
-**v1.7.5** — telnet, SSH, WebSocket. Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
+**v2.0.0** — telnet, SSH, WebSocket. Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
 
 Booleans: `yes`/`no` (+ `true`/`false`, `on`/`off`, `1`/`0`).
 
@@ -409,4 +409,4 @@ HyBBX: GPL-3.0 — [LICENSING.md](LICENSING.md). External modems are separate pr
 
 ## See also
 
-[QUICKSTART.md](QUICKSTART.md) · [FEATURES.md](FEATURES.md) · [TOPOLOGY.md](TOPOLOGY.md) · [WEBSOCKET.md](WEBSOCKET.md) · [RELEASE-1.7.5.md](RELEASE-1.7.5.md)
+[TOPOLOGY.md](TOPOLOGY.md) · [WEBSOCKET.md](WEBSOCKET.md) · [BUILD.md](BUILD.md)

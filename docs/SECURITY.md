@@ -1,6 +1,6 @@
 # Security and spam policy
 
-**v1.7.5** — built-in `[security]` in core (`security.log`, `security_ban.c`). No separate spam plugin.
+**v2.0.0** — built-in `[security]` in core (`security.log`, `security_ban.c`). No separate spam plugin.
 
 HyBBX treats **network security** and **spam control** as one subsystem: same `[security]` section, same `security.log`, same short cool-down bans.
 
@@ -49,15 +49,9 @@ INI keys: [MANUAL.md](MANUAL.md#security). Optional `iptables` / `nftables` via 
 
 `hybbx_security_ban_abuse_report(ip, category)` counts toward `abuse_maxretry` / `abuse_findtime`. Call sites (chat flood, register spam, …) are added when thresholds are defined — **not** for every rejected message.
 
-## Content moderation (planned)
+## Content moderation (not built)
 
-Non-social or illegal behaviour (harassment, threats, unlawful material) needs **content policy** beyond IP bans:
-
-- Moderator role exists (`mod` / `moderator` in auth)
-- No automated content classifier in v1.7.5
-- Open design: sysop tools, user reports, channel kick/mute, legal hold — see [ROADMAP.md](ROADMAP.md)
-
-Research before implementation: ham-radio community norms, operator liability, minimal logging of message content.
+Non-social or illegal behaviour needs **content policy** beyond IP bans. Moderator role exists (`mod` in auth). No automated content classifier in v2.0.0.
 
 ## Inter-node
 

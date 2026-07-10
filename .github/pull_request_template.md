@@ -5,7 +5,7 @@
 ## Type
 
 - [ ] Bug fix
-- [ ] Feature (see [docs/ROADMAP.md](../docs/ROADMAP.md))
+- [ ] Feature
 - [ ] Documentation
 - [ ] Refactor / internal
 - [ ] Build / CI
@@ -19,13 +19,13 @@
 
 ## Documentation
 
-- [ ] Updated [docs/FEATURES.md](../docs/FEATURES.md) (if user-visible behavior changed)
 - [ ] Updated [docs/MANUAL.md](../docs/MANUAL.md) and/or `share/hybbx.ini.example` (if config/operator docs changed)
-- [ ] Updated [docs/ROADMAP.md](../docs/ROADMAP.md) (if planning-only; usually N/A)
+- [ ] Updated [docs/COMMANDS.md](../docs/COMMANDS.md) / `share/commands.yaml` (if commands changed)
+- [ ] Updated [docs/BUILD.md](../docs/BUILD.md) (if build options changed)
 
 ## Architecture
 
-- [ ] Aligns with architecture standard: Main + Secondary ([docs/ROADMAP.md](../docs/ROADMAP.md))
+- [ ] Aligns with Main + Secondary model ([docs/TOPOLOGY.md](../docs/TOPOLOGY.md))
 - [ ] No KISS/AX.25/telnet wire parsing added to `src/core/`
 - [ ] Follows plugin / HBX circuit model ([AGENTS.md](../AGENTS.md))
 

@@ -1,6 +1,8 @@
 # Development
 
-[AGENTS.md](../AGENTS.md) · [REPOSITORY.md](REPOSITORY.md) · **v1.7.5**
+[AGENTS.md](../AGENTS.md) · [CONTRIBUTING.md](../CONTRIBUTING.md) · **v2.0.0 (upcoming)**
+
+Fork-friendly: this file + AGENTS.md are the maintainer handoff for humans and coding agents.
 
 ## Toolchain
 
@@ -8,6 +10,17 @@ CMake 3.16+, GCC or Clang, pthread.
 
 ```bash
 ./scripts/dev-setup.sh
+```
+
+## Layout
+
+API: `include/hybbx/`. Config: `share/`. Sessions and commands: `src/core/`. Transports: `plugins/`. Full INI: [MANUAL.md](MANUAL.md).
+
+```
+src/core/       session, storage, circuit, commands, commands_registry
+src/clients/    hybbx-telnet, hybbx-ssh, hybbx-terminal
+plugins/        telnet, ssh, websocket, packet_radio, …
+share/          hybbx.ini.example, commands.yaml
 ```
 
 ## Architecture
@@ -19,7 +32,7 @@ Secondary / proxy network / RF plugins → HBX circuit :7323 only
 
 - No wire-protocol parsing in `src/core/`
 - Inter-node: HBX/Circuit + `LINK_AUTH` only
-- Built-in `[security]` in `src/core/security_ban.c` — network abuse + excessive spam; policy in [SECURITY.md](SECURITY.md)
+- Built-in `[security]` in `src/core/security_ban.c` — [SECURITY.md](SECURITY.md)
 - Plugins: `hybbx_transport_plugin_t` — register in `src/main.c`
 
 ## Commands
@@ -31,8 +44,7 @@ Registry: [share/commands.yaml](../share/commands.yaml). Layout: [COMMANDS.md](C
 - `/index`: full command-index for every account
 - `/alias`: alias map
 - Help topics: two lines, ≤80 cols, no square brackets in session text
-- `/broadcast` / `/announce`: Sysop → all online sessions on local Main (`hybbx_broadcast_announce`)
-- Proxy network: user services only; no admin commands over proxy links
+- `/broadcast` / `/announce`: Sysop → all online sessions on local Main
 
 ## Conventions
 
@@ -47,16 +59,20 @@ cmake -B build -DHYBBX_BUILD_TESTS=ON && cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-**Verified:** telnet session path. **Built:** SSH, WebSocket. **AX.25/RF:** local tests only.
-
 ## Doc duty
 
 | Change | Update |
 |--------|--------|
-| Behavior | FEATURES.md |
-| Commands | commands.yaml, COMMANDS.md, MANUAL.md, commands_registry.c |
-| INI/operator | MANUAL.md + `share/*.ini.example` (Linux-based paths) |
+| INI / operator | MANUAL.md + `share/*.ini.example` |
+| Commands | commands.yaml, COMMANDS.md, commands_registry.c |
 | Build | BUILD.md |
-| Planned | ROADMAP.md |
+| Transport plugin | matching doc in `docs/` (TNCS, WEBSOCKET, …) |
 
-Git: `user.name=ngteq`, empty email.
+Technical docs only — no planning or status matrices.
+
+## Fork / new maintainer
+
+1. [CONTRIBUTING.md](../CONTRIBUTING.md) — GPL obligations, fork checklist
+2. [TOPOLOGY.md](TOPOLOGY.md) — do not break HBX-only inter-node rule
+3. `include/hybbx/` — public API; extend before duplicating logic in plugins
+4. Tests: `./scripts/dev-setup.sh` then `ctest --test-dir build` with `-DHYBBX_BUILD_TESTS=ON`

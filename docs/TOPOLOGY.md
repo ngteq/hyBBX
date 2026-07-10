@@ -1,6 +1,6 @@
 # HyBBX topology
 
-**v1.7.5** — Main, Secondary, and mains-proxy mesh. INI: [MANUAL.md](MANUAL.md). Mesh detail: [MAINS_PROXY.md](MAINS_PROXY.md).
+**v2.0.0** — Main, Secondary, and mains-proxy mesh. INI: [MANUAL.md](MANUAL.md). Mesh detail: [MAINS_PROXY.md](MAINS_PROXY.md).
 
 ## Roles
 
@@ -78,4 +78,4 @@ Inter-Main mail and chat: `/proxymail` and `/proxychat` (delivery not available 
 
 ## See also
 
-[MANUAL.md](MANUAL.md) · [FEATURES.md](FEATURES.md) · [TNCS.md](TNCS.md) · [BUILD.md](BUILD.md)
+[MANUAL.md](MANUAL.md) · [TNCS.md](TNCS.md) · [BUILD.md](BUILD.md)

@@ -21,7 +21,7 @@ typedef struct hybbx_networks_config {
     int baycom;
     /** ARDOP host-client (`transport.ardop`) — external ARDOPC. */
     int ardop;
-    /** CRDOP CB host-client (`transport.crdop`) — external CRDOPC (github.com/ngteq/CRDOP). */
+    /** CRDOP CB host-client (`transport.crdop`) — external CRDOPC process. */
     int crdop;
     /** SSH transport (`transport.ssh`) — libssh server on port 3232. */
     int ssh;

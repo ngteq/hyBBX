@@ -1,6 +1,6 @@
 # Command registry and help layout
 
-**v1.7.5** — source of commands: [share/commands.yaml](../share/commands.yaml). Operator summary: [MANUAL.md](MANUAL.md).
+**v2.0.0** — source of commands: [share/commands.yaml](../share/commands.yaml). Operator summary: [MANUAL.md](MANUAL.md).
 
 ## User groups
 

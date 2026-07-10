@@ -1,6 +1,6 @@
 # WebSocket transport
 
-**v1.7.5** — session forward-proxy on loopback. Does **not** serve PHP, JS, or static files.
+**v2.0.0** — session forward-proxy on loopback. Does **not** serve PHP, JS, or static files.
 
 Browser UI files live in your **httpd document root** (`HTTPD_DOCROOT`). Copy from
 `~/hybbx/reverse-proxy/docroot/hybbx-websocket/`. Public TLS terminates on

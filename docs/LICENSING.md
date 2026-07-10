@@ -6,7 +6,7 @@
 
 | Item | License |
 |------|---------|
-| Core, plugins, clients, docs | **GPL-3.0** — [LICENSE.txt](../LICENSE.txt) |
+| Core, plugins, clients, docs | **GPL-3.0** — [LICENSE.txt](../LICENSE.txt) (copyright: HyBBX contributors) |
 
 ## Bundled in HyBBX binary
 
@@ -26,7 +26,7 @@ HyBBX is **plugin-only** — no ARDOPC/CRDOPC/TNC DSP in tree.
 |---------|-----------------|--------------|
 | ARDOPC (g8bpq) | GPL-3.0 (packaging) | `ardop` — GPL-3.0 |
 | ardopcf (pflarue) | MIT | `ardop` — GPL-3.0 |
-| CRDOPC ([ngteq/CRDOP](https://github.com/ngteq/CRDOP)) | MIT | `crdop` — GPL-3.0 |
+| CRDOPC (external) | MIT | `crdop` — GPL-3.0 |
 
 Plugins talk to external processes over TCP — no DSP linking.
 

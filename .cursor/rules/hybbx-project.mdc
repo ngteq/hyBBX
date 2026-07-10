@@ -9,7 +9,7 @@ Read [AGENTS.md](../../AGENTS.md) and [docs/DEVELOPMENT.md](../../docs/DEVELOPME
 
 ## Product
 
-Plugin-only session daemon; Main + Secondary HBX topology ([TOPOLOGY.md](../../docs/TOPOLOGY.md)). **v1.7.5** — [RELEASE-1.7.5.md](../../docs/RELEASE-1.7.5.md). Technical docs in `docs/`; root README is short overview.
+Plugin-only session daemon; Main + Secondary HBX topology ([TOPOLOGY.md](../../docs/TOPOLOGY.md)). **v2.0.0 (upcoming)**. Technical docs in `docs/`; root README is short overview.
 
 ## Code
 
@@ -20,13 +20,12 @@ Plugin-only session daemon; Main + Secondary HBX topology ([TOPOLOGY.md](../../d
 
 ## Docs
 
-- Feature changes → FEATURES.md. Config → MANUAL.md + `share/hybbx.ini.example` (keep INI comments short).
-- Commands → [COMMANDS.md](../../docs/COMMANDS.md) + [share/commands.yaml](../../share/commands.yaml); help format in [AGENTS.md](../../AGENTS.md).
-- **Current version only** — no prior-version references in docs, `text/`, or user-facing comments.
-- **As-is software** — compact prose; no upgrade/migration/history sections.
-- **Linux-based documentation** — `docs/`, `text/`, README, share examples. `HTTPD_DOCROOT`, `systemctl`, `ss`. No other OS names (BSD, macOS, Windows, …) or distro-specific package paths.
-- On version bump: replace release docs; delete superseded `docs/RELEASE-*.md`.
+- **Technical only** — operator/INI → MANUAL.md + `share/*.ini.example`; commands → COMMANDS.md + commands.yaml; build → BUILD.md
+- No planning, roadmap, feature-status, or release-note docs
+- **Current version only** — no prior-version references in docs, `text/`, or user-facing comments
+- **As-is software** — compact prose; no upgrade/migration/history sections
+- **Linux-based documentation** — `docs/`, `text/`, README, share examples. `HTTPD_DOCROOT`, `systemctl`, `ss`. No other OS names (BSD, macOS, Windows, …) or distro-specific package paths
 
 ## Git
 
-Public: `user.name=ngteq`, empty email; no agent `Co-authored-by`. No commit/push unless user asks.
+No commit/push unless the maintainer asks.

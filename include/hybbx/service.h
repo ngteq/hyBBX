@@ -6,7 +6,7 @@
  *
  * Loads INI ([service], [storage], [auth], [transport.*], [circuit]), starts
  * transport plugins and the HBX circuit hub. Edge link/repeater daemons attach
- * to [circuit]; see share/hybbx.ini.example and docs/ROADMAP.md.
+ * to [circuit]; see share/hybbx.ini.example and docs/TOPOLOGY.md.
  */
 
 #include "hybbx/config.h"

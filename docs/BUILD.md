@@ -1,11 +1,19 @@
 # Build
 
-[PLATFORMS.md](PLATFORMS.md) · [QUICKSTART.md](QUICKSTART.md) · **v1.7.5**
+[PLATFORMS.md](PLATFORMS.md) · [MANUAL.md](MANUAL.md) · **v2.0.0**
+
+## Build and run
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
+./scripts/hybbx.sh
+telnet 127.0.0.1 2323
 ```
+
+SSH: `ssh 127.0.0.1 -p 3232`. WebSocket: [WEBSOCKET.md](WEBSOCKET.md).
+
+Empty data dir → **Sysop** with a random password (printed on first start; change with `/changeme`). `auto_login = yes` → guest; `/login` for registered users.
 
 Tests: `-DHYBBX_BUILD_TESTS=ON` → `ctest --test-dir build`
 

@@ -1,6 +1,6 @@
 # CRDOP plugin
 
-**Status:** Built — **not live RF verified**. Standalone sources: `plugins/crdop/`. External modem: [CRDOPC](https://github.com/ngteq/CRDOP) (MIT, not in HyBBX tree).
+**Status:** Built — **not live RF verified**. Standalone sources: `plugins/crdop/`. External modem: **CRDOPC** (MIT, not in HyBBX tree).
 
 CB-oriented digital bridge. Separate protocol from ARDOP — [ARDOP.md](ARDOP.md).
 
@@ -9,20 +9,14 @@ CB-oriented digital bridge. Separate protocol from ARDOP — [ARDOP.md](ARDOP.md
 | Layer | Component |
 |-------|-----------|
 | HyBBX | `crdop` plugin → HBX `terminal` |
-| Modem | **CRDOPC** (build from ngteq/CRDOP) |
+| Modem | **CRDOPC** (external build) |
 | Wire | ARDOP-compatible host TCP — control **N**, data **N+1** |
 
 Plugin applies CB defaults (`500MAX`, half-duplex QoS, `crdop-link`).
 
 ## CRDOPC (external)
 
-```bash
-git clone https://github.com/ngteq/CRDOP.git
-cd CRDOP && ./scripts/build-crdop.sh
-./scripts/crdopc    # default control 8515
-```
-
-Start CRDOPC **before** HyBBX.
+Build and install CRDOPC from the upstream CRDOP project, then start it **before** HyBBX (default control port **8515**).
 
 ## INI (Secondary typical)
 
@@ -70,4 +64,4 @@ Plugin: GPL-3.0. CRDOPC: MIT — [LICENSING.md](LICENSING.md).
 
 ## See also
 
-[ARDOP.md](ARDOP.md) · [FEATURES.md](FEATURES.md) · [ROADMAP.md](ROADMAP.md)
+[ARDOP.md](ARDOP.md) · [MANUAL.md](MANUAL.md) · [BUILD.md](BUILD.md)

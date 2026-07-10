@@ -7,18 +7,16 @@ labels: enhancement
 
 ## Problem / use case
 
-<!-- See docs/ROADMAP.md for planned work -->
-
 ## Proposed solution
 
 ## Alternatives considered
 
 ## Fits HyBBX model?
 
-- [ ] Multi-transport session daemon; Main + Secondary HBX topology ([docs/ROADMAP.md](../../docs/ROADMAP.md))
+- [ ] Multi-transport session daemon; Main + Secondary HBX topology ([docs/TOPOLOGY.md](../../docs/TOPOLOGY.md))
 - [ ] Plugin link adapters; line-oriented session commands ([README.md](../../README.md))
 - [ ] Link adapter or HBX/circuit extension (not core wire-protocol parsing)
 
 ## Documentation
 
-Should update [docs/FEATURES.md](../../docs/FEATURES.md) when implemented: yes / no
+Should update [docs/MANUAL.md](../../docs/MANUAL.md) when implemented: yes / no

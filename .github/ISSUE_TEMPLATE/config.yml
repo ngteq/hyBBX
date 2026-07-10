@@ -1,8 +1,1 @@
 blank_issues_enabled: true
-contact_links:
-  - name: Documentation index
-    url: https://github.com/ngteq/hyBBX/blob/main/docs/INDEX.md
-    about: FEATURES, MANUAL, QUICKSTART, DEVELOPMENT
-  - name: Contributing guide
-    url: https://github.com/ngteq/hyBBX/blob/main/CONTRIBUTING.md
-    about: Setup, PR checklist, git policy

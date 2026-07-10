@@ -1,4 +1,4 @@
-; HyBBX Secondary — v1.7.5. Full keys: docs/MANUAL.md
+; HyBBX Secondary — v2.0.0. Full keys: docs/MANUAL.md
 ; Remote RF edge → Main [circuit]. Not a telnet user on Main.
 
 [service]
@@ -96,4 +96,4 @@ frequency1 = 27.205
 frequency2 = 27.215
 
 ; ARDOP: docs/ARDOP.md — start external ARDOPC first
-; CRDOP: docs/CRDOP.md — start external CRDOPC first (github.com/ngteq/CRDOP)
+; CRDOP: docs/CRDOP.md — start external CRDOPC first

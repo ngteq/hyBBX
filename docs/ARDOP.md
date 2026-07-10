@@ -64,4 +64,4 @@ Plugin: GPL-3.0. ARDOPC licensing varies by upstream — [LICENSING.md](LICENSIN
 
 ## See also
 
-[CRDOP.md](CRDOP.md) · [FEATURES.md](FEATURES.md) · [ROADMAP.md](ROADMAP.md)
+[CRDOP.md](CRDOP.md) · [MANUAL.md](MANUAL.md) · [BUILD.md](BUILD.md)
