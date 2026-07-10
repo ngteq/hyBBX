@@ -1,6 +1,6 @@
 # Quick start
 
-**v1.7.5** (testing) — telnet, SSH, WebSocket, built-in security bans. Topology: [TOPOLOGY.md](TOPOLOGY.md).
+**v1.7.5** — telnet, SSH, WebSocket, built-in security bans. Topology: [TOPOLOGY.md](TOPOLOGY.md).
 
 ## Requirements
 

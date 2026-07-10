@@ -2,7 +2,7 @@
 
 C99 mailbox inspired **session daemon** for low-bandwidth links: local mail, chat, conference, and `/` commands over telnet, AX.25, SSH, WebSocket and more.
 
-**v1.7.5** (testing) — [docs/RELEASE-1.7.5.md](docs/RELEASE-1.7.5.md) · [docs/TOPOLOGY.md](docs/TOPOLOGY.md)
+**v1.7.5** — [docs/RELEASE-1.7.5.md](docs/RELEASE-1.7.5.md) · [docs/TOPOLOGY.md](docs/TOPOLOGY.md)
 
 ## Live (hybbx.un1t.me)
 

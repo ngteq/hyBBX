@@ -1,6 +1,6 @@
 # Feature status
 
-**v1.7.5** (testing) · [RELEASE-1.7.5.md](RELEASE-1.7.5.md) · INI: [MANUAL.md](MANUAL.md)
+**v1.7.5** · [RELEASE-1.7.5.md](RELEASE-1.7.5.md) · INI: [MANUAL.md](MANUAL.md)
 
 | Status | Meaning |
 |--------|---------|

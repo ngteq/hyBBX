@@ -1,6 +1,6 @@
 HyBBX v1.7.5 release notes
 
-Testing release. Command registry loaded from share/commands.yaml at startup.
+Command registry loaded from share/commands.yaml at startup.
 /help, /menu, /index, /alias and verb access are registry-driven.
 One blank line before /command output.
 
@@ -9,6 +9,5 @@ Main + Secondary topology; optional mains_proxy mesh (partial).
 Built-in [security] bans; optional SQLite storage.
 
 Proxy relay and proxymail delivery not available yet.
-Formal GitHub Release after field tests.
 
 See docs/RELEASE-1.7.5.md, docs/TOPOLOGY.md, docs/FEATURES.md.

@@ -1,8 +1,6 @@
 # HyBBX v1.7.5
 
-**Testing release.** Lab-ready without RF hardware; formal GitHub Release after field tests. Proxy relay and proxymail delivery not available yet.
-
-Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSocket** (loopback `:4591`), **HBX circuit hub** (`:7323`). Clients: **hybbx-telnet**, **hybbx-ssh**, **hybbx-terminal**.
+Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSocket** (loopback `:4591`), **HBX circuit hub** (`:7323`). Clients: **hybbx-telnet**, **hybbx-ssh**, **hybbx-terminal**. Proxy relay and proxymail delivery not available yet.
 
 **Demo:** [README — hybbx.un1t.me](../README.md#live-hybbxun1tme).
 
