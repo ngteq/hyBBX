@@ -2,11 +2,16 @@
 #define HYBBX_CIRCUIT_H
 
 /**
- * HyBBX Internal Circuit Protocol (HBX) v1.
+ * HBX — Hybrid Bridge eXchange (v1).
  *
- * Wraps link-layer payloads (AX.25 and future stacks) in a typed frame for
- * transport over internal TCP/IPv4+IPv6 only. The application core never sees
- * KISS, AX.25 on-air framing, or serial — only HBX frames on loopback TCP.
+ * HyBBX internal framed protocol on the circuit TCP hub. Multiplexes
+ * link-layer payloads (AX.25 and future stacks) and application streams
+ * (terminal, proxymail, proxychat) between HyBBX processes. Header magic:
+ * `H` `B` `X`. Transport is internal TCP/IPv4+IPv6 only — the application
+ * core never sees KISS, AX.25 on-air framing, or serial.
+ *
+ * Short form in docs: **HBX** or **HBX/Circuit** — Circuit = TCP hub
+ * (:7323), HBX = framing on top.
  */
 
 #include "hybbx/ax25.h"
@@ -42,6 +47,8 @@ typedef enum hybbx_circuit_proto {
     HYBBX_CIRCUIT_PROTO_LINK_AUTH_ACK = 0x04,/**< Central auth response */
     HYBBX_CIRCUIT_PROTO_FLOW_CTRL = 0x05,    /**< Load-balance pause/break/cancel */
     HYBBX_CIRCUIT_PROTO_TERMINAL = 0x10,     /**< BBS terminal byte stream */
+    HYBBX_CIRCUIT_PROTO_PROXY_MAIL = 0x80,   /**< Inter-Main proxymail (service only) */
+    HYBBX_CIRCUIT_PROTO_PROXY_CHAT = 0x81,   /**< Inter-Main proxychat (service only) */
     HYBBX_CIRCUIT_PROTO_RESERVED_APRS = 0x20,
     HYBBX_CIRCUIT_PROTO_RESERVED_NETROM = 0x21
 } hybbx_circuit_proto_t;

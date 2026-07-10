@@ -20,7 +20,7 @@ HyBBX splits **user sessions** from **RF / mesh infrastructure**.
                     │  packet_radio · ardop · crdop · …   │
                     └─────────────────────────────────────┘
 
-  Optional (partial):  Main-A ◄── HBX circuit ──► Main-B   (proxy network)
+  Optional:  Main-A ◄── HBX circuit ──► Main-B   (proxy network)
 ```
 
 
@@ -37,7 +37,7 @@ Multiple Secondaries on one Main need unique `link_id` values (up to 16 links).
 
 ### mains_proxy (proxy network)
 
-**Partial** — links two or more **Main** instances for `/proxymail` and `/proxychat` (delivery not available yet). User services only — no Sysop/Admin/Mod actions over proxy. Opt-in: `-DHYBBX_PLUGIN_MAINS_PROXY=ON`, `[networks] mains_proxy=yes`.
+Links **Main** or **Secondary** instances for `/proxymail` and `/proxychat`. Pure service linking only — no user accounts, rights, or other Main data cross proxy links. No Sysop/Admin/Mod actions over proxy. Opt-in: `-DHYBBX_PLUGIN_MAINS_PROXY=ON`, `[networks] mains_proxy=yes`.
 
 Peers connect **only via HBX/Circuit** (`circuit_host`, `circuit_port`, `link_id`, `link_password`) — same security model as Secondary. No raw Main-to-Main TCP bypass. RF between sites may use a Secondary on each side; direct Main↔Main circuit is also allowed (full or half duplex). Detail: [docs/MAINS_PROXY.md](docs/MAINS_PROXY.md).
 

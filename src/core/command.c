@@ -1671,11 +1671,15 @@ static hybbx_result_t cmd_proxymail(hybbx_service_t *service,
         }
         if (rc == HYBBX_ERR_UNSUPPORTED) {
             hybbx_session_write_line(session,
-                "Your message is ready, but delivery to other mains "
-                "is not available yet.");
+                "Proxymail is not available — enable mains_proxy and peer links.");
             hybbx_session_proxymail_compose_cancel(session);
             hybbx_session_leave_area(session);
             hybbx_session_show_prompt(session);
+            return HYBBX_OK;
+        }
+        if (rc == HYBBX_ERR_NOT_FOUND) {
+            hybbx_session_write_line(session,
+                "Unknown remote main — check user@mainname and peer_id.");
             return HYBBX_OK;
         }
         if (rc != HYBBX_OK) {

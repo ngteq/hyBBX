@@ -14,9 +14,9 @@ Full guide: [TOPOLOGY.md](TOPOLOGY.md).
 |------|---------|
 | **Main** | Users, storage, HBX hub `:7323`, optional `mains_proxy` |
 | **Secondary** | RF edge — HBX client to Main; no public logins |
-| **mains_proxy** | Main ↔ Main mesh (not active yet); HBX circuit peers only |
+| **mains_proxy** | Main or Secondary ↔ remote Main; HBX circuit peers; service linking only |
 
-Inter-node traffic (Secondary, RF plugins, mesh) uses **HBX/Circuit** only. User sessions use telnet, SSH, or WebSocket on Main.
+Inter-node traffic (Secondary, RF plugins, mesh) uses **HBX/Circuit** only (Circuit = TCP hub `:7323`, HBX = framing on top; definition: [TOPOLOGY.md](TOPOLOGY.md)). User sessions use telnet, SSH, or WebSocket on Main.
 
 ---
 
@@ -171,7 +171,7 @@ Tokens in `banner.txt`, `motd.txt`, `news.txt`, `rules.txt`:
 | `ssh` | `no` | SSH plugin (libssh, port 3232) |
 | `websocket` | `no` | WebSocket forward-proxy (port 4591) |
 | `circuit` | `yes` | HBX hub (Main) |
-| `mains_proxy` | `no` | Main-to-Main mesh proxy ([MAINS_PROXY.md](MAINS_PROXY.md); relay not active yet) |
+| `mains_proxy` | `no` | Main-to-Main service mesh ([MAINS_PROXY.md](MAINS_PROXY.md)) |
 
 Telnet is always started when built (not gated here).
 
@@ -296,7 +296,7 @@ On **Secondary**: kernel SER12/PAR96/EPP or serial KISS + HBX circuit. Up to 4 i
 
 ### `[transport.mains_proxyN]` (Main-to-Main mesh)
 
-Links Mains via **HBX/Circuit** only; relay not active yet. See [MAINS_PROXY.md](MAINS_PROXY.md).
+Links nodes via **HBX/Circuit** only. Pure service linking — proxymail and proxychat; no user or rights data transferred. See [MAINS_PROXY.md](MAINS_PROXY.md).
 
 | Key | Default | Notes |
 |-----|---------|-------|
@@ -370,9 +370,9 @@ Mail, chat, conference, and `/who` require a registered account.
 | `/chat` | Chat channels |
 | `/conference` | Two-user conference |
 | `/mail` | Local mailbox (registered) |
-| `/mail proxymail` | Enter inter-Main mail sub-area (delivery not available yet) |
+| `/mail proxymail` | Enter inter-Main mail sub-area |
 | `/proxymail` | Same as `/mail proxymail` |
-| `/chat proxychat` | Enter inter-Main chat sub-area (not available yet) |
+| `/chat proxychat` | Enter inter-Main chat sub-area |
 | `/proxychat` | Same as `/chat proxychat` |
 | `/login <user> <pass>` | Registered login (one active session per account) |
 | `/register` | Self-registration (guest) |

@@ -1,8 +1,8 @@
 # HyBBX toolchain detection and portable warning flags.
 #
 # Supported compilers: GCC (primary), LLVM Clang.
-# Supported OS families: Linux, BSD, macOS 10+, Windows 10+ (MinGW/Clang),
-#   AmigaOS 3.9+ (cross-GCC), and other POSIX systems.
+# Supported OS families: Linux, *BSD (FreeBSD, NetBSD, OpenBSD, …), MacOS X+,
+#   Windows 10+ (MinGW/Clang), AmigaOS 3.9+ (cross-GCC). POSIX+ friendly.
 
 include(CheckCCompilerFlag)
 

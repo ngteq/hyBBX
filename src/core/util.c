@@ -313,7 +313,7 @@ hybbx_result_t hybbx_platform_os_name(char *out, size_t out_len)
         }
 
         if (strcmp(name, "Darwin") == 0) {
-            name = "macOS";
+            name = "MacOS";
         }
     }
 #endif

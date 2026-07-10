@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-/** Suppress SIGPIPE on send() (SO_NOSIGPIPE on BSD/macOS; noop on Linux). */
+/** Suppress SIGPIPE on send() (SO_NOSIGPIPE on BSD/MacOS; noop on Linux). */
 void hybbx_socket_nosigpipe(int fd);
 
 /**

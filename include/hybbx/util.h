@@ -52,7 +52,7 @@ hybbx_result_t hybbx_path_resolve(char *out, size_t out_len, const char *path);
 hybbx_result_t hybbx_path_dirname(const char *path, char *out, size_t out_len);
 
 /**
- * Host operating system name for display (e.g. Linux, FreeBSD, Windows).
+ * Host operating system name for display (e.g. Linux, FreeBSD, MacOS, Windows).
  * Does not include OS version or kernel release.
  */
 hybbx_result_t hybbx_platform_os_name(char *out, size_t out_len);

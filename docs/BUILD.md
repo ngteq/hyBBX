@@ -2,6 +2,8 @@
 
 [PLATFORMS.md](PLATFORMS.md) · [MANUAL.md](MANUAL.md) · **v2.0.0**
 
+HyBBX targets POSIX+ systems first; `*BSD` (FreeBSD, NetBSD, OpenBSD, …) and AmigaOS 3.9+ stay supported in-tree ([PLATFORMS.md](PLATFORMS.md#amigaos-39)).
+
 ## Build and run
 
 ```bash

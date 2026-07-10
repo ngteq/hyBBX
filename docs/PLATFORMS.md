@@ -2,7 +2,11 @@
 
 HyBBX is developed on **Linux** (GCC primary, Clang). Operator documentation assumes Linux (`HTTPD_DOCROOT`, `systemctl`, `ss`).
 
-C99 · CMake 3.16+ · pthread (POSIX targets).
+**Portability:** HyBBX stays **POSIX+ friendly** — standard C99 and POSIX APIs first, platform code behind narrow guards (`_WIN32`, `__AMIGA__`, …). We keep `*BSD` and **AmigaOS 3.9+** working in-tree and aim to make every change **easy to port** (no Linux-only shortcuts in shared core).
+
+C99 · CMake 3.16+ · pthread on POSIX-class targets.
+
+Platform targets each have their own section below. Spell **MacOS** (not macOS). **`*BSD`** means the BSD family — **FreeBSD**, **NetBSD**, **OpenBSD**, DragonFly BSD, and related systems (not MacOS).
 
 ## Linux
 
@@ -63,10 +67,36 @@ supported on AmigaOS.
 
 Hardening: stack protector where supported; no Linux PIE/RELRO on Amiga.
 
-## Other POSIX
+## *BSD
 
-BSD and macOS builds are supported in tree with GCC or Clang; verify plugins in your environment.
+**FreeBSD**, **NetBSD**, **OpenBSD**, DragonFly BSD, and related BSD systems (`*BSD` notation). First-class alongside Linux — build with GCC or Clang; verify plugins in your environment.
 
-## Windows
+Serial TNC paths follow the host (`/dev/cua*`, `/dev/tty*`).
 
-MinGW/LLVM-MinGW builds use the Win32 serial and socket paths in plugins; SSH follows libssh availability.
+## MacOS X+
+
+**MacOS X** and newer (Intel and Apple Silicon). Build with Apple Clang or LLVM Clang; pthread and serial I/O use the POSIX paths in-tree.
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
+
+| Need | Role |
+|------|------|
+| Xcode CLT or Homebrew LLVM | Compiler |
+| libssh (pkg-config) | SSH plugin |
+| OpenSSL / libsodium | Optional crypto |
+
+Serial TNC paths: `/dev/cu.*`, `/dev/tty.*`. Verify libssh and plugin deps on your MacOS version.
+
+## Windows 10+
+
+**Windows 10** and newer via **MinGW-w64** or **LLVM-MinGW** (GCC or Clang). Win32 serial (`COMn`) and socket code paths in plugins; SSH follows libssh availability.
+
+```bash
+cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
+
+Map TNC `device=` to `COM1`, `COM2`, … (or `\\.\COM10` for higher ports). Operator docs (`systemctl`, paths) remain Linux-oriented; adapt commands for your environment.

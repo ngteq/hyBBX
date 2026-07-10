@@ -4,8 +4,8 @@
 /**
  * Inter-Main mail via mains_proxy — separate from local `/mail`.
  *
- * Local mail uses flat-file or SQL under `[mail]`; proxymail will use its
- * own storage on each Main once the mesh is implemented. Stub only for now.
+ * Local mail uses flat-file or SQL under `[mail]`; proxymail uses flat files
+ * under `data/proxymail/` on each node. Only service payloads cross the mesh.
  */
 
 #include "hybbx/mail.h"
@@ -50,7 +50,7 @@ hybbx_result_t hybbx_proxymail_recycle_empty(struct hybbx_service *service,
                                              struct hybbx_session *session);
 
 /**
- * Queue outbound proxymail (stub — mesh delivery not active).
+ * Queue outbound proxymail for mesh delivery.
  * @p to_address must be @c user@remote-main-service .
  */
 hybbx_result_t hybbx_proxymail_deliver(struct hybbx_service *service,
@@ -58,6 +58,13 @@ hybbx_result_t hybbx_proxymail_deliver(struct hybbx_service *service,
                                        const char *to_address,
                                        const char *subject,
                                        const char *body);
+
+/** Store proxymail received from a remote Main. */
+void hybbx_proxymail_receive(struct hybbx_service *service,
+                             const char *from_address,
+                             const char *to_address,
+                             const char *subject,
+                             const char *body);
 
 #ifdef __cplusplus
 }

@@ -76,7 +76,8 @@ static void bridge_load_section(const char *section, void *userdata)
     if (!bridge_section_is_numbered_packet_radio(section) &&
         !bridge_section_is_numbered_ardop(section) &&
         !bridge_section_is_numbered_crdop(section) &&
-        !bridge_section_is_numbered_baycom(section)) {
+        !bridge_section_is_numbered_baycom(section) &&
+        !bridge_section_is_numbered_transport(section, "mains_proxy")) {
         return;
     }
 
@@ -110,6 +111,8 @@ static void bridge_load_section(const char *section, void *userdata)
     value = hybbx_config_get(ctx->reg_config, section, "link_role", NULL);
     if (value != NULL && value[0] != '\0') {
         hybbx_strlcpy(entry->link_role, value, sizeof(entry->link_role));
+    } else if (bridge_section_is_numbered_transport(section, "mains_proxy")) {
+        hybbx_strlcpy(entry->link_role, "proxy", sizeof(entry->link_role));
     } else {
         hybbx_strlcpy(entry->link_role, "link", sizeof(entry->link_role));
     }

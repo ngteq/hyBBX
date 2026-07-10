@@ -34,7 +34,11 @@ Remote RF: run Secondary near the TNC; point `circuit_host` at Main. Main holds 
 
 ## HBX/Circuit — sole inter-node transport
 
-All paths between HyBBX processes use **HBX v1** on the internal circuit hub. The application core never sees KISS, AX.25 on-air framing, or serial — only typed HBX frames on TCP (loopback or routed).
+**HBX — Hybrid Bridge eXchange (v1)** — HyBBX-internal framed protocol on the circuit TCP hub. Multiplexes link-layer payloads (AX.25, …) and application streams (terminal, proxymail, proxychat) between Main, Secondary, and proxy peers. Header magic: `H` `B` `X`.
+
+In running text: **HBX** or **HBX/Circuit** — **Circuit** = TCP hub (`:7323`), **HBX** = framing on top.
+
+All paths between HyBBX processes use HBX v1 on the internal circuit hub. The application core never sees KISS, AX.25 on-air framing, or serial — only typed HBX frames on TCP (loopback or routed).
 
 | Path | Attachment |
 |------|------------|
@@ -51,21 +55,21 @@ Protocol: `include/hybbx/circuit.h` — default port `7323`, max 16 concurrent l
 
 ## Proxy network (`mains_proxy`)
 
-Link two or more Main instances for **user services** (mail, chat, future). **Status: partial** — API and plugin skeleton; no live relay yet. **No Sysop, Admin, or Mod actions cross proxy links.**
+Link Main or Secondary instances for **pure service linking** — proxymail and proxychat only. **No user accounts, rights, or other Main data cross proxy links.** **No Sysop, Admin, or Mod actions cross proxy links.**
 
 ```
-Main-A  <--- HBX circuit :7323 + LINK_AUTH --->  Main-B
-   ^                                              ^
-   | optional Secondary / AX.25                   |
-   +----------------------------------------------+
+Main-A  <--- HBX circuit :7323 + LINK_AUTH (role=proxy) --->  Main-B
+   ^                                                          ^
+   | optional Secondary / AX.25                             |
+   +----------------------------------------------------------+
 ```
 
 - **Opt-in:** `-DHYBBX_PLUGIN_MAINS_PROXY=ON` and `[networks] mains_proxy=yes`
 - Peers use `circuit_host`, `circuit_port`, `link_id`, `link_password` (not a separate mesh TCP port)
-- `wire=circuit` (default); `wire=ax25` reserved for RF-carried mesh
-- Secondary edge recommended for RF but optional — configure reciprocal `[transport.mains_proxyN]` on each Main
+- `wire=circuit` (default); `wire=ax25` reserved
+- Secondary may run outbound `mains_proxy`; configure reciprocal `[transport.mains_proxyN]` on each peer
 
-Inter-Main mail and chat: `/proxymail` and `/proxychat` (delivery not available yet). INI keys: [MAINS_PROXY.md](MAINS_PROXY.md). `/broadcast` stays on each local Main only.
+Inter-Main mail and chat: `/proxymail` and `/proxychat`. INI keys: [MAINS_PROXY.md](MAINS_PROXY.md). `/broadcast` stays on each local node only.
 
 ## Choosing a layout
 
@@ -73,7 +77,7 @@ Inter-Main mail and chat: `/proxymail` and `/proxychat` (delivery not available 
 |------|--------|
 | Users + one local TNC | Standalone Main |
 | Users in DC, RF at remote site | Main + Secondary |
-| Two BBS communities linked | Two Mains + `mains_proxy` (when implemented) |
+| Two BBS communities linked | Two Mains + `mains_proxy` |
 | High RF fan-out | Main + multiple Secondaries (`link_id` each) |
 
 ## See also

@@ -17,6 +17,7 @@ Plugin-only session daemon; Main + Secondary HBX topology ([TOPOLOGY.md](../../d
 - Core = sessions + HBX/TCP only — no wire-protocol parsing in `src/core/`
 - Plugins in `plugins/`; booleans via `hybbx_parse_bool()`
 - Minimal scope; [limits.h](../../include/hybbx/limits.h)
+- **POSIX+ / portability:** shared code stays POSIX-friendly; keep `*BSD` (FreeBSD, NetBSD, OpenBSD, …) and AmigaOS 3.9+ compatible; platform code behind `_WIN32` / `__AMIGA__` guards or dedicated files
 
 ## Docs
 
@@ -24,7 +25,8 @@ Plugin-only session daemon; Main + Secondary HBX topology ([TOPOLOGY.md](../../d
 - No planning, roadmap, feature-status, or release-note docs
 - **Current version only** — no prior-version references in docs, `text/`, or user-facing comments
 - **As-is software** — compact prose; no upgrade/migration/history sections
-- **Linux-based documentation** — `docs/`, `text/`, README, share examples. `HTTPD_DOCROOT`, `systemctl`, `ss`. No other OS names (BSD, macOS, Windows, …) or distro-specific package paths
+- **Linux-based operator docs** — `docs/`, `text/`, README, share examples. `HTTPD_DOCROOT`, `systemctl`, `ss`. Platform targets only in `docs/PLATFORMS.md` — own sections per OS (Linux, AmigaOS 3.9+, *BSD, MacOS X+, Windows 10+, …); spell **MacOS**, not macOS
+- **POSIX+ / portability** — `*BSD` (FreeBSD, NetBSD, OpenBSD, …) and AmigaOS 3.9+ stay compatible; shared code easy to port; no Linux-only APIs in core without guards
 
 ## Git
 

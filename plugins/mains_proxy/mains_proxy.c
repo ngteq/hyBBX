@@ -1,9 +1,8 @@
 /*
- * mains_proxy — Main-to-Main mesh proxy (stub).
+ * mains_proxy — Main-to-Main mesh proxy.
  *
  * Peers attach via HBX/Circuit only (circuit_host, circuit_port, link_id).
- * Never open a raw TCP socket to a remote Main — same security model as
- * Secondary edge links. INI: [transport.mains_proxyN] on each Main.
+ * Service linking only — proxymail and proxychat payloads; no user data.
  */
 #include "hybbx/plugin.h"
 #include "hybbx/service.h"

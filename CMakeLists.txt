@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # Default C compiler when CC / CMAKE_C_COMPILER are not set:
-#   *BSD  → LLVM Clang (native toolchain on BSD)
+#   *BSD (FreeBSD, NetBSD, OpenBSD, …)  → LLVM Clang (native toolchain on BSD)
 #   other → GCC
 if(NOT DEFINED ENV{CC} AND NOT CMAKE_C_COMPILER)
     if(CMAKE_HOST_SYSTEM_NAME MATCHES "^(FreeBSD|OpenBSD|NetBSD|DragonFly)$")
@@ -150,10 +150,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL "AmigaOS")
     message(STATUS "HyBBX: targeting AmigaOS 3.9+ (cross-GCC)")
 elseif(WIN32)
     set(HYBBX_PLATFORM_WINDOWS TRUE)
-    message(STATUS "HyBBX: targeting Windows (GCC/Clang via MinGW or LLVM-MinGW)")
+    message(STATUS "HyBBX: targeting Windows 10+ (GCC/Clang via MinGW or LLVM-MinGW)")
 elseif(APPLE)
     set(HYBBX_PLATFORM_MACOS TRUE)
-    message(STATUS "HyBBX: targeting macOS (GCC / Clang)")
+    message(STATUS "HyBBX: targeting MacOS X+ (Apple Clang / LLVM Clang)")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
     set(HYBBX_PLATFORM_LINUX TRUE)
     message(STATUS "HyBBX: targeting Linux")

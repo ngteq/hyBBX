@@ -4,7 +4,7 @@
 
 ## Toolchain
 
-CMake 3.16+, GCC or Clang, pthread.
+CMake 3.16+, GCC or Clang, pthread. **POSIX+ first** — shared code uses C99 and portable POSIX APIs; isolate OS-specific paths (see [PLATFORMS.md](PLATFORMS.md)). Keep `*BSD` (FreeBSD, NetBSD, OpenBSD, …), **AmigaOS 3.9+**, MacOS, and Windows builds working when you touch core, clients, or serial/socket code.
 
 ```bash
 ./scripts/dev-setup.sh
@@ -49,6 +49,7 @@ Registry: [share/commands.yaml](../share/commands.yaml). Layout: [COMMANDS.md](C
 - C99, `hybbx_` prefix, `hybbx_result_t`
 - INI booleans: `hybbx_parse_bool()`
 - Limits: `include/hybbx/limits.h`
+- **Portability:** prefer POSIX+ APIs in `src/core/` and shared helpers; no Linux-only calls without a guarded fallback. Platform branches: `_WIN32`, `__AMIGA__`, `__APPLE__`, or dedicated files (e.g. `serial_port.c`). After serial/socket/client changes, confirm `*BSD` (FreeBSD, NetBSD, OpenBSD, …) and AmigaOS cross-build paths still compile.
 
 ## Testing
 

@@ -1119,7 +1119,8 @@ static void session_process_line(hybbx_session_core_t *core, const char *line)
             return;
         }
 
-        (void)hybbx_proxychat_post_stub(&core->pub, line);
+        (void)hybbx_proxychat_post(hybbx_session_service(&core->pub), &core->pub,
+                                   line);
         return;
     }
 

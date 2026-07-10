@@ -3,6 +3,7 @@
 #endif
 
 #include "hybbx/circuit_tcp.h"
+#include "hybbx/mains_proxy.h"
 #include "hybbx/circuit.h"
 #include "hybbx/broadcast.h"
 #include "hybbx/circuit_balance.h"
@@ -632,7 +633,20 @@ static void on_circuit_frame(hybbx_circuit_proto_t proto, uint16_t flags,
 
     (void)flags;
 
-    if (slot == NULL || slot->session == NULL || len == 0) {
+    if (slot == NULL) {
+        return;
+    }
+
+    if (proto == HYBBX_CIRCUIT_PROTO_PROXY_MAIL ||
+        proto == HYBBX_CIRCUIT_PROTO_PROXY_CHAT) {
+        if (slot->hub != NULL && slot->hub->service != NULL) {
+            hybbx_mains_proxy_inbound_frame(slot->hub->service, proto,
+                                            payload, len);
+        }
+        return;
+    }
+
+    if (slot->session == NULL || len == 0) {
         return;
     }
 

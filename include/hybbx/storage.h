@@ -117,6 +117,9 @@ void hybbx_storage_close(hybbx_storage_t *storage);
 
 hybbx_storage_backend_kind_t hybbx_storage_backend(const hybbx_storage_t *storage);
 
+/** Root data directory path, or NULL when unset. */
+const char *hybbx_storage_root_path(const hybbx_storage_t *storage);
+
 /**
  * Register a new user account (level user, inactive until Sysop/Admin activates).
  */

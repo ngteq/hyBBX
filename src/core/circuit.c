@@ -42,6 +42,10 @@ const char *hybbx_circuit_proto_name(hybbx_circuit_proto_t proto)
         return "flow_ctrl";
     case HYBBX_CIRCUIT_PROTO_TERMINAL:
         return "terminal";
+    case HYBBX_CIRCUIT_PROTO_PROXY_MAIL:
+        return "proxy_mail";
+    case HYBBX_CIRCUIT_PROTO_PROXY_CHAT:
+        return "proxy_chat";
     case HYBBX_CIRCUIT_PROTO_RESERVED_APRS:
         return "aprs";
     case HYBBX_CIRCUIT_PROTO_RESERVED_NETROM:

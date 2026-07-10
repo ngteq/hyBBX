@@ -209,6 +209,14 @@ hybbx_storage_backend_kind_t hybbx_storage_backend(const hybbx_storage_t *storag
     return storage->backend;
 }
 
+const char *hybbx_storage_root_path(const hybbx_storage_t *storage)
+{
+    if (storage == NULL || storage->path == NULL || storage->path[0] == '\0') {
+        return NULL;
+    }
+    return storage->path;
+}
+
 hybbx_result_t hybbx_storage_register_user(hybbx_storage_t *storage,
                                            const hybbx_user_registration_t *reg,
                                            hybbx_user_record_t *out)

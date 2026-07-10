@@ -2,12 +2,14 @@
 #define HYBBX_CIRCUIT_TCP_H
 
 /**
- * HBX circuit TCP hub on Main; remote Secondary processes connect via LINK_AUTH.
+ * HBX/Circuit TCP hub on Main (Circuit = TCP listener :7323; HBX = framed
+ * payloads on that stream). Remote Secondary processes connect via LINK_AUTH.
  * Secondaries are separate edge machines (extenders/repeaters), not telnet users
  * or local [transport.*] adapters on Main.
  * Hub: [circuit] bind/port. Client: hybbx_circuit_link_* + LINK_AUTH.
  * All inter-node paths (Secondary, mains_proxy mesh, future relays) use this
  * client pattern only — never a direct socket to a remote HyBBX Main.
+ * Formal name: HBX — Hybrid Bridge eXchange (v1); see docs/TOPOLOGY.md.
  */
 
 #include "hybbx/circuit.h"
