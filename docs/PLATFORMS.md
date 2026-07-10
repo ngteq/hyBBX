@@ -45,18 +45,6 @@ present). The cross-build uses headers and libs from that prefix
 (`m68k-amigaos/clib2`, `m68k-amigaos/ndk-include`) — not a manual merge of
 NDK trees.
 
-**NDK layout:** under `/opt/amiga/NDKs/` you typically find developer-kit
-trees such as `32/` and `39/` (kit generations, not “the AmigaOS 3.2 NDK” /
-“the AmigaOS 3.9 NDK”). **AmigaOS 3.1.4 has no dedicated NDK**; classic
-development combines headers and docs from `32`, `39`, and other kits as
-needed. HyBBX does not require you to wire those paths into CMake.
-
-**Version labels:** AmigaOS version numbers do not follow release order.
-**3.9** (Haage & Partner) shipped first among these; **3.1.4** and **3.2**
-(Hyperion) followed later — roughly the same era, both younger than 3.9
-despite the lower-looking numbers. HyBBX targets **3.9+** as the minimum
-baseline; the client should also run on 3.1.4 and 3.2 with a TCP stack.
-
 Amiga builds enable **hybbx-telnet** and **packet_radio** only; SSH,
 WebSocket, ARDOP, CRDOP, baycom, and `hybbx-terminal` are disabled automatically.
 
