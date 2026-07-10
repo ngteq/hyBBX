@@ -6,8 +6,6 @@ HyBBX is developed on **Linux** (GCC primary, Clang). Operator documentation ass
 
 C99 · CMake 3.16+ · pthread on POSIX-class targets.
 
-Platform targets each have their own section below. Spell **MacOS** (not macOS). **`*BSD`** means the BSD family — **FreeBSD**, **NetBSD**, **OpenBSD**, DragonFly BSD, and related systems (not MacOS).
-
 ## Linux
 
 ```bash
