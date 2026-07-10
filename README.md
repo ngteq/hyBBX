@@ -76,12 +76,6 @@ Details: [docs/BUILD.md](docs/BUILD.md) · [docs/MANUAL.md](docs/MANUAL.md)
 | RF / transports | [TNCS.md](docs/TNCS.md) · [MAINS_PROXY.md](docs/MAINS_PROXY.md) · [BAYCOM.md](docs/BAYCOM.md) |
 | Developer | [BUILD.md](docs/BUILD.md) · [DEVELOPMENT.md](docs/DEVELOPMENT.md) · [COMMANDS.md](docs/COMMANDS.md) · [CONTRIBUTING.md](CONTRIBUTING.md) |
 
-## Fork and continue
-
-HyBBX is **GPL-3.0**. You may fork, modify, and run your own Main — keep [LICENSE.txt](LICENSE.txt), provide source to recipients, and document your changes.
-
-**New maintainer or AI-assisted work:** read [CONTRIBUTING.md](CONTRIBUTING.md) → [AGENTS.md](AGENTS.md) → [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Architecture and INI are self-contained in `docs/`; session commands load from [share/commands.yaml](share/commands.yaml).
-
 ---
 
 **Live demo** — [hybbx.un1t.me](https://hybbx.un1t.me/): `telnet hybbx.un1t.me 2323` (guest auto-login). Browser terminal on the site; SSH port 3232 with `/login` for registered accounts.
