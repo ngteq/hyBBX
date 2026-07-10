@@ -1,6 +1,6 @@
 # HyBBX — agent guide
 
-Humans: [CONTRIBUTING.md](CONTRIBUTING.md). **v1.5.0** — [RELEASE-1.5.0.md](docs/RELEASE-1.5.0.md).
+Humans: [CONTRIBUTING.md](CONTRIBUTING.md). **v1.7.5** — [RELEASE-1.7.5.md](docs/RELEASE-1.7.5.md).
 
 ## Product
 
@@ -23,7 +23,7 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 4. Booleans: `hybbx_parse_bool()` — `yes`/`no`
 5. Buffers: [limits.h](include/hybbx/limits.h)
 6. Doc changes: feature → FEATURES.md; INI → MANUAL.md + `share/*.ini.example`
-7. **Commands:** user groups are Sysop, Admin, Mod, User, Guest only (no “Staff”). Registry: [share/commands.yaml](share/commands.yaml), layout: [docs/COMMANDS.md](docs/COMMANDS.md). Help: two lines (`/<verb> …` + `Help: …`); headers use `/help <cmd> for more`. `/broadcast` (alias `/announce`) = Sysop → all online users on **local Main** only.
+7. **Commands:** user groups are Sysop, Admin, Mod, User, Guest only (no “Staff”). Registry: [share/commands.yaml](share/commands.yaml), layout: [docs/COMMANDS.md](docs/COMMANDS.md). Help: two lines (`/<verb> …` + `Help: …`); headers use `/help <cmd> for more`. Output: one blank line before `/command` reply, none after (not chat/mail compose). `/broadcast` (alias `/announce`) = Sysop → all online users on **local Main** only.
 8. **Proxy network** (`mains_proxy`): user services (`proxymail`, `proxychat`, future) only — no Sysop/Admin/Mod actions across proxy links.
 9. **Version docs:** current release only (`HYBBX_VERSION_STRING`). No prior-version references. As-is software — compact text, no upgrade/history bloat. On bump: replace release docs; remove old `RELEASE-*.md` from tree.
 10. **Documentation — Linux-based.** All docs in `docs/`, `text/`, README, and share examples assume Linux. Use `HTTPD_DOCROOT`, `systemctl`, `ss`. Do not name other OSes (BSD, macOS, Windows, …) or distro-specific package paths unless unavoidable in third-party license names.
@@ -32,7 +32,7 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 
 | File | Use |
 |------|-----|
-| [RELEASE-1.5.0.md](docs/RELEASE-1.5.0.md) | Current release |
+| [RELEASE-1.7.5.md](docs/RELEASE-1.7.5.md) | Current release |
 | [FEATURES.md](docs/FEATURES.md) | Shipped vs partial |
 | [MANUAL.md](docs/MANUAL.md) | INI + commands |
 | [COMMANDS.md](docs/COMMANDS.md) | Command registry, help layout |

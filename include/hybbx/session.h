@@ -65,6 +65,9 @@ hybbx_result_t hybbx_session_write(hybbx_session_t *session, const char *text);
 hybbx_result_t hybbx_session_write_line(hybbx_session_t *session,
                                         const char *text);
 
+/** One blank line before `/command` output (not chat/mail compose). */
+hybbx_result_t hybbx_session_command_gap(hybbx_session_t *session);
+
 /**
  * Show the global input prompt when configured.
  * Default (empty prompt): no output — users type on a blank line.

@@ -6,7 +6,7 @@ Current status: [FEATURES.md](FEATURES.md). Topology: [TOPOLOGY.md](TOPOLOGY.md)
 
 | Item | Notes |
 |------|-------|
-| v1.5.0 field testing | Proxy relay, proxymail delivery, live RF |
+| v1.7.5 field testing | Proxy relay, proxymail delivery, live RF |
 | AX.25 field validation | Secondary→Main HBX — live RF TBD |
 | ARDOP / CRDOP live modem tests | External ARDOPC/CRDOPC |
 | mains_proxy live relay | Proxy network HBX circuit I/O |

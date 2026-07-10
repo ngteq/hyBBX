@@ -2,7 +2,7 @@
 
 C99 mailbox inspired **session daemon** for low-bandwidth links: local mail, chat, conference, and `/` commands over telnet, AX.25, SSH, WebSocket and more.
 
-**v1.5.0** (testing) — [docs/RELEASE-1.5.0.md](docs/RELEASE-1.5.0.md) · [docs/TOPOLOGY.md](docs/TOPOLOGY.md)
+**v1.7.5** (testing) — [docs/RELEASE-1.7.5.md](docs/RELEASE-1.7.5.md) · [docs/TOPOLOGY.md](docs/TOPOLOGY.md)
 
 ## Live (hybbx.un1t.me)
 
@@ -49,7 +49,7 @@ Multiple Secondaries on one Main need unique `link_id` values (up to 16 links).
 
 ### mains_proxy (proxy network)
 
-**Partial in v1.5.0** — links two or more **Main** instances for `/proxymail` and `/proxychat` (delivery not available yet). User services only — no Sysop/Admin/Mod actions over proxy. Opt-in: `-DHYBBX_PLUGIN_MAINS_PROXY=ON`, `[networks] mains_proxy=yes`.
+**Partial in v1.7.5** — links two or more **Main** instances for `/proxymail` and `/proxychat` (delivery not available yet). User services only — no Sysop/Admin/Mod actions over proxy. Opt-in: `-DHYBBX_PLUGIN_MAINS_PROXY=ON`, `[networks] mains_proxy=yes`.
 
 Peers connect **only via HBX/Circuit** (`circuit_host`, `circuit_port`, `link_id`, `link_password`) — same security model as Secondary. No raw Main-to-Main TCP bypass. RF between sites may use a Secondary on each side; direct Main↔Main circuit is also allowed (full or half duplex). Detail: [docs/MAINS_PROXY.md](docs/MAINS_PROXY.md).
 

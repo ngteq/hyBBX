@@ -14,6 +14,20 @@
 #define HYBBX_DIR_TEXT "text"
 #define HYBBX_DIR_LOGS "logs"
 #define HYBBX_FILE_CONFIG "hybbx.ini"
+#define HYBBX_FILE_COMMANDS "commands.yaml"
+
+/** Command registry (share/commands.yaml). */
+#define HYBBX_COMMANDS_MAX             64u
+#define HYBBX_COMMANDS_GROUP_MAX       8u
+#define HYBBX_COMMANDS_VERBS_PER_GROUP 16u
+#define HYBBX_COMMANDS_ALIASES_MAX     48u
+#define HYBBX_COMMANDS_ALIAS_PER      8u
+#define HYBBX_COMMANDS_MENU_LEVELS    5u
+#define HYBBX_COMMANDS_MENU_BLOCKS    12u
+#define HYBBX_COMMANDS_MENU_LAYOUTS   16u
+#define HYBBX_COMMANDS_ALIAS_LINES    8u
+#define HYBBX_COMMANDS_HELP_LINE_MAX  96u
+#define HYBBX_COMMANDS_HEADER_MAX     128u
 
 /** Environment variable: absolute path to the HyBBX install directory. */
 #define HYBBX_ENV_ROOT "HYBBX_ROOT"

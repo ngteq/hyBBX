@@ -1,6 +1,6 @@
 # Development
 
-[AGENTS.md](../AGENTS.md) · [REPOSITORY.md](REPOSITORY.md) · **v1.5.0**
+[AGENTS.md](../AGENTS.md) · [REPOSITORY.md](REPOSITORY.md) · **v1.7.5**
 
 ## Toolchain
 
@@ -54,7 +54,7 @@ ctest --test-dir build --output-on-failure
 | Change | Update |
 |--------|--------|
 | Behavior | FEATURES.md |
-| Commands | commands.yaml, COMMANDS.md, MANUAL.md, command.c |
+| Commands | commands.yaml, COMMANDS.md, MANUAL.md, commands_registry.c |
 | INI/operator | MANUAL.md + `share/*.ini.example` (Linux-based paths) |
 | Build | BUILD.md |
 | Planned | ROADMAP.md |

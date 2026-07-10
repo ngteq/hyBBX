@@ -1,5 +1,6 @@
 #include "hybbx/hybbx.h"
 #include "hybbx/command.h"
+#include "hybbx/commands_registry.h"
 #include "hybbx/service.h"
 #include "hybbx/session.h"
 #include "hybbx/texts.h"
@@ -52,110 +53,6 @@ static int str_ieq(const char *a, const char *b)
 
 static void cmd_deny_privilege(hybbx_session_t *session);
 
-static int cmd_verb_allowed(hybbx_user_level_t level, const char *verb)
-{
-    if (verb == NULL || verb[0] == '\0') {
-        return 1;
-    }
-
-    if (str_ieq(verb, "help") || str_ieq(verb, "?") || str_ieq(verb, "command") ||
-        str_ieq(verb, "menu") || str_ieq(verb, "index") || str_ieq(verb, "alias")) {
-        return 1;
-    }
-
-    if (level == HYBBX_LEVEL_GUEST) {
-        return str_ieq(verb, "motd") || str_ieq(verb, "news") ||
-               str_ieq(verb, "rules") || str_ieq(verb, "legal") ||
-               str_ieq(verb, "login") || str_ieq(verb, "register") ||
-               str_ieq(verb, "clear") || str_ieq(verb, "cls") ||
-               str_ieq(verb, "reset") || str_ieq(verb, "echo") ||
-               str_ieq(verb, "session") || str_ieq(verb, "info") ||
-               str_ieq(verb, "version") || str_ieq(verb, "ver") ||
-               str_ieq(verb, "exit") || str_ieq(verb, "logout") ||
-               str_ieq(verb, "bye") || str_ieq(verb, "quit");
-    }
-
-    if (str_ieq(verb, "news") || str_ieq(verb, "motd") ||
-        str_ieq(verb, "rules") || str_ieq(verb, "legal") ||
-        str_ieq(verb, "who") || str_ieq(verb, "online") || str_ieq(verb, "users") ||
-        str_ieq(verb, "session") || str_ieq(verb, "info") ||
-        str_ieq(verb, "version") || str_ieq(verb, "ver") ||
-        str_ieq(verb, "leave") || str_ieq(verb, "back") ||
-        str_ieq(verb, "main") ||
-        str_ieq(verb, "clear") || str_ieq(verb, "cls") ||
-        str_ieq(verb, "reset") || str_ieq(verb, "echo") ||
-        str_ieq(verb, "exit") || str_ieq(verb, "logout") ||
-        str_ieq(verb, "bye") || str_ieq(verb, "quit") ||
-        str_ieq(verb, "login") ||
-        str_ieq(verb, "deleteme")) {
-        return 1;
-    }
-
-    if (str_ieq(verb, "register")) {
-        return hybbx_auth_may_register(level);
-    }
-
-    if (str_ieq(verb, "usercreate") || str_ieq(verb, "createuser")) {
-        return hybbx_auth_may_create_user(level);
-    }
-
-    if (str_ieq(verb, "changeme")) {
-        return hybbx_auth_may_changeme(level);
-    }
-
-    if (str_ieq(verb, "changeuser") || str_ieq(verb, "userchange")) {
-        return hybbx_user_level_is_sysop_or_admin(level);
-    }
-
-    if (str_ieq(verb, "deleteuser") || str_ieq(verb, "userdelete")) {
-        return hybbx_user_level_is_sysop(level);
-    }
-
-    if (str_ieq(verb, "chat")) {
-        return !hybbx_user_level_is_guest(level);
-    }
-
-    if (str_ieq(verb, "conference") || str_ieq(verb, "meeting")) {
-        return !hybbx_user_level_is_guest(level);
-    }
-
-    if (str_ieq(verb, "mail")) {
-        return !hybbx_user_level_is_guest(level);
-    }
-
-    if (str_ieq(verb, "proxymail")) {
-        return !hybbx_user_level_is_guest(level);
-    }
-
-    if (str_ieq(verb, "proxychat")) {
-        return !hybbx_user_level_is_guest(level);
-    }
-
-    if (str_ieq(verb, "activate")) {
-        return hybbx_auth_may_activate(level);
-    }
-
-    if (str_ieq(verb, "promote") || str_ieq(verb, "demote") ||
-        str_ieq(verb, "delete") || str_ieq(verb, "del")) {
-        return level == HYBBX_LEVEL_SYSOP || level == HYBBX_LEVEL_ADMIN;
-    }
-
-    if (str_ieq(verb, "shutdown") || str_ieq(verb, "restart")) {
-        return hybbx_user_level_is_sysop(level);
-    }
-
-    if (str_ieq(verb, "broadcast") || str_ieq(verb, "announce")) {
-        return hybbx_user_level_is_sysop(level);
-    }
-
-    return 0;
-}
-
-static int cmd_deleteme_confirmed(const char *arg)
-{
-    return arg != NULL && hybbx_bool_is_true(arg);
-}
-
 static int cmd_help_shows_deleteme(hybbx_user_level_t level)
 {
     return !hybbx_user_level_is_sysop(level) &&
@@ -179,7 +76,7 @@ static int cmd_verb_allowed_login_prompt(const char *verb)
         return 1;
     }
 
-    if (cmd_verb_allowed(HYBBX_LEVEL_GUEST, verb)) {
+    if (hybbx_commands_registry_verb_allowed(HYBBX_LEVEL_GUEST, verb)) {
         return 1;
     }
 
@@ -202,7 +99,7 @@ static hybbx_result_t cmd_check_access(hybbx_session_t *session,
         return HYBBX_ERR_DENIED;
     }
 
-    if (cmd_verb_allowed(level, verb)) {
+    if (hybbx_commands_registry_verb_allowed(level, verb)) {
         return HYBBX_OK;
     }
 
@@ -222,421 +119,76 @@ static hybbx_result_t cmd_check_access(hybbx_session_t *session,
     return HYBBX_ERR_DENIED;
 }
 
-static void cmd_help_group(hybbx_session_t *session,
-                           const char *label, const char *cmds)
+static int cmd_deleteme_confirmed(const char *arg)
 {
-    char buf[HYBBX_LINE_MAX];
-
-    snprintf(buf, sizeof(buf), "  %-10s %s", label, cmds);
-    hybbx_session_write_line(session, buf);
+    return arg != NULL && hybbx_bool_is_true(arg);
 }
 
-static void cmd_help_continuation(hybbx_session_t *session, const char *cmds)
+static void cmd_registry_usage(hybbx_session_t *session, const char *verb)
 {
-    char buf[HYBBX_LINE_MAX];
+    const char *canonical = hybbx_commands_registry_canonical(verb);
 
-    snprintf(buf, sizeof(buf), "             %s", cmds);
-    hybbx_session_write_line(session, buf);
-}
-
-static void cmd_help_two(hybbx_session_t *session,
-                         const char *line1, const char *line2)
-{
-    hybbx_session_write_line(session, line1);
-    hybbx_session_write_line(session, line2);
-}
-
-static void cmd_help_admin_sysop(hybbx_session_t *session,
-                                 hybbx_user_level_t level)
-{
-    if (hybbx_auth_may_create_user(level)) {
-        cmd_help_group(session, "Admin",
-                       "/usercreate /activate /changeuser /promote /demote");
-        if (hybbx_user_level_is_sysop(level)) {
-            cmd_help_continuation(session, "/delete");
-            cmd_help_group(session, "Sysop",
-                           "/deleteuser /shutdown /restart /broadcast");
-        }
-    } else if (hybbx_auth_may_activate(level)) {
-        cmd_help_group(session, "Admin", "/activate");
-    }
-}
-
-static void cmd_help_list_general(hybbx_session_t *session, int full_who)
-{
-    if (full_who) {
-        cmd_help_group(session, "General",
-            "/help /menu /index /alias /news /motd /rules /who");
-        cmd_help_continuation(session, "/users /session /version");
-    } else {
-        cmd_help_group(session, "General",
-            "/help /menu /index /alias /news /motd /rules /session /version");
-    }
-}
-
-static void cmd_help_list_for_level(hybbx_session_t *session)
-{
-    hybbx_user_level_t level = hybbx_session_user_level(session);
-
-    hybbx_session_write_line(session,
-        "HyBBX commands /help <cmd> for more");
-
-    if (level == HYBBX_LEVEL_GUEST ||
-        (hybbx_session_login_prompt(session) &&
-         !hybbx_session_logged_in(session))) {
-        cmd_help_list_general(session, 0);
-        cmd_help_group(session, "Screen", "/clear /echo");
-        cmd_help_group(session, "Account", "/login /register");
-        cmd_help_continuation(session, "/exit");
-        return;
-    }
-
-    cmd_help_list_general(session, 1);
-    cmd_help_group(session, "Screen", "/clear /echo");
-    cmd_help_group(session, "Areas",
-                   "/leave /main /chat /conference /mail");
-    cmd_help_continuation(session, "/proxymail /proxychat /exit");
-    if (cmd_help_shows_deleteme(level)) {
-        cmd_help_group(session, "Account",
-                       "/login /changeme /deleteme");
-    } else {
-        cmd_help_group(session, "Account", "/login /changeme");
-    }
-
-    cmd_help_admin_sysop(session, level);
-}
-
-static void cmd_help_index_for_all(hybbx_session_t *session)
-{
-    hybbx_session_write_line(session,
-        "HyBBX command-index /help <cmd> for more");
-    cmd_help_list_general(session, 1);
-    cmd_help_group(session, "Screen", "/clear /echo");
-    cmd_help_group(session, "Areas",
-                   "/leave /main /chat /conference /mail");
-    cmd_help_continuation(session, "/proxymail /proxychat /exit");
-    cmd_help_group(session, "Account",
-                   "/login /changeme /register /deleteme");
-    cmd_help_group(session, "Admin",
-                   "/usercreate /activate /changeuser /promote /demote");
-    cmd_help_continuation(session, "/delete");
-    cmd_help_group(session, "Sysop",
-                   "/deleteuser /shutdown /restart /broadcast");
-}
-
-static hybbx_result_t cmd_alias_list(hybbx_session_t *session)
-{
-    hybbx_session_write_line(session,
-        "HyBBX aliases /help <cmd> for more");
-    hybbx_session_write_line(session,
-        "? command -> help   legal -> rules   online -> who   ver -> version");
-    hybbx_session_write_line(session,
-        "info -> session   back -> leave   cls reset -> clear");
-    hybbx_session_write_line(session,
-        "logout bye quit -> exit   del -> delete   meeting -> conference");
-    hybbx_session_write_line(session,
-        "createuser -> usercreate   userchange -> changeuser");
-    hybbx_session_write_line(session,
-        "userdelete -> deleteuser   announce -> broadcast");
-    hybbx_session_write_line(session,
-        "mail+proxymail   chat+proxychat");
-    return HYBBX_OK;
+    hybbx_commands_registry_show_help(session, canonical);
 }
 
 static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic)
 {
     hybbx_user_level_t level = hybbx_session_user_level(session);
-    const char *canonical = topic;
+    const char *canonical;
+    const hybbx_command_def_t *def;
 
     if (topic == NULL || topic[0] == '\0') {
-        cmd_help_list_for_level(session);
+        hybbx_commands_registry_show_menu(session);
         return HYBBX_OK;
     }
 
-    if (str_ieq(topic, "info")) {
-        canonical = "session";
-    } else if (str_ieq(topic, "online")) {
-        canonical = "who";
-    } else if (str_ieq(topic, "ver")) {
-        canonical = "version";
-    } else if (str_ieq(topic, "logout") || str_ieq(topic, "bye") ||
-               str_ieq(topic, "quit")) {
-        canonical = "exit";
-    } else if (str_ieq(topic, "?")) {
-        canonical = "help";
-    } else if (str_ieq(topic, "command")) {
-        canonical = "help";
-    } else if (str_ieq(topic, "del")) {
-        canonical = "delete";
-    } else if (str_ieq(topic, "back")) {
-        canonical = "leave";
-    } else if (str_ieq(topic, "cls") || str_ieq(topic, "reset")) {
-        canonical = "clear";
-    } else if (str_ieq(topic, "legal")) {
-        canonical = "rules";
-    } else if (str_ieq(topic, "meeting")) {
-        canonical = "conference";
-    } else if (str_ieq(topic, "createuser")) {
-        canonical = "usercreate";
-    } else if (str_ieq(topic, "userchange")) {
-        canonical = "changeuser";
-    } else if (str_ieq(topic, "userdelete")) {
-        canonical = "deleteuser";
-    } else if (str_ieq(topic, "announce")) {
-        canonical = "broadcast";
-    }
+    canonical = hybbx_commands_registry_canonical(topic);
 
-    if (!cmd_verb_allowed(level, canonical) ||
+    if (!hybbx_commands_registry_verb_allowed(level, canonical) ||
         (str_ieq(canonical, "deleteme") && !cmd_help_shows_deleteme(level))) {
         hybbx_session_write_line(session, cmd_help_unknown(session));
         return HYBBX_ERR_NOT_FOUND;
     }
 
-    if (str_ieq(canonical, "help")) {
-        cmd_help_two(session, "/help cmd",
-            "Help: List commands or show one command. More: /menu /index /alias.");
+    if (str_ieq(canonical, "usercreate") &&
+        !hybbx_auth_may_create_user(level)) {
+        cmd_deny_privilege(session);
         return HYBBX_OK;
     }
 
-    if (str_ieq(canonical, "menu")) {
-        cmd_help_two(session, "/menu",
-            "Help: Your command menu. Same as /help with no argument.");
+    if (str_ieq(canonical, "activate") && !hybbx_auth_may_activate(level)) {
+        cmd_deny_privilege(session);
         return HYBBX_OK;
     }
 
-    if (str_ieq(canonical, "index")) {
-        cmd_help_two(session, "/index",
-            "Help: Full command-index for this Main. Same for every account.");
+    if (str_ieq(canonical, "deleteuser") &&
+        !hybbx_user_level_is_sysop(level)) {
+        cmd_deny_privilege(session);
         return HYBBX_OK;
     }
 
-    if (str_ieq(canonical, "alias")) {
-        cmd_help_two(session, "/alias",
-            "Help: Alternate names for commands. More: see /alias output.");
+    if ((str_ieq(canonical, "shutdown") || str_ieq(canonical, "restart") ||
+         str_ieq(canonical, "broadcast")) &&
+        !hybbx_user_level_is_sysop(level)) {
+        cmd_deny_privilege(session);
         return HYBBX_OK;
     }
 
-    if (str_ieq(canonical, "news")) {
-        cmd_help_two(session, "/news",
-            "Help: Show system news from news.txt.");
-        return HYBBX_OK;
+    def = hybbx_commands_registry_find(canonical);
+    if (def == NULL || def->line1[0] == '\0') {
+        hybbx_session_write_line(session, cmd_help_unknown(session));
+        return HYBBX_ERR_NOT_FOUND;
     }
 
-    if (str_ieq(canonical, "motd")) {
-        cmd_help_two(session, "/motd",
-            "Help: Show message of the day.");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "rules")) {
-        cmd_help_two(session, "/rules",
-            "Help: Show terms of use from rules.txt. More: /legal");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "who")) {
-        cmd_help_two(session, "/who",
-            "Help: Online users and connection type. More: /online");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "users")) {
-        cmd_help_two(session, "/users",
-            "Help: Registered users by level (Sysop Admin Mod User Guest).");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "session")) {
-        cmd_help_two(session, "/session",
-            "Help: Username, session id, transport. More: /info");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "version")) {
-        cmd_help_two(session, "/version",
-            "Help: HyBBX version and host OS name. More: /ver");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "leave")) {
-        cmd_help_two(session, "/leave",
-            "Help: Up one area level. More: /back");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "main")) {
-        cmd_help_two(session, "/main",
-            "Help: Return to main prompt.");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "clear")) {
-        cmd_help_two(session, "/clear",
-            "Help: Clear screen and discard input line. More: /cls /reset");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "echo")) {
-        cmd_help_two(session, "/echo yes|no",
-            "Help: Show or set typed-character echo.");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "chat")) {
-        cmd_help_two(session, "/chat n|name|show|showall|proxychat",
-            "Help: Join or list chat channels. More: /chat proxychat");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "conference")) {
-        cmd_help_two(session, "/conference topic user",
-            "Help: Private two-user channel. More: /meeting");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "mail")) {
-        cmd_help_two(session, "/mail list|read|send|delete|recycle|proxymail ...",
-            "Help: Personal mailbox on this Main. More: list read send delete");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "proxymail")) {
-        cmd_help_two(session, "/proxymail",
-            "Help: mail to user@other-main. More: list read send delete recycle.");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "proxychat")) {
-        cmd_help_two(session, "/proxychat",
-            "Help: Chat with users on other mains. More: /chat proxychat");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "exit")) {
-        cmd_help_two(session, "/exit",
-            "Help: Close connection. More: /quit /logout /bye");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "login")) {
-        cmd_help_two(session, "/login username password",
-            "Help: Log in with a registered account.");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "changeme")) {
-        cmd_help_two(session, "/changeme old new name country location email",
-            "Help: Update own profile and password.");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "register")) {
-        cmd_help_two(session,
-            "/register user name country location email password",
-            "Help: Self-registration. Guest only. Sysop and Admin notified.");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "usercreate")) {
-        if (!hybbx_auth_may_create_user(level)) {
-            cmd_deny_privilege(session);
-            return HYBBX_OK;
-        }
-        cmd_help_two(session, "/usercreate user name country location email",
-            "Help: Create user account. Inactive until /activate. More: /createuser");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "activate")) {
-        if (!hybbx_auth_may_activate(level)) {
-            cmd_deny_privilege(session);
-            return HYBBX_OK;
-        }
-        cmd_help_two(session, "/activate username",
-            "Help: Set username activated.");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "promote")) {
-        cmd_help_two(session, "/promote username admin|mod",
-            "Help: Raise user to Admin or Mod.");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "demote")) {
-        cmd_help_two(session, "/demote username",
-            "Help: Set user to User level.");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "deleteme")) {
-        cmd_help_two(session, "/deleteme yes|no",
-            "Help: Permanently delete own account.");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "delete")) {
-        cmd_help_two(session, "/delete username",
-            "Help: Permanently remove account. More: /del");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "changeuser")) {
-        cmd_help_two(session,
-            "/changeuser user name country location email password",
-            "Help: Overwrite user profile and password. More: /userchange");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "deleteuser")) {
-        if (!hybbx_user_level_is_sysop(level)) {
-            cmd_deny_privilege(session);
-            return HYBBX_OK;
-        }
-        cmd_help_two(session, "/deleteuser username",
-            "Help: Delete any non-Sysop account. More: /userdelete");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "shutdown")) {
-        if (!hybbx_user_level_is_sysop(level)) {
-            cmd_deny_privilege(session);
-            return HYBBX_OK;
-        }
-        cmd_help_two(session, "/shutdown",
-            "Help: Stop the HyBBX daemon.");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "restart")) {
-        if (!hybbx_user_level_is_sysop(level)) {
-            cmd_deny_privilege(session);
-            return HYBBX_OK;
-        }
-        cmd_help_two(session, "/restart",
-            "Help: Restart the HyBBX daemon.");
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "broadcast")) {
-        if (!hybbx_user_level_is_sysop(level)) {
-            cmd_deny_privilege(session);
-            return HYBBX_OK;
-        }
-        cmd_help_two(session, "/broadcast message",
-            "Help: Send message to all online users on this Main. More: /announce");
-        return HYBBX_OK;
-    }
-
-    hybbx_session_write_line(session, cmd_help_unknown(session));
-    return HYBBX_ERR_NOT_FOUND;
+    hybbx_commands_registry_show_help(session, canonical);
+    return HYBBX_OK;
 }
 
 static hybbx_result_t cmd_help(hybbx_session_t *session,
                                const hybbx_parsed_command_t *cmd)
 {
     if (cmd->argc == 0) {
-        cmd_help_list_for_level(session);
+        hybbx_commands_registry_show_menu(session);
         return HYBBX_OK;
     }
 
@@ -2397,8 +1949,7 @@ static hybbx_result_t cmd_broadcast(hybbx_service_t *service,
     hybbx_result_t rc;
 
     if (cmd->argc < 1) {
-        cmd_help_two(session, "/broadcast message",
-            "Help: Send message to all online users on this Main. More: /announce");
+        cmd_registry_usage(session, "broadcast");
         return HYBBX_OK;
     }
 
@@ -2539,6 +2090,8 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
         return HYBBX_ERR_INVALID;
     }
 
+    (void)hybbx_session_command_gap(session);
+
     if (cmd->verb == NULL || cmd->verb[0] == '\0') {
         return cmd_help(session, cmd);
     }
@@ -2592,7 +2145,7 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
 
     if (str_ieq(cmd->verb, "menu")) {
         if (cmd->argc == 0) {
-            cmd_help_list_for_level(session);
+            hybbx_commands_registry_show_menu(session);
             return HYBBX_OK;
         }
         return cmd_help_topic(session, cmd->argv[0]);
@@ -2600,7 +2153,7 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
 
     if (str_ieq(cmd->verb, "index")) {
         if (cmd->argc == 0) {
-            cmd_help_index_for_all(session);
+            hybbx_commands_registry_show_index(session);
             return HYBBX_OK;
         }
         return cmd_help_topic(session, cmd->argv[0]);
@@ -2608,7 +2161,8 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
 
     if (str_ieq(cmd->verb, "alias")) {
         if (cmd->argc == 0) {
-            return cmd_alias_list(session);
+            hybbx_commands_registry_show_aliases(session);
+            return HYBBX_OK;
         }
         return cmd_help_topic(session, cmd->argv[0]);
     }

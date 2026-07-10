@@ -12,6 +12,7 @@
 #include "hybbx/registry.h"
 #include "hybbx/config.h"
 #include "hybbx/command.h"
+#include "hybbx/commands_registry.h"
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
 
@@ -262,12 +263,21 @@ int main(int argc, char *argv[])
 
         setup_install_root(config_path);
 
+        rc = hybbx_commands_registry_init();
+        if (rc != HYBBX_OK) {
+            fprintf(stderr, "Failed to load command registry\n");
+            hybbx_config_free(&config);
+            hybbx_service_destroy(service);
+            return EXIT_FAILURE;
+        }
+
         rc = hybbx_service_apply_config(service, &config, config_path);
         if (rc != HYBBX_OK) {
             fprintf(stderr,
                     "Failed to apply configuration (storage path writable? "
                     "telnet/circuit bind ok?) — %s\n",
                     hybbx_result_name(rc));
+            hybbx_commands_registry_shutdown();
             hybbx_config_free(&config);
             hybbx_service_destroy(service);
             return EXIT_FAILURE;
@@ -290,6 +300,7 @@ int main(int argc, char *argv[])
     if (have_config) {
         hybbx_config_free(&config);
     }
+    hybbx_commands_registry_shutdown();
     hybbx_service_destroy(service);
 
     return EXIT_SUCCESS;

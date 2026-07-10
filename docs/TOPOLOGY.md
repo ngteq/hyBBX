@@ -1,6 +1,6 @@
 # HyBBX topology
 
-**v1.5.0** — Main, Secondary, and mains-proxy mesh. INI: [MANUAL.md](MANUAL.md). Mesh detail: [MAINS_PROXY.md](MAINS_PROXY.md).
+**v1.7.5** — Main, Secondary, and mains-proxy mesh. INI: [MANUAL.md](MANUAL.md). Mesh detail: [MAINS_PROXY.md](MAINS_PROXY.md).
 
 ## Roles
 

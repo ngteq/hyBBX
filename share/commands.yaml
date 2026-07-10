@@ -18,6 +18,7 @@ meta:
   menu_header: "HyBBX commands /help <cmd> for more"
   index_header: "HyBBX command-index /help <cmd> for more"
   alias_header: "HyBBX aliases /help <cmd> for more"
+  command_output: "blank line before /command output; no blank line after"
 
 user_groups:
   - Sysop
@@ -102,9 +103,49 @@ index:
   - general
   - screen
   - areas
-  - account
-  - admin
+  - account_index
+  - admin_index
   - sysop
+
+menu_layouts:
+  general_guest:
+    - label: General
+      verbs: [help, menu, index, alias, news, motd, rules, session, version]
+    - label: Screen
+      group: screen
+  general:
+    - label: General
+      group: general
+  areas:
+    - label: Areas
+      group: areas
+      wrap: yes
+  account_guest:
+    - label: Account
+      verbs: [login, register]
+    - continuation: [exit]
+  account_user:
+    - label: Account
+      verbs: [login, changeme]
+      optional: [deleteme]
+  account_index:
+    - label: Account
+      verbs: [login, changeme, register, deleteme]
+  admin_full:
+    - label: Admin
+      group: admin
+      omit: [delete]
+    - continuation_group: admin
+      verbs: [delete]
+  admin_activate:
+    - label: Admin
+      verbs: [activate]
+  admin_index:
+    - label: Admin
+      group: admin
+  sysop:
+    - label: Sysop
+      group: sysop
 
 aliases:
   help:
@@ -280,6 +321,7 @@ commands:
   register:
     group: account
     min: Guest
+    only: Guest
     line1: "/register user name country location email password"
     line2: "Help: Self-registration. Guest only. Sysop and Admin notified."
 

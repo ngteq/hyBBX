@@ -12,6 +12,7 @@ if(HYBBX_BUILD_DAEMON)
         core/link.c
         core/command.c
         core/command_parse.c
+        core/commands_registry.c
         core/auth.c
         core/password.c
         core/crypto_config.c
@@ -114,6 +115,10 @@ if(HYBBX_BUILD_DAEMON)
     install(FILES ${CMAKE_SOURCE_DIR}/share/hybbx.ini.example
         DESTINATION ${HYBBX_INSTALL_HOME}
         RENAME hybbx.ini
+    )
+
+    install(FILES ${CMAKE_SOURCE_DIR}/share/commands.yaml
+        DESTINATION ${HYBBX_INSTALL_HOME}
     )
 
     install(FILES ${CMAKE_SOURCE_DIR}/share/hybbx-secondary.ini.example

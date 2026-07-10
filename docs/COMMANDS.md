@@ -1,6 +1,6 @@
 # Command registry and help layout
 
-**v1.5.0** — source of truth: [share/commands.yaml](../share/commands.yaml). Operator summary: [MANUAL.md](MANUAL.md).
+**v1.7.5** — source of commands: [share/commands.yaml](../share/commands.yaml). Operator summary: [MANUAL.md](MANUAL.md).
 
 ## User groups
 
@@ -46,6 +46,15 @@ Help: summary. More: subcommands or aliases
 
 Same text for `/help <cmd>` and on-command usage hints. Use **for more** in headers; **More:** in topic lines when listing subcommands.
 
+## Command output layout
+
+When a session runs a `/command` (not chat, mail compose, or conference text):
+
+1. **One blank line** before the command output (`hybbx_session_command_gap()`).
+2. **No blank line** after the last output line (next input follows directly).
+
+`/broadcast` and `/announce` use the same gap on every recipient session.
+
 Examples:
 
 ```
@@ -83,13 +92,13 @@ No administrative commands cross proxy links.
 
 | Piece | Status |
 |-------|--------|
-| `share/commands.yaml` | **Built** — registry |
-| `/help`, `/menu`, `/index`, `/alias` | **Built** — `command.c` (hand-synced to yaml) |
-| Two-line `/help <cmd>` topics | **Built** |
+| `share/commands.yaml` | **Built** — registry source |
+| Runtime loader from YAML | **Built** — `commands_registry.c`, loaded at startup |
+| `/help`, `/menu`, `/index`, `/alias` | **Built** — registry-driven |
+| Two-line `/help <cmd>` topics | **Built** — from YAML `line1` / `line2` |
 | `/broadcast` local fan-out | **Built** — `hybbx_broadcast_announce()` |
-| Runtime loader from YAML | **Planned** |
 
-When changing commands: update `commands.yaml`, then MANUAL.md and COMMANDS.md, then code.
+When changing commands: update `commands.yaml`, then MANUAL.md and COMMANDS.md.
 
 ## See also
 

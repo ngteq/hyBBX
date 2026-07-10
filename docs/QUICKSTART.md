@@ -1,6 +1,6 @@
 # Quick start
 
-**v1.5.0** (testing) — telnet, SSH, WebSocket, built-in security bans. Topology: [TOPOLOGY.md](TOPOLOGY.md).
+**v1.7.5** (testing) — telnet, SSH, WebSocket, built-in security bans. Topology: [TOPOLOGY.md](TOPOLOGY.md).
 
 ## Requirements
 
@@ -47,4 +47,4 @@ Empty data dir → **Sysop** with a random password (printed on first start; cha
 
 ## Next
 
-[FEATURES.md](FEATURES.md) · [RELEASE-1.5.0.md](RELEASE-1.5.0.md) · [BUILD.md](BUILD.md)
+[FEATURES.md](FEATURES.md) · [RELEASE-1.7.5.md](RELEASE-1.7.5.md) · [BUILD.md](BUILD.md)

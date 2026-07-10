@@ -1,8 +1,8 @@
-# HyBBX v1.5.0
+# HyBBX v1.7.5
 
-**Testing release — nearly complete.** Lab-ready without RF hardware; formal GitHub Release after field tests. Proxy relay and proxymail delivery not available yet.
+**Testing release.** Lab-ready without RF hardware; formal GitHub Release after field tests. Proxy relay and proxymail delivery not available yet.
 
-Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSocket** (loopback `:4591`), **HBX circuit hub** (`:7323`). Clients: **hybbx-telnet**, **hybbx-ssh**, **hybbx-terminal**, **hybbx-telnet** (AmigaOS).
+Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSocket** (loopback `:4591`), **HBX circuit hub** (`:7323`). Clients: **hybbx-telnet**, **hybbx-ssh**, **hybbx-terminal**.
 
 **Demo:** [README — hybbx.un1t.me](../README.md#live-hybbxun1tme).
 
@@ -10,6 +10,8 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 
 | Item | Detail |
 |------|--------|
+| **Command registry** | `share/commands.yaml` loaded at startup — `/help`, `/menu`, `/index`, `/alias` |
+| **Command output layout** | One blank line before `/command` replies |
 | **Topology** | [TOPOLOGY.md](TOPOLOGY.md) — Main, Secondary, mains-proxy |
 | `mains_proxy` | Proxy network; HBX/Circuit peers; user services only |
 | `/proxymail`, `/proxychat` | Inter-Main mail/chat (delivery not available yet) |
@@ -49,6 +51,7 @@ Multi-transport session daemon: **telnet** (`:2323`), **SSH** (`:3232`), **WebSo
 | Area | Status |
 |------|--------|
 | Telnet, mail, chat, commands | **Verified** |
+| Command registry (YAML) | **Built** — [COMMANDS.md](COMMANDS.md) |
 | WebSocket, browser UI | **Verified** |
 | Built-in security bans | **Built** |
 | SQLite storage | **Built** — opt-in |
@@ -70,4 +73,4 @@ Mains-proxy: `-DHYBBX_PLUGIN_MAINS_PROXY=ON`. Options: [BUILD.md](BUILD.md).
 
 ## See also
 
-[RELEASE-NOTES-1.5.0.txt](RELEASE-NOTES-1.5.0.txt) · [TOPOLOGY.md](TOPOLOGY.md) · [FEATURES.md](FEATURES.md) · [MANUAL.md](MANUAL.md) · [ROADMAP.md](ROADMAP.md)
+[RELEASE-NOTES-1.7.5.txt](RELEASE-NOTES-1.7.5.txt) · [TOPOLOGY.md](TOPOLOGY.md) · [FEATURES.md](FEATURES.md) · [MANUAL.md](MANUAL.md) · [ROADMAP.md](ROADMAP.md)

@@ -381,6 +381,7 @@ void hybbx_broadcast_ax25_tick(hybbx_service_t *service)
 }
 
 typedef struct broadcast_announce_ctx {
+    hybbx_session_t *from;
     const char *from_name;
     const char *message;
 } broadcast_announce_ctx_t;
@@ -397,6 +398,9 @@ static void broadcast_announce_visitor(hybbx_session_t *session, void *userdata)
     snprintf(line, sizeof(line), "*** %s: %s ***",
              ctx->from_name != NULL ? ctx->from_name : "Announce",
              ctx->message);
+    if (ctx->from == NULL || session != ctx->from) {
+        (void)hybbx_session_command_gap(session);
+    }
     hybbx_session_write_line(session, line);
 }
 
@@ -422,6 +426,7 @@ hybbx_result_t hybbx_broadcast_announce(hybbx_service_t *service,
         return HYBBX_ERR_INVALID;
     }
 
+    ctx.from = from;
     ctx.from_name = (from != NULL) ? hybbx_session_display_name(from) : "Announce";
     ctx.message = message;
     hybbx_service_visit_sessions(service, broadcast_announce_visitor, &ctx);

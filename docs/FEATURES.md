@@ -1,6 +1,6 @@
 # Feature status
 
-**v1.5.0** (testing) · [RELEASE-1.5.0.md](RELEASE-1.5.0.md) · INI: [MANUAL.md](MANUAL.md)
+**v1.7.5** (testing) · [RELEASE-1.7.5.md](RELEASE-1.7.5.md) · INI: [MANUAL.md](MANUAL.md)
 
 | Status | Meaning |
 |--------|---------|
@@ -18,6 +18,7 @@
 | Mail, chat, conference | **Verified** |
 | `/proxymail`, `/proxychat` | **Partial** — proxy network; delivery not available yet |
 | `/` commands | **Verified** |
+| Command registry (`commands.yaml`) | **Built** — runtime loader — [COMMANDS.md](COMMANDS.md) |
 | Flat-file storage | **Verified** |
 | Traffic pacing 2400/80 | **Verified** |
 | Texts (`text/*.txt`) | **Verified** |

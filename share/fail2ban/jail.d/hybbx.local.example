@@ -1,6 +1,6 @@
 # Example fail2ban jails for HyBBX security.log
 #
-# HyBBX v1.5.0+ includes built-in [security] bans — these filters are optional
+# HyBBX v1.7.5+ includes built-in [security] bans — these filters are optional
 # for site-wide iptables/nftables integration alongside the daemon.
 #
 # 1. Copy filter.d/*.conf to /etc/fail2ban/filter.d/

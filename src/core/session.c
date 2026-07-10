@@ -841,6 +841,11 @@ hybbx_result_t hybbx_session_write_line(hybbx_session_t *session,
     return hybbx_session_write(session, "\n");
 }
 
+hybbx_result_t hybbx_session_command_gap(hybbx_session_t *session)
+{
+    return hybbx_session_write(session, "\n");
+}
+
 static int session_accepts_input(const hybbx_session_core_t *core)
 {
     return core != NULL && (core->logged_in != 0 || core->login_prompt != 0);
