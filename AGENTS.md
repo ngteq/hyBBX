@@ -1,6 +1,6 @@
 # HyBBX — agent guide
 
-Humans: [CONTRIBUTING.md](CONTRIBUTING.md). **v2.0.0 (upcoming)**. This file is the primary handoff for AI-assisted forks and continued development.
+Humans: [CONTRIBUTING.md](CONTRIBUTING.md). **v2.0.0 (upcoming)**.
 
 ## Product
 
@@ -27,7 +27,6 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 8. **Proxy network** (`mains_proxy`): user services (`proxymail`, `proxychat`, future) only — no Sysop/Admin/Mod actions across proxy links.
 9. **Version:** current `HYBBX_VERSION_STRING` only in code and brief doc headers. As-is software — compact text, no upgrade/history bloat.
 10. **Documentation — Linux-based.** All docs in `docs/`, `text/`, README, and share examples assume Linux. Use `HTTPD_DOCROOT`, `systemctl`, `ss`. Do not name other OSes (BSD, macOS, Windows, …) or distro-specific package paths unless unavoidable in third-party license names.
-11. **Fork-friendly.** No personal or custodial prose in docs. GPL-3.0 — preserve LICENSE.txt. New maintainers: CONTRIBUTING.md → this file → DEVELOPMENT.md → TOPOLOGY.md.
 
 ## Doc map
 
@@ -55,4 +54,4 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 ctest --test-dir build   # -DHYBBX_BUILD_TESTS=ON
 ```
 
-Do not commit unless the maintainer asks.
+Do not commit unless the user asks.

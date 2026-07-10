@@ -80,4 +80,4 @@ Details: [docs/BUILD.md](docs/BUILD.md) · [docs/MANUAL.md](docs/MANUAL.md)
 
 **Live demo** — [hybbx.un1t.me](https://hybbx.un1t.me/): `telnet hybbx.un1t.me 2323` (guest auto-login). Browser terminal on the site; SSH port 3232 with `/login` for registered accounts.
 
-GPL-3.0 — [LICENSE.txt](LICENSE.txt) · [docs/LICENSING.md](docs/LICENSING.md) · [CONTRIBUTING.md](CONTRIBUTING.md)
+GPL-3.0 — [LICENSE.txt](LICENSE.txt) · [docs/LICENSING.md](docs/LICENSING.md)

@@ -28,4 +28,4 @@ Plugin-only session daemon; Main + Secondary HBX topology ([TOPOLOGY.md](../../d
 
 ## Git
 
-No commit/push unless the maintainer asks.
+No commit/push unless the user asks.

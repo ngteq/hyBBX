@@ -2,8 +2,6 @@
 
 [AGENTS.md](../AGENTS.md) · [CONTRIBUTING.md](../CONTRIBUTING.md) · **v2.0.0 (upcoming)**
 
-Fork-friendly: this file + AGENTS.md are the maintainer handoff for humans and coding agents.
-
 ## Toolchain
 
 CMake 3.16+, GCC or Clang, pthread.
@@ -69,10 +67,3 @@ ctest --test-dir build --output-on-failure
 | Transport plugin | matching doc in `docs/` (TNCS, WEBSOCKET, …) |
 
 Technical docs only — no planning or status matrices.
-
-## Fork / new maintainer
-
-1. [CONTRIBUTING.md](../CONTRIBUTING.md) — GPL obligations, fork checklist
-2. [TOPOLOGY.md](TOPOLOGY.md) — do not break HBX-only inter-node rule
-3. `include/hybbx/` — public API; extend before duplicating logic in plugins
-4. Tests: `./scripts/dev-setup.sh` then `ctest --test-dir build` with `-DHYBBX_BUILD_TESTS=ON`
