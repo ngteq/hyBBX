@@ -42,6 +42,17 @@ static int session_str_ieq(const char *a, const char *b)
     return *a == '\0' && *b == '\0';
 }
 
+static int session_console_show_guest_events(void)
+{
+    const hybbx_log_config_t *cfg = hybbx_log_config_get();
+
+    if (cfg == NULL) {
+        return 1;
+    }
+
+    return cfg->level <= HYBBX_LOG_STATS;
+}
+
 typedef struct hybbx_session_core {
     hybbx_session_t pub;
     hybbx_session_record_t record;
@@ -1255,12 +1266,14 @@ hybbx_result_t hybbx_session_open(hybbx_service_t *service,
         }
 
         if (!suppress_startup_text) {
-            printf("[session] auto-login %s on %s (session %llu)\n",
-                   core->record.username, transport->name,
-                   (unsigned long long)core->record.session_id);
-            hybbx_log_info("auto-login %s on %s (session %llu)",
-                           core->record.username, transport->name,
-                           (unsigned long long)core->record.session_id);
+            if (session_console_show_guest_events()) {
+                printf("[session] auto-login %s on %s (session %llu)\n",
+                       core->record.username, transport->name,
+                       (unsigned long long)core->record.session_id);
+            }
+            hybbx_log_stats("auto-login %s on %s (session %llu)",
+                            core->record.username, transport->name,
+                            (unsigned long long)core->record.session_id);
         }
 
         if (!suppress_startup_text) {

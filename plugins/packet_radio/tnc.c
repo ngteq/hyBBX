@@ -26,6 +26,7 @@ struct hybbx_tnc {
     hybbx_tnc_host_t host;
     hybbx_ax25_path_t tx_path;
     int kiss_active;
+    hybbx_kiss_entry_t kiss_entry_used;
     int host_ready;
     hybbx_tnc_frame_cb frame_cb;
     hybbx_tnc_ui_cb ui_cb;
@@ -131,18 +132,6 @@ static hybbx_result_t send_cmd(hybbx_tnc_t *tnc, const char *cmd)
     return send_raw(tnc, (const uint8_t *)line, len);
 }
 
-static void tnc_sleep_ms(unsigned ms)
-{
-#if defined(_WIN32)
-    Sleep((DWORD)ms);
-#else
-    struct timeval tv;
-    tv.tv_sec = (time_t)(ms / 1000u);
-    tv.tv_usec = (suseconds_t)((ms % 1000u) * 1000u);
-    (void)select(0, NULL, NULL, NULL, &tv);
-#endif
-}
-
 static hybbx_result_t drain_serial(hybbx_tnc_t *tnc, unsigned rounds)
 {
     uint8_t buf[128];
@@ -160,32 +149,6 @@ static hybbx_result_t drain_serial(hybbx_tnc_t *tnc, unsigned rounds)
     }
 
     return HYBBX_OK;
-}
-
-static int tnc_probe_command_mode(hybbx_tnc_t *tnc)
-{
-    uint8_t buf[64];
-    size_t read_len = 0;
-
-    if (tnc == NULL || tnc->serial == NULL) {
-        return 0;
-    }
-
-    (void)drain_serial(tnc, 2);
-    (void)send_cmd(tnc, "");
-    tnc_sleep_ms(100);
-
-    if (hybbx_serial_read(tnc->serial, buf, sizeof(buf), &read_len) != HYBBX_OK) {
-        return 0;
-    }
-
-    return read_len > 0;
-}
-
-static hybbx_result_t tnc_send_esc_at_k(hybbx_tnc_t *tnc)
-{
-    const uint8_t seq[] = { 0x1b, '@', 'K' };
-    return send_raw(tnc, seq, sizeof(seq));
 }
 
 static hybbx_result_t send_kiss_param(hybbx_tnc_t *tnc,
@@ -258,50 +221,133 @@ static hybbx_result_t tnc_apply_radio_modulation(hybbx_tnc_t *tnc)
     return HYBBX_OK;
 }
 
-static hybbx_result_t tnc_enter_kiss_mode(hybbx_tnc_t *tnc)
+static hybbx_result_t tnc_send_esc_at_k(hybbx_tnc_t *tnc)
 {
-    unsigned attempt;
+    const uint8_t seq[] = { 0x1b, '@', 'K' };
 
-    if (!tnc->config.params.kiss_on_startup) {
-        tnc->kiss_active = 1;
+    return send_raw(tnc, seq, sizeof(seq));
+}
+
+static hybbx_result_t tnc_send_kiss_return_frame(hybbx_tnc_t *tnc)
+{
+    const uint8_t frame[] = { HYBBX_KISS_FEND, 0xFFu, HYBBX_KISS_FEND };
+
+    return send_raw(tnc, frame, sizeof(frame));
+}
+
+static hybbx_result_t tnc_profile_prepare_kiss_host(hybbx_tnc_t *tnc)
+{
+    if (tnc == NULL || tnc->config.tnc != HYBBX_PACKET_RADIO_TNC_PK232) {
         return HYBBX_OK;
     }
 
-    /*
-     * Some TNC2C devices need a short settle window after serial open and may
-     * ignore the first KISS switch command. Probe command mode and retry with
-     * ESC @ K fallback so HyBBX can start without external boot helpers.
-     */
-    if (tnc->config.tnc == HYBBX_PACKET_RADIO_TNC_TNC2C) {
-        tnc_sleep_ms(300);
+    drain_serial(tnc, 2);
+    (void)send_cmd(tnc, "XFLOW OFF");
+    (void)send_cmd(tnc, "AWLEN 8");
+    (void)send_cmd(tnc, "PARITY 0");
+    (void)send_cmd(tnc, "CONMODE TRANS");
+    (void)send_cmd(tnc, "FULLDUP OFF");
+    drain_serial(tnc, 2);
+    return HYBBX_OK;
+}
+
+static hybbx_result_t tnc_enter_kiss_by_entry(hybbx_tnc_t *tnc,
+                                              hybbx_kiss_entry_t entry)
+{
+    if (tnc == NULL) {
+        return HYBBX_ERR_INVALID;
     }
 
-    for (attempt = 0; attempt < 3; attempt++) {
-        if (!tnc_probe_command_mode(tnc)) {
+    switch (entry) {
+    case HYBBX_KISS_ENTRY_NONE:
+        tnc->kiss_active = 1;
+        tnc->kiss_entry_used = HYBBX_KISS_ENTRY_NONE;
+        return HYBBX_OK;
+
+    case HYBBX_KISS_ENTRY_ESC_AT_K:
+        if (tnc_send_esc_at_k(tnc) != HYBBX_OK) {
+            return HYBBX_ERR_IO;
+        }
+        drain_serial(tnc, 8);
+        tnc->kiss_active = 1;
+        tnc->kiss_entry_used = HYBBX_KISS_ENTRY_ESC_AT_K;
+        return HYBBX_OK;
+
+    case HYBBX_KISS_ENTRY_KISS_ON:
+        if (send_cmd(tnc, "kiss on") != HYBBX_OK) {
+            return HYBBX_ERR_IO;
+        }
+        drain_serial(tnc, 8);
+        tnc->kiss_active = 1;
+        tnc->kiss_entry_used = HYBBX_KISS_ENTRY_KISS_ON;
+        return HYBBX_OK;
+
+    case HYBBX_KISS_ENTRY_AUTO:
+        if (send_cmd(tnc, "kiss on") == HYBBX_OK) {
+            drain_serial(tnc, 8);
             tnc->kiss_active = 1;
+            tnc->kiss_entry_used = HYBBX_KISS_ENTRY_KISS_ON;
             return HYBBX_OK;
         }
-
-        if (send_cmd(tnc, "kiss on") == HYBBX_OK) {
-            tnc_sleep_ms(120);
-            if (!tnc_probe_command_mode(tnc)) {
-                tnc->kiss_active = 1;
-                return HYBBX_OK;
-            }
-        }
-
         if (tnc_send_esc_at_k(tnc) == HYBBX_OK) {
-            tnc_sleep_ms(120);
-            if (!tnc_probe_command_mode(tnc)) {
-                tnc->kiss_active = 1;
-                return HYBBX_OK;
-            }
+            drain_serial(tnc, 8);
+            tnc->kiss_active = 1;
+            tnc->kiss_entry_used = HYBBX_KISS_ENTRY_ESC_AT_K;
+            return HYBBX_OK;
         }
+        return HYBBX_ERR_IO;
 
-        tnc_sleep_ms(200);
+    case HYBBX_KISS_ENTRY_UNSET:
+    default:
+        return HYBBX_ERR_INVALID;
+    }
+}
+
+static void tnc_exit_kiss_mode(hybbx_tnc_t *tnc)
+{
+    hybbx_kiss_exit_t exit_mode;
+
+    if (tnc == NULL || !tnc->kiss_active ||
+        tnc->config.protocol != HYBBX_PACKET_RADIO_PROTO_KISS) {
+        return;
     }
 
-    return HYBBX_ERR_IO;
+    exit_mode = tnc->config.params.kiss_exit;
+    if (exit_mode == HYBBX_KISS_EXIT_UNSET) {
+        exit_mode = HYBBX_KISS_EXIT_AUTO;
+    }
+    if (exit_mode == HYBBX_KISS_EXIT_AUTO) {
+        if (tnc->kiss_entry_used == HYBBX_KISS_ENTRY_ESC_AT_K) {
+            exit_mode = HYBBX_KISS_EXIT_KISS_FRAME;
+        } else {
+            exit_mode = HYBBX_KISS_EXIT_KISS_OFF;
+        }
+    }
+
+    switch (exit_mode) {
+    case HYBBX_KISS_EXIT_KISS_FRAME:
+        (void)tnc_send_kiss_return_frame(tnc);
+        break;
+    case HYBBX_KISS_EXIT_KISS_OFF:
+        (void)send_cmd(tnc, "kiss off");
+        break;
+    case HYBBX_KISS_EXIT_NONE:
+    case HYBBX_KISS_EXIT_UNSET:
+    default:
+        break;
+    }
+}
+
+static hybbx_result_t tnc_enter_kiss_mode(hybbx_tnc_t *tnc)
+{
+    hybbx_result_t rc;
+
+    rc = tnc_profile_prepare_kiss_host(tnc);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    return tnc_enter_kiss_by_entry(tnc, tnc->config.params.kiss_entry);
 }
 
 static void tnc_deliver_ui(hybbx_tnc_t *tnc, const uint8_t *frame, size_t len)
@@ -459,17 +505,7 @@ static void tnc_serial_params_from_config(const hybbx_packet_radio_config_t *con
 
 static const char *tnc_profile_name(hybbx_packet_radio_tnc_t tnc)
 {
-    switch (tnc) {
-    case HYBBX_PACKET_RADIO_TNC_BAYCOM:
-        return "baycom";
-    case HYBBX_PACKET_RADIO_TNC_PCCOM:
-        return "pccom";
-    case HYBBX_PACKET_RADIO_TNC_GENERIC:
-        return "generic";
-    case HYBBX_PACKET_RADIO_TNC_TNC2C:
-    default:
-        return "tnc2c";
-    }
+    return hybbx_packet_radio_tnc_name(tnc);
 }
 
 static const char *modem_name(hybbx_tnc2c_modem_t modem)
@@ -600,7 +636,9 @@ hybbx_result_t hybbx_tnc_open(hybbx_tnc_t **out,
 
     rc = hybbx_serial_open(&tnc->serial, config->device, &serial_params);
     if (rc != HYBBX_OK) {
-        fprintf(stderr, "[tnc] failed to open %s at %u baud (%u%c%u)\n",
+        fprintf(stderr,
+                "[tnc] cannot open %s at %u baud (%u%c%u) — "
+                "device not available or permission denied\n",
                 config->device, config->baud, serial_params.data_bits,
                 *serial_parity_letter(config->params.serial_parity),
                 serial_params.stop_bits);
@@ -609,12 +647,13 @@ hybbx_result_t hybbx_tnc_open(hybbx_tnc_t **out,
     }
 
     printf("[tnc] profile=%s protocol=%u device=%s host=%u %u%c%u rts_dtr=%s "
-           "radio=%u modem=%s modulation=%s band=%s duplex=%s\n",
+           "kiss_entry=%s radio=%u modem=%s modulation=%s band=%s duplex=%s\n",
            tnc_profile_name(config->tnc), (unsigned)config->protocol,
            config->device, config->baud, serial_params.data_bits,
            *serial_parity_letter(config->params.serial_parity),
            serial_params.stop_bits,
            serial_params.assert_modem_lines ? "on" : "off",
+           hybbx_kiss_entry_name(config->params.kiss_entry),
            config->params.radio_baud,
            modem_name(config->params.modem),
            hybbx_packet_radio_modulation_name(config->params.modulation),
@@ -646,10 +685,7 @@ void hybbx_tnc_close(hybbx_tnc_t *tnc)
     }
 
     if (tnc->serial != NULL) {
-        if (tnc->kiss_active &&
-            tnc->config.protocol == HYBBX_PACKET_RADIO_PROTO_KISS) {
-            (void)send_cmd(tnc, "kiss off");
-        }
+        tnc_exit_kiss_mode(tnc);
         hybbx_serial_close(tnc->serial);
     }
 

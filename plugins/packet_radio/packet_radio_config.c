@@ -80,6 +80,30 @@ static const char *find_kv(const char *config, const char *key,
     return NULL;
 }
 
+int hybbx_packet_radio_section_is_local_edge(const char *config)
+{
+    char scratch[64];
+
+    if (config == NULL) {
+        return 0;
+    }
+
+    if (find_kv(config, "circuit_host", scratch, sizeof(scratch)) != NULL) {
+        return 1;
+    }
+    if (find_kv(config, "device", scratch, sizeof(scratch)) != NULL) {
+        return 1;
+    }
+    if (find_kv(config, "tnc", scratch, sizeof(scratch)) != NULL) {
+        return 1;
+    }
+    if (find_kv(config, "protocol", scratch, sizeof(scratch)) != NULL) {
+        return 1;
+    }
+
+    return 0;
+}
+
 static hybbx_packet_radio_device_type_t parse_device_type(const char *value)
 {
     if (value == NULL) {
@@ -111,6 +135,29 @@ static hybbx_packet_radio_tnc_t parse_tnc(const char *value)
 {
     if (value == NULL || str_ieq(value, "tnc2c") || str_ieq(value, "tnc2-c")) {
         return HYBBX_PACKET_RADIO_TNC_TNC2C;
+    }
+
+    if (str_ieq(value, "tnc2") || str_ieq(value, "tnc-2") ||
+        str_ieq(value, "pktnc2") || str_ieq(value, "pk-tnc2") ||
+        str_ieq(value, "tapr") || str_ieq(value, "thefirmware") ||
+        str_ieq(value, "tf")) {
+        return HYBBX_PACKET_RADIO_TNC_TNC2;
+    }
+
+    if (str_ieq(value, "pk232") || str_ieq(value, "pk-232") ||
+        str_ieq(value, "aea") || str_ieq(value, "pk87") ||
+        str_ieq(value, "pk-87")) {
+        return HYBBX_PACKET_RADIO_TNC_PK232;
+    }
+
+    if (str_ieq(value, "mfj1278") || str_ieq(value, "mfj-1278") ||
+        str_ieq(value, "mfj1278b") || str_ieq(value, "mfj")) {
+        return HYBBX_PACKET_RADIO_TNC_MFJ1278;
+    }
+
+    if (str_ieq(value, "kantronics") || str_ieq(value, "kpc") ||
+        str_ieq(value, "kpc3") || str_ieq(value, "kpc9612")) {
+        return HYBBX_PACKET_RADIO_TNC_KANTRONICS;
     }
 
     if (str_ieq(value, "baycom") || str_ieq(value, "bay-com")) {
@@ -308,6 +355,63 @@ static void apply_serial_line(hybbx_packet_radio_config_t *out, const char *valu
     }
 }
 
+static hybbx_kiss_entry_t parse_kiss_entry(const char *value)
+{
+    if (value == NULL || value[0] == '\0') {
+        return HYBBX_KISS_ENTRY_UNSET;
+    }
+
+    if (str_ieq(value, "none") || str_ieq(value, "skip") ||
+        str_ieq(value, "off") || str_ieq(value, "no")) {
+        return HYBBX_KISS_ENTRY_NONE;
+    }
+
+    if (str_ieq(value, "kiss_on") || str_ieq(value, "kiss-on") ||
+        str_ieq(value, "command") || str_ieq(value, "on") ||
+        str_ieq(value, "yes")) {
+        return HYBBX_KISS_ENTRY_KISS_ON;
+    }
+
+    if (str_ieq(value, "esc_at_k") || str_ieq(value, "esc@k") ||
+        str_ieq(value, "esc") || str_ieq(value, "@k")) {
+        return HYBBX_KISS_ENTRY_ESC_AT_K;
+    }
+
+    if (str_ieq(value, "auto")) {
+        return HYBBX_KISS_ENTRY_AUTO;
+    }
+
+    return HYBBX_KISS_ENTRY_UNSET;
+}
+
+static hybbx_kiss_exit_t parse_kiss_exit(const char *value)
+{
+    if (value == NULL || value[0] == '\0') {
+        return HYBBX_KISS_EXIT_UNSET;
+    }
+
+    if (str_ieq(value, "none") || str_ieq(value, "skip") ||
+        str_ieq(value, "off") || str_ieq(value, "no")) {
+        return HYBBX_KISS_EXIT_NONE;
+    }
+
+    if (str_ieq(value, "kiss_off") || str_ieq(value, "kiss-off") ||
+        str_ieq(value, "command")) {
+        return HYBBX_KISS_EXIT_KISS_OFF;
+    }
+
+    if (str_ieq(value, "kiss_frame") || str_ieq(value, "frame") ||
+        str_ieq(value, "fend")) {
+        return HYBBX_KISS_EXIT_KISS_FRAME;
+    }
+
+    if (str_ieq(value, "auto")) {
+        return HYBBX_KISS_EXIT_AUTO;
+    }
+
+    return HYBBX_KISS_EXIT_UNSET;
+}
+
 static unsigned int default_radio_baud_for_modem(hybbx_tnc2c_modem_t modem)
 {
     switch (modem) {
@@ -356,35 +460,6 @@ int hybbx_packet_radio_baud_valid(unsigned int baud)
     return baud > 0;
 }
 
-int hybbx_packet_radio_section_is_local_edge(const char *config)
-{
-    char scratch[256];
-    const char *value;
-
-    if (config == NULL || config[0] == '\0') {
-        return 0;
-    }
-
-    value = find_kv(config, "device", scratch, sizeof(scratch));
-    if (value != NULL && value[0] != '\0') {
-        return 1;
-    }
-    value = find_kv(config, "tnc", scratch, sizeof(scratch));
-    if (value != NULL && value[0] != '\0') {
-        return 1;
-    }
-    value = find_kv(config, "protocol", scratch, sizeof(scratch));
-    if (value != NULL && value[0] != '\0') {
-        return 1;
-    }
-    value = find_kv(config, "circuit_host", scratch, sizeof(scratch));
-    if (value != NULL && value[0] != '\0') {
-        return 1;
-    }
-
-    return 0;
-}
-
 hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
                                                hybbx_packet_radio_config_t *out)
 {
@@ -412,7 +487,8 @@ hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
     out->params.band = HYBBX_PACKET_RADIO_BAND_UNSET;
     out->params.duplex = HYBBX_PACKET_RADIO_DUPLEX_UNSET;
     out->params.modulation = HYBBX_PACKET_RADIO_MOD_UNSET;
-    out->params.kiss_on_startup = 1;
+    out->params.kiss_entry = HYBBX_KISS_ENTRY_UNSET;
+    out->params.kiss_exit = HYBBX_KISS_EXIT_UNSET;
     out->params.host_connect_on_start = 0;
     out->params.assert_modem_lines = -1;
 
@@ -520,8 +596,21 @@ hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
         }
     }
 
-    value = find_kv(config, "kiss_on_startup", scratch, sizeof(scratch));
-    out->params.kiss_on_startup = hybbx_parse_bool(value, out->params.kiss_on_startup);
+    value = find_kv(config, "kiss_entry", scratch, sizeof(scratch));
+    if (value != NULL) {
+        hybbx_kiss_entry_t kiss_entry = parse_kiss_entry(value);
+        if (kiss_entry != HYBBX_KISS_ENTRY_UNSET) {
+            out->params.kiss_entry = kiss_entry;
+        }
+    }
+
+    value = find_kv(config, "kiss_exit", scratch, sizeof(scratch));
+    if (value != NULL) {
+        hybbx_kiss_exit_t kiss_exit = parse_kiss_exit(value);
+        if (kiss_exit != HYBBX_KISS_EXIT_UNSET) {
+            out->params.kiss_exit = kiss_exit;
+        }
+    }
 
     value = find_kv(config, "host_connect", scratch, sizeof(scratch));
     out->params.host_connect_on_start = hybbx_parse_bool(value,

@@ -37,10 +37,10 @@ Recommended for HyBBX Secondary: **KISS**.
 | `mfj1278` | `mfj-1278`, `mfj` | 7E1 | `auto` | off | 4800 |
 | `kantronics` | `kpc`, `kpc3`, `kpc9612` | 8N1 | `kiss_on` | off | 9600 |
 | `baycom` | `bay-com` | 8N1 KISS only | `kiss_on` | off | 2400 |
-
-For native SER12/PAR96 (kernel hdlcdrv), use the [`baycom`](BAYCOM.md) plugin — not `packet_radio`.
 | `pccom` | `pc-com`, `albrecht` | 8N1 | — (hostmode) | off | 2400 |
 | `generic` | `tnc` | 8N1 | `auto` | off | 2400 |
+
+For native SER12/PAR96 (kernel hdlcdrv), use the [`baycom`](BAYCOM.md) plugin — not `packet_radio`.
 
 Override serial line: `serial_line=7e1|8n1` or `data_bits`, `parity`, `stop_bits`, `rts_dtr`.
 
@@ -91,8 +91,7 @@ link_id = edge-b
 ...
 ```
 
-Each section needs a unique `device` and `link_id`. Main must list matching
-`[transport.packet_radioN]` registry rows.
+Each section needs a unique `device` and `link_id`. Main must list matching `[transport.packet_radioN]` registry rows.
 
 `link_password` must be set when Main keeps `[circuit] link_auth=yes`
 (default). If missing, the hub logs

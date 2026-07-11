@@ -23,6 +23,7 @@ enabled = no
 
 [networks]
 ax25 = yes
+baycom = no
 ardop = no
 crdop = no
 circuit = no
@@ -48,10 +49,10 @@ device_type = usb
 device = /dev/ttyUSB0
 baud = 2400
 serial_line = 7e1
+kiss_entry = kiss_on
 modem = tcm3105
 radio_baud = 1200
 clock_mhz = 4.9
-kiss_on_startup = yes
 txdelay = 50
 persist = 128
 slot = 10
@@ -59,6 +60,36 @@ txtail = 0
 radio_band = amateur
 radio_duplex = half
 g3ruh_fsk = no
+
+; Second TNC on same Secondary (unique device + link_id; Main needs matching section):
+; [transport.packet_radio2]
+; tnc = tnc2
+; protocol = kiss
+; device_type = serial
+; device = /dev/ttyUSB1
+; baud = 9600
+; serial_line = 8n1
+; kiss_entry = auto
+; circuit_host = main.example.com
+; link_id = secondary-2
+; link_password = changeme2
+
+; BayCom PR-Stack (kernel SER12) — see docs/BAYCOM.md
+; [networks]
+; baycom = yes
+; ax25 = no
+;
+; [transport.baycom1]
+; backend = kernel
+; mode = ser12*
+; interface = bcsf0
+; iobase = 0x3f8
+; irq = 4
+; radio_baud = 1200
+; circuit_host = main.example.com
+; circuit_port = 7323
+; link_id = baycom-1
+; link_password = changeme
 
 [ax25]
 frequency1 = 27.205
