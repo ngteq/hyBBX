@@ -53,6 +53,14 @@ Edge daemons authenticate with per-link `link_password`. User wire auth (telnet/
 
 Protocol: `include/hybbx/circuit.h` — default port `7323`, max 16 concurrent links.
 
+## TNC2C validation notes
+
+- Verified in field setup: TNC2C (`protocol=kiss`, 19200 8N1 host) links to HBX
+  with `LINK_AUTH` (`link_id=packet-radio1`) and stays online.
+- AX.25 broadcast TX path is verified end-to-end (HyBBX log + on-air audio TX).
+- Further validation still required: long-run stability (hours/days), multi-link
+  contention behavior, and dual-station RX/TX under sustained traffic.
+
 ## Proxy network (`mains_proxy`)
 
 Link Main or Secondary instances for **pure service linking** — proxymail and proxychat only. **No user accounts, rights, or other Main data cross proxy links.** **No Sysop, Admin, or Mod actions cross proxy links.**

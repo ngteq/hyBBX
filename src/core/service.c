@@ -739,13 +739,13 @@ static hybbx_result_t service_apply_circuit(struct hybbx_service_internal *svc,
         config, "circuit", "link_stale_days", HYBBX_LINK_STALE_DAYS, 1u, 365u);
     cfg.balance.enabled = hybbx_config_get_bool(config, "circuit", "balance", 1);
     cfg.balance.lag_sec = hybbx_config_get_uint(
-        config, "circuit", "balance_lag_sec", 5u, 1u, 120u);
+        config, "circuit", "balance_lag_sec", 8u, 1u, 120u);
     cfg.balance.queue_pause = (size_t)hybbx_config_get_uint(
-        config, "circuit", "balance_queue_pause", 4096u, 256u, 1048576u);
+        config, "circuit", "balance_queue_pause", 8192u, 256u, 1048576u);
     cfg.balance.queue_break = (size_t)hybbx_config_get_uint(
-        config, "circuit", "balance_queue_break", 16384u, 1024u, 1048576u);
+        config, "circuit", "balance_queue_break", 32768u, 1024u, 1048576u);
     cfg.balance.queue_cancel = (size_t)hybbx_config_get_uint(
-        config, "circuit", "balance_queue_cancel", 65536u, 4096u, 4194304u);
+        config, "circuit", "balance_queue_cancel", 131072u, 4096u, 4194304u);
     cfg.max_links = hybbx_config_get_uint(
         config, "circuit", "max_links", HYBBX_CIRCUIT_DEFAULT_MAX_LINKS,
         1u, HYBBX_CIRCUIT_MAX_LINKS);

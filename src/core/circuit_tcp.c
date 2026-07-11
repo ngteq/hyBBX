@@ -447,6 +447,7 @@ static hybbx_result_t circuit_slot_send_hbx(hybbx_circuit_link_slot_t *slot,
     balance_send_ctx_t bctx;
     flow_ctrl_ctx_t fctx;
     hybbx_circuit_hub_t *hub;
+    int bypass_balance = 0;
 
     if (slot == NULL || frame == NULL || len == 0) {
         return HYBBX_ERR_INVALID;
@@ -457,8 +458,24 @@ static hybbx_result_t circuit_slot_send_hbx(hybbx_circuit_link_slot_t *slot,
         return HYBBX_ERR_INVALID;
     }
 
+    /*
+     * Keep low-rate AX.25 UI TX (broadcast/beacon) reliable on slow links:
+     * bypass the queue-based balancer for this tiny control payload class.
+     * This avoids "logged as sent" beacons getting delayed/dropped when the
+     * balancer is temporarily in PAUSE/BREAK around startup stabilization.
+     */
+    if (len >= HYBBX_CIRCUIT_HEADER_SIZE &&
+        frame[0] == HYBBX_CIRCUIT_MAGIC_0 &&
+        frame[1] == HYBBX_CIRCUIT_MAGIC_1 &&
+        frame[2] == HYBBX_CIRCUIT_MAGIC_2 &&
+        frame[3] == HYBBX_CIRCUIT_VERSION &&
+        frame[4] == (uint8_t)HYBBX_CIRCUIT_PROTO_AX25_UI &&
+        (((unsigned)frame[5] << 8u) | (unsigned)frame[6]) & HYBBX_CIRCUIT_FLAG_TX) {
+        bypass_balance = 1;
+    }
+
     if (slot->balance != NULL && slot->profile_set &&
-        hub->config.balance.enabled) {
+        hub->config.balance.enabled && !bypass_balance) {
         bctx.slot = slot;
         fctx.hub = hub;
         fctx.slot = slot;
@@ -1002,7 +1019,7 @@ static int circuit_wait_link_auth(hybbx_circuit_link_slot_t *slot)
     }
 
     if (!ctx.done) {
-        circuit_log_auth_fail(slot->fd, "timeout", NULL);
+        circuit_log_auth_fail(slot->fd, "timeout_no_link_auth", NULL);
     }
 
     return ctx.ok;

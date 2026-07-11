@@ -67,7 +67,17 @@ static const char *protocol_name(hybbx_packet_radio_protocol_t proto)
 
 static const char *tnc_name(hybbx_packet_radio_tnc_t tnc)
 {
-    return hybbx_packet_radio_tnc_name(tnc);
+    switch (tnc) {
+    case HYBBX_PACKET_RADIO_TNC_BAYCOM:
+        return "baycom";
+    case HYBBX_PACKET_RADIO_TNC_PCCOM:
+        return "pccom";
+    case HYBBX_PACKET_RADIO_TNC_GENERIC:
+        return "generic";
+    case HYBBX_PACKET_RADIO_TNC_TNC2C:
+    default:
+        return "tnc2c";
+    }
 }
 
 static int instance_circuit_uplink_allowed(const packet_radio_instance_t *inst)
@@ -324,13 +334,22 @@ static hybbx_result_t instance_connect_circuit(packet_radio_instance_t *inst)
         port = HYBBX_CIRCUIT_DEFAULT_PORT;
     }
 
+    if (inst->config.link_password == NULL ||
+        inst->config.link_password[0] == '\0') {
+        fprintf(stderr,
+                "[packet_radio%u] missing link_password for HBX LINK_AUTH; "
+                "set link_password in [transport.packet_radioN] "
+                "(hub logs link_auth_fail reason=timeout_no_link_auth)\n",
+                inst->index + 1);
+        return HYBBX_ERR_INVALID;
+    }
+
     for (attempt = 0; attempt < 50; attempt++) {
         hybbx_result_t rc = hybbx_circuit_link_connect(host, port,
                                                      &inst->circuit_fd);
         if (rc == HYBBX_OK) {
             hybbx_circuit_decoder_init(&inst->circuit_dec);
-            if (inst->config.link_password != NULL &&
-                inst->config.link_password[0] != '\0') {
+            {
                 const char *link_id = inst->config.link_id;
                 const char *link_role = inst->config.link_role;
 

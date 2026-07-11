@@ -136,10 +136,10 @@ link_password = changeme
 link_stale_days = 10
 max_links = 8
 balance = yes
-balance_lag_sec = 5
-balance_queue_pause = 4096
-balance_queue_break = 16384
-balance_queue_cancel = 65536
+balance_lag_sec = 8
+balance_queue_pause = 8192
+balance_queue_break = 32768
+balance_queue_cancel = 131072
 
 [broadcast]
 enabled = yes
