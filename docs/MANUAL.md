@@ -194,6 +194,10 @@ httpd document root. See [WEBSOCKET.md](WEBSOCKET.md).
 |-----|---------|-------------|
 | `enabled` | `yes` | |
 | `ax25` | `yes` | QST UI to low/half-duplex links |
+| `ax25_auto` | `yes` | Periodic AX.25 QST beacon |
+| `ax25_auto_interval` | `300` | Seconds between beacon cycles (min 300) |
+| `ax25_auto_stagger` | `0` | Seconds between successive link phases within one interval (`0` = all links at once; dual-radio e.g. `150`) |
+| `ax25_auto_message` | `Broadcast: @service@ online` | Auto-beacon text (`@service@` = service name) |
 | `tcp` | `yes` | **Stub** — log only |
 | `ax25_mycall` | `HYBBX` | |
 | `ax25_dest` | `QST` | |

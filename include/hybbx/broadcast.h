@@ -10,6 +10,7 @@
  * INI `[broadcast]` ax25_auto: periodic AX.25 QST UI beacon over HBX to
  * Secondary extenders (low-bandwidth + half-duplex links). Separate from
  * `/broadcast`; not a user command.
+ * ax25_auto_stagger offsets successive links (sorted by MHz) within one interval.
  */
 
 #include "hybbx/ax25.h"
@@ -38,6 +39,8 @@ typedef struct hybbx_broadcast_config {
     int ax25_enabled;
     int ax25_auto;
     unsigned ax25_auto_interval_sec;
+    /** Seconds between successive link phases (0 = all links at once). */
+    unsigned ax25_auto_stagger_sec;
     char ax25_mycall[HYBBX_AX25_CALL_MAX + 1];
     char ax25_dest[HYBBX_AX25_CALL_MAX + 1];
     char ax25_auto_message[HYBBX_BROADCAST_AX25_MESSAGE_MAX + 1];

@@ -144,7 +144,7 @@ void hybbx_service_detach_session(hybbx_service_t *service,
 typedef void (*hybbx_service_session_visit_fn)(struct hybbx_session *session,
                                                void *userdata);
 
-/** Invoke @p fn for each attached session (holds an internal lock). */
+/** Invoke @p fn for each attached session (snapshot; lock not held in @p fn). */
 void hybbx_service_visit_sessions(hybbx_service_t *service,
                                   hybbx_service_session_visit_fn fn,
                                   void *userdata);

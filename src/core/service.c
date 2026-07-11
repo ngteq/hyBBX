@@ -477,18 +477,47 @@ void hybbx_service_visit_sessions(hybbx_service_t *service,
     struct hybbx_service_internal *svc =
         (struct hybbx_service_internal *)service;
     hybbx_attached_session_t *node;
+    hybbx_session_t **snapshot = NULL;
+    size_t count = 0;
+    size_t i;
 
     if (svc == NULL || fn == NULL) {
         return;
     }
 
+    /*
+     * Snapshot session pointers under session_lock, then invoke callbacks
+     * without holding the lock. Visitors may write to circuit sessions,
+     * which can re-enter via load-balance -> bandwidth policy.
+     */
     pthread_mutex_lock(&svc->session_lock);
     for (node = svc->sessions; node != NULL; node = node->next) {
         if (node->session != NULL) {
-            fn(node->session, userdata);
+            count++;
+        }
+    }
+
+    if (count > 0) {
+        snapshot = calloc(count, sizeof(*snapshot));
+        if (snapshot != NULL) {
+            i = 0;
+            for (node = svc->sessions; node != NULL; node = node->next) {
+                if (node->session != NULL) {
+                    snapshot[i++] = node->session;
+                }
+            }
         }
     }
     pthread_mutex_unlock(&svc->session_lock);
+
+    if (snapshot == NULL) {
+        return;
+    }
+
+    for (i = 0; i < count; i++) {
+        fn(snapshot[i], userdata);
+    }
+    free(snapshot);
 }
 
 typedef struct find_registered_session_ctx {

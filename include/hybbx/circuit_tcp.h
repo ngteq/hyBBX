@@ -84,6 +84,20 @@ double hybbx_circuit_hub_link_frequency_mhz(const hybbx_circuit_hub_t *hub);
 /** Non-zero when link QoS is low-bandwidth and half-duplex (AX.25 broadcast allowed). */
 int hybbx_circuit_hub_link_broadcast_qos(const hybbx_circuit_hub_t *hub);
 
+typedef struct hybbx_circuit_broadcast_link {
+    double frequency_mhz;
+    unsigned slot_index;
+    char link_id[HYBBX_LINK_ID_MAX];
+} hybbx_circuit_broadcast_link_t;
+
+/**
+ * Active broadcast-QoS links sorted by MHz (then link_id).
+ * Returns count written to @p out (may be 0).
+ */
+unsigned hybbx_circuit_hub_broadcast_links(const hybbx_circuit_hub_t *hub,
+                                           hybbx_circuit_broadcast_link_t *out,
+                                           unsigned out_max);
+
 void hybbx_circuit_hub_prune_links(hybbx_circuit_hub_t *hub);
 
 /** Link adapter: connect to the internal circuit hub (TCP client). */

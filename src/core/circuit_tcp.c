@@ -695,6 +695,82 @@ int hybbx_circuit_hub_link_broadcast_qos(const hybbx_circuit_hub_t *hub)
     return 0;
 }
 
+static void circuit_broadcast_links_sort(hybbx_circuit_broadcast_link_t *links,
+                                         unsigned count)
+{
+    unsigned i;
+    unsigned j;
+
+    for (i = 1; i < count; i++) {
+        hybbx_circuit_broadcast_link_t key = links[i];
+
+        j = i;
+        while (j > 0) {
+            double prev_mhz = links[j - 1].frequency_mhz;
+            double key_mhz = key.frequency_mhz;
+            int move = 0;
+
+            if (key_mhz > 0.0 && prev_mhz <= 0.0) {
+                move = 0;
+            } else if (key_mhz <= 0.0 && prev_mhz > 0.0) {
+                move = 1;
+            } else if (key_mhz > 0.0 && prev_mhz > 0.0 &&
+                       key_mhz < prev_mhz) {
+                move = 1;
+            } else if (key_mhz <= 0.0 && prev_mhz <= 0.0 &&
+                       strcmp(key.link_id, links[j - 1].link_id) < 0) {
+                move = 1;
+            }
+
+            if (!move) {
+                break;
+            }
+
+            links[j] = links[j - 1];
+            j--;
+        }
+        links[j] = key;
+    }
+}
+
+unsigned hybbx_circuit_hub_broadcast_links(const hybbx_circuit_hub_t *hub,
+                                           hybbx_circuit_broadcast_link_t *out,
+                                           unsigned out_max)
+{
+    unsigned i;
+    unsigned count = 0;
+
+    if (hub == NULL || out == NULL || out_max == 0) {
+        return 0;
+    }
+
+    for (i = 0; i < HYBBX_CIRCUIT_MAX_LINKS; i++) {
+        const hybbx_circuit_link_slot_t *slot = &hub->slots[i];
+
+        if (slot->state != CIRCUIT_SLOT_ACTIVE || slot->fd < 0) {
+            continue;
+        }
+        if (!circuit_slot_broadcast_qos(slot)) {
+            continue;
+        }
+        if (count >= out_max) {
+            break;
+        }
+
+        out[count].frequency_mhz = slot->profile.frequency_mhz;
+        out[count].slot_index = i;
+        hybbx_strlcpy(out[count].link_id, slot->link_id,
+                      sizeof(out[count].link_id));
+        count++;
+    }
+
+    if (count > 1) {
+        circuit_broadcast_links_sort(out, count);
+    }
+
+    return count;
+}
+
 static void on_circuit_frame(hybbx_circuit_proto_t proto, uint16_t flags,
                              const uint8_t *payload, size_t len,
                              void *userdata)
