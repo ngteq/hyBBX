@@ -91,7 +91,12 @@ link_id = edge-b
 ...
 ```
 
-Each section needs a unique `device` and `link_id`. Main must list matching `[transport.packet_radioN]` registry rows.
+Each section needs a unique `device` and `link_id`. Main must list matching
+`[transport.packet_radioN]` registry rows.
+
+`link_password` must be set when Main keeps `[circuit] link_auth=yes`
+(default). If missing, the hub logs
+`link_auth_fail ... reason=timeout_no_link_auth`.
 
 ## Not supported in HyBBX
 

@@ -4,9 +4,8 @@
 /**
  * Unified TNC / AX.25 link driver for HyBBX packet radio.
  *
- * Supported hardware profiles (see docs/TNCS.md):
- *  - Landolt TNC2C, classic TNC-2 / PK-TNC2 (TheFirmware)
- *  - AEA PK-232, MFJ-1278, Kantronics KPC
+ * Supported hardware profiles:
+ *  - Landolt TNC2C (primary test device)
  *  - BayCom-compatible modems (KISS / host / 6PACK over RS-232)
  *  - Albrecht PC-COM (2400 baud host, TCM3105 1200 radio)
  *  - Generic TNC2-class controllers
@@ -71,30 +70,8 @@ typedef enum hybbx_packet_radio_tnc {
     HYBBX_PACKET_RADIO_TNC_TNC2C = 1,
     HYBBX_PACKET_RADIO_TNC_BAYCOM = 2,
     HYBBX_PACKET_RADIO_TNC_PCCOM = 3,
-    HYBBX_PACKET_RADIO_TNC_GENERIC = 4,
-    HYBBX_PACKET_RADIO_TNC_TNC2 = 5,
-    HYBBX_PACKET_RADIO_TNC_PK232 = 6,
-    HYBBX_PACKET_RADIO_TNC_MFJ1278 = 7,
-    HYBBX_PACKET_RADIO_TNC_KANTRONICS = 8
+    HYBBX_PACKET_RADIO_TNC_GENERIC = 4
 } hybbx_packet_radio_tnc_t;
-
-/** How HyBBX enters KISS mode on the host serial link. */
-typedef enum hybbx_kiss_entry {
-    HYBBX_KISS_ENTRY_UNSET = 0,
-    HYBBX_KISS_ENTRY_NONE = 1,
-    HYBBX_KISS_ENTRY_KISS_ON = 2,
-    HYBBX_KISS_ENTRY_ESC_AT_K = 3,
-    HYBBX_KISS_ENTRY_AUTO = 4
-} hybbx_kiss_entry_t;
-
-/** How HyBBX leaves KISS mode on shutdown. */
-typedef enum hybbx_kiss_exit {
-    HYBBX_KISS_EXIT_UNSET = 0,
-    HYBBX_KISS_EXIT_NONE = 1,
-    HYBBX_KISS_EXIT_KISS_OFF = 2,
-    HYBBX_KISS_EXIT_KISS_FRAME = 3,
-    HYBBX_KISS_EXIT_AUTO = 4
-} hybbx_kiss_exit_t;
 
 /**
  * RF service band — drives safe duplex defaults.
@@ -132,8 +109,7 @@ typedef struct hybbx_tnc_params {
     hybbx_packet_radio_band_t band;
     hybbx_packet_radio_duplex_t duplex;
     int fullduplex;
-    hybbx_kiss_entry_t kiss_entry;
-    hybbx_kiss_exit_t kiss_exit;
+    int kiss_on_startup;
     int host_connect_on_start;
     unsigned int data_bits;
     hybbx_tnc_serial_parity_t serial_parity;
@@ -218,12 +194,6 @@ hybbx_result_t hybbx_tnc_profile_apply_defaults(hybbx_packet_radio_config_t *cfg
 
 /** Apply host serial line defaults (TNC2C: 7E1 + RTS/DTR). */
 hybbx_result_t hybbx_tnc_finalize_serial_line(hybbx_packet_radio_config_t *cfg);
-
-/** Apply kiss_entry / kiss_exit defaults from TNC profile when unset. */
-hybbx_result_t hybbx_tnc_finalize_kiss_entry(hybbx_packet_radio_config_t *cfg);
-
-const char *hybbx_packet_radio_tnc_name(hybbx_packet_radio_tnc_t tnc);
-const char *hybbx_kiss_entry_name(hybbx_kiss_entry_t entry);
 
 #ifdef __cplusplus
 }

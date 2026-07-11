@@ -6,6 +6,8 @@ logs/
 data/
 local/data/
 local/keys/
+share/keys/
+shared/keys/
 cmake-build-*/
 
 # IDE

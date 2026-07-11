@@ -8,15 +8,20 @@ Booleans: `yes`/`no` (+ `true`/`false`, `on`/`off`, `1`/`0`).
 
 ## Topology
 
-Full guide: [TOPOLOGY.md](TOPOLOGY.md).
+```
+Users (telnet :2323, SSH :3232, WebSocket via proxy) ──► Main (storage, mail)
+                                                              ▲
+                                                              │ HBX/TCP :7323
+                                                         Secondary (packet_radio / ardop / crdop)
+```
 
-| Role | Purpose |
-|------|---------|
-| **Main** | Users, storage, HBX hub `:7323`, optional `mains_proxy` |
-| **Secondary** | RF edge — HBX client to Main; no public logins |
-| **mains_proxy** | Main or Secondary ↔ remote Main; HBX circuit peers; service linking only |
+| Role | `[networks]` typical | Hosts |
+|------|----------------------|-------|
+| **Main** | `circuit=yes`, `ax25=no` | Users, HBX hub |
+| **Secondary** | `circuit=no`, `ax25=yes` | TNC/RF; `circuit_host` → Main |
+| **Standalone Main** | `ax25=yes` on same box | Lab / single-host |
 
-Inter-node traffic (Secondary, RF plugins, mesh) uses **HBX/Circuit** only (Circuit = TCP hub `:7323`, HBX = framing on top; definition: [TOPOLOGY.md](TOPOLOGY.md)). User sessions use telnet, SSH, or WebSocket on Main.
+**Secondary** = separate HyBBX process (infrastructure), not a telnet user. Multiple Secondaries: unique `link_id` per active link; `max_links` on Main (default 8, max 16).
 
 ---
 
@@ -35,8 +40,7 @@ Inter-node traffic (Secondary, RF plugins, mesh) uses **HBX/Circuit** only (Circ
 | Key | Default | Description |
 |-----|---------|-------------|
 | `clock` | `24h` | `24h` \| `12h` \| `am_pm` |
-| `seconds` | `yes` | Append `:SS` to `%time%` and log stamps when `yes` |
-| `date` | `iso` | `iso` (`YYYY/MM/DD`) \| `iso_short` (`YY/MM/DD`) \| `us` (`MM/DD/YYYY`) \| `eu` (`DD/MM/YYYY`) |
+| `seconds` | `no` | Append `:SS` when `yes` |
 
 ### `[log]`
 
@@ -48,51 +52,14 @@ Inter-node traffic (Secondary, RF plugins, mesh) uses **HBX/Circuit** only (Circ
 
 `security.log` is always written to the same directory (independent of `enabled`).
 
-### `[security]`
-
-Built-in protection for **network abuse** and **excessive spam** — one subsystem (`security.log`, `src/core/security_ban.c`). See [SECURITY.md](SECURITY.md).
-
-**Policy:** short cool-down bans (default 10 minutes). **Normal** chat/mail traffic uses soft limits in `[traffic]` / `[chat]` / `[mail]` — no bans. **Bans** apply to brute-force, connection flood, and repeated abuse above `abuse_maxretry`.
-
-| Key | Default | Description |
-|-----|---------|-------------|
-| `enabled` | `yes` | Master switch |
-| `maxretry` | `5` | Login / link-auth failures before ban |
-| `findtime` | `600` | Login failure window (seconds) |
-| `bantime` | `600` | Ban duration (seconds) |
-| `abuse_maxretry` | `30` | Excessive abuse events before ban |
-| `abuse_findtime` | `600` | Abuse event window (seconds) |
-| `telnet` | `yes` | Track telnet login failures |
-| `ssh` | `yes` | Track SSH login failures |
-| `websocket` | `yes` | Track WebSocket login failures |
-| `circuit` | `yes` | Track HBX `link_auth` failures |
-| `rate_limit` | `30` | Max new connections per IP per window |
-| `rate_window` | `60` | Connection flood window (seconds) |
-| `ban_backend` | `internal` | `internal` \| `log` \| `iptables` \| `nftables` \| `hosts` |
-| `ban_callid` | *(empty)* | Comma-separated AX.25 callsigns or HBX `link_id` values (permanent until removed from INI) |
-
-Events: `login_fail`, `link_auth_fail`, `rate_limit`, `abuse:*` (hook for excessive flood — not normal messages). **CALLID bans** apply to AX.25 source addresses and circuit `link_id`; logged as `ban callid=…` (internal only — no firewall rule). Optional `share/fail2ban/` for site-wide firewall integration.
-
 ### `[storage]`
 
-Default **`backend = flatfile`** — no host packages; works out of the box. Built-in crypto (see `[crypto]`) matches this: zero extra dependencies.
-
-**Recommended when available:** `backend = sqlite` (requires libsqlite3 at build time) for better query performance and automatic DB backups. Set `HYBBX_STORAGE_SQLITE=ON` (default) and install `libsqlite3-dev` (or distro equivalent) before building.
-
-MySQL/MariaDB backends are planned for **v2.0.0** only.
-
 | Key | Default | Description |
 |-----|---------|-------------|
-| `backend` | `flatfile` | `flatfile` or `sqlite` |
-| `path` | `data` | Data root (`users/` for flatfile) |
-| `user_db` | `users.db` | SQLite users/sessions file (under `path`) |
-| `mail_db` | `mail.db` | SQLite mail file (under `path`) |
-| `backup_interval` | `300` | Seconds between SQLite DB copies |
-| `backup_path` | *(empty)* | Backup directory; empty = same dir as DB, `.flb` suffix |
+| `backend` | `flatfile` | `sqlite`/`mysql` planned |
+| `path` | `data` | User shards under `users/` |
 
-SQLite creates `user_db` / `mail_db` on first start only; existing files are never overwritten on reinstall. Delete or move them to recreate. Backups copy to `users.db.flb` and `mail.db.flb` by default.
-
-Flatfile: first start creates Sysop in `users/users.ini` with a random password (10–14 chars, `a-z` `0-9`); printed once on the console. SQLite: same Sysop bootstrap in `users.db`.
+First start creates Sysop in `users/users.ini` with a random password (10–14 chars, `a-z` `0-9`); printed once on the console.
 
 ### `[auth]`
 
@@ -103,10 +70,6 @@ Flatfile: first start creates Sysop in `users/users.ini` with a random password 
 | `guest_timeout_minutes` | `30` | Guest disconnect |
 
 ### `[crypto]`
-
-Defaults use **built-in** backends (`tinysha256`, `tinyaes`, `monocypher`, system random) — no host package dependencies.
-
-**Recommended when available:** OpenSSL (`-DHYBBX_CRYPTO_OPENSSL=ON`, requires libssl) for `password_hash` and `aes_gcm`; libsodium for `chacha` / `x25519`.
 
 | Key | Default | Options |
 |-----|---------|---------|
@@ -131,15 +94,7 @@ Defaults use **built-in** backends (`tinysha256`, `tinyaes`, `monocypher`, syste
 |-----|---------|-------------|
 | `path` | `text` | `banner.txt`, `motd.txt`, `news.txt`, `rules.txt` |
 
-Tokens in `banner.txt`, `motd.txt`, `news.txt`, `rules.txt`:
-
-| Token | Expands to |
-|-------|------------|
-| `@version@` | HyBBX version (banner) |
-| `@service@` | `[service] name` (banner) |
-| `@username@` | Session display name (motd) |
-| `%time%` | Local time per `[time]` (default `HH:MM:SS` 24h) |
-| `%date%` | Local date per `[time] date=` (default `YYYY/MM/DD`) |
+Tokens: `@version@`, `@service@`, `@username@` in banner/motd.
 
 ### `[chat]`
 
@@ -165,13 +120,11 @@ Tokens in `banner.txt`, `motd.txt`, `news.txt`, `rules.txt`:
 | Key | Main default | Description |
 |-----|--------------|-------------|
 | `ax25` | `no` | Packet radio plugin |
-| `baycom` | `no` | BayCom PR-Stack plugin ([BAYCOM.md](BAYCOM.md)) |
 | `ardop` | `no` | ARDOP host client |
 | `crdop` | `no` | CRDOP host client |
 | `ssh` | `no` | SSH plugin (libssh, port 3232) |
 | `websocket` | `no` | WebSocket forward-proxy (port 4591) |
 | `circuit` | `yes` | HBX hub (Main) |
-| `mains_proxy` | `no` | Main-to-Main service mesh ([MAINS_PROXY.md](MAINS_PROXY.md)) |
 
 Telnet is always started when built (not gated here).
 
@@ -229,24 +182,20 @@ httpd document root. See [WEBSOCKET.md](WEBSOCKET.md).
 | `link_stale_days` | `10` | Stale link cleanup |
 | `max_links` | `8` | Concurrent Secondaries (max 16) |
 | `balance` | `yes` | Auto `FLOW_CTRL` pacing |
-| `balance_lag_sec` | `5` | |
-| `balance_queue_pause` | `4096` | Pause threshold |
-| `balance_queue_break` | `16384` | Break threshold |
-| `balance_queue_cancel` | `65536` | Cancel threshold |
+| `balance_lag_sec` | `8` | |
+| `balance_queue_pause` | `8192` | Pause threshold |
+| `balance_queue_break` | `32768` | Break threshold |
+| `balance_queue_cancel` | `131072` | Cancel threshold |
 
 ### `[broadcast]` (Main)
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `enabled` | `yes` | `/broadcast` and `/announce` (Sysop → all online users on this Main) |
-| `ax25` | `yes` | AX.25 auto-beacon over HBX (internal; not `/broadcast`) |
-| `ax25_auto` | `yes` | Periodic AX.25 QST UI when a qualifying link is up |
-| `ax25_auto_interval` | `300` | Seconds between AX.25 sends (minimum 300) |
-| `ax25_auto_message` | `Broadcast: @service@ online` | UI payload; `@service@` expands from `[service] name` |
+| `enabled` | `yes` | |
+| `ax25` | `yes` | QST UI to low/half-duplex links |
+| `tcp` | `yes` | **Stub** — log only |
 | `ax25_mycall` | `HYBBX` | |
 | `ax25_dest` | `QST` | |
-
-AX.25 auto-beacon payloads are capped at **48 characters** (1200 baud). This is separate from `/broadcast message`, which reaches every connected session on the local Main (max 240 characters).
 
 ### `[ax25]`
 
@@ -254,62 +203,26 @@ MHz list for operator reference (`frequency1`, `frequency1_label`, …). Tune ra
 
 ### `[transport.packet_radioN]` (bridge registry)
 
-On **Main**: metadata per remote Secondary (`link_id`, `link_password`, `link_role`, `frequency_mhz`) — no `device` / `tnc` keys. Or add those keys on Main for a **local TNC** (standalone).
+On **Main**: metadata per remote Secondary (`link_id`, `link_password`, `link_role`, `frequency_mhz`).
 
-On **Secondary**: TNC settings + `circuit_host`, `circuit_port`, matching `link_id` / password. Multiple `[transport.packet_radioN]` sections start multiple TNC devices (unique `device` + `link_id` each). See [TNCS.md](TNCS.md).
+On **Secondary**: TNC settings + `circuit_host`, `circuit_port`, matching `link_id` / password.
+With `[circuit] link_auth = yes` (default), `link_password` is required on the
+edge side; missing password causes `link_auth_fail ... reason=timeout_no_link_auth`.
 
 | TNC key | Notes |
 |---------|-------|
-| `tnc` | `tnc2c`, `tnc2`, `pktnc2`, `pk232`, `mfj1278`, `kantronics`, `baycom`, `pccom`, `generic` — [TNCS.md](TNCS.md) |
-| `protocol` | `kiss`, `hostmode` (`tnc2` = host mode only), `sixpack` |
+| `tnc` | `tnc2c`, `baycom`, `pccom`, `generic` |
+| `protocol` | `kiss`, `tnc2`, `sixpack` |
 | `device` / `device_type` | Serial path |
 | `baud` | Host serial baud |
 | `serial_line` | `7e1` (TNC2C default), `8n1`, or `data_bits` + `parity` |
-| `kiss_entry` | `kiss_on`, `esc_at_k`, `auto`, `none` |
-| `kiss_exit` | `kiss_off`, `kiss_frame`, `auto`, `none` |
 | `modem` | `tcm3105`, etc. |
 | `radio_band` | `amateur`, `cb` |
 | `radio_duplex` | `half`, `full` |
 | `g3ruh_fsk` | `yes` for 9600 FSK |
 | `mycall`, `dest`, `via` | AX.25 addresses |
 
-Full Secondary example: `share/hybbx-secondary.ini.example`. TNC profiles: [TNCS.md](TNCS.md). BayCom PR-Stack: [BAYCOM.md](BAYCOM.md). ARDOP/CRDOP sections: [ARDOP.md](ARDOP.md), [CRDOP.md](CRDOP.md).
-
-### `[transport.baycomN]` (BayCom PR-Stack)
-
-On **Main**: bridge registry (`link_id`, `link_password`, `link_role`, `frequency_mhz`).
-
-On **Secondary**: kernel SER12/PAR96/EPP or serial KISS + HBX circuit. Up to 4 instances. See [BAYCOM.md](BAYCOM.md).
-
-| Key | Default | Notes |
-|-----|---------|-------|
-| `backend` | `kernel` | `kernel` (hdlcdrv) or `kiss` (serial firmware) |
-| `mode` | `ser12*` | `ser12`, `ser12*`, `ser12+`, `ser12hdx`, `par96`, `par96*`, `epp` |
-| `interface` | per mode | `bcsf0`, `bcsh0`, `bcp0`, `bce0` |
-| `kernel_module` | per mode | `baycom_ser_fdx`, `baycom_ser_hdx`, `baycom_par`, `baycom_epp` |
-| `iobase` / `irq` | `0x3f8` / `4` | SER12 UART (kernel backend) |
-| `radio_baud` | `1200` | On-air baud |
-| `kernel_autoload` | `no` | `modprobe` on start (root) |
-| `txdelay`, `slot`, `persist`, `txtail` | see [BAYCOM.md](BAYCOM.md) | Channel access (10 ms units) |
-| `device` / `serial_baud` | `/dev/ttyS0` / `1200` | KISS backend only |
-| `circuit_host`, `circuit_port`, `link_id`, `link_password` | — | HBX to Main |
-
-### `[transport.mains_proxyN]` (Main-to-Main mesh)
-
-Links nodes via **HBX/Circuit** only. Pure service linking — proxymail and proxychat; no user or rights data transferred. See [MAINS_PROXY.md](MAINS_PROXY.md).
-
-| Key | Default | Notes |
-|-----|---------|-------|
-| `peer_id` | (empty) | Logical peer name |
-| `circuit_host` | — | Remote Main HBX hub |
-| `circuit_port` | `7323` | Remote HBX port |
-| `link_id` | — | Bridge id (match peer) |
-| `link_password` | — | `LINK_AUTH` secret |
-| `wire` | `circuit` | `circuit` or `ax25` (reserved) |
-| `duplex` | `full` | `full` or `half` |
-| `use_secondary` | `yes` | Prefer Secondary path when available |
-
-Deprecated: `host` / `port` (use `circuit_host` / `circuit_port`).
+Full Secondary example: `share/hybbx-secondary.ini.example`. ARDOP/CRDOP sections: [ARDOP.md](ARDOP.md), [CRDOP.md](CRDOP.md).
 
 ---
 
@@ -317,44 +230,11 @@ Deprecated: `host` / `port` (use `circuit_host` / `circuit_port`).
 
 Input: `/command` … · `;` and `#` lines ignored · other text → area handler.
 
-Registry and help layout: [COMMANDS.md](COMMANDS.md) · [share/commands.yaml](../share/commands.yaml).
-
-| Surface | Role |
-|---------|------|
-| `/help`, `/menu` | Commands this session can use |
-| `/index` | Full command-index (same for every account) |
-| `/alias` | Alternate command names |
-| `/help cmd` | Two-line topic help |
-
-Headers: `HyBBX commands /help <cmd> for more` · `HyBBX command-index …` · `HyBBX aliases …`
-
-Menu groups: **General**, **Screen**, **Areas**, **Account**, **Admin**, **Sysop**. User groups: **Sysop**, **Admin**, **Mod**, **User**, **Guest**.
-
-### Guests
-
-With `auto_login = yes`, guests may use:
-
-| Command | Description |
-|---------|-------------|
-| `/help`, `/menu` | Command menu |
-| `/index` | Full command-index |
-| `/alias` | Alias map |
-| `/news` | System news (`news.txt`) |
-| `/motd` | Message of the day |
-| `/rules`, `/legal` | Terms of use |
-| `/login` | Registered login |
-| `/register` | Self-registration |
-| `/clear`, `/echo`, `/exit` | Screen, echo, disconnect |
-
-Mail, chat, conference, and `/who` require a registered account.
-
 ### All users
 
 | Command | Description |
 |---------|-------------|
-| `/help`, `/menu` | Command menu |
-| `/index` | Full command-index |
-| `/alias` | Alias map |
+| `/help` | List or `/help <cmd>` |
 | `/motd` | Message of the day |
 | `/news` | System news |
 | `/rules`, `/legal` | `text/rules.txt` |
@@ -369,35 +249,23 @@ Mail, chat, conference, and `/who` require a registered account.
 | `/leave` | Up one area |
 | `/chat` | Chat channels |
 | `/conference` | Two-user conference |
-| `/mail` | Local mailbox (registered) |
-| `/mail proxymail` | Enter inter-Main mail sub-area |
-| `/proxymail` | Same as `/mail proxymail` |
-| `/chat proxychat` | Enter inter-Main chat sub-area |
-| `/proxychat` | Same as `/chat proxychat` |
+| `/mail` | Mailbox (registered) |
 | `/login <user> <pass>` | Registered login (one active session per account) |
 | `/register` | Self-registration (guest) |
 | `/changeme` | Own profile/password |
-| `/deleteme` | Delete own account (User) |
 
-### Admin
+### Admin and Sysop
 
-| Command | Min level |
-|---------|-----------|
-| `/usercreate` | Admin |
-| `/activate` | Admin |
-| `/promote`, `/demote` | Admin |
-| `/delete` | Admin |
-| `/changeuser` | Admin |
-
-### Sysop
-
-| Command | Min level |
-|---------|-----------|
-| `/deleteuser` | Sysop |
+| Command | Role |
+|---------|------|
+| `/usercreate` | Admin+ |
+| `/activate` | Admin+ |
+| `/promote`, `/demote` | Admin+ |
+| `/delete`, `/deleteuser` | Admin+ |
+| `/changeuser` | Admin+ |
+| `/deleteme` | User (own account) |
 | `/shutdown`, `/restart` | Sysop |
-| `/broadcast message`, `/announce` | Sysop — all online users on this Main |
-
-User groups: **Sysop**, **Admin**, **Mod**, **User**, **Guest** — see [share/commands.yaml](../share/commands.yaml).
+| `/broadcast ax25\|tcp <msg>` | Sysop (tcp = stub) |
 
 ---
 
