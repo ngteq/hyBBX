@@ -119,7 +119,6 @@ menu_layouts:
   areas:
     - label: Areas
       group: areas
-      wrap: yes
   account_guest:
     - label: Account
       verbs: [login, register]
