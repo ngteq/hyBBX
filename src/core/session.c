@@ -1254,12 +1254,14 @@ hybbx_result_t hybbx_session_open(hybbx_service_t *service,
             return rc;
         }
 
-        printf("[session] auto-login %s on %s (session %llu)\n",
-               core->record.username, transport->name,
-               (unsigned long long)core->record.session_id);
-        hybbx_log_info("auto-login %s on %s (session %llu)",
-                       core->record.username, transport->name,
-                       (unsigned long long)core->record.session_id);
+        if (!suppress_startup_text) {
+            printf("[session] auto-login %s on %s (session %llu)\n",
+                   core->record.username, transport->name,
+                   (unsigned long long)core->record.session_id);
+            hybbx_log_info("auto-login %s on %s (session %llu)",
+                           core->record.username, transport->name,
+                           (unsigned long long)core->record.session_id);
+        }
 
         if (!suppress_startup_text) {
             hybbx_session_show_prompt(&core->pub);

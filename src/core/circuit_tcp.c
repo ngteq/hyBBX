@@ -628,7 +628,17 @@ hybbx_result_t hybbx_circuit_hub_multicast_hbx(hybbx_circuit_hub_t *hub,
             continue;
         }
 
-        rc = circuit_slot_send_hbx(slot, frame, len);
+        if (require_broadcast_qos && circuit_frame_is_ax25_ui_tx(frame, len)) {
+            /*
+             * Low-priority AX.25 broadcast: admission is decided by balancer
+             * state/queue reserve, then transmit immediately.
+             * This avoids enqueue->break drops that can otherwise log as sent
+             * without reaching RF.
+             */
+            rc = circuit_slot_send_raw(slot, frame, len);
+        } else {
+            rc = circuit_slot_send_hbx(slot, frame, len);
+        }
         if (rc == HYBBX_OK) {
             sent++;
         } else {
