@@ -276,7 +276,7 @@ static void on_circuit_downlink(hybbx_circuit_proto_t proto, uint16_t flags,
         return;
     }
 
-    if (inst->tnc == NULL || len == 0 || inst->flow_paused) {
+    if (inst->tnc == NULL || len == 0) {
         return;
     }
 

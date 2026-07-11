@@ -1185,6 +1185,7 @@ hybbx_result_t hybbx_session_open(hybbx_service_t *service,
     hybbx_storage_t *storage;
     const hybbx_auth_config_t *auth;
     hybbx_result_t rc;
+    int suppress_startup_text;
 
     if (service == NULL || transport == NULL || out == NULL) {
         return HYBBX_ERR_INVALID;
@@ -1227,9 +1228,13 @@ hybbx_result_t hybbx_session_open(hybbx_service_t *service,
         core->input_echo = traffic != NULL && traffic->input_echo;
     }
 
+    suppress_startup_text = (transport->kind == HYBBX_TRANSPORT_CIRCUIT);
+
     (void)hybbx_term_init_session(&core->pub);
 
-    session_send_banner(core);
+    if (!suppress_startup_text) {
+        session_send_banner(core);
+    }
 
     if (auth->auto_login) {
         unsigned guest_slot = 0;
@@ -1256,10 +1261,14 @@ hybbx_result_t hybbx_session_open(hybbx_service_t *service,
                        core->record.username, transport->name,
                        (unsigned long long)core->record.session_id);
 
-        hybbx_session_show_prompt(&core->pub);
+        if (!suppress_startup_text) {
+            hybbx_session_show_prompt(&core->pub);
+        }
     } else {
         core->login_prompt = 1;
-        hybbx_session_show_prompt(&core->pub);
+        if (!suppress_startup_text) {
+            hybbx_session_show_prompt(&core->pub);
+        }
     }
 
     *out = &core->pub;

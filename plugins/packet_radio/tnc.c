@@ -131,6 +131,18 @@ static hybbx_result_t send_cmd(hybbx_tnc_t *tnc, const char *cmd)
     return send_raw(tnc, (const uint8_t *)line, len);
 }
 
+static void tnc_sleep_ms(unsigned ms)
+{
+#if defined(_WIN32)
+    Sleep((DWORD)ms);
+#else
+    struct timeval tv;
+    tv.tv_sec = (time_t)(ms / 1000u);
+    tv.tv_usec = (suseconds_t)((ms % 1000u) * 1000u);
+    (void)select(0, NULL, NULL, NULL, &tv);
+#endif
+}
+
 static hybbx_result_t drain_serial(hybbx_tnc_t *tnc, unsigned rounds)
 {
     uint8_t buf[128];
@@ -148,6 +160,32 @@ static hybbx_result_t drain_serial(hybbx_tnc_t *tnc, unsigned rounds)
     }
 
     return HYBBX_OK;
+}
+
+static int tnc_probe_command_mode(hybbx_tnc_t *tnc)
+{
+    uint8_t buf[64];
+    size_t read_len = 0;
+
+    if (tnc == NULL || tnc->serial == NULL) {
+        return 0;
+    }
+
+    (void)drain_serial(tnc, 2);
+    (void)send_cmd(tnc, "");
+    tnc_sleep_ms(100);
+
+    if (hybbx_serial_read(tnc->serial, buf, sizeof(buf), &read_len) != HYBBX_OK) {
+        return 0;
+    }
+
+    return read_len > 0;
+}
+
+static hybbx_result_t tnc_send_esc_at_k(hybbx_tnc_t *tnc)
+{
+    const uint8_t seq[] = { 0x1b, '@', 'K' };
+    return send_raw(tnc, seq, sizeof(seq));
 }
 
 static hybbx_result_t send_kiss_param(hybbx_tnc_t *tnc,
@@ -222,18 +260,48 @@ static hybbx_result_t tnc_apply_radio_modulation(hybbx_tnc_t *tnc)
 
 static hybbx_result_t tnc_enter_kiss_mode(hybbx_tnc_t *tnc)
 {
+    unsigned attempt;
+
     if (!tnc->config.params.kiss_on_startup) {
         tnc->kiss_active = 1;
         return HYBBX_OK;
     }
 
-    if (send_cmd(tnc, "kiss on") != HYBBX_OK) {
-        return HYBBX_ERR_IO;
+    /*
+     * Some TNC2C devices need a short settle window after serial open and may
+     * ignore the first KISS switch command. Probe command mode and retry with
+     * ESC @ K fallback so HyBBX can start without external boot helpers.
+     */
+    if (tnc->config.tnc == HYBBX_PACKET_RADIO_TNC_TNC2C) {
+        tnc_sleep_ms(300);
     }
 
-    drain_serial(tnc, 8);
-    tnc->kiss_active = 1;
-    return HYBBX_OK;
+    for (attempt = 0; attempt < 3; attempt++) {
+        if (!tnc_probe_command_mode(tnc)) {
+            tnc->kiss_active = 1;
+            return HYBBX_OK;
+        }
+
+        if (send_cmd(tnc, "kiss on") == HYBBX_OK) {
+            tnc_sleep_ms(120);
+            if (!tnc_probe_command_mode(tnc)) {
+                tnc->kiss_active = 1;
+                return HYBBX_OK;
+            }
+        }
+
+        if (tnc_send_esc_at_k(tnc) == HYBBX_OK) {
+            tnc_sleep_ms(120);
+            if (!tnc_probe_command_mode(tnc)) {
+                tnc->kiss_active = 1;
+                return HYBBX_OK;
+            }
+        }
+
+        tnc_sleep_ms(200);
+    }
+
+    return HYBBX_ERR_IO;
 }
 
 static void tnc_deliver_ui(hybbx_tnc_t *tnc, const uint8_t *frame, size_t len)
