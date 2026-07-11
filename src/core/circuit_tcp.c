@@ -182,6 +182,60 @@ static int circuit_slot_broadcast_qos(const hybbx_circuit_link_slot_t *slot)
            slot->profile.duplex == HYBBX_CIRCUIT_DUPLEX_HALF;
 }
 
+static int circuit_frame_is_ax25_ui_tx(const uint8_t *frame, size_t len)
+{
+    unsigned flags;
+
+    if (frame == NULL || len < HYBBX_CIRCUIT_HEADER_SIZE) {
+        return 0;
+    }
+
+    if (frame[0] != HYBBX_CIRCUIT_MAGIC_0 ||
+        frame[1] != HYBBX_CIRCUIT_MAGIC_1 ||
+        frame[2] != HYBBX_CIRCUIT_MAGIC_2 ||
+        frame[3] != HYBBX_CIRCUIT_VERSION ||
+        frame[4] != (uint8_t)HYBBX_CIRCUIT_PROTO_AX25_UI) {
+        return 0;
+    }
+
+    flags = ((unsigned)frame[5] << 8u) | (unsigned)frame[6];
+    return (flags & HYBBX_CIRCUIT_FLAG_TX) != 0;
+}
+
+static int circuit_slot_can_send_low_prio(const hybbx_circuit_hub_t *hub,
+                                          const hybbx_circuit_link_slot_t *slot)
+{
+    hybbx_circuit_balance_action_t action;
+    size_t queued;
+    size_t queue_pause;
+    size_t reserve_threshold;
+
+    if (hub == NULL || slot == NULL || slot->balance == NULL ||
+        !hub->config.balance.enabled || !slot->profile_set) {
+        return 1;
+    }
+
+    action = hybbx_circuit_balance_action(slot->balance);
+    if (action == HYBBX_CIRCUIT_BAL_PAUSE ||
+        action == HYBBX_CIRCUIT_BAL_BREAK ||
+        action == HYBBX_CIRCUIT_BAL_CANCEL) {
+        return 0;
+    }
+
+    queued = hybbx_circuit_balance_queued_bytes(slot->balance);
+    queue_pause = hub->config.balance.queue_pause;
+    if (queue_pause == 0) {
+        queue_pause = 1;
+    }
+    reserve_threshold = queue_pause / 2u;
+    if (reserve_threshold == 0) {
+        reserve_threshold = 1;
+    }
+
+    /* Keep a reserve for interactive user/mesh traffic. */
+    return queued < reserve_threshold;
+}
+
 static unsigned circuit_count_used_slots(const hybbx_circuit_hub_t *hub)
 {
     unsigned i;
@@ -447,7 +501,6 @@ static hybbx_result_t circuit_slot_send_hbx(hybbx_circuit_link_slot_t *slot,
     balance_send_ctx_t bctx;
     flow_ctrl_ctx_t fctx;
     hybbx_circuit_hub_t *hub;
-    int bypass_balance = 0;
 
     if (slot == NULL || frame == NULL || len == 0) {
         return HYBBX_ERR_INVALID;
@@ -458,24 +511,8 @@ static hybbx_result_t circuit_slot_send_hbx(hybbx_circuit_link_slot_t *slot,
         return HYBBX_ERR_INVALID;
     }
 
-    /*
-     * Keep low-rate AX.25 UI TX (broadcast/beacon) reliable on slow links:
-     * bypass the queue-based balancer for this tiny control payload class.
-     * This avoids "logged as sent" beacons getting delayed/dropped when the
-     * balancer is temporarily in PAUSE/BREAK around startup stabilization.
-     */
-    if (len >= HYBBX_CIRCUIT_HEADER_SIZE &&
-        frame[0] == HYBBX_CIRCUIT_MAGIC_0 &&
-        frame[1] == HYBBX_CIRCUIT_MAGIC_1 &&
-        frame[2] == HYBBX_CIRCUIT_MAGIC_2 &&
-        frame[3] == HYBBX_CIRCUIT_VERSION &&
-        frame[4] == (uint8_t)HYBBX_CIRCUIT_PROTO_AX25_UI &&
-        (((unsigned)frame[5] << 8u) | (unsigned)frame[6]) & HYBBX_CIRCUIT_FLAG_TX) {
-        bypass_balance = 1;
-    }
-
     if (slot->balance != NULL && slot->profile_set &&
-        hub->config.balance.enabled && !bypass_balance) {
+        hub->config.balance.enabled) {
         bctx.slot = slot;
         fctx.hub = hub;
         fctx.slot = slot;
@@ -583,6 +620,11 @@ hybbx_result_t hybbx_circuit_hub_multicast_hbx(hybbx_circuit_hub_t *hub,
         if (frequency_mhz > 0.0 && slot->profile.frequency_mhz > 0.0 &&
             !hybbx_ax25_frequency_match(frequency_mhz,
                                          slot->profile.frequency_mhz)) {
+            continue;
+        }
+        if (require_broadcast_qos && circuit_frame_is_ax25_ui_tx(frame, len) &&
+            !circuit_slot_can_send_low_prio(hub, slot)) {
+            last_err = HYBBX_ERR_BUSY;
             continue;
         }
 

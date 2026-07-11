@@ -58,6 +58,8 @@ Protocol: `include/hybbx/circuit.h` — default port `7323`, max 16 concurrent l
 - Verified in field setup: TNC2C (`protocol=kiss`, 19200 8N1 host) links to HBX
   with `LINK_AUTH` (`link_id=packet-radio1`) and stays online.
 - AX.25 broadcast TX path is verified end-to-end (HyBBX log + on-air audio TX).
+- Broadcast TX participates in the circuit balancer as low-priority traffic:
+  send only while link reserve is available for user/mesh traffic.
 - Further validation still required: long-run stability (hours/days), multi-link
   contention behavior, and dual-station RX/TX under sustained traffic.
 
