@@ -360,8 +360,6 @@ void hybbx_broadcast_ax25_tick(hybbx_service_t *service)
     if (g_ax25_auto_tick < cfg->ax25_auto_interval_sec) {
         return;
     }
-    g_ax25_auto_tick = 0;
-
     if (!hybbx_circuit_hub_link_broadcast_qos(hub)) {
         return;
     }
@@ -377,7 +375,22 @@ void hybbx_broadcast_ax25_tick(hybbx_service_t *service)
         return;
     }
 
-    (void)hybbx_broadcast_ax25(service, 0.0, message);
+    {
+        hybbx_result_t rc = hybbx_broadcast_ax25(service, 0.0, message);
+
+        if (rc == HYBBX_OK) {
+            g_ax25_auto_tick = 0;
+            return;
+        }
+
+        /*
+         * Balancer-pressure path: keep auto-broadcast low-priority, but retry
+         * shortly instead of skipping a full interval after a deferred send.
+         */
+        if (rc == HYBBX_ERR_BUSY && cfg->ax25_auto_interval_sec > 0) {
+            g_ax25_auto_tick = cfg->ax25_auto_interval_sec - 1u;
+        }
+    }
 }
 
 typedef struct broadcast_announce_ctx {

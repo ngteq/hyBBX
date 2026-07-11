@@ -641,6 +641,9 @@ hybbx_result_t hybbx_circuit_hub_multicast_hbx(hybbx_circuit_hub_t *hub,
     }
 
     if (require_broadcast_qos) {
+        if (last_err != HYBBX_ERR_NOT_FOUND) {
+            return last_err;
+        }
         return HYBBX_ERR_DENIED;
     }
 
