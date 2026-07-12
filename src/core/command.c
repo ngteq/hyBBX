@@ -1957,6 +1957,37 @@ static hybbx_result_t cmd_broadcast(hybbx_service_t *service,
         return HYBBX_OK;
     }
 
+    if (str_ieq(cmd->argv[0], "ax25")) {
+        if (cmd->argc > 1) {
+            hybbx_session_write_line(session,
+                "RF beacon uses ax25_auto_message from INI. Use: /broadcast ax25");
+            return HYBBX_OK;
+        }
+
+        rc = hybbx_broadcast_ax25_manual(service);
+        if (rc == HYBBX_ERR_UNSUPPORTED) {
+            hybbx_session_write_line(session, "AX.25 broadcast is disabled.");
+            return HYBBX_OK;
+        }
+        if (rc == HYBBX_ERR_DENIED) {
+            hybbx_session_write_line(session,
+                "No qualifying packet-radio links for AX.25 broadcast.");
+            return HYBBX_OK;
+        }
+        if (rc == HYBBX_ERR_BUSY) {
+            hybbx_session_write_line(session,
+                "AX.25 broadcast deferred (link busy).");
+            return HYBBX_OK;
+        }
+        if (rc != HYBBX_OK) {
+            hybbx_session_write_line(session, "AX.25 broadcast failed.");
+            return HYBBX_ERR_IO;
+        }
+
+        hybbx_session_write_line(session, "AX.25 broadcast sent.");
+        return HYBBX_OK;
+    }
+
     message[0] = '\0';
     for (i = 0; i < (int)cmd->argc; i++) {
         size_t part_len = strlen(cmd->argv[i]);

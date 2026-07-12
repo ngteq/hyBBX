@@ -65,17 +65,30 @@ Help: Set username activated.
 Help: mail to user@other-main. More: list read send delete recycle.
 
 /broadcast message...
-Help: Send message to all online users on this Main. More: /announce
+Help: Local announce to online users. More: /announce /broadcast ax25
+
+/broadcast ax25
+Help: Instant RF beacon (ax25_auto_message) to all packet-radio links.
 ```
 
 ## `/broadcast` (announce)
 
 - Alias: **`/announce`**
 - **Sysop** only
-- Instant message to every **current online participant on the local Main**
+
+### `/broadcast <message>`
+
+- Instant message to every **logged-in online user** on the local Main (telnet/SSH/WebSocket)
+- Guests and registered users receive it; **circuit/TNC bridge sessions do not**
 - Not RF, not HBX circuit fan-out, not the proxy network
 
-INI `[broadcast]` **ax25_auto** beacons are infrastructure (QST UI over qualifying HBX links) — not the `/broadcast` user command. See [MANUAL.md](MANUAL.md).
+### `/broadcast ax25`
+
+- **No custom RF text** — uses INI `ax25_auto_message` (`@service@` token)
+- Sends immediately to each qualifying packet-radio link **one after another** (K24 → K25)
+- Separate from periodic INI **`ax25_auto`** beacons (time-staggered by `ax25_auto_stagger`)
+
+INI `[broadcast]` **ax25_auto** is background infrastructure — see [MANUAL.md](MANUAL.md).
 
 ## Proxy network
 
@@ -97,6 +110,8 @@ No administrative commands cross proxy links.
 | `/help`, `/menu`, `/index`, `/alias` | **Built** — registry-driven |
 | Two-line `/help <cmd>` topics | **Built** — from YAML `line1` / `line2` |
 | `/broadcast` local fan-out | **Built** — `hybbx_broadcast_announce()` |
+| `/broadcast ax25` manual RF | **Built** — `hybbx_broadcast_ax25_manual()` |
+| INI `ax25_auto` staggered beacon | **Built** — `hybbx_broadcast_ax25_tick()` |
 
 When changing commands: update `commands.yaml`, then MANUAL.md and COMMANDS.md.
 

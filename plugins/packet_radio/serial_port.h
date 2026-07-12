@@ -42,6 +42,9 @@ hybbx_result_t hybbx_serial_read(hybbx_serial_port_t *port,
                                  uint8_t *buf, size_t buf_len,
                                  size_t *read_len);
 
+/** POSIX serial fd for poll/select; returns -1 when unavailable. */
+int hybbx_serial_fd(const hybbx_serial_port_t *port);
+
 #ifdef __cplusplus
 }
 #endif

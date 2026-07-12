@@ -6,8 +6,8 @@
 # Proxy network: links user services only (proxymail, proxychat, future).
 # No Sysop/Admin/Mod actions cross proxy links — ever.
 #
-# /broadcast (alias /announce): Sysop sends to all online users on local Main.
-# INI [broadcast] ax25_auto is a separate AX.25 beacon — not /broadcast.
+# /broadcast (alias /announce): Sysop local announce or /broadcast ax25 RF trigger.
+# INI [broadcast] ax25_auto is periodic staggered beacon — not /broadcast ax25.
 #
 # Help format (2 lines, max 80 cols):
 #   /<verb> placeholders
@@ -395,5 +395,5 @@ commands:
   broadcast:
     group: sysop
     min: Sysop
-    line1: "/broadcast message"
-    line2: "Help: Send message to all online users on this Main. More: /announce"
+    line1: "/broadcast message | ax25"
+    line2: "Help: Local announce or instant RF beacon (INI message). More: /announce"

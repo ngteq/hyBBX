@@ -692,6 +692,15 @@ void hybbx_tnc_close(hybbx_tnc_t *tnc)
     free(tnc);
 }
 
+int hybbx_tnc_serial_fd(const hybbx_tnc_t *tnc)
+{
+    if (tnc == NULL || tnc->serial == NULL) {
+        return -1;
+    }
+
+    return hybbx_serial_fd(tnc->serial);
+}
+
 hybbx_result_t hybbx_tnc_send_frame(hybbx_tnc_t *tnc,
                                     const uint8_t *frame, size_t len)
 {

@@ -10,6 +10,7 @@
 
 #include <arpa/inet.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <poll.h>
@@ -23,6 +24,7 @@
 static int set_socket_options(int fd)
 {
     int on = 1;
+    int flags;
 
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) != 0) {
         return -1;
@@ -33,6 +35,11 @@ static int set_socket_options(int fd)
     }
 
     hybbx_socket_nosigpipe(fd);
+
+    flags = fcntl(fd, F_GETFL, 0);
+    if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) != 0) {
+        return -1;
+    }
 
     return 0;
 }
@@ -135,6 +142,10 @@ hybbx_result_t hybbx_circuit_link_read(int fd, uint8_t *buf, size_t buf_len,
             *read_len = 0;
             return HYBBX_OK;
         }
+        return HYBBX_ERR_IO;
+    }
+    if (n == 0) {
+        *read_len = 0;
         return HYBBX_ERR_IO;
     }
 

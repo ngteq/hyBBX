@@ -197,10 +197,12 @@ httpd document root. See [WEBSOCKET.md](WEBSOCKET.md).
 | `ax25_auto` | `yes` | Periodic AX.25 QST beacon |
 | `ax25_auto_interval` | `300` | Seconds between beacon cycles (min 300) |
 | `ax25_auto_stagger` | `0` | Seconds between successive link phases within one interval (`0` = all links at once; dual-radio e.g. `150`) |
-| `ax25_auto_message` | `Broadcast: @service@ online` | Auto-beacon text (`@service@` = service name) |
+| `ax25_auto_message` | `Broadcast: @service@ online` | Auto-beacon text (`@service@` = service name); also used by `/broadcast ax25` |
 | `tcp` | `yes` | **Stub** — log only |
 | `ax25_mycall` | `HYBBX` | |
 | `ax25_dest` | `QST` | |
+
+Sysop `/broadcast <message>` announces to logged-in local users only (not circuit/TNC links). `/broadcast ax25` sends `ax25_auto_message` instantly to each packet-radio link in sequence. INI `ax25_auto` is the periodic staggered background beacon.
 
 ### `[ax25]`
 
@@ -291,7 +293,8 @@ Input: `/command` … · `;` and `#` lines ignored · other text → area handle
 | `/changeuser` | Admin+ |
 | `/deleteme` | User (own account) |
 | `/shutdown`, `/restart` | Sysop |
-| `/broadcast ax25\|tcp <msg>` | Sysop (tcp = stub) |
+| `/broadcast <message>` | Sysop — local online users |
+| `/broadcast ax25` | Sysop — instant RF beacon (INI `ax25_auto_message`) |
 
 ---
 

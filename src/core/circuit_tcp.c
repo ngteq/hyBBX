@@ -206,9 +206,6 @@ static int circuit_slot_can_send_low_prio(const hybbx_circuit_hub_t *hub,
                                           const hybbx_circuit_link_slot_t *slot)
 {
     hybbx_circuit_balance_action_t action;
-    size_t queued;
-    size_t queue_pause;
-    size_t reserve_threshold;
 
     if (hub == NULL || slot == NULL || slot->balance == NULL ||
         !hub->config.balance.enabled || !slot->profile_set) {
@@ -222,18 +219,12 @@ static int circuit_slot_can_send_low_prio(const hybbx_circuit_hub_t *hub,
         return 0;
     }
 
-    queued = hybbx_circuit_balance_queued_bytes(slot->balance);
-    queue_pause = hub->config.balance.queue_pause;
-    if (queue_pause == 0) {
-        queue_pause = 1;
-    }
-    reserve_threshold = queue_pause / 2u;
-    if (reserve_threshold == 0) {
-        reserve_threshold = 1;
-    }
-
-    /* Keep a reserve for interactive user/mesh traffic. */
-    return queued < reserve_threshold;
+    /*
+     * Auto-beacon AX.25 UI uses circuit_slot_send_raw (no queue slot). Only
+     * honour flow-control states; mesh backlog reserve caused starvation when
+     * queued bytes sat between queue_pause/2 and queue_pause with action NONE.
+     */
+    return 1;
 }
 
 static unsigned circuit_count_used_slots(const hybbx_circuit_hub_t *hub)
@@ -573,7 +564,7 @@ hybbx_result_t hybbx_circuit_hub_send_hbx(hybbx_circuit_hub_t *hub,
         return HYBBX_ERR_INVALID;
     }
 
-    return hybbx_circuit_hub_multicast_hbx(hub, frame, len, 0.0, 0);
+    return hybbx_circuit_hub_multicast_hbx(hub, frame, len, 0.0, 0, NULL);
 }
 
 unsigned hybbx_circuit_hub_active_link_count(const hybbx_circuit_hub_t *hub)
@@ -597,11 +588,16 @@ unsigned hybbx_circuit_hub_active_link_count(const hybbx_circuit_hub_t *hub)
 hybbx_result_t hybbx_circuit_hub_multicast_hbx(hybbx_circuit_hub_t *hub,
                                                const uint8_t *frame, size_t len,
                                                double frequency_mhz,
-                                               int require_broadcast_qos)
+                                               int require_broadcast_qos,
+                                               unsigned *sent_out)
 {
     unsigned i;
     int sent = 0;
     hybbx_result_t last_err = HYBBX_ERR_NOT_FOUND;
+
+    if (sent_out != NULL) {
+        *sent_out = 0;
+    }
 
     if (hub == NULL || frame == NULL || len == 0) {
         return HYBBX_ERR_INVALID;
@@ -647,6 +643,9 @@ hybbx_result_t hybbx_circuit_hub_multicast_hbx(hybbx_circuit_hub_t *hub,
     }
 
     if (sent > 0) {
+        if (sent_out != NULL) {
+            *sent_out = (unsigned)sent;
+        }
         return HYBBX_OK;
     }
 
@@ -758,6 +757,14 @@ unsigned hybbx_circuit_hub_broadcast_links(const hybbx_circuit_hub_t *hub,
         }
 
         out[count].frequency_mhz = slot->profile.frequency_mhz;
+        if (out[count].frequency_mhz <= 0.0 && slot->link_id[0] != '\0') {
+            const hybbx_circuit_bridge_entry_t *be =
+                hybbx_circuit_bridge_find(&hub->bridge, slot->link_id);
+
+            if (be != NULL && be->frequency_mhz > 0.0) {
+                out[count].frequency_mhz = be->frequency_mhz;
+            }
+        }
         out[count].slot_index = i;
         hybbx_strlcpy(out[count].link_id, slot->link_id,
                       sizeof(out[count].link_id));

@@ -229,6 +229,12 @@ hybbx_result_t hybbx_serial_read(hybbx_serial_port_t *port,
     return HYBBX_OK;
 }
 
+int hybbx_serial_fd(const hybbx_serial_port_t *port)
+{
+    (void)port;
+    return -1;
+}
+
 #elif defined(__AMIGA__)
 
 #include <proto/exec.h>
@@ -419,6 +425,12 @@ hybbx_result_t hybbx_serial_read(hybbx_serial_port_t *port,
 
     *read_len = (size_t)port->io->IOSer.io_Actual;
     return HYBBX_OK;
+}
+
+int hybbx_serial_fd(const hybbx_serial_port_t *port)
+{
+    (void)port;
+    return -1;
 }
 
 #else /* POSIX */
@@ -661,6 +673,15 @@ hybbx_result_t hybbx_serial_read(hybbx_serial_port_t *port,
 
     *read_len = (size_t)n;
     return HYBBX_OK;
+}
+
+int hybbx_serial_fd(const hybbx_serial_port_t *port)
+{
+    if (port == NULL) {
+        return -1;
+    }
+
+    return port->fd;
 }
 
 #endif

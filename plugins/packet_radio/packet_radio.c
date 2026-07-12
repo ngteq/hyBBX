@@ -24,8 +24,12 @@
 #if defined(_WIN32)
 #include <windows.h>
 #else
+#include <errno.h>
+#include <poll.h>
 #include <sys/select.h>
 #endif
+
+#define PACKET_RADIO_POLL_MS 20u
 
 static hybbx_service_t *g_service;
 
@@ -37,6 +41,7 @@ typedef struct packet_radio_instance {
     volatile int flow_paused;
     volatile int flow_cancel;
     unsigned index;
+    unsigned circuit_reconnect_polls;
 } packet_radio_instance_t;
 
 static packet_radio_instance_t g_instances[HYBBX_PACKET_RADIO_MAX_INSTANCES];
@@ -46,6 +51,8 @@ static volatile int g_radio_running;
 static int g_poll_thread_started;
 
 extern const hybbx_transport_plugin_t hybbx_plugin_packet_radio;
+
+static hybbx_result_t instance_connect_circuit(packet_radio_instance_t *inst);
 
 static const char *device_type_name(hybbx_packet_radio_device_type_t type)
 {
@@ -197,6 +204,73 @@ static void on_tnc_host_ui(const uint8_t *payload, size_t len,
     }
 }
 
+static void instance_format_call(const hybbx_ax25_address_t *addr,
+                                 char *out, size_t out_len)
+{
+    if (out == NULL || out_len == 0) {
+        return;
+    }
+
+    out[0] = '\0';
+    if (addr == NULL || addr->call[0] == '\0') {
+        return;
+    }
+
+    if (addr->ssid > 0u) {
+        snprintf(out, out_len, "%s-%u", addr->call, addr->ssid);
+    } else {
+        hybbx_strlcpy(out, addr->call, out_len);
+    }
+}
+
+static void instance_log_rf_tx(packet_radio_instance_t *inst,
+                             hybbx_result_t rc,
+                             const hybbx_ax25_path_t *path,
+                             size_t payload_len)
+{
+    char src[HYBBX_AX25_CALL_MAX + 8];
+    char dst[HYBBX_AX25_CALL_MAX + 8];
+
+    if (inst == NULL) {
+        return;
+    }
+
+    instance_format_call(path != NULL ? &path->source : NULL, src, sizeof(src));
+    instance_format_call(path != NULL ? &path->dest : NULL, dst, sizeof(dst));
+
+    if (rc == HYBBX_OK) {
+        printf("[packet_radio%u] RF TX %s>%s (%zu bytes)\n",
+               inst->index + 1, src, dst, payload_len);
+    } else {
+        fprintf(stderr,
+                "[packet_radio%u] RF TX failed %s>%s (%zu bytes, rc=%d)\n",
+                inst->index + 1, src, dst, payload_len, (int)rc);
+    }
+}
+
+static hybbx_result_t instance_tx_ax25_ui(packet_radio_instance_t *inst,
+                                          const hybbx_ax25_path_t *path,
+                                          const uint8_t *payload, size_t len)
+{
+    uint8_t frame[HYBBX_AX25_FRAME_MAX];
+    size_t frame_len;
+    hybbx_result_t rc;
+
+    if (inst == NULL || inst->tnc == NULL || path == NULL ||
+        payload == NULL || len == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    frame_len = hybbx_ax25_build_ui(path, payload, len, frame, sizeof(frame));
+    if (frame_len == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    rc = hybbx_tnc_send_frame(inst->tnc, frame, frame_len);
+    instance_log_rf_tx(inst, rc, path, len);
+    return rc;
+}
+
 static hybbx_result_t instance_send_bytes(packet_radio_instance_t *inst,
                                           const uint8_t *data, size_t len)
 {
@@ -212,6 +286,32 @@ static hybbx_result_t instance_send_bytes(packet_radio_instance_t *inst,
     }
 
     return hybbx_tnc_send_ui(inst->tnc, data, len);
+}
+
+static void instance_circuit_disconnect(packet_radio_instance_t *inst)
+{
+    if (inst == NULL) {
+        return;
+    }
+
+    if (inst->circuit_fd >= 0) {
+        close(inst->circuit_fd);
+        inst->circuit_fd = -1;
+    }
+    hybbx_circuit_decoder_init(&inst->circuit_dec);
+    inst->circuit_reconnect_polls = 0;
+}
+
+static void instance_circuit_reconnect(packet_radio_instance_t *inst)
+{
+    if (inst == NULL) {
+        return;
+    }
+
+    instance_circuit_disconnect(inst);
+    if (instance_connect_circuit(inst) == HYBBX_OK) {
+        printf("[packet_radio%u] circuit reconnected\n", inst->index + 1);
+    }
 }
 
 static void instance_on_circuit_flow_ctrl(packet_radio_instance_t *inst,
@@ -284,15 +384,26 @@ static void on_circuit_downlink(hybbx_circuit_proto_t proto, uint16_t flags,
     case HYBBX_CIRCUIT_PROTO_TERMINAL:
         (void)instance_send_bytes(inst, payload, len);
         break;
-    case HYBBX_CIRCUIT_PROTO_AX25:
-        (void)hybbx_tnc_send_frame(inst->tnc, payload, len);
+    case HYBBX_CIRCUIT_PROTO_AX25: {
+        hybbx_result_t rc = hybbx_tnc_send_frame(inst->tnc, payload, len);
+        if (rc != HYBBX_OK) {
+            fprintf(stderr,
+                    "[packet_radio%u] RF TX frame failed (rc=%d, %zu bytes)\n",
+                    inst->index + 1, (int)rc, len);
+        }
         break;
+    }
     case HYBBX_CIRCUIT_PROTO_AX25_UI: {
         uint8_t ui[HYBBX_AX25_PAYLOAD_MAX];
-        size_t ui_len = hybbx_circuit_unpack_ax25_ui(payload, len, NULL,
+        hybbx_ax25_path_t path;
+        size_t ui_len = hybbx_circuit_unpack_ax25_ui(payload, len, &path,
                                                      ui, sizeof(ui));
         if (ui_len > 0) {
-            (void)instance_send_bytes(inst, ui, ui_len);
+            (void)instance_tx_ax25_ui(inst, &path, ui, ui_len);
+        } else {
+            fprintf(stderr,
+                    "[packet_radio%u] AX25_UI unpack failed (%zu bytes)\n",
+                    inst->index + 1, len);
         }
         break;
     }
@@ -419,45 +530,184 @@ static void instance_shutdown(packet_radio_instance_t *inst)
     inst->circuit_fd = -1;
 }
 
-static void *packet_radio_poll_thread(void *arg)
+typedef enum {
+    PR_POLL_CIRCUIT = 0,
+    PR_POLL_SERIAL = 1
+} packet_radio_poll_kind_t;
+
+typedef struct {
+    unsigned instance_index;
+    packet_radio_poll_kind_t kind;
+} packet_radio_poll_map_t;
+
+static void instance_drain_circuit(packet_radio_instance_t *inst)
 {
     uint8_t buf[512];
+
+    if (inst == NULL || inst->circuit_fd < 0) {
+        return;
+    }
+
+    for (;;) {
+        size_t read_len = 0;
+        hybbx_result_t rc = hybbx_circuit_link_read(inst->circuit_fd, buf,
+                                                    sizeof(buf), &read_len);
+
+        if (rc == HYBBX_ERR_IO) {
+            fprintf(stderr,
+                    "[packet_radio%u] circuit disconnected — reconnecting\n",
+                    inst->index + 1);
+            instance_circuit_reconnect(inst);
+            return;
+        }
+        if (rc != HYBBX_OK || read_len == 0) {
+            break;
+        }
+
+        hybbx_circuit_decoder_feed(&inst->circuit_dec, buf, read_len,
+                                   on_circuit_downlink, inst);
+    }
+}
+
+#if !defined(_WIN32)
+static void packet_radio_poll_instances(void)
+{
+    struct pollfd pfds[HYBBX_PACKET_RADIO_MAX_INSTANCES * 2u];
+    packet_radio_poll_map_t map[HYBBX_PACKET_RADIO_MAX_INSTANCES * 2u];
+    nfds_t nfds = 0;
     unsigned i;
 
-    (void)arg;
+    for (i = 0; i < g_instance_count; i++) {
+        packet_radio_instance_t *inst = &g_instances[i];
+        int circuit_fd = inst->circuit_fd;
+        int serial_fd = inst->tnc != NULL ? hybbx_tnc_serial_fd(inst->tnc) : -1;
 
-    while (g_radio_running) {
-        for (i = 0; i < g_instance_count; i++) {
-            packet_radio_instance_t *inst = &g_instances[i];
+        if (circuit_fd >= 0) {
+            pfds[nfds].fd = circuit_fd;
+            pfds[nfds].events = POLLIN;
+            pfds[nfds].revents = 0;
+            map[nfds].instance_index = i;
+            map[nfds].kind = PR_POLL_CIRCUIT;
+            nfds++;
+        }
 
-            if (inst->tnc != NULL) {
-                (void)hybbx_tnc_poll(inst->tnc);
+        if (serial_fd >= 0) {
+            pfds[nfds].fd = serial_fd;
+            pfds[nfds].events = POLLIN;
+            pfds[nfds].revents = 0;
+            map[nfds].instance_index = i;
+            map[nfds].kind = PR_POLL_SERIAL;
+            nfds++;
+        }
+    }
+
+    if (nfds > 0) {
+        int pr = poll(pfds, nfds, (int)PACKET_RADIO_POLL_MS);
+
+        if (pr < 0) {
+            if (errno != EINTR) {
+                fprintf(stderr, "[packet_radio] poll failed\n");
             }
+        } else if (pr > 0) {
+            nfds_t j;
 
-            if (inst->circuit_fd >= 0) {
-                size_t read_len = 0;
-                hybbx_result_t rc = hybbx_circuit_link_read(inst->circuit_fd,
-                                                            buf, sizeof(buf),
-                                                            &read_len);
-                if (rc == HYBBX_OK && read_len > 0) {
-                    hybbx_circuit_decoder_feed(&inst->circuit_dec, buf,
-                                               read_len, on_circuit_downlink,
-                                               inst);
+            for (j = 0; j < nfds; j++) {
+                short rev = pfds[j].revents;
+
+                if (rev == 0) {
+                    continue;
+                }
+
+                if ((rev & (POLLERR | POLLHUP | POLLNVAL)) != 0) {
+                    if (map[j].kind == PR_POLL_CIRCUIT) {
+                        packet_radio_instance_t *inst =
+                            &g_instances[map[j].instance_index];
+
+                        fprintf(stderr,
+                                "[packet_radio%u] circuit hangup — "
+                                "reconnecting\n",
+                                inst->index + 1);
+                        instance_circuit_reconnect(inst);
+                    }
+                    continue;
+                }
+
+                if ((rev & POLLIN) == 0) {
+                    continue;
+                }
+
+                if (map[j].kind == PR_POLL_CIRCUIT) {
+                    instance_drain_circuit(&g_instances[map[j].instance_index]);
+                } else {
+                    packet_radio_instance_t *inst =
+                        &g_instances[map[j].instance_index];
+
+                    if (inst->tnc != NULL) {
+                        (void)hybbx_tnc_poll(inst->tnc);
+                    }
                 }
             }
+        }
+    } else {
+        packet_radio_poll_sleep_ms(PACKET_RADIO_POLL_MS);
+    }
+}
+#endif
 
-            if (inst->flow_cancel) {
-                inst->flow_cancel = 0;
-                inst->flow_paused = 0;
-                if (inst->circuit_fd >= 0) {
-                    close(inst->circuit_fd);
-                    inst->circuit_fd = -1;
-                }
+static void packet_radio_service_maintenance(void)
+{
+    unsigned i;
+
+    for (i = 0; i < g_instance_count; i++) {
+        packet_radio_instance_t *inst = &g_instances[i];
+
+        if (inst->circuit_fd < 0) {
+            inst->circuit_reconnect_polls++;
+            if (inst->circuit_reconnect_polls >= 50u) {
+                inst->circuit_reconnect_polls = 0;
                 (void)instance_connect_circuit(inst);
             }
         }
 
-        packet_radio_poll_sleep_ms(20);
+        if (inst->flow_cancel) {
+            inst->flow_cancel = 0;
+            inst->flow_paused = 0;
+            instance_circuit_reconnect(inst);
+        }
+    }
+}
+
+#if defined(_WIN32)
+static void packet_radio_poll_win32(void)
+{
+    unsigned i;
+
+    for (i = 0; i < g_instance_count; i++) {
+        packet_radio_instance_t *inst = &g_instances[i];
+
+        if (inst->tnc != NULL) {
+            (void)hybbx_tnc_poll(inst->tnc);
+        }
+
+        if (inst->circuit_fd >= 0) {
+            instance_drain_circuit(inst);
+        }
+    }
+}
+#endif
+
+static void *packet_radio_poll_thread(void *arg)
+{
+    (void)arg;
+
+    while (g_radio_running) {
+#if !defined(_WIN32)
+        packet_radio_poll_instances();
+#else
+        packet_radio_poll_win32();
+        packet_radio_poll_sleep_ms(PACKET_RADIO_POLL_MS);
+#endif
+        packet_radio_service_maintenance();
     }
 
     return NULL;

@@ -1,11 +1,13 @@
 #include "hybbx/broadcast.h"
 #include "hybbx/service.h"
 #include "hybbx/session.h"
+#include "hybbx/plugin.h"
 #include "hybbx/circuit_tcp.h"
 #include "hybbx/circuit.h"
 #include "hybbx/ax25.h"
 #include "hybbx/texts.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -203,6 +205,46 @@ static time_t g_ax25_last_sent;
 static time_t g_ax25_link_last_sent[HYBBX_CIRCUIT_MAX_LINKS];
 static unsigned g_ax25_auto_tick;
 static unsigned g_ax25_link_retry[HYBBX_CIRCUIT_MAX_LINKS];
+static unsigned g_ax25_defer_log_sec;
+
+static double broadcast_link_target_mhz(const hybbx_broadcast_config_t *cfg,
+                                        const hybbx_circuit_broadcast_link_t *link,
+                                        unsigned link_index)
+{
+    double mhz;
+
+    if (link == NULL) {
+        return 0.0;
+    }
+
+    mhz = link->frequency_mhz;
+    if (mhz <= 0.0 && cfg != NULL && link_index < cfg->frequencies.count) {
+        mhz = cfg->frequencies.mhz[link_index];
+    }
+
+    return mhz;
+}
+
+static void broadcast_ax25_log_deferred(double frequency_mhz, const char *reason)
+{
+    if (reason == NULL) {
+        return;
+    }
+
+    g_ax25_defer_log_sec++;
+    if (g_ax25_defer_log_sec < 60u) {
+        return;
+    }
+
+    g_ax25_defer_log_sec = 0;
+    if (frequency_mhz > 0.0) {
+        printf("[broadcast] ax25 %.3f MHz deferred (%s)\n",
+               frequency_mhz, reason);
+    } else {
+        printf("[broadcast] ax25 auto deferred (%s)\n", reason);
+    }
+    hybbx_log_stats("[broadcast] ax25 deferred: %s", reason);
+}
 
 static int broadcast_ax25_rate_ok(unsigned interval_sec)
 {
@@ -312,9 +354,10 @@ static size_t broadcast_expand_service_token(char *out, size_t out_len,
     return pos;
 }
 
-hybbx_result_t hybbx_broadcast_ax25(hybbx_service_t *service,
-                                    double frequency_mhz,
-                                    const char *message)
+static hybbx_result_t broadcast_ax25_send(hybbx_service_t *service,
+                                            double frequency_mhz,
+                                            const char *message,
+                                            int enforce_rate_limit)
 {
     const hybbx_broadcast_config_t *cfg;
     hybbx_circuit_hub_t *hub;
@@ -354,7 +397,8 @@ hybbx_result_t hybbx_broadcast_ax25(hybbx_service_t *service,
                                             links[i].frequency_mhz)) {
                 continue;
             }
-            if (broadcast_ax25_link_rate_ok(links[i].slot_index,
+            if (!enforce_rate_limit ||
+                broadcast_ax25_link_rate_ok(links[i].slot_index,
                                             cfg->ax25_auto_interval_sec)) {
                 any_rate_ok = 1;
                 break;
@@ -364,7 +408,8 @@ hybbx_result_t hybbx_broadcast_ax25(hybbx_service_t *service,
             return HYBBX_ERR_BUSY;
         }
         per_link = 1;
-    } else if (!broadcast_ax25_rate_ok(cfg->ax25_auto_interval_sec)) {
+    } else if (enforce_rate_limit &&
+               !broadcast_ax25_rate_ok(cfg->ax25_auto_interval_sec)) {
         return HYBBX_ERR_BUSY;
     }
 
@@ -391,7 +436,7 @@ hybbx_result_t hybbx_broadcast_ax25(hybbx_service_t *service,
     }
 
     rc = hybbx_circuit_hub_multicast_hbx(hub, frame, frame_len,
-                                         frequency_mhz, 1);
+                                         frequency_mhz, 1, &sent_links);
     if (rc != HYBBX_OK) {
         return rc;
     }
@@ -416,13 +461,92 @@ hybbx_result_t hybbx_broadcast_ax25(hybbx_service_t *service,
         broadcast_ax25_mark_sent();
     }
 
-    sent_links = hybbx_circuit_hub_active_link_count(hub);
     if (frequency_mhz > 0.0) {
-        printf("[broadcast] ax25 %.3f MHz (%u link(s), low+half): %s\n",
+        printf("[broadcast] ax25 %.3f MHz (%u hub): %s\n",
                frequency_mhz, sent_links, message);
     } else {
-        printf("[broadcast] ax25 all qualifying links (%u active): %s\n",
+        printf("[broadcast] ax25 all qualifying links (%u hub): %s\n",
                sent_links, message);
+    }
+
+    return HYBBX_OK;
+}
+
+hybbx_result_t hybbx_broadcast_ax25(hybbx_service_t *service,
+                                    double frequency_mhz,
+                                    const char *message)
+{
+    return broadcast_ax25_send(service, frequency_mhz, message, 1);
+}
+
+hybbx_result_t hybbx_broadcast_ax25_manual(hybbx_service_t *service)
+{
+    const hybbx_broadcast_config_t *cfg;
+    hybbx_circuit_hub_t *hub;
+    hybbx_circuit_broadcast_link_t links[HYBBX_CIRCUIT_MAX_LINKS];
+    char message[HYBBX_BROADCAST_AX25_MESSAGE_MAX + 1];
+    unsigned link_count;
+    unsigned sent = 0;
+    unsigned i;
+
+    if (service == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    cfg = hybbx_service_get_broadcast(service);
+    if (cfg == NULL || !cfg->enabled || !cfg->ax25_enabled) {
+        return HYBBX_ERR_UNSUPPORTED;
+    }
+
+    hub = hybbx_service_circuit_hub(service);
+    if (hub == NULL || !hybbx_circuit_hub_running(hub)) {
+        return HYBBX_ERR_BUSY;
+    }
+
+    link_count = hybbx_circuit_hub_broadcast_links(hub, links,
+                                                   HYBBX_CIRCUIT_MAX_LINKS);
+    if (link_count == 0) {
+        return HYBBX_ERR_DENIED;
+    }
+
+    broadcast_expand_service_token(message, sizeof(message),
+                                   cfg->ax25_auto_message,
+                                   hybbx_service_get_name(service));
+    if (message[0] == '\0') {
+        return HYBBX_ERR_INVALID;
+    }
+
+    printf("[broadcast] ax25 manual sequential (%u link(s)): %s\n",
+           link_count, message);
+
+    for (i = 0; i < link_count; i++) {
+        double target_mhz = broadcast_link_target_mhz(cfg, &links[i], i);
+        hybbx_result_t rc;
+
+        if (target_mhz <= 0.0) {
+            hybbx_log_stats("[broadcast] ax25 manual skip link=%s (no MHz)",
+                            links[i].link_id);
+            continue;
+        }
+
+        rc = broadcast_ax25_send(service, target_mhz, message, 0);
+        if (rc == HYBBX_OK) {
+            sent++;
+            continue;
+        }
+
+        if (rc == HYBBX_ERR_BUSY) {
+            printf("[broadcast] ax25 manual %.3f MHz deferred (balancer busy)\n",
+                   target_mhz);
+            continue;
+        }
+
+        printf("[broadcast] ax25 manual %.3f MHz failed (%d)\n",
+               target_mhz, (int)rc);
+    }
+
+    if (sent == 0) {
+        return HYBBX_ERR_BUSY;
     }
 
     return HYBBX_OK;
@@ -496,6 +620,7 @@ void hybbx_broadcast_ax25_tick(hybbx_service_t *service)
 
             if (rc == HYBBX_ERR_BUSY && interval > 0) {
                 g_ax25_auto_tick = interval - 1u;
+                broadcast_ax25_log_deferred(0.0, "balancer busy");
             }
         }
         return;
@@ -503,7 +628,7 @@ void hybbx_broadcast_ax25_tick(hybbx_service_t *service)
 
     for (i = 0; i < link_count; i++) {
         unsigned phase = (i * stagger) % interval;
-        double target_mhz = links[i].frequency_mhz;
+        double target_mhz = broadcast_link_target_mhz(cfg, &links[i], i);
         hybbx_result_t rc;
 
         if (!g_ax25_link_retry[links[i].slot_index] &&
@@ -514,17 +639,24 @@ void hybbx_broadcast_ax25_tick(hybbx_service_t *service)
             continue;
         }
         if (target_mhz <= 0.0) {
+            hybbx_log_stats("[broadcast] ax25 skip link=%s (no MHz)",
+                            links[i].link_id);
             continue;
         }
 
         rc = hybbx_broadcast_ax25(service, target_mhz, message);
         if (rc == HYBBX_OK) {
             g_ax25_link_retry[links[i].slot_index] = 0;
+            g_ax25_defer_log_sec = 0;
             continue;
         }
 
         if (rc == HYBBX_ERR_BUSY) {
             g_ax25_link_retry[links[i].slot_index] = 1;
+            broadcast_ax25_log_deferred(target_mhz, "balancer busy");
+        } else if (rc == HYBBX_ERR_DENIED) {
+            g_ax25_link_retry[links[i].slot_index] = 1;
+            broadcast_ax25_log_deferred(target_mhz, "no qualifying link");
         }
     }
 
@@ -539,12 +671,39 @@ typedef struct broadcast_announce_ctx {
     const char *message;
 } broadcast_announce_ctx_t;
 
+static int broadcast_announce_is_local_user(const hybbx_session_t *session)
+{
+    hybbx_transport_kind_t kind;
+
+    if (session == NULL || session->transport == NULL) {
+        return 1;
+    }
+
+    kind = session->transport->kind;
+    return kind == HYBBX_TRANSPORT_TELNET ||
+           kind == HYBBX_TRANSPORT_SSH ||
+           kind == HYBBX_TRANSPORT_WEBSOCKET;
+}
+
 static void broadcast_announce_visitor(hybbx_session_t *session, void *userdata)
 {
     broadcast_announce_ctx_t *ctx = (broadcast_announce_ctx_t *)userdata;
     char line[HYBBX_LINE_MAX];
 
     if (session == NULL || ctx == NULL || ctx->message == NULL) {
+        return;
+    }
+
+    /*
+     * Local /broadcast is for online human users only. Circuit link adapter
+     * sessions (HBX bridges to TNCs) must not receive terminal fan-out —
+     * it floods low-bandwidth circuit queues and triggers load-balance
+     * pause/break on packet-radio links.
+     */
+    if (!broadcast_announce_is_local_user(session)) {
+        return;
+    }
+    if (!hybbx_session_logged_in(session)) {
         return;
     }
 

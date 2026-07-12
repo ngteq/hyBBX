@@ -77,7 +77,8 @@ unsigned hybbx_circuit_hub_active_link_count(const hybbx_circuit_hub_t *hub);
 hybbx_result_t hybbx_circuit_hub_multicast_hbx(hybbx_circuit_hub_t *hub,
                                                const uint8_t *frame, size_t len,
                                                double frequency_mhz,
-                                               int require_broadcast_qos);
+                                               int require_broadcast_qos,
+                                               unsigned *sent_out);
 
 double hybbx_circuit_hub_link_frequency_mhz(const hybbx_circuit_hub_t *hub);
 

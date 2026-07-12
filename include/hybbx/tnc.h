@@ -180,6 +180,9 @@ void hybbx_tnc_close(hybbx_tnc_t *tnc);
 
 hybbx_result_t hybbx_tnc_poll(hybbx_tnc_t *tnc);
 
+/** POSIX serial fd for poll/select; returns -1 when unavailable. */
+int hybbx_tnc_serial_fd(const hybbx_tnc_t *tnc);
+
 /** Send a raw AX.25 frame (already built) to the TNC. */
 hybbx_result_t hybbx_tnc_send_frame(hybbx_tnc_t *tnc,
                                     const uint8_t *frame, size_t len);

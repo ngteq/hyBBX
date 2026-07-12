@@ -5,7 +5,10 @@
  * HyBBX broadcast — Main instance only.
  *
  * User command `/broadcast` (alias `/announce`): instant message to every
- * online session on this Main (local telnet/SSH/WebSocket users).
+ * online local user session on this Main (telnet/SSH/WebSocket).
+ *
+ * `/broadcast ax25`: manual instant RF beacon — ax25_auto_message to each
+ * qualifying packet-radio link sequentially (no custom RF text).
  *
  * INI `[broadcast]` ax25_auto: periodic AX.25 QST UI beacon over HBX to
  * Secondary extenders (low-bandwidth + half-duplex links). Separate from
@@ -69,11 +72,17 @@ const hybbx_broadcast_config_t *hybbx_service_get_broadcast(
     const struct hybbx_service *service);
 
 /**
- * Send @p message to every online session on this Main (Sysop `/broadcast`).
+ * Send @p message to every online local user on this Main (Sysop `/broadcast`).
  */
 hybbx_result_t hybbx_broadcast_announce(struct hybbx_service *service,
                                         struct hybbx_session *from,
                                         const char *message);
+
+/**
+ * Manual AX.25 beacon (Sysop `/broadcast ax25`): INI ax25_auto_message to each
+ * qualifying link immediately, one after another. No custom RF text.
+ */
+hybbx_result_t hybbx_broadcast_ax25_manual(struct hybbx_service *service);
 
 /**
  * AX.25 auto-beacon over HBX (INI ax25_auto only).
