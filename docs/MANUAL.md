@@ -129,6 +129,8 @@ Tokens: `@version@`, `@service@`, `@username@` in banner/motd.
 
 Telnet is always started when built (not gated here).
 
+Entertain Area applications (e.g. text chess) are **plugins only** on Main — see [ENTERTAIN.md](ENTERTAIN.md). Enable per app when shipped (`chess = yes`, …).
+
 ### `[transport.telnet]`
 
 | Key | Default | Description |

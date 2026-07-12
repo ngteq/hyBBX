@@ -14,12 +14,13 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 | `plugins/packet_radio` | Serial/USB TNC |
 | `plugins/baycom` | BayCom PR-Stack (kernel SER12/PAR96) |
 | `plugins/ardop`, `plugins/crdop` | ARDOPC, CRDOPC |
+| `plugins/entertain_*` (e.g. chess) | Entertain Area — games/apps on Main only |
 
 ## Rules
 
 1. Core = sessions + HBX/TCP only — no KISS/AX.25/telnet wire parsing in `src/core/`
 2. **Inter-node transport:** Secondary→Main, Main↔Main (`mains_proxy`), and proxy relay (`proxymail`/`proxychat`) MUST use HBX/Circuit (`hybbx_circuit_link_connect` + `LINK_AUTH`) — never raw TCP/AX.25 sockets between HyBBX processes. User sessions (telnet/SSH/WebSocket) are separate. Proxy carries user services only — no admin actions.
-3. Plugins: `hybbx_transport_plugin_t` in `plugins/`
+3. Plugins: `hybbx_transport_plugin_t` in `plugins/`; **Entertain Area apps are plugins only** — see [ENTERTAIN.md](docs/ENTERTAIN.md)
 4. Booleans: `hybbx_parse_bool()` — `yes`/`no`
 5. Buffers: [limits.h](include/hybbx/limits.h)
 6. **Portability:** POSIX+ friendly — C99 and portable POSIX in shared code; keep `*BSD` (FreeBSD, NetBSD, OpenBSD, …) and **AmigaOS 3.9+** compatible; isolate platform code (`_WIN32`, `__AMIGA__`, …). New core changes should stay easy to port.
@@ -47,6 +48,7 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 | [ARDOP.md](docs/ARDOP.md) · [CRDOP.md](docs/CRDOP.md) | Modem plugins |
 | [CLIENTS.md](docs/CLIENTS.md) | CLI clients |
 | [PLATFORMS.md](docs/PLATFORMS.md) | Per-OS build notes (MacOS, Windows, …) |
+| [ENTERTAIN.md](docs/ENTERTAIN.md) | Entertain Area — plugin-only apps (chess, …) |
 
 ## Build
 

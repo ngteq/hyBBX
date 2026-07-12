@@ -45,8 +45,10 @@ All paths between HyBBX processes use HBX v1 on the internal circuit hub. The ap
 | Localhost Secondary | TCP → Main `:7323`, `LINK_AUTH` |
 | Remote Secondary | TCP → Main `:7323` |
 | Packet radio / BayCom / ARDOP / CRDOP | Plugin edge → HBX client |
-| AX.25 auto-beacon (INI) | Main → HBX → Secondary extenders |
-| `/broadcast` (Sysop) | All online users on local Main only |
+| AX.25 auto-beacon (INI) | Main → HBX → Secondary extenders (staggered) |
+| `/broadcast <msg>` (Sysop) | Logged-in local Main users (telnet/SSH/WebSocket) |
+| `/broadcast ax25` (Sysop) | Instant sequential RF beacon (`ax25_auto_message`) |
+| Entertain Area apps | Main plugins only — [ENTERTAIN.md](ENTERTAIN.md) |
 | Proxy network (`mains_proxy`) | Main ↔ Main via HBX circuit client |
 
 Edge daemons authenticate with per-link `link_password`. User wire auth (telnet/SSH) is separate from HBX link auth.

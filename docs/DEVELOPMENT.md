@@ -17,7 +17,7 @@ API: `include/hybbx/`. Config: `share/`. Sessions and commands: `src/core/`. Tra
 ```
 src/core/       session, storage, circuit, commands, commands_registry
 src/clients/    hybbx-telnet, hybbx-ssh, hybbx-terminal
-plugins/        telnet, ssh, websocket, packet_radio, …
+plugins/        telnet, ssh, websocket, packet_radio, entertain_* (chess, …)
 share/          hybbx.ini.example, commands.yaml
 ```
 
@@ -32,6 +32,7 @@ Secondary / proxy network / RF plugins → HBX circuit :7323 only
 - Inter-node: HBX/Circuit + `LINK_AUTH` only
 - Built-in `[security]` in `src/core/security_ban.c` — [SECURITY.md](SECURITY.md)
 - Plugins: `hybbx_transport_plugin_t` — register in `src/main.c`
+- **Entertain Area:** every game/app is a plugin in `plugins/` — never `src/core/`. See [ENTERTAIN.md](ENTERTAIN.md).
 
 ## Commands
 

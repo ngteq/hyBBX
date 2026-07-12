@@ -27,7 +27,7 @@ HyBBX splits **user sessions** from **RF / mesh infrastructure**.
 
 ### Main
 
-Central site: registered users, flat-file or SQLite storage, telnet/SSH/WebSocket listeners, internal **HBX circuit hub** on `:7323`. Sysop mail, chat channels, `/broadcast` to all online users on this Main. Template: [share/hybbx.ini.example](share/hybbx.ini.example).
+Central site: registered users, flat-file or SQLite storage, telnet/SSH/WebSocket listeners, internal **HBX circuit hub** on `:7323`. Sysop `/broadcast` to local online users; `/broadcast ax25` for manual RF beacon. Optional **Entertain Area** apps are plugins ([docs/ENTERTAIN.md](docs/ENTERTAIN.md)). Template: [share/hybbx.ini.example](share/hybbx.ini.example).
 
 ### Secondary
 
@@ -74,7 +74,7 @@ Details: [docs/BUILD.md](docs/BUILD.md) · [docs/MANUAL.md](docs/MANUAL.md)
 | Security | [SECURITY.md](docs/SECURITY.md) |
 | WebSocket | [WEBSOCKET.md](docs/WEBSOCKET.md) |
 | RF / transports | [TNCS.md](docs/TNCS.md) · [MAINS_PROXY.md](docs/MAINS_PROXY.md) · [BAYCOM.md](docs/BAYCOM.md) |
-| Developer | [BUILD.md](docs/BUILD.md) · [DEVELOPMENT.md](docs/DEVELOPMENT.md) · [COMMANDS.md](docs/COMMANDS.md) · [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Developer | [BUILD.md](docs/BUILD.md) · [DEVELOPMENT.md](docs/DEVELOPMENT.md) · [COMMANDS.md](docs/COMMANDS.md) · [ENTERTAIN.md](docs/ENTERTAIN.md) · [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 ---
 
