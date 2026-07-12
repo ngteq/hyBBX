@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -907,9 +908,58 @@ typedef struct circuit_auth_ctx {
     hybbx_link_auth_t auth;
 } circuit_auth_ctx_t;
 
+static void circuit_evict_stale_link(hybbx_circuit_hub_t *hub,
+                                     hybbx_circuit_link_slot_t *stale,
+                                     const char *link_id)
+{
+    int fd = -1;
+
+    if (hub == NULL || stale == NULL) {
+        return;
+    }
+
+    /*
+     * Reconnect race: close the stale TCP fd and drop link_id so the new
+     * auth can proceed. Do not reset session/balance here — the stale link
+     * thread still owns those until it exits and calls circuit_close_slot.
+     */
+    pthread_mutex_lock(&hub->lock);
+    fd = stale->fd;
+    if (fd >= 0) {
+        (void)shutdown(fd, SHUT_RDWR);
+        close(fd);
+        stale->fd = -1;
+    }
+    stale->link_id[0] = '\0';
+    pthread_mutex_unlock(&hub->lock);
+
+    if (link_id != NULL && link_id[0] != '\0') {
+        hybbx_log_info("[circuit] replacing stale link id=%s (reconnect)",
+                       link_id);
+    }
+}
+
+static int circuit_auth_fail_counts_as_abuse(const char *reason)
+{
+    if (reason == NULL) {
+        return 0;
+    }
+
+    /*
+     * duplicate_id is a reconnect race (stale hub slot), not brute-force.
+     * circuit_validate_link_auth evicts the stale slot; do not ban for it.
+     */
+    if (strcmp(reason, "duplicate_id") == 0) {
+        return 0;
+    }
+
+    return 1;
+}
+
 static void circuit_log_auth_fail(int fd, const char *reason, const char *id)
 {
     char ip[HYBBX_REMOTE_ADDR_MAX];
+    int count_abuse = circuit_auth_fail_counts_as_abuse(reason);
 
     if (reason == NULL) {
         return;
@@ -925,9 +975,11 @@ static void circuit_log_auth_fail(int fd, const char *reason, const char *id)
                 "link_auth_fail ip=%s reason=%s transport=circuit",
                 ip, reason);
         }
-        hybbx_security_ban_link_auth_fail(ip);
-        if (id != NULL && id[0] != '\0' && strcmp(reason, "banned") != 0) {
-            hybbx_security_ban_link_auth_fail_callid(id);
+        if (count_abuse) {
+            hybbx_security_ban_link_auth_fail(ip);
+            if (id != NULL && id[0] != '\0' && strcmp(reason, "banned") != 0) {
+                hybbx_security_ban_link_auth_fail_callid(id);
+            }
         }
     } else {
         hybbx_security_log_write(
@@ -996,11 +1048,19 @@ static int circuit_validate_link_auth(circuit_auth_ctx_t *ctx, const char **reas
         return 0;
     }
 
-    if (circuit_find_active_slot_by_id(hub, ctx->auth.id, slot) >= 0) {
-        if (reason != NULL) {
-            *reason = "duplicate_id";
+    {
+        int stale_idx = circuit_find_active_slot_by_id(hub, ctx->auth.id, slot);
+
+        if (stale_idx >= 0) {
+            circuit_evict_stale_link(hub, &hub->slots[(unsigned)stale_idx],
+                                     ctx->auth.id);
+            if (circuit_find_active_slot_by_id(hub, ctx->auth.id, slot) >= 0) {
+                if (reason != NULL) {
+                    *reason = "duplicate_id";
+                }
+                return 0;
+            }
         }
-        return 0;
     }
 
     (void)entry;

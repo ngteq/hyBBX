@@ -96,6 +96,7 @@ static unsigned packet_radio_count_local_edges(const char *config)
 }
 
 static hybbx_result_t instance_connect_circuit(packet_radio_instance_t *inst);
+static void packet_radio_poll_sleep_ms(unsigned ms);
 
 static const char *device_type_name(hybbx_packet_radio_device_type_t type)
 {
@@ -380,6 +381,7 @@ static void instance_circuit_reconnect(packet_radio_instance_t *inst)
     }
 
     instance_circuit_disconnect(inst);
+    packet_radio_poll_sleep_ms(250);
     if (instance_connect_circuit(inst) == HYBBX_OK) {
         hybbx_log_info("[packet_radio%u] circuit reconnected", inst->index + 1);
     }
