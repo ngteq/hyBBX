@@ -243,6 +243,19 @@ Sysop `/broadcast <message>` announces to logged-in local users only (not circui
 
 MHz list for operator reference (`frequency1`, `frequency1_label`, …). Tune radios manually.
 
+### `[max25]`
+
+Optional **max25d** TCP reachability probe before `packet_radio` opens local serial TNC ports. RF prep (boot-wait, MYCALL, KISS) lives in **MainAX25-Stack (MAX25)** — not in HyBBX. When local TNC instances are configured, HyBBX probes max25d by default; without a reachable max25d, local AX.25 attach is skipped (telnet and other transports continue).
+
+| Key | Default | Notes |
+|-----|---------|-------|
+| `check` | `yes` | `yes` = TCP probe before local TNC attach; `no` = skip probe (legacy standalone / manual KISS) |
+| `host` | `127.0.0.1` | max25d host |
+| `port` | `7325` | max25d TCP (M25/1) |
+| `timeout_ms` | `3000` | Connect probe timeout (100–60000) |
+
+When `check=yes` and max25d is unreachable, HyBBX logs a warning and **skips local TNC instances** — telnet, SSH, WebSocket, and circuit hub continue. Bridge-registry rows on Main (no local `device`) are unaffected. Set `check=no` when HyBBX runs without MAX25 (manual `kiss_entry=kiss_on` prep).
+
 ### `[transport.packet_radioN]` (bridge registry)
 
 On **Main**: metadata per remote Secondary (`link_id`, `link_password`, `link_role`, `frequency_mhz`).

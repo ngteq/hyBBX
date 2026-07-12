@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #define HYBBX_CIRCUIT_LINK_POLL_MS 50
@@ -52,6 +53,7 @@ typedef struct hybbx_circuit_link_slot {
     hybbx_circuit_balance_t *balance;
     hybbx_circuit_link_profile_t profile;
     int profile_set;
+    time_t last_rf_activity;
 } hybbx_circuit_link_slot_t;
 
 struct hybbx_circuit_hub {
@@ -183,9 +185,10 @@ static int circuit_slot_broadcast_qos(const hybbx_circuit_link_slot_t *slot)
            slot->profile.duplex == HYBBX_CIRCUIT_DUPLEX_HALF;
 }
 
-static int circuit_frame_is_ax25_ui_tx(const uint8_t *frame, size_t len)
+static int circuit_frame_is_ax25_broadcast_tx(const uint8_t *frame, size_t len)
 {
     unsigned flags;
+    uint8_t proto;
 
     if (frame == NULL || len < HYBBX_CIRCUIT_HEADER_SIZE) {
         return 0;
@@ -194,8 +197,13 @@ static int circuit_frame_is_ax25_ui_tx(const uint8_t *frame, size_t len)
     if (frame[0] != HYBBX_CIRCUIT_MAGIC_0 ||
         frame[1] != HYBBX_CIRCUIT_MAGIC_1 ||
         frame[2] != HYBBX_CIRCUIT_MAGIC_2 ||
-        frame[3] != HYBBX_CIRCUIT_VERSION ||
-        frame[4] != (uint8_t)HYBBX_CIRCUIT_PROTO_AX25_UI) {
+        frame[3] != HYBBX_CIRCUIT_VERSION) {
+        return 0;
+    }
+
+    proto = frame[4];
+    if (proto != (uint8_t)HYBBX_CIRCUIT_PROTO_AX25_UI &&
+        proto != (uint8_t)HYBBX_CIRCUIT_PROTO_AX25) {
         return 0;
     }
 
@@ -214,16 +222,13 @@ static int circuit_slot_can_send_low_prio(const hybbx_circuit_hub_t *hub,
     }
 
     action = hybbx_circuit_balance_action(slot->balance);
-    if (action == HYBBX_CIRCUIT_BAL_PAUSE ||
-        action == HYBBX_CIRCUIT_BAL_BREAK ||
-        action == HYBBX_CIRCUIT_BAL_CANCEL) {
+    if (action == HYBBX_CIRCUIT_BAL_CANCEL) {
         return 0;
     }
 
     /*
-     * Auto-beacon AX.25 UI uses circuit_slot_send_raw (no queue slot). Only
-     * honour flow-control states; mesh backlog reserve caused starvation when
-     * queued bytes sat between queue_pause/2 and queue_pause with action NONE.
+     * Auto-beacon AX.25 uses circuit_slot_send_raw (no queue slot). Do not
+     * block on PAUSE/BREAK backlog — only CANCEL drops the link.
      */
     return 1;
 }
@@ -618,16 +623,16 @@ hybbx_result_t hybbx_circuit_hub_multicast_hbx(hybbx_circuit_hub_t *hub,
                                          slot->profile.frequency_mhz)) {
             continue;
         }
-        if (require_broadcast_qos && circuit_frame_is_ax25_ui_tx(frame, len) &&
+        if (require_broadcast_qos && circuit_frame_is_ax25_broadcast_tx(frame, len) &&
             !circuit_slot_can_send_low_prio(hub, slot)) {
             last_err = HYBBX_ERR_BUSY;
             continue;
         }
 
-        if (require_broadcast_qos && circuit_frame_is_ax25_ui_tx(frame, len)) {
+        if (require_broadcast_qos && circuit_frame_is_ax25_broadcast_tx(frame, len)) {
             /*
              * Low-priority AX.25 broadcast: admission is decided by balancer
-             * state/queue reserve, then transmit immediately.
+             * flow-control state, then transmit immediately (no queue slot).
              * This avoids enqueue->break drops that can otherwise log as sent
              * without reaching RF.
              */
@@ -852,6 +857,7 @@ static void circuit_slot_reset(hybbx_circuit_link_slot_t *slot)
     slot->profile_set = 0;
     memset(&slot->profile, 0, sizeof(slot->profile));
     slot->link_id[0] = '\0';
+    slot->last_rf_activity = 0;
     slot->state = CIRCUIT_SLOT_FREE;
     slot->thread = (pthread_t)0;
 }
@@ -1220,6 +1226,7 @@ static void *circuit_link_thread(void *arg)
     }
 
     slot->state = CIRCUIT_SLOT_ACTIVE;
+    slot->last_rf_activity = time(NULL);
     hybbx_log_info("[circuit] link adapter attached id=%s (HBX bridge active)",
            slot->link_id[0] != '\0' ? slot->link_id : "?");
 
@@ -1554,6 +1561,63 @@ void hybbx_circuit_hub_prune_links(hybbx_circuit_hub_t *hub)
     if (hub != NULL) {
         (void)hybbx_link_registry_prune(&hub->links);
     }
+}
+
+void hybbx_circuit_hub_note_rf_activity(hybbx_circuit_hub_t *hub,
+                                        const char *link_id)
+{
+    time_t now;
+    unsigned i;
+
+    if (hub == NULL || link_id == NULL || link_id[0] == '\0') {
+        return;
+    }
+
+    now = time(NULL);
+
+    pthread_mutex_lock(&hub->lock);
+    for (i = 0; i < HYBBX_CIRCUIT_MAX_LINKS; i++) {
+        hybbx_circuit_link_slot_t *slot = &hub->slots[i];
+
+        if (slot->state != CIRCUIT_SLOT_ACTIVE || slot->fd < 0) {
+            continue;
+        }
+        if (strcmp(slot->link_id, link_id) != 0) {
+            continue;
+        }
+
+        slot->last_rf_activity = now;
+        break;
+    }
+    pthread_mutex_unlock(&hub->lock);
+}
+
+int hybbx_circuit_hub_link_band_idle(const hybbx_circuit_hub_t *hub,
+                                     unsigned slot_index,
+                                     unsigned min_idle_sec)
+{
+    const hybbx_circuit_link_slot_t *slot;
+    time_t now;
+    time_t idle_since;
+
+    if (hub == NULL || slot_index >= HYBBX_CIRCUIT_MAX_LINKS ||
+        min_idle_sec == 0) {
+        return 0;
+    }
+
+    slot = &hub->slots[slot_index];
+    if (slot->state != CIRCUIT_SLOT_ACTIVE || slot->fd < 0 ||
+        slot->last_rf_activity == 0) {
+        return 0;
+    }
+
+    now = time(NULL);
+    idle_since = now - slot->last_rf_activity;
+    if (idle_since < 0) {
+        return 0;
+    }
+
+    return (unsigned)idle_since >= min_idle_sec;
 }
 
 static hybbx_result_t circuit_plugin_init(hybbx_service_t *service)

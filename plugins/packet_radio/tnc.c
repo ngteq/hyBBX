@@ -36,6 +36,8 @@ struct hybbx_tnc {
     unsigned long long last_rx_ms;
 };
 
+static int tnc_profile_thefirmware(hybbx_packet_radio_tnc_t tnc);
+
 static void config_copy(hybbx_packet_radio_config_t *dst,
                         const hybbx_packet_radio_config_t *src)
 {
@@ -201,28 +203,6 @@ static hybbx_result_t tnc_apply_kiss_params(hybbx_tnc_t *tnc)
                            (uint8_t)(tnc->config.params.fullduplex ? 1 : 0));
 }
 
-static hybbx_result_t tnc_apply_radio_modulation(hybbx_tnc_t *tnc)
-{
-    char cmd[64];
-
-    if (tnc == NULL ||
-        !hybbx_packet_radio_modulation_is_g3ruh(tnc->config.params.modulation)) {
-        return HYBBX_OK;
-    }
-
-    drain_serial(tnc, 2);
-    (void)send_cmd(tnc, "MODEM 9600");
-    (void)send_cmd(tnc, "HB 9600");
-    if (tnc->config.tnc == HYBBX_PACKET_RADIO_TNC_TNC2C) {
-        snprintf(cmd, sizeof(cmd), "CLOCK %.1f",
-                 (double)tnc->config.params.clock_mhz);
-        (void)send_cmd(tnc, cmd);
-    }
-    (void)send_cmd(tnc, "PACLEN 256");
-    drain_serial(tnc, 2);
-    return HYBBX_OK;
-}
-
 static hybbx_result_t tnc_send_esc_at_k(hybbx_tnc_t *tnc)
 {
     const uint8_t seq[] = { 0x1b, '@', 'K' };
@@ -237,19 +217,32 @@ static hybbx_result_t tnc_send_kiss_return_frame(hybbx_tnc_t *tnc)
     return send_raw(tnc, frame, sizeof(frame));
 }
 
-static hybbx_result_t tnc_profile_prepare_kiss_host(hybbx_tnc_t *tnc)
+static void tnc_serial_pause_ms(unsigned ms)
 {
-    if (tnc == NULL || tnc->config.tnc != HYBBX_PACKET_RADIO_TNC_PK232) {
-        return HYBBX_OK;
+#if defined(_WIN32)
+    Sleep(ms);
+#else
+    struct timespec ts;
+
+    ts.tv_sec = (time_t)(ms / 1000u);
+    ts.tv_nsec = (long)((ms % 1000u) * 1000000u);
+    (void)nanosleep(&ts, NULL);
+#endif
+}
+
+/** Leave KISS (crash/kill) so host commands (MYCALL, kiss on) work again. */
+static hybbx_result_t tnc_kiss_wakeup_host(hybbx_tnc_t *tnc)
+{
+    if (tnc == NULL) {
+        return HYBBX_ERR_INVALID;
     }
 
-    drain_serial(tnc, 2);
-    (void)send_cmd(tnc, "XFLOW OFF");
-    (void)send_cmd(tnc, "AWLEN 8");
-    (void)send_cmd(tnc, "PARITY 0");
-    (void)send_cmd(tnc, "CONMODE TRANS");
-    (void)send_cmd(tnc, "FULLDUP OFF");
-    drain_serial(tnc, 2);
+    tnc->kiss_active = 0;
+    (void)tnc_send_kiss_return_frame(tnc);
+    tnc_serial_pause_ms(250);
+    drain_serial(tnc, 12);
+    (void)send_cmd(tnc, "");
+    drain_serial(tnc, 6);
     return HYBBX_OK;
 }
 
@@ -342,13 +335,6 @@ static void tnc_exit_kiss_mode(hybbx_tnc_t *tnc)
 
 static hybbx_result_t tnc_enter_kiss_mode(hybbx_tnc_t *tnc)
 {
-    hybbx_result_t rc;
-
-    rc = tnc_profile_prepare_kiss_host(tnc);
-    if (rc != HYBBX_OK) {
-        return rc;
-    }
-
     return tnc_enter_kiss_by_entry(tnc, tnc->config.params.kiss_entry);
 }
 
@@ -524,6 +510,8 @@ static const char *modem_name(hybbx_tnc2c_modem_t modem)
 }
 
 
+static int tnc_profile_thefirmware(hybbx_packet_radio_tnc_t tnc);
+
 static hybbx_result_t tnc_profile_init(hybbx_tnc_t *tnc)
 {
     hybbx_result_t rc;
@@ -534,12 +522,14 @@ static hybbx_result_t tnc_profile_init(hybbx_tnc_t *tnc)
         return rc;
     }
 
-    rc = tnc_apply_radio_modulation(tnc);
-    if (rc != HYBBX_OK) {
-        return rc;
-    }
-
     if (tnc->config.protocol == HYBBX_PACKET_RADIO_PROTO_KISS) {
+        if (tnc->config.params.kiss_entry == HYBBX_KISS_ENTRY_NONE) {
+            tnc->kiss_active = 1;
+            tnc->kiss_entry_used = HYBBX_KISS_ENTRY_NONE;
+            hybbx_log_info("[tnc] KISS attach (MAX25 prep assumed)");
+            return HYBBX_OK;
+        }
+
         rc = tnc_enter_kiss_mode(tnc);
         if (rc != HYBBX_OK) {
             return rc;
@@ -648,7 +638,8 @@ hybbx_result_t hybbx_tnc_open(hybbx_tnc_t **out,
     }
 
     hybbx_log_info("[tnc] profile=%s protocol=%u device=%s host=%u %u%c%u rts_dtr=%s "
-                   "kiss_entry=%s radio=%u modem=%s modulation=%s band=%s duplex=%s",
+                   "kiss_entry=%s radio=%u modem=%s modulation=%s band=%s duplex=%s "
+                   "txdelay=%u persist=%u",
                    tnc_profile_name(config->tnc), (unsigned)config->protocol,
                    config->device, config->baud, serial_params.data_bits,
                    *serial_parity_letter(config->params.serial_parity),
@@ -659,7 +650,16 @@ hybbx_result_t hybbx_tnc_open(hybbx_tnc_t **out,
                    modem_name(config->params.modem),
                    hybbx_packet_radio_modulation_name(config->params.modulation),
                    hybbx_packet_radio_band_name(config->params.band),
-                   hybbx_packet_radio_duplex_name(config->params.duplex));
+                   hybbx_packet_radio_duplex_name(config->params.duplex),
+                   config->params.txdelay,
+                   config->params.persist);
+
+    if (config->tnc == HYBBX_PACKET_RADIO_TNC_TNC2C &&
+        serial_params.data_bits == 8 &&
+        config->params.serial_parity == HYBBX_TNC_SERIAL_PARITY_NONE) {
+        hybbx_log_warn("[tnc] tnc2c %s: 8N1 host line — use serial_line=7E1 if KISS/UNPROTO TX fails",
+                       config->device);
+    }
 
     rc = tnc_profile_init(tnc);
     if (rc != HYBBX_OK) {
@@ -669,6 +669,9 @@ hybbx_result_t hybbx_tnc_open(hybbx_tnc_t **out,
 
     if (config->protocol == HYBBX_PACKET_RADIO_PROTO_KISS) {
         hybbx_log_info("[tnc] KISS active (port %u)", config->params.kiss_port);
+        if (tnc_profile_thefirmware(config->tnc)) {
+            hybbx_log_info("[tnc] UI transmit=TheFirmware UNPROTO (KISS for RX)");
+        }
     } else if (config->protocol == HYBBX_PACKET_RADIO_PROTO_SIXPACK) {
         hybbx_log_info("[tnc] 6PACK active");
     } else {
@@ -702,6 +705,128 @@ int hybbx_tnc_serial_fd(const hybbx_tnc_t *tnc)
     return hybbx_serial_fd(tnc->serial);
 }
 
+static hybbx_result_t tnc_ensure_kiss_tx(hybbx_tnc_t *tnc)
+{
+    hybbx_result_t rc;
+
+    if (tnc == NULL ||
+        tnc->config.protocol != HYBBX_PACKET_RADIO_PROTO_KISS) {
+        return HYBBX_OK;
+    }
+
+    if (!tnc->kiss_active) {
+        rc = tnc_enter_kiss_mode(tnc);
+        if (rc != HYBBX_OK) {
+            hybbx_log_warn("[tnc] KISS TX blocked — host mode (re-entry failed)");
+            return rc;
+        }
+        hybbx_log_info("[tnc] KISS re-entered before RF TX");
+        return tnc_apply_kiss_params(tnc);
+    }
+
+    return HYBBX_OK;
+}
+
+/** KISS DATA: host sends AX.25 body only; TheFirmware adds FCS on air. */
+static size_t tnc_kiss_ax25_len(const uint8_t *frame, size_t len)
+{
+    uint16_t crc_rx;
+    uint16_t crc_calc;
+
+    if (len < 16) {
+        return len;
+    }
+
+    crc_rx = (uint16_t)frame[len - 2] | ((uint16_t)frame[len - 1] << 8);
+    crc_calc = hybbx_ax25_crc(frame, len - 2);
+    if (crc_rx == crc_calc) {
+        return len - 2;
+    }
+
+    return len;
+}
+
+static int tnc_profile_thefirmware(hybbx_packet_radio_tnc_t tnc)
+{
+    switch (tnc) {
+    case HYBBX_PACKET_RADIO_TNC_TNC2:
+    case HYBBX_PACKET_RADIO_TNC_TNC2C:
+    case HYBBX_PACKET_RADIO_TNC_GENERIC:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+static void tnc_format_ax25_call(const hybbx_ax25_address_t *addr,
+                                 char *out, size_t out_len)
+{
+    if (addr == NULL || out == NULL || out_len == 0) {
+        return;
+    }
+
+    snprintf(out, out_len, "%s", addr->call);
+    if (addr->ssid > 0) {
+        size_t n = strlen(out);
+
+        if (n + 4 < out_len) {
+            snprintf(out + n, out_len - n, "-%u", addr->ssid);
+        }
+    }
+}
+
+/**
+ * TheFirmware (TNC-2 class) often ignores KISS DATA on hybrid host/KISS builds
+ * while UNPROTO from cmd: mode keys PTT reliably. Exit KISS, send, re-enter.
+ */
+static hybbx_result_t tnc_thefirmware_unproto_send(hybbx_tnc_t *tnc,
+                                                   const hybbx_ax25_path_t *path,
+                                                   const uint8_t *payload,
+                                                   size_t payload_len)
+{
+    char cmd[320];
+    char dest[HYBBX_AX25_CALL_MAX + 8];
+    hybbx_result_t rc;
+
+    if (tnc == NULL || path == NULL || payload == NULL || payload_len == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (payload_len + 64 >= sizeof(cmd)) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    tnc_format_ax25_call(&path->dest, dest, sizeof(dest));
+
+    rc = tnc_kiss_wakeup_host(tnc);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    (void)send_cmd(tnc, "MON OFF");
+
+    snprintf(cmd, sizeof(cmd), "UNPROTO %s 0 %.*s",
+             dest, (int)payload_len, (const char *)payload);
+    rc = send_cmd(tnc, cmd);
+    if (rc != HYBBX_OK) {
+        hybbx_log_warn("[tnc] UNPROTO %s host send failed", dest);
+        return rc;
+    }
+
+    drain_serial(tnc, 24);
+    tnc_serial_pause_ms(500);
+
+    hybbx_log_info("[tnc] TheFirmware UNPROTO %s (%zu bytes)", dest, payload_len);
+
+    rc = tnc_enter_kiss_mode(tnc);
+    if (rc != HYBBX_OK) {
+        hybbx_log_warn("[tnc] KISS re-entry after UNPROTO failed");
+        return rc;
+    }
+
+    return tnc_apply_kiss_params(tnc);
+}
+
 hybbx_result_t hybbx_tnc_send_frame(hybbx_tnc_t *tnc,
                                     const uint8_t *frame, size_t len)
 {
@@ -731,14 +856,52 @@ hybbx_result_t hybbx_tnc_send_frame(hybbx_tnc_t *tnc,
         return HYBBX_ERR_UNSUPPORTED;
     }
 
-    encoded = hybbx_kiss_encode((uint8_t)tnc->config.params.kiss_port,
-                                HYBBX_KISS_CMD_DATA, frame, len,
-                                buf, sizeof(buf));
-    if (encoded == 0) {
-        return HYBBX_ERR_IO;
+    if (tnc->config.protocol == HYBBX_PACKET_RADIO_PROTO_KISS &&
+        tnc_profile_thefirmware(tnc->config.tnc)) {
+        hybbx_ax25_path_t path;
+        uint8_t ui[HYBBX_AX25_PAYLOAD_MAX];
+        size_t ui_len = hybbx_ax25_parse_ui(frame, len, &path, ui, sizeof(ui));
+
+        if (ui_len > 0) {
+            return tnc_thefirmware_unproto_send(tnc, &path, ui, ui_len);
+        }
     }
 
-    return send_raw(tnc, buf, encoded);
+    if (tnc->config.protocol == HYBBX_PACKET_RADIO_PROTO_KISS) {
+        rc = tnc_ensure_kiss_tx(tnc);
+        if (rc != HYBBX_OK) {
+            return rc;
+        }
+    }
+
+    {
+        const uint8_t *tx_frame = frame;
+        size_t tx_len = len;
+
+        if (tnc->config.protocol == HYBBX_PACKET_RADIO_PROTO_KISS) {
+            tx_len = tnc_kiss_ax25_len(frame, len);
+            tx_frame = frame;
+            (void)send_kiss_param(tnc, HYBBX_KISS_CMD_PERSIST,
+                                   (uint8_t)tnc->config.params.persist);
+            if (tnc_profile_thefirmware(tnc->config.tnc)) {
+                hybbx_log_warn("[tnc] UI parse failed (%zu bytes) — KISS DATA fallback",
+                               len);
+            }
+        }
+
+        encoded = hybbx_kiss_encode((uint8_t)tnc->config.params.kiss_port,
+                                    HYBBX_KISS_CMD_DATA, tx_frame, tx_len,
+                                    buf, sizeof(buf));
+        if (encoded == 0) {
+            return HYBBX_ERR_IO;
+        }
+
+        hybbx_log_debug("[tnc] KISS DATA ax25=%zu kiss=%zu%s",
+                        tx_len, encoded,
+                        tx_len + 2 == len ? " (fcs stripped)" : "");
+
+        return send_raw(tnc, buf, encoded);
+    }
 }
 
 hybbx_result_t hybbx_tnc_send_ui(hybbx_tnc_t *tnc,

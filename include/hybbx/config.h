@@ -67,6 +67,19 @@ char *hybbx_config_format_transport_sections(const hybbx_config_t *config,
                                              const char *plugin_name);
 
 /**
+ * Like @ref hybbx_config_format_transport_sections for @c packet_radio, but
+ * prepends a `[max25]` key chunk when that INI section exists.
+ */
+char *hybbx_config_format_packet_radio_start(const hybbx_config_t *config);
+
+/**
+ * Prepend @c [max25] keys as a packet_radio start prefix (before instance sep).
+ * Caller must free the returned string.
+ */
+char *hybbx_config_prepend_packet_radio_max25(const hybbx_config_t *config,
+                                              const char *body);
+
+/**
  * Resolve INI section for a transport plugin: @c transport.&lt;plugin&gt; first,
  * else the first @c transport.&lt;plugin&gt;&lt;digits&gt; section with keys
  * (e.g. @c transport.packet_radio1). Writes the chosen name to @p out_section.

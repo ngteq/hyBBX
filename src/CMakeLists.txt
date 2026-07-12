@@ -36,6 +36,7 @@ if(HYBBX_BUILD_DAEMON)
         core/texts.c
         core/util.c
         core/log.c
+        core/max25.c
         core/security.c
         core/security_ban.c
         clients/circuit_client.c

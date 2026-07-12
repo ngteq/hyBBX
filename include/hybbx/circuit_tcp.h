@@ -101,6 +101,15 @@ unsigned hybbx_circuit_hub_broadcast_links(const hybbx_circuit_hub_t *hub,
 
 void hybbx_circuit_hub_prune_links(hybbx_circuit_hub_t *hub);
 
+/** Record RF activity on a link adapter (RX or TX). */
+void hybbx_circuit_hub_note_rf_activity(hybbx_circuit_hub_t *hub,
+                                        const char *link_id);
+
+/** Non-zero when @p slot_index has had no RF activity for @p min_idle_sec. */
+int hybbx_circuit_hub_link_band_idle(const hybbx_circuit_hub_t *hub,
+                                     unsigned slot_index,
+                                     unsigned min_idle_sec);
+
 /** Link adapter: connect to the internal circuit hub (TCP client). */
 hybbx_result_t hybbx_circuit_link_connect(const char *host, unsigned port,
                                         int *out_fd);

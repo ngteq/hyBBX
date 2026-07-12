@@ -141,20 +141,8 @@ const char *hybbx_kiss_entry_name(hybbx_kiss_entry_t entry)
 
 static hybbx_kiss_entry_t default_kiss_entry_for_tnc(hybbx_packet_radio_tnc_t tnc)
 {
-    switch (tnc) {
-    case HYBBX_PACKET_RADIO_TNC_TNC2C:
-    case HYBBX_PACKET_RADIO_TNC_PK232:
-    case HYBBX_PACKET_RADIO_TNC_KANTRONICS:
-    case HYBBX_PACKET_RADIO_TNC_BAYCOM:
-        return HYBBX_KISS_ENTRY_KISS_ON;
-    case HYBBX_PACKET_RADIO_TNC_TNC2:
-    case HYBBX_PACKET_RADIO_TNC_MFJ1278:
-    case HYBBX_PACKET_RADIO_TNC_GENERIC:
-        return HYBBX_KISS_ENTRY_AUTO;
-    case HYBBX_PACKET_RADIO_TNC_PCCOM:
-    default:
-        return HYBBX_KISS_ENTRY_NONE;
-    }
+    (void)tnc;
+    return HYBBX_KISS_ENTRY_NONE;
 }
 
 hybbx_result_t hybbx_tnc_finalize_kiss_entry(hybbx_packet_radio_config_t *cfg)
@@ -168,7 +156,11 @@ hybbx_result_t hybbx_tnc_finalize_kiss_entry(hybbx_packet_radio_config_t *cfg)
     }
 
     if (cfg->params.kiss_exit == HYBBX_KISS_EXIT_UNSET) {
-        cfg->params.kiss_exit = HYBBX_KISS_EXIT_AUTO;
+        if (cfg->params.kiss_entry == HYBBX_KISS_ENTRY_NONE) {
+            cfg->params.kiss_exit = HYBBX_KISS_EXIT_NONE;
+        } else {
+            cfg->params.kiss_exit = HYBBX_KISS_EXIT_AUTO;
+        }
     }
 
     return HYBBX_OK;
@@ -197,6 +189,36 @@ hybbx_result_t hybbx_tnc_finalize_radio_duplex(hybbx_packet_radio_config_t *cfg)
 
     cfg->params.fullduplex =
         (cfg->params.duplex == HYBBX_PACKET_RADIO_DUPLEX_FULL) ? 1 : 0;
+
+    return HYBBX_OK;
+}
+
+hybbx_result_t hybbx_tnc_finalize_csma(hybbx_packet_radio_config_t *cfg)
+{
+    if (cfg == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (cfg->params.persist == 0) {
+        if (cfg->params.band == HYBBX_PACKET_RADIO_BAND_CB) {
+            cfg->params.persist = 255;
+        } else {
+            cfg->params.persist = 63;
+        }
+    } else if (cfg->params.band == HYBBX_PACKET_RADIO_BAND_CB &&
+               cfg->params.persist < 255) {
+        hybbx_log_warn("[tnc] CB band persist=%u overridden to 255 for beacon TX",
+                       cfg->params.persist);
+        cfg->params.persist = 255;
+    }
+
+    if (cfg->params.txdelay == 0) {
+        cfg->params.txdelay = 50;
+    }
+
+    if (cfg->params.slot == 0) {
+        cfg->params.slot = 10;
+    }
 
     return HYBBX_OK;
 }
@@ -371,6 +393,7 @@ hybbx_result_t hybbx_tnc_profile_apply_defaults(hybbx_packet_radio_config_t *cfg
 
     (void)hybbx_tnc_finalize_modulation(cfg);
     (void)hybbx_tnc_finalize_radio_duplex(cfg);
+    (void)hybbx_tnc_finalize_csma(cfg);
     (void)hybbx_tnc_finalize_serial_line(cfg);
     return hybbx_tnc_finalize_kiss_entry(cfg);
 }

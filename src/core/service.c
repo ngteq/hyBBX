@@ -1119,9 +1119,11 @@ static void apply_transport_cb(const hybbx_transport_plugin_t *plugin,
         return;
     }
 
-    if (strcmp(plugin->name, "packet_radio") == 0 ||
-        strcmp(plugin->name, "baycom") == 0 ||
-        strcmp(plugin->name, "mains_proxy") == 0) {
+    if (strcmp(plugin->name, "packet_radio") == 0) {
+        transport_config =
+            hybbx_config_format_packet_radio_start(ctx->config);
+    } else if (strcmp(plugin->name, "baycom") == 0 ||
+               strcmp(plugin->name, "mains_proxy") == 0) {
         transport_config = hybbx_config_format_transport_sections(ctx->config,
                                                                   plugin->name);
     } else {

@@ -445,6 +445,7 @@ int hybbx_serial_fd(const hybbx_serial_port_t *port)
 struct hybbx_serial_port {
     int fd;
     unsigned int baud;
+    int assert_modem_lines;
 };
 
 #ifndef cfmakeraw
@@ -601,6 +602,7 @@ hybbx_result_t hybbx_serial_open(hybbx_serial_port_t **out,
     }
 
     port->baud = params->baud;
+    port->assert_modem_lines = params->assert_modem_lines;
     *out = port;
     return HYBBX_OK;
 }
@@ -626,6 +628,14 @@ hybbx_result_t hybbx_serial_write(hybbx_serial_port_t *port,
         return HYBBX_ERR_INVALID;
     }
 
+    if (port->assert_modem_lines) {
+        hybbx_result_t rc = posix_assert_modem_lines(port->fd, 1);
+
+        if (rc != HYBBX_OK) {
+            return rc;
+        }
+    }
+
     while (written < len) {
         ssize_t n = write(port->fd, data + written, len - written);
 
@@ -643,6 +653,10 @@ hybbx_result_t hybbx_serial_write(hybbx_serial_port_t *port,
             return HYBBX_ERR_IO;
         }
         written += (size_t)n;
+    }
+
+    if (tcdrain(port->fd) != 0) {
+        return HYBBX_ERR_IO;
     }
 
     return HYBBX_OK;

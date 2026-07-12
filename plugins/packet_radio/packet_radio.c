@@ -4,6 +4,7 @@
  */
 #include "hybbx/plugin.h"
 #include "hybbx/service.h"
+#include "hybbx/broadcast.h"
 #include "hybbx/packet_radio.h"
 #include "hybbx/tnc.h"
 #include "hybbx/circuit.h"
@@ -15,6 +16,7 @@
 #include "hybbx/ax25.h"
 #include "hybbx/util.h"
 #include "hybbx/log.h"
+#include "hybbx/max25.h"
 
 #include <pthread.h>
 #include <stdio.h>
@@ -52,6 +54,46 @@ static volatile int g_radio_running;
 static int g_poll_thread_started;
 
 extern const hybbx_transport_plugin_t hybbx_plugin_packet_radio;
+
+static void instance_note_rf_activity(packet_radio_instance_t *inst);
+
+static unsigned packet_radio_count_local_edges(const char *config)
+{
+    char scratch[4096];
+    const char *cursor = config;
+    unsigned count = 0;
+
+    while (*cursor != '\0') {
+        const char *sep = strchr(cursor, HYBBX_PACKET_RADIO_INSTANCE_SEP);
+        size_t len = sep != NULL ? (size_t)(sep - cursor) : strlen(cursor);
+
+        if (len == 0) {
+            cursor = sep != NULL ? sep + 1 : cursor + len;
+            if (sep == NULL) {
+                break;
+            }
+            continue;
+        }
+
+        if (len >= sizeof(scratch)) {
+            return count;
+        }
+
+        memcpy(scratch, cursor, len);
+        scratch[len] = '\0';
+
+        if (hybbx_packet_radio_section_is_local_edge(scratch)) {
+            count++;
+        }
+
+        cursor = sep != NULL ? sep + 1 : cursor + len;
+        if (sep == NULL) {
+            break;
+        }
+    }
+
+    return count;
+}
 
 static hybbx_result_t instance_connect_circuit(packet_radio_instance_t *inst);
 
@@ -173,6 +215,7 @@ static void on_tnc_ax25_frame(const uint8_t *frame, size_t len, void *userdata)
         return;
     }
 
+    instance_note_rf_activity(inst);
     (void)instance_circuit_uplink(inst, frame, len);
 }
 
@@ -248,6 +291,26 @@ static void instance_log_rf_tx(packet_radio_instance_t *inst,
     }
 }
 
+static void instance_note_rf_activity(packet_radio_instance_t *inst)
+{
+    hybbx_circuit_hub_t *hub;
+    const char *link_id;
+
+    if (inst == NULL || g_service == NULL) {
+        return;
+    }
+
+    hub = hybbx_service_circuit_hub(g_service);
+    link_id = inst->config.link_id;
+    if (link_id == NULL || link_id[0] == '\0') {
+        link_id = "packet-radio";
+    }
+
+    if (hub != NULL) {
+        hybbx_circuit_hub_note_rf_activity(hub, link_id);
+    }
+}
+
 static hybbx_result_t instance_tx_ax25_ui(packet_radio_instance_t *inst,
                                           const hybbx_ax25_path_t *path,
                                           const uint8_t *payload, size_t len)
@@ -267,6 +330,9 @@ static hybbx_result_t instance_tx_ax25_ui(packet_radio_instance_t *inst,
     }
 
     rc = hybbx_tnc_send_frame(inst->tnc, frame, frame_len);
+    if (rc == HYBBX_OK) {
+        instance_note_rf_activity(inst);
+    }
     instance_log_rf_tx(inst, rc, path, len);
     return rc;
 }
@@ -386,7 +452,17 @@ static void on_circuit_downlink(hybbx_circuit_proto_t proto, uint16_t flags,
         break;
     case HYBBX_CIRCUIT_PROTO_AX25: {
         hybbx_result_t rc = hybbx_tnc_send_frame(inst->tnc, payload, len);
-        if (rc != HYBBX_OK) {
+        if (rc == HYBBX_OK) {
+            hybbx_ax25_path_t path;
+            uint8_t ui[HYBBX_AX25_PAYLOAD_MAX];
+            size_t ui_len = hybbx_ax25_parse_ui(payload, len, &path,
+                                                ui, sizeof(ui));
+
+            instance_note_rf_activity(inst);
+            if (ui_len > 0) {
+                instance_log_rf_tx(inst, rc, &path, ui_len);
+            }
+        } else {
             hybbx_log_warn("[packet_radio%u] RF TX frame failed (rc=%d, %zu bytes)",
                            inst->index + 1, (int)rc, len);
         }
@@ -730,6 +806,24 @@ static hybbx_result_t instance_start(packet_radio_instance_t *inst,
         return rc;
     }
 
+    if (g_service != NULL) {
+        const hybbx_broadcast_config_t *bc =
+            hybbx_service_get_broadcast(g_service);
+
+        if (bc != NULL && bc->ax25_mycall[0] != '\0') {
+            size_t n = strlen(bc->ax25_mycall) + 1;
+            char *mc = malloc(n);
+
+            if (mc != NULL) {
+                memcpy(mc, bc->ax25_mycall, n);
+                free(inst->config.mycall);
+                inst->config.mycall = mc;
+                hybbx_log_info("[packet_radio%u] ax25 source=%s (from [broadcast] ax25_mycall)",
+                               index + 1, inst->config.mycall);
+            }
+        }
+    }
+
     hybbx_log_info("[packet_radio%u] tnc=%s protocol=%s device_type=%s device=%s "
                    "band=%s duplex=%s modulation=%s circuit=%s:%u "
                    "(HBX over internal TCP)",
@@ -796,10 +890,12 @@ static void packet_radio_shutdown(void)
 static hybbx_result_t packet_radio_start(const char *config)
 {
     char scratch[4096];
-    const char *cursor = config;
+    const char *cursor;
+    hybbx_max25_config_t max25;
     hybbx_result_t rc = HYBBX_OK;
     unsigned started = 0;
     unsigned section_num = 0;
+    unsigned local_edges;
 
     (void)g_service;
 
@@ -809,6 +905,26 @@ static hybbx_result_t packet_radio_start(const char *config)
 
     packet_radio_shutdown();
     g_poll_thread = (pthread_t)0;
+
+    cursor = hybbx_max25_config_skip_prefix(config, &max25);
+    local_edges = packet_radio_count_local_edges(cursor);
+    if (local_edges > 0u) {
+        const int had_max25_prefix = (cursor != config);
+
+        if (!had_max25_prefix) {
+            hybbx_max25_config_defaults(&max25);
+            max25.check = 1;
+        }
+        if (max25.check && hybbx_max25_probe(&max25) != HYBBX_OK) {
+            hybbx_log_warn("[packet_radio] no local AX.25 — max25d required "
+                           "([max25] check=no to disable)");
+            return HYBBX_OK;
+        }
+        if (max25.check) {
+            hybbx_log_info("[packet_radio] max25d reachable at %s:%u",
+                           max25.host, max25.port);
+        }
+    }
 
     while (*cursor != '\0' && g_instance_count < HYBBX_PACKET_RADIO_MAX_INSTANCES) {
         const char *sep = strchr(cursor, HYBBX_PACKET_RADIO_INSTANCE_SEP);

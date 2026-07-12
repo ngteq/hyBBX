@@ -225,6 +225,9 @@ hybbx_result_t hybbx_tnc_finalize_serial_line(hybbx_packet_radio_config_t *cfg);
 /** Apply kiss_entry / kiss_exit defaults from TNC profile when unset. */
 hybbx_result_t hybbx_tnc_finalize_kiss_entry(hybbx_packet_radio_config_t *cfg);
 
+/** Apply CSMA defaults (Persist/SlotTime) from band when unset in INI. */
+hybbx_result_t hybbx_tnc_finalize_csma(hybbx_packet_radio_config_t *cfg);
+
 const char *hybbx_packet_radio_tnc_name(hybbx_packet_radio_tnc_t tnc);
 const char *hybbx_kiss_entry_name(hybbx_kiss_entry_t entry);
 

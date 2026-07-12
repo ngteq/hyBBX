@@ -82,4 +82,4 @@ Technical docs only — no planning or status matrices.
 
 ## RF prep (MAX25)
 
-TNC, BayCom PR-Stack, and CRDOP soft-modem **lifecycle** live in **MainAX25-Stack (MAX25)** — not in HyBBX. HyBBX transport plugins (`packet_radio`, `baycom`, `crdop`) attach after MAX25 prep. Contract: MAX25 `docs/HYBBX.md` + `share/hybbx/*.ini.example`.
+TNC, BayCom PR-Stack, and CRDOP soft-modem **lifecycle** live in **MainAX25-Stack (MAX25)** — not in HyBBX. MAX25 owns boot-wait, DTR/RTS power-on, host `MYCALL`, `kiss on`, TXDELAY/Persist defaults, and modem line setup. HyBBX `packet_radio` opens serial **after** prep and attaches with `kiss_entry=none` (default). Contract: MAX25 `docs/HYBBX.md` + `share/hybbx/*.ini.example`.

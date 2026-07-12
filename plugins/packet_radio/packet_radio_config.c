@@ -481,7 +481,7 @@ hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
     out->params.radio_baud = HYBBX_TNC2C_DEFAULT_RADIO_BAUD;
     out->params.kiss_port = 0;
     out->params.txdelay = 50;
-    out->params.persist = 128;
+    out->params.persist = 0;
     out->params.slot = 10;
     out->params.txtail = 0;
     out->params.band = HYBBX_PACKET_RADIO_BAND_UNSET;

@@ -653,6 +653,68 @@ fail:
     return NULL;
 }
 
+char *hybbx_config_prepend_packet_radio_max25(const hybbx_config_t *config,
+                                              const char *body)
+{
+    char prefix[HYBBX_CONFIG_VALUE_MAX * 2];
+    char *out;
+    size_t prefix_len;
+    size_t body_len;
+    int check;
+
+    if (config == NULL) {
+        return body != NULL ? hybbx_strdup(body) : NULL;
+    }
+
+    if (body == NULL || body[0] == '\0') {
+        return hybbx_strdup(body != NULL ? body : "");
+    }
+
+    check = hybbx_config_get_bool(config, "max25", "check", 1);
+    snprintf(prefix, sizeof(prefix),
+             "max25_check=%s;max25_host=%s;max25_port=%u;max25_timeout_ms=%u",
+             check ? "yes" : "no",
+             hybbx_config_get(config, "max25", "host", "127.0.0.1"),
+             hybbx_config_get_uint(config, "max25", "port",
+                                   HYBBX_MAX25_DEFAULT_PORT, 1u, 65535u),
+             hybbx_config_get_uint(config, "max25", "timeout_ms",
+                                   HYBBX_MAX25_PROBE_TIMEOUT_MS,
+                                   100u, 60000u));
+
+    if (body == NULL || body[0] == '\0') {
+        return hybbx_strdup(prefix);
+    }
+
+    prefix_len = strlen(prefix);
+    body_len = strlen(body);
+    out = malloc(prefix_len + 1u + body_len + 1u);
+    if (out == NULL) {
+        return NULL;
+    }
+
+    memcpy(out, prefix, prefix_len);
+    out[prefix_len] = HYBBX_PACKET_RADIO_INSTANCE_SEP;
+    memcpy(out + prefix_len + 1u, body, body_len + 1u);
+    return out;
+}
+
+char *hybbx_config_format_packet_radio_start(const hybbx_config_t *config)
+{
+    char *body;
+
+    body = hybbx_config_format_transport_sections(config, "packet_radio");
+    if (body == NULL) {
+        return NULL;
+    }
+
+    {
+        char *out = hybbx_config_prepend_packet_radio_max25(config, body);
+
+        free(body);
+        return out;
+    }
+}
+
 void hybbx_config_foreach(const hybbx_config_t *config,
                           hybbx_config_iter_fn fn, void *ctx)
 {

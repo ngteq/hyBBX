@@ -80,8 +80,17 @@
 /** Command history depth for interactive line editors. */
 #define HYBBX_HISTORY_MAX 25u
 
-/** AX.25 broadcast minimum interval (seconds); INI may only increase this. */
-#define HYBBX_BROADCAST_AX25_INTERVAL_MIN_SEC 300u
+/** AX.25 auto-beacon minimum interval (seconds); INI may only increase this. */
+#define HYBBX_BROADCAST_AX25_INTERVAL_MIN_SEC 600u
+
+/** RF channel must be idle this long before an auto AX.25 beacon may TX. */
+#define HYBBX_BROADCAST_AX25_BAND_IDLE_SEC 180u
+
+/** Default max25d TCP listen port (MAX25 max25d.ini.example). */
+#define HYBBX_MAX25_DEFAULT_PORT 7325u
+
+/** Default TCP connect timeout for max25d reachability probe (ms). */
+#define HYBBX_MAX25_PROBE_TIMEOUT_MS 3000u
 
 /** AX.25 on-air payload cap (1200 baud; keep UI frames short). */
 #define HYBBX_BROADCAST_AX25_MESSAGE_MAX 48u
