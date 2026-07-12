@@ -1,6 +1,6 @@
 # Licensing
 
-> Not legal advice.
+**v2.0.0** · not legal advice.
 
 ## HyBBX
 

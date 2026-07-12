@@ -1,6 +1,6 @@
 # Contributing
 
-Standards: [AGENTS.md](AGENTS.md), [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+**v2.0.0** · standards: [AGENTS.md](AGENTS.md), [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ```bash
 git clone <repository-url> && cd hyBBX

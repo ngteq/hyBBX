@@ -9,7 +9,7 @@ Read [AGENTS.md](../../AGENTS.md) and [docs/DEVELOPMENT.md](../../docs/DEVELOPME
 
 ## Product
 
-Plugin-only session daemon; Main + Secondary HBX topology ([TOPOLOGY.md](../../docs/TOPOLOGY.md)). **v2.0.0 (upcoming)**. Technical docs in `docs/`; root README is short overview.
+Plugin-only session daemon; Main + Secondary HBX topology ([TOPOLOGY.md](../../docs/TOPOLOGY.md)). **v2.0.0**. Technical docs in `docs/`; root README is short overview.
 
 ## Code
 

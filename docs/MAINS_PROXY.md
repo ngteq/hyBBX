@@ -1,6 +1,6 @@
 # Main-to-Main proxy (`mains_proxy`)
 
-Topology: [TOPOLOGY.md](TOPOLOGY.md).
+**v2.0.0** · topology: [TOPOLOGY.md](TOPOLOGY.md).
 
 The **proxy network** links HyBBX **Main** or **Secondary** instances for **pure service linking** — proxymail and proxychat only. All peer traffic uses **HBX/Circuit** (`circuit_host`, `link_id`, `link_password`). Never open a raw TCP socket between HyBBX processes.
 
@@ -68,7 +68,7 @@ link_password = changeme
 | `link_password` | — | `LINK_AUTH` secret (match peer `[circuit]`) |
 | `wire` | `circuit` | `circuit` (active) or `ax25` (reserved) |
 | `duplex` | `full` | `full` or `half` (reserved) |
-| `use_secondary` | `yes` | Reserved — prefer Secondary HBX path |
+| `use_secondary` | `yes` | Prefer Secondary HBX path when configured |
 
 Legacy keys `host` / `port` are deprecated.
 

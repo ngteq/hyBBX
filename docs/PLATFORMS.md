@@ -1,6 +1,6 @@
 # Platforms
 
-HyBBX is developed on **Linux** (GCC primary, Clang). Operator documentation assumes Linux (`HTTPD_DOCROOT`, `systemctl`, `ss`).
+**v2.0.0** — HyBBX is developed on **Linux** (GCC primary, Clang). Operator documentation assumes Linux (`HTTPD_DOCROOT`, `systemctl`, `ss`).
 
 **Text-first, portable:** the product is built around **plain-text sessions** (commands, mail, chat) so the same codebase runs on constrained links and diverse hosts. Shared logic uses C99 and POSIX APIs; platform code stays behind narrow guards. That flexibility lets you deploy text telnet on AmigaOS or *BSD today and add ANSI, menus, or WebSocket graphics through plugins without rewriting core.
 

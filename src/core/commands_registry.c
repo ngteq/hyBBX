@@ -863,7 +863,8 @@ static void render_menu_block(hybbx_session_t *session,
         }
     }
 
-    format_verbs_line(cmds, sizeof(cmds), verbs, count);
+    format_verbs_line(cmds, sizeof(cmds),
+                      (const char (*)[HYBBX_CMD_VERB_MAX])verbs, count);
 
     if (!block->wrap) {
         emit_menu_line(session, block->label, cmds, 0);

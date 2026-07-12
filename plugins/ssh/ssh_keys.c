@@ -41,9 +41,16 @@ static hybbx_result_t generate_ed25519_keypair(const char *priv_path,
                                                const char *pub_path)
 {
     ssh_key key = NULL;
+    ssh_pki_ctx ctx = NULL;
     int rc;
 
-    rc = ssh_pki_generate(SSH_KEYTYPE_ED25519, 0, &key);
+    ctx = ssh_pki_ctx_new();
+    if (ctx == NULL) {
+        return HYBBX_ERR_IO;
+    }
+
+    rc = ssh_pki_generate_key(SSH_KEYTYPE_ED25519, ctx, &key);
+    ssh_pki_ctx_free(ctx);
     if (rc != SSH_OK || key == NULL) {
         hybbx_log_warn("[ssh] Ed25519 generate failed (rc=%d)", rc);
         return HYBBX_ERR_IO;

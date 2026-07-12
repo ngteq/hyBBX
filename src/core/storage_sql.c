@@ -560,7 +560,7 @@ hybbx_result_t hybbx_storage_sql_open(hybbx_storage_t *storage)
 
     if (storage->backend == HYBBX_STORAGE_MYSQL ||
         storage->backend == HYBBX_STORAGE_MARIADB) {
-        hybbx_log_warn("[storage] MySQL/MariaDB backends are planned for v2.0.0 — "
+        hybbx_log_warn("[storage] MySQL/MariaDB backends are not supported — "
                        "use flatfile or sqlite");
         return HYBBX_ERR_UNSUPPORTED;
     }

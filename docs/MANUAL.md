@@ -22,7 +22,7 @@ HyBBX is a **text-first** system: sessions read and write **plain text** (lines,
 | Plain telnet/BBS feel | `[traffic]` defaults (`ansi=no`, `pace_output=yes`) |
 | Colour / cursor control | `[traffic] ansi=yes` |
 | Banners, MOTD, rules | `[texts]` flat files with tokens |
-| Richer UI later | Plugins or WebSocket client ([WEBSOCKET.md](WEBSOCKET.md)) — core stays line-oriented |
+| Richer UI | Plugins or WebSocket client ([WEBSOCKET.md](WEBSOCKET.md)) — core stays line-oriented |
 
 RF and mesh paths (HBX, AX.25 UI beacons) also carry **text payloads**, not graphical desktops. Portability: same session model on Linux, *BSD, AmigaOS, MacOS, Windows — [PLATFORMS.md](PLATFORMS.md).
 
@@ -84,6 +84,29 @@ Daily file log: `yyyymmdd-hybbx.log` under `dir`. Same `level` filters **console
 Order (least → most severe): `debug` → `stats` → `info` → `warn`. At `warn`, only warnings appear; at `debug`, everything is logged.
 
 `security.log` is always written to the same directory (independent of `enabled` and `level`).
+
+### `[security]`
+
+Built-in abuse protection — policy detail: [SECURITY.md](SECURITY.md).
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `enabled` | `yes` | Enable IP/CALLID cool-down bans |
+| `telnet` | `yes` | Track telnet login failures |
+| `ssh` | `yes` | Track SSH transport login failures |
+| `websocket` | `yes` | Track WebSocket login failures |
+| `circuit` | `yes` | Track HBX `LINK_AUTH` failures |
+| `maxretry` | `5` | Failures before IP/CALLID ban |
+| `findtime` | `600` | Failure window (seconds) |
+| `bantime` | `600` | Ban duration (seconds) |
+| `abuse_maxretry` | `30` | Abuse events before ban |
+| `abuse_findtime` | `600` | Abuse window (seconds) |
+| `rate_limit` | `30` | Connection attempts per window |
+| `rate_window` | `60` | Rate-limit window (seconds) |
+| `ban_backend` | `internal` | `internal`, `log`, `iptables`, `nftables` |
+| `ban_callid` | — | Permanent CALLID bans (comma-separated) |
+
+Normal chat/mail traffic is never banned — only repeated login, link-auth, or flood abuse.
 
 ### `[storage]`
 
@@ -162,7 +185,7 @@ Tokens: `@version@`, `@service@`, `@username@` in banner/motd.
 
 Telnet is always started when built (not gated here).
 
-Entertain Area applications (e.g. text chess) are **plugins only** on Main — see [ENTERTAIN.md](ENTERTAIN.md). Enable per app when shipped (`chess = yes`, …).
+Entertain Area applications (e.g. text chess) are **plugins only** on Main — see [ENTERTAIN.md](ENTERTAIN.md). Enable per installed plugin (`chess = yes`, …).
 
 ### `[transport.telnet]`
 
@@ -230,14 +253,14 @@ httpd document root. See [WEBSOCKET.md](WEBSOCKET.md).
 | `enabled` | `yes` | |
 | `ax25` | `yes` | QST UI to low/half-duplex links |
 | `ax25_auto` | `yes` | Periodic AX.25 QST beacon |
-| `ax25_auto_interval` | `300` | Seconds between beacon cycles (min 300) |
-| `ax25_auto_stagger` | `0` | Seconds between successive link phases within one interval (`0` = all links at once; dual-radio e.g. `150`) |
+| `ax25_auto_interval` | `600` | Seconds between beacon cycles (minimum 600) |
+| `ax25_auto_stagger` | `0` | Seconds between link phases in one cycle (`150` typical for dual-radio) |
 | `ax25_auto_message` | `Broadcast: @service@ online` | Auto-beacon text (`@service@` = service name); also used by `/broadcast ax25` |
-| `tcp` | `yes` | **Stub** — log only |
+| `tcp` | `yes` | Log only — no outbound TCP beacon |
 | `ax25_mycall` | `HYBBX` | |
 | `ax25_dest` | `QST` | |
 
-Sysop `/broadcast <message>` announces to logged-in local users only (not circuit/TNC links). `/broadcast ax25` sends `ax25_auto_message` instantly to each packet-radio link in sequence. INI `ax25_auto` is the periodic staggered background beacon.
+Sysop `/broadcast <message>` announces to logged-in local users only (not circuit/TNC links). `/broadcast ax25` sends `ax25_auto_message` instantly to each packet-radio link in sequence. INI `ax25_auto` runs periodic beacons (minimum 600 s interval, 180 s band idle, optional stagger).
 
 ### `[ax25]`
 
@@ -271,7 +294,7 @@ edge side; missing password causes `link_auth_fail ... reason=timeout_no_link_au
 | `device` / `device_type` | Serial path |
 | `baud` | Host serial baud |
 | `serial_line` | `7e1` (TNC2C default), `8n1`, or `data_bits` + `parity` |
-| `kiss_entry` | `kiss_on`, `esc_at_k`, `auto`, `none` |
+| `kiss_entry` | `none` (default with MAX25), `kiss_on`, `esc_at_k`, `auto` |
 | `kiss_exit` | `kiss_off`, `kiss_frame`, `auto`, `none` |
 | `modem` | `tcm3105`, etc. |
 | `radio_band` | `amateur`, `cb` |
@@ -354,4 +377,4 @@ HyBBX: GPL-3.0 — [LICENSING.md](LICENSING.md). External modems are separate pr
 
 ## See also
 
-[TOPOLOGY.md](TOPOLOGY.md) · [WEBSOCKET.md](WEBSOCKET.md) · [BUILD.md](BUILD.md)
+[TOPOLOGY.md](TOPOLOGY.md) · [SECURITY.md](SECURITY.md) · [WEBSOCKET.md](WEBSOCKET.md) · [BUILD.md](BUILD.md)

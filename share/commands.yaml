@@ -3,7 +3,7 @@
 # User groups (only these five): Sysop, Admin, Mod, User, Guest.
 # Internal storage: sysop admin mod user guest (auth.h).
 #
-# Proxy network: links user services only (proxymail, proxychat, future).
+# Proxy network: links user services only (proxymail, proxychat).
 # No Sysop/Admin/Mod actions cross proxy links — ever.
 #
 # /broadcast (alias /announce): Sysop local announce or /broadcast ax25 RF trigger.

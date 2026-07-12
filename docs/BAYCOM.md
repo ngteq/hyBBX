@@ -2,7 +2,7 @@
 
 **v2.0.0** · INI: [MANUAL.md](MANUAL.md) · transport: `baycom`
 
-**Opt-in:** not built or started by default. Enable at compile time (`-DHYBBX_PLUGIN_BAYCOM=ON`) and in INI (`[networks] baycom=yes`).
+**Opt-in:** CMake default OFF; INI `[networks] baycom=no`. Enable with `-DHYBBX_PLUGIN_BAYCOM=ON` and `baycom=yes`.
 
 HyBBX `baycom` implements the Linux equivalent of the DOS BayCom PR-Stack **L2** path: HDLC + AX.25 UI frames on BayCom modems, bridged to Main over HBX.
 

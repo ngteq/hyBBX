@@ -97,23 +97,13 @@ Primary term: **proxy network** (`mains_proxy` plugin, HBX/Circuit between Mains
 | Over proxy | Not over proxy |
 |------------|----------------|
 | `/proxymail`, `/proxychat` | Sysop, Admin, Mod actions |
-| Future user services when technically correct | `/broadcast`, `/shutdown`, account admin |
+| Additional plugin user services | `/broadcast`, `/shutdown`, account admin |
 
 No administrative commands cross proxy links.
 
-## Implementation status
+## Registry
 
-| Piece | Status |
-|-------|--------|
-| `share/commands.yaml` | **Built** — registry source |
-| Runtime loader from YAML | **Built** — `commands_registry.c`, loaded at startup |
-| `/help`, `/menu`, `/index`, `/alias` | **Built** — registry-driven |
-| Two-line `/help <cmd>` topics | **Built** — from YAML `line1` / `line2` |
-| `/broadcast` local fan-out | **Built** — `hybbx_broadcast_announce()` |
-| `/broadcast ax25` manual RF | **Built** — `hybbx_broadcast_ax25_manual()` |
-| INI `ax25_auto` staggered beacon | **Built** — `hybbx_broadcast_ax25_tick()` |
-
-When changing commands: update `commands.yaml`, then MANUAL.md and COMMANDS.md.
+Commands load from `share/commands.yaml` at startup (`commands_registry.c`). When changing commands: update YAML, then [MANUAL.md](MANUAL.md) and this file.
 
 ## See also
 

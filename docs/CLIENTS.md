@@ -1,6 +1,6 @@
 # Standalone clients
 
-No INI — flags and environment only. Sources: `src/clients/`.
+**v2.0.0** · no INI — flags and environment only. Sources: `src/clients/`.
 
 Build: `-DHYBBX_CLIENTS_ONLY=ON` or `./scripts/build-clients.sh`.
 

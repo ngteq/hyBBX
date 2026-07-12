@@ -57,15 +57,12 @@ Edge daemons authenticate with per-link `link_password`. User wire auth (telnet/
 
 Protocol: `include/hybbx/circuit.h` — default port `7323`, max 16 concurrent links.
 
-## TNC2C validation notes
+## RF production notes
 
-- Verified in field setup: TNC2C (`protocol=kiss`, 19200 8N1 host) links to HBX
-  with `LINK_AUTH` (`link_id=packet-radio1`) and stays online.
-- AX.25 broadcast TX path is verified end-to-end (HyBBX log + on-air audio TX).
-- Broadcast TX participates in the circuit balancer as low-priority traffic:
-  send only while link reserve is available for user/mesh traffic.
-- Further validation still required: long-run stability (hours/days), multi-link
-  contention behavior, and dual-station RX/TX under sustained traffic.
+- TNC2C (`protocol=kiss`, 19200 8N1) links to HBX with `LINK_AUTH` (`link_id=packet-radio1`).
+- AX.25 broadcast TX verified end-to-end (HyBBX log + on-air audio).
+- Broadcast TX uses circuit balancer low-priority reserve.
+- Dual TNC broadcast works on AX25SRV production (staggered `ax25_auto_stagger`).
 
 ## Proxy network (`mains_proxy`)
 

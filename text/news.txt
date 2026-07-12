@@ -1,5 +1,5 @@
 News
 
-No announcements.
+HyBBX v2.0.0 — dual AX.25 broadcast, MAX25 RF prep, HBX circuit hub.
 
-Edit text/news.txt to post items here.
+Welcome. Type /help for commands.

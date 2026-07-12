@@ -261,7 +261,12 @@ static void instance_format_call(const hybbx_ax25_address_t *addr,
     }
 
     if (addr->ssid > 0u) {
-        snprintf(out, out_len, "%s-%u", addr->call, addr->ssid);
+        unsigned ssid = addr->ssid;
+
+        if (ssid > HYBBX_AX25_SSID_MAX) {
+            ssid = HYBBX_AX25_SSID_MAX;
+        }
+        snprintf(out, out_len, "%s-%u", addr->call, ssid);
     } else {
         hybbx_strlcpy(out, addr->call, out_len);
     }

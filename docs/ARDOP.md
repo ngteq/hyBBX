@@ -1,6 +1,6 @@
 # ARDOP plugin
 
-**Status:** Built — **not live RF verified**. Standalone sources: `plugins/ardop/`. External modem: ARDOPC or ardopcf (not in HyBBX tree).
+**v2.0.0** · sources: `plugins/ardop/`. External modem: ARDOPC or ardopcf (not in HyBBX tree). Verify RF on site after deploy.
 
 Amateur-band digital bridge. For CB use **`crdop`** + CRDOPC — [CRDOP.md](CRDOP.md).
 
@@ -45,7 +45,7 @@ plugins/ardop/
   ardop_crc.c                CRC-16 (0x8810)
 ```
 
-`hybbx_ardop_common` may also link from `plugins/crdop/` today — protocols diverge later.
+Host TCP helpers live in `hybbx_ardop_common` (shared with `crdop` plugin).
 
 **CMake:** `HYBBX_PLUGIN_ARDOP=ON`. Transport kind: `HYBBX_TRANSPORT_ARDOP` (4).
 

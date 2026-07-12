@@ -14,7 +14,7 @@ TNC boot-wait, DTR/RTS power-on, host **`MYCALL`**, **`kiss on`**, TXDELAY/Persi
 2. TNC must be in **KISS** with valid MYCALL before HyBBX starts.
 3. HyBBX opens the serial port and attaches (`kiss_entry=none` default).
 
-Contract: MAX25 `docs/HYBBX.md` + `share/hybbx/*.ini.example`. Technical AX.25 facts: MAX25 `docs/PACKET-RADIO.md`.
+Contract: MAX25 `docs/HYBBX.md` + `share/hybbx-*.ini.example`. Technical AX.25 facts: MAX25 `docs/PACKET-RADIO.md`.
 
 HyBBX `[max25] check=yes` (default) probes max25d TCP (**7325**) before opening local serial TNC ports; without max25d, local AX.25 is skipped. Set `check=no` for legacy standalone (`kiss_entry=kiss_on`). See [MANUAL.md](MANUAL.md).
 

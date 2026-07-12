@@ -2,51 +2,40 @@
 
 **v2.0.0** · operator INI: [MANUAL.md](MANUAL.md) · code: [DEVELOPMENT.md](DEVELOPMENT.md)
 
-The **Entertain Area** is a set of optional, user-facing applications on **Main** (telnet/SSH/WebSocket sessions). Games and similar apps are **not** part of `src/core/`.
+Optional user-facing apps on **Main** (telnet/SSH/WebSocket). Games and similar tools are **plugins only** — not in `src/core/`.
 
-Entertain apps follow the **text-first** model (e.g. ASCII chess board, `/` move commands). A plugin may add menus or client graphics later; core and default UX remain plain text for RF and low-bandwidth users.
+Entertain apps use the **text-first** model (ASCII boards, `/` move commands). Plugins may add menus or client graphics; core stays line-oriented for RF and low-bandwidth links.
 
 ## Rule
 
-**Every Entertain application is a plugin** under `plugins/`. Core keeps sessions, storage, commands registry, and HBX only — no game logic, boards, or entertain wire formats in `src/core/`.
+**Every Entertain app is a plugin** under `plugins/`. Core holds sessions, storage, commands registry, and HBX — no game logic in `src/core/`.
 
 | Layer | Responsibility |
 |-------|----------------|
 | `src/core/` | Sessions, command dispatch, shared limits |
-| `plugins/<entertain>/` | App state, `/` verbs, multi-user room logic |
+| `plugins/<entertain>/` | App state, `/` verbs, room logic |
 
-Same opt-in model as other plugins: CMake `HYBBX_PLUGIN_*`, `[networks]` enable flag, register in `src/main.c`.
-
-## First app: text chess
-
-Planned as an entertain plugin (working name `plugins/chess` or `plugins/entertain_chess`):
-
-- ASCII board in the terminal
-- Multi-user: two players, observers in the same entertain session/room
-- Commands owned by the plugin (registered in [commands.yaml](../share/commands.yaml) or plugin loader)
-- No RF, no HBX circuit, no proxy fan-out
-
-Other entertain apps (future plugins) follow the same pattern — one plugin per app or one `entertain` plugin with sub-modules, but always under `plugins/`, never core.
+Opt-in like other plugins: CMake `HYBBX_PLUGIN_*`, `[networks]` flag, register in `src/main.c`.
 
 ## Operator
 
-Entertain plugins run on **Main** only (where user sessions live). Secondary remains RF/HBX edge infrastructure.
+Entertain plugins run on **Main** only. Secondary remains RF/HBX edge infrastructure.
 
-Enable per plugin when shipped, e.g.:
+Enable per plugin when installed:
 
 ```ini
 [networks]
 chess = yes
 ```
 
-Exact keys follow each plugin’s MANUAL section when the plugin lands.
+Exact keys follow each plugin’s MANUAL section.
 
 ## Developer checklist
 
 1. New directory under `plugins/`
-2. CMake option `HYBBX_PLUGIN_<NAME>` (default OFF until stable)
+2. CMake option `HYBBX_PLUGIN_<NAME>` (default OFF)
 3. No KISS/AX.25/telnet wire parsing in core
-4. Commands: two-line help, Sysop/Admin/Mod/User/Guest rules per app
+4. Commands: two-line help; Sysop/Admin/Mod/User/Guest rules per app
 5. Docs: this file + MANUAL subsection + `share/*.ini.example` when INI keys exist
 
 ## See also

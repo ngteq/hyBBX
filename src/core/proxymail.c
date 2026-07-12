@@ -278,7 +278,9 @@ static hybbx_result_t proxymail_next_id(hybbx_service_t *service,
 
     fp = fopen(counter_path, "r");
     if (fp != NULL) {
-        (void)fscanf(fp, "%llu", &n);
+        if (fscanf(fp, "%llu", &n) != 1) {
+            n = 0;
+        }
         fclose(fp);
     }
 

@@ -1606,9 +1606,11 @@ int hybbx_circuit_hub_link_band_idle(const hybbx_circuit_hub_t *hub,
     }
 
     slot = &hub->slots[slot_index];
-    if (slot->state != CIRCUIT_SLOT_ACTIVE || slot->fd < 0 ||
-        slot->last_rf_activity == 0) {
+    if (slot->state != CIRCUIT_SLOT_ACTIVE || slot->fd < 0) {
         return 0;
+    }
+    if (slot->last_rf_activity == 0) {
+        return 1;
     }
 
     now = time(NULL);

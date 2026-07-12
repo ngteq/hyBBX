@@ -456,6 +456,7 @@ const char *hybbx_date_format_name(hybbx_date_format_t fmt)
     }
 }
 
+#if !defined(HYBBX_CLIENT_BUILD)
 static hybbx_date_format_t parse_date_format(const char *value)
 {
     if (value == NULL || value[0] == '\0') {
@@ -484,6 +485,7 @@ static hybbx_date_format_t parse_date_format(const char *value)
 
     return HYBBX_DATE_ISO;
 }
+#endif
 
 hybbx_result_t hybbx_time_local_now(struct tm *out)
 {

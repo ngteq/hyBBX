@@ -4,7 +4,7 @@
 
 HyBBX is built for classic BBS and slow RF workflows. The core stays text; **flexibility** comes through optional ANSI (`[traffic] ansi` in INI), paced output, plugins (Entertain, transports), and WebSocket/httpd clients for menus or graphics — without moving wire or game logic into core. **Portable** shared code (C99, POSIX+) targets Linux, *BSD, AmigaOS 3.9+, MacOS, and Windows — see [docs/PLATFORMS.md](docs/PLATFORMS.md). Operator detail: [docs/MANUAL.md](docs/MANUAL.md) (*Text-based operation*).
 
-**upcoming v2.0.0** — [docs/MANUAL.md](docs/MANUAL.md) · [docs/TOPOLOGY.md](docs/TOPOLOGY.md)
+**v2.0.0** — [docs/MANUAL.md](docs/MANUAL.md) · [docs/TOPOLOGY.md](docs/TOPOLOGY.md)
 
 ## Architecture
 
@@ -52,7 +52,7 @@ All HyBBX-to-HyBBX paths use **HBX v1** frames on the circuit hub. The core neve
 Built-in `[security]` covers **network protection** and **abuse** (same subsystem — see [docs/SECURITY.md](docs/SECURITY.md)):
 
 - **No bans for normal spam** — `[traffic]`, `[chat]`, `[mail]` soft limits only (pace, truncate, caps).
-- **Bans for abuse** — IP: login brute-force, connection flood; **CALLID** (AX.25 callsign, HBX `link_id`): circuit auth failures, `ban_callid=`; *(future)* excessive flood via `abuse_maxretry`.
+- **Bans for abuse** — IP: login brute-force, connection flood; **CALLID** (AX.25 callsign, HBX `link_id`): circuit auth failures, `ban_callid=`; optional `abuse_maxretry` hook for repeated flood events.
 - Short cool-down bans (default 10 min); `security.log`; optional `iptables`/`nftables`. External fail2ban in `share/fail2ban/` optional.
 
 
@@ -75,7 +75,10 @@ Details: [docs/BUILD.md](docs/BUILD.md) · [docs/MANUAL.md](docs/MANUAL.md)
 | Topology | [TOPOLOGY.md](docs/TOPOLOGY.md) |
 | Security | [SECURITY.md](docs/SECURITY.md) |
 | WebSocket | [WEBSOCKET.md](docs/WEBSOCKET.md) |
-| RF / transports | [TNCS.md](docs/TNCS.md) · [MAINS_PROXY.md](docs/MAINS_PROXY.md) · [BAYCOM.md](docs/BAYCOM.md) |
+| RF / transports | [TNCS.md](docs/TNCS.md) · [MAINS_PROXY.md](docs/MAINS_PROXY.md) · [BAYCOM.md](docs/BAYCOM.md) · [ARDOP.md](docs/ARDOP.md) · [CRDOP.md](docs/CRDOP.md) |
+| Clients | [CLIENTS.md](docs/CLIENTS.md) |
+| Platform | [PLATFORMS.md](docs/PLATFORMS.md) |
+| Legal | [LICENSING.md](docs/LICENSING.md) |
 | Developer | [BUILD.md](docs/BUILD.md) · [DEVELOPMENT.md](docs/DEVELOPMENT.md) · [COMMANDS.md](docs/COMMANDS.md) · [ENTERTAIN.md](docs/ENTERTAIN.md) · [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 ---

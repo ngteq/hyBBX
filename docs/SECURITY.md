@@ -23,7 +23,7 @@ Configured outside `[security]`; they shape traffic on slow links:
 | `[chat]` | `message_max` | Truncate/deny oversized lines |
 | `[mail]` | `max_messages`, `body_max`, `subject_max` | Mailbox caps |
 | Conference | *(fixed)* | Max 2 invites per target / 30 min |
-| AX.25 broadcast | *(fixed)* | Min 5 min between auto-broadcasts |
+| AX.25 broadcast | *(fixed)* | Min 600 s between auto-beacon cycles; 180 s band idle |
 
 These are **not** security events. A busy user on a slow link is expected.
 
@@ -45,13 +45,13 @@ Policy: **short cool-down bans** for dynamic abuse; **permanent** only via `ban_
 
 INI keys: [MANUAL.md](MANUAL.md#security). Optional `iptables` / `nftables` via `ban_backend`. External fail2ban filters in `share/fail2ban/` remain optional.
 
-## Abuse hook (not wired yet)
+## Abuse hook
 
-`hybbx_security_ban_abuse_report(ip, category)` counts toward `abuse_maxretry` / `abuse_findtime`. Call sites (chat flood, register spam, …) are added when thresholds are defined — **not** for every rejected message.
+`hybbx_security_ban_abuse_report(ip, category)` counts toward `abuse_maxretry` / `abuse_findtime`. Plugins and core call it for repeated flood patterns — not for every rejected message.
 
-## Content moderation (not built)
+## Content policy
 
-Non-social or illegal behaviour needs **content policy** beyond IP bans. Moderator role exists (`mod` in auth). No automated content classifier in v2.0.0.
+No automated content classifier in core. Moderator role (`mod`) exists for operator policy. IP/CALLID bans cover network abuse only.
 
 ## Inter-node
 

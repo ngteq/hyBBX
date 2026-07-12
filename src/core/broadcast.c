@@ -286,31 +286,6 @@ static int broadcast_hub_link_band_idle(hybbx_circuit_hub_t *hub,
                                             HYBBX_BROADCAST_AX25_BAND_IDLE_SEC);
 }
 
-static int broadcast_hub_all_bands_idle(hybbx_circuit_hub_t *hub)
-{
-    hybbx_circuit_broadcast_link_t links[HYBBX_CIRCUIT_MAX_LINKS];
-    unsigned link_count;
-    unsigned i;
-
-    if (hub == NULL) {
-        return 0;
-    }
-
-    link_count = hybbx_circuit_hub_broadcast_links(hub, links,
-                                                   HYBBX_CIRCUIT_MAX_LINKS);
-    if (link_count == 0) {
-        return 0;
-    }
-
-    for (i = 0; i < link_count; i++) {
-        if (!broadcast_hub_link_band_idle(hub, links[i].slot_index)) {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
 static int broadcast_ax25_rate_ok(unsigned interval_sec)
 {
     time_t now;
@@ -558,6 +533,77 @@ hybbx_result_t hybbx_broadcast_ax25(hybbx_service_t *service,
     return broadcast_ax25_send(service, frequency_mhz, message, 1);
 }
 
+static unsigned broadcast_ax25_send_links(hybbx_service_t *service,
+                                            hybbx_circuit_hub_t *hub,
+                                            const hybbx_broadcast_config_t *cfg,
+                                            const char *message,
+                                            const hybbx_circuit_broadcast_link_t *links,
+                                            unsigned link_count,
+                                            int enforce_rate_limit,
+                                            int check_band_idle)
+{
+    unsigned sent = 0;
+    unsigned i;
+
+    if (service == NULL || cfg == NULL || message == NULL || links == NULL ||
+        link_count == 0) {
+        return 0;
+    }
+
+    for (i = 0; i < link_count; i++) {
+        double target_mhz = broadcast_link_target_mhz(cfg, &links[i], i);
+        hybbx_result_t rc;
+
+        if (target_mhz <= 0.0) {
+            hybbx_log_stats("[broadcast] ax25 skip link=%s (no MHz)",
+                            links[i].link_id);
+            continue;
+        }
+
+        if (check_band_idle && hub != NULL &&
+            !broadcast_hub_link_band_idle(hub, links[i].slot_index)) {
+            broadcast_ax25_log_deferred(target_mhz, "band busy");
+            g_ax25_link_retry[links[i].slot_index] = 1;
+            continue;
+        }
+
+        if (enforce_rate_limit &&
+            !broadcast_ax25_link_rate_ok(links[i].slot_index,
+                                         cfg->ax25_auto_interval_sec)) {
+            continue;
+        }
+
+        rc = broadcast_ax25_send(service, target_mhz, message,
+                                 enforce_rate_limit);
+        if (rc == HYBBX_OK) {
+            sent++;
+            g_ax25_link_retry[links[i].slot_index] = 0;
+            g_ax25_defer_log_sec = 0;
+            if (i + 1 < link_count) {
+                broadcast_ax25_link_pause_ms(HYBBX_BROADCAST_MANUAL_LINK_GAP_MS);
+            }
+            continue;
+        }
+
+        if (rc == HYBBX_ERR_BUSY) {
+            g_ax25_link_retry[links[i].slot_index] = 1;
+            broadcast_ax25_log_deferred(target_mhz, "balancer busy");
+            continue;
+        }
+
+        if (rc == HYBBX_ERR_DENIED) {
+            g_ax25_link_retry[links[i].slot_index] = 1;
+            broadcast_ax25_log_deferred(target_mhz, "no qualifying link");
+            continue;
+        }
+
+        hybbx_log_warn("[broadcast] ax25 %.3f MHz failed (%d)",
+                       target_mhz, (int)rc);
+    }
+
+    return sent;
+}
+
 hybbx_result_t hybbx_broadcast_ax25_manual(hybbx_service_t *service)
 {
     const hybbx_broadcast_config_t *cfg;
@@ -565,8 +611,7 @@ hybbx_result_t hybbx_broadcast_ax25_manual(hybbx_service_t *service)
     hybbx_circuit_broadcast_link_t links[HYBBX_CIRCUIT_MAX_LINKS];
     char message[HYBBX_BROADCAST_AX25_MESSAGE_MAX + 1];
     unsigned link_count;
-    unsigned sent = 0;
-    unsigned i;
+    unsigned sent;
 
     if (service == NULL) {
         return HYBBX_ERR_INVALID;
@@ -596,37 +641,10 @@ hybbx_result_t hybbx_broadcast_ax25_manual(hybbx_service_t *service)
     }
 
     hybbx_log_info("[broadcast] ax25 manual sequential (%u link(s)): %s",
-           link_count, message);
+                   link_count, message);
 
-    for (i = 0; i < link_count; i++) {
-        double target_mhz = broadcast_link_target_mhz(cfg, &links[i], i);
-        hybbx_result_t rc;
-
-        if (target_mhz <= 0.0) {
-            hybbx_log_stats("[broadcast] ax25 manual skip link=%s (no MHz)",
-                            links[i].link_id);
-            continue;
-        }
-
-        rc = broadcast_ax25_send(service, target_mhz, message, 0);
-        if (rc == HYBBX_OK) {
-            sent++;
-            if (i + 1 < link_count) {
-                broadcast_ax25_link_pause_ms(HYBBX_BROADCAST_MANUAL_LINK_GAP_MS);
-            }
-            continue;
-        }
-
-        if (rc == HYBBX_ERR_BUSY) {
-            hybbx_log_stats("[broadcast] ax25 manual %.3f MHz deferred (balancer busy)",
-                   target_mhz);
-            continue;
-        }
-
-        hybbx_log_warn("[broadcast] ax25 manual %.3f MHz failed (%d)",
-               target_mhz, (int)rc);
-    }
-
+    sent = broadcast_ax25_send_links(service, hub, cfg, message, links,
+                                     link_count, 0, 0);
     if (sent == 0) {
         return HYBBX_ERR_BUSY;
     }
@@ -642,8 +660,6 @@ void hybbx_broadcast_ax25_tick(hybbx_service_t *service)
     hybbx_circuit_broadcast_link_t links[HYBBX_CIRCUIT_MAX_LINKS];
     unsigned link_count;
     unsigned interval;
-    unsigned stagger;
-    unsigned i;
 
     if (service == NULL) {
         return;
@@ -659,10 +675,6 @@ void hybbx_broadcast_ax25_tick(hybbx_service_t *service)
         return;
     }
 
-    if (!hybbx_circuit_hub_link_broadcast_qos(hub)) {
-        return;
-    }
-
     interval = cfg->ax25_auto_interval_sec;
     if (interval == 0) {
         return;
@@ -674,7 +686,6 @@ void hybbx_broadcast_ax25_tick(hybbx_service_t *service)
         return;
     }
 
-    stagger = cfg->ax25_auto_stagger_sec;
     g_ax25_auto_tick++;
 
     broadcast_expand_service_token(message, sizeof(message),
@@ -684,74 +695,28 @@ void hybbx_broadcast_ax25_tick(hybbx_service_t *service)
         return;
     }
 
-    if (stagger == 0 || link_count == 1) {
-        if (g_ax25_auto_tick < interval) {
-            return;
-        }
-        if (!broadcast_ax25_rate_ok(interval)) {
-            return;
-        }
-        if (!broadcast_hub_all_bands_idle(hub)) {
-            broadcast_ax25_log_deferred(0.0, "band busy");
-            return;
-        }
-
-        {
-            hybbx_result_t rc = hybbx_broadcast_ax25(service, 0.0, message);
-
-            if (rc == HYBBX_OK) {
-                g_ax25_auto_tick = 0;
-                return;
-            }
-
-            if (rc == HYBBX_ERR_BUSY && interval > 0) {
-                g_ax25_auto_tick = interval - 1u;
-                broadcast_ax25_log_deferred(0.0, "balancer busy");
-            }
-        }
+    if (g_ax25_auto_tick < interval) {
+        return;
+    }
+    if (!broadcast_ax25_rate_ok(interval)) {
         return;
     }
 
-    for (i = 0; i < link_count; i++) {
-        unsigned phase = (i * stagger) % interval;
-        double target_mhz = broadcast_link_target_mhz(cfg, &links[i], i);
-        hybbx_result_t rc;
+    hybbx_log_info("[broadcast] ax25 auto sequential (%u link(s)): %s",
+                   link_count, message);
 
-        if (!g_ax25_link_retry[links[i].slot_index] &&
-            g_ax25_auto_tick % interval != phase) {
-            continue;
-        }
-        if (!broadcast_ax25_link_rate_ok(links[i].slot_index, interval)) {
-            continue;
-        }
-        if (!broadcast_hub_link_band_idle(hub, links[i].slot_index)) {
-            broadcast_ax25_log_deferred(target_mhz, "band busy");
-            continue;
-        }
-        if (target_mhz <= 0.0) {
-            hybbx_log_stats("[broadcast] ax25 skip link=%s (no MHz)",
-                            links[i].link_id);
-            continue;
+    {
+        unsigned sent = broadcast_ax25_send_links(service, hub, cfg, message,
+                                                  links, link_count, 1, 0);
+
+        if (sent > 0) {
+            g_ax25_auto_tick = 0;
+            return;
         }
 
-        rc = hybbx_broadcast_ax25(service, target_mhz, message);
-        if (rc == HYBBX_OK) {
-            g_ax25_link_retry[links[i].slot_index] = 0;
-            g_ax25_defer_log_sec = 0;
-            continue;
+        if (interval > 0) {
+            g_ax25_auto_tick = interval - 1u;
         }
-
-        if (rc == HYBBX_ERR_BUSY) {
-            g_ax25_link_retry[links[i].slot_index] = 1;
-            broadcast_ax25_log_deferred(target_mhz, "balancer busy");
-        } else if (rc == HYBBX_ERR_DENIED) {
-            g_ax25_link_retry[links[i].slot_index] = 1;
-            broadcast_ax25_log_deferred(target_mhz, "no qualifying link");
-        }
-    }
-
-    if (g_ax25_auto_tick >= interval) {
-        g_ax25_auto_tick = 0;
     }
 }
 
