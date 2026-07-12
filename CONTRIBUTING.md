@@ -8,6 +8,17 @@ git clone <repository-url> && cd hyBBX
 telnet 127.0.0.1 2323
 ```
 
+## Git identity
+
+**Only** this identity — no alternatives:
+
+```
+user.name  = ngteq
+user.email = info@un1t.me
+```
+
+Local `.git/config`. Push **only** via SSH `~/.ssh/id_ed25519_ngteq` to `git@github.com:ngteq/hyBBX.git`.
+
 ## Pull requests
 
 - Small, focused diffs; Main/Secondary model unchanged unless discussed

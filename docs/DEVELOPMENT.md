@@ -73,3 +73,13 @@ ctest --test-dir build --output-on-failure
 | Transport plugin | matching doc in `docs/` (TNCS, WEBSOCKET, …) |
 
 Technical docs only — no planning or status matrices.
+
+## Git
+
+- **Only** `ngteq <info@un1t.me>` — author and committer (`.git/config`)
+- **Only** SSH push: `~/.ssh/id_ed25519_ngteq` → `git@github.com:ngteq/hyBBX.git`
+- Agents: commit/push only when the user asks
+
+## RF prep (MAX25)
+
+TNC, BayCom PR-Stack, and CRDOP soft-modem **lifecycle** live in **MainAX25-Stack (MAX25)** — not in HyBBX. HyBBX transport plugins (`packet_radio`, `baycom`, `crdop`) attach after MAX25 prep. Contract: MAX25 `docs/HYBBX.md` + `share/hybbx/*.ini.example`.

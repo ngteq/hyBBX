@@ -6,6 +6,8 @@
 
 HyBBX `baycom` implements the Linux equivalent of the DOS BayCom PR-Stack **L2** path: HDLC + AX.25 UI frames on BayCom modems, bridged to Main over HBX.
 
+**RF prep:** kernel module load, KISS PTY, and modem catalog validation live in **MainAX25-Stack (MAX25)** `hardware/modems` — not in HyBBX. Start MAX25 before enabling this plugin.
+
 For async serial TNCs (TNC2C, PK-TNC2, PK-232, …) use the [`packet_radio`](TNCS.md) plugin instead.
 
 ## Backends

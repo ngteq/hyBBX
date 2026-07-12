@@ -14,9 +14,11 @@ CB-oriented digital bridge. Separate protocol from ARDOP — [ARDOP.md](ARDOP.md
 
 Plugin applies CB defaults (`500MAX`, half-duplex QoS, `crdop-link`).
 
+**RF prep:** CRDOPC build and lifecycle live in **MainAX25-Stack (MAX25)** `hardware/soft-modems` — not in HyBBX. Start MAX25 (or CRDOPC) before enabling this plugin.
+
 ## CRDOPC (external)
 
-Build and install CRDOPC from the upstream CRDOP project, then start it **before** HyBBX (default control port **8515**).
+Build and install CRDOPC via MAX25 soft-modem prep (or upstream CRDOP), then start it **before** HyBBX (default control port **8515**).
 
 ## INI (Secondary typical)
 

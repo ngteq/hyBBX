@@ -13,10 +13,12 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 | `src/core/`, `plugins/telnet` | TNC, KISS, sound-card apps |
 | `plugins/ssh`, `plugins/websocket` | libssh; httpd for browser UI |
 | Built-in `[security]` (network + abuse) | Optional external fail2ban filters in `share/fail2ban/` |
-| `plugins/packet_radio` | Serial/USB TNC |
-| `plugins/baycom` | BayCom PR-Stack (kernel SER12/PAR96) |
-| `plugins/ardop`, `plugins/crdop` | ARDOPC, CRDOPC |
+| `plugins/packet_radio` | Serial/USB TNC — RF prep: **MainAX25-Stack (MAX25)** `hardware/tncs` |
+| `plugins/baycom` | BayCom modem path — prep: MAX25 `hardware/modems` (replaces standalone BayCom PR-Stack) |
+| `plugins/ardop`, `plugins/crdop` | ARDOPC; CRDOPC — soft-modem prep: MAX25 `hardware/soft-modems` (replaces standalone CRDOP tree) |
 | `plugins/entertain_*` (e.g. chess) | Entertain Area — games/apps on Main only |
+
+MAX25 owns TNC boot-wait, BayCom kernel lifecycle, and CRDOPC start; HyBBX plugins open serial/TCP **after** prep. Contract: MainAX25-Stack (MAX25) `docs/HYBBX.md`.
 
 ## Rules
 
@@ -32,6 +34,7 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 10. **Proxy network** (`mains_proxy`): user services (`proxymail`, `proxychat`, future) only — no Sysop/Admin/Mod actions across proxy links.
 11. **Version:** current `HYBBX_VERSION_STRING` only in code and brief doc headers. As-is software — compact text, no upgrade/history bloat.
 12. **Documentation — Linux-based.** Operator docs in `docs/`, `text/`, README, and share examples assume Linux (`HTTPD_DOCROOT`, `systemctl`, `ss`). Platform targets belong in [PLATFORMS.md](docs/PLATFORMS.md) only — each OS in its own section (Linux, AmigaOS 3.9+, *BSD [FreeBSD, NetBSD, OpenBSD, …], **MacOS X+**, **Windows 10+**; spell **MacOS**, not macOS). Do not mix MacOS into *BSD rubrics elsewhere.
+13. **Git** — no commit/push unless the user asks. **Only** `ngteq <info@un1t.me>` for author/committer (`.git/config`). Push **only** via `~/.ssh/id_ed25519_ngteq` → `git@github.com:ngteq/hyBBX.git`.
 
 ## Doc map
 
@@ -59,5 +62,3 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 ./scripts/dev-setup.sh
 ctest --test-dir build   # -DHYBBX_BUILD_TESTS=ON
 ```
-
-Do not commit unless the user asks.
