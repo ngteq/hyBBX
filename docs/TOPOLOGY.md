@@ -2,6 +2,8 @@
 
 **v2.0.0** — Main, Secondary, and mains-proxy mesh. INI: [MANUAL.md](MANUAL.md). Mesh detail: [MAINS_PROXY.md](MAINS_PROXY.md).
 
+User-facing paths are **text-first** (line-oriented sessions, `/` commands). Transports and plugins may add ANSI, menus, or client graphics; HBX/RF payloads remain plain text unless a plugin defines otherwise.
+
 ## Roles
 
 | Role | Process | Typical `[networks]` | Hosts |

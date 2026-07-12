@@ -4,6 +4,8 @@
 
 The **Entertain Area** is a set of optional, user-facing applications on **Main** (telnet/SSH/WebSocket sessions). Games and similar apps are **not** part of `src/core/`.
 
+Entertain apps follow the **text-first** model (e.g. ASCII chess board, `/` move commands). A plugin may add menus or client graphics later; core and default UX remain plain text for RF and low-bandwidth users.
+
 ## Rule
 
 **Every Entertain application is a plugin** under `plugins/`. Core keeps sessions, storage, commands registry, and HBX only — no game logic, boards, or entertain wire formats in `src/core/`.

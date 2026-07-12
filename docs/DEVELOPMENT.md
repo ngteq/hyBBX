@@ -28,6 +28,9 @@ Users → telnet | ssh | websocket → Main (sessions, storage)
 Secondary / proxy network / RF plugins → HBX circuit :7323 only
 ```
 
+- **Text-first:** core I/O is line-oriented plain text; `[traffic]` controls width, pace, optional ANSI
+- **Extensible:** plugins add transports, entertain apps, or richer clients — no wire/game parsing in core
+- **Portable:** POSIX+ C99 in shared code; platform branches in dedicated files — [PLATFORMS.md](PLATFORMS.md)
 - No wire-protocol parsing in `src/core/`
 - Inter-node: HBX/Circuit + `LINK_AUTH` only
 - Built-in `[security]` in `src/core/security_ban.c` — [SECURITY.md](SECURITY.md)

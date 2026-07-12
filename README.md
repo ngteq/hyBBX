@@ -4,6 +4,12 @@ C99 mailbox inspired **session daemon** for low-bandwidth links: local mail, cha
 
 **upcoming v2.0.0** — [docs/MANUAL.md](docs/MANUAL.md) · [docs/TOPOLOGY.md](docs/TOPOLOGY.md)
 
+## Text-first
+
+HyBBX is built for **pure text-based** use: line-oriented terminals, `/` commands, mail and chat as plain text. That is the default on telnet, SSH, packet-radio terminal paths, and WebSocket browser terminals — ideal for slow RF and classic BBS workflows.
+
+The design stays **flexible and portable** (C99, POSIX+, optional plugins): operators can enable ANSI colours (`[traffic] ansi`), paced 8N1 output, and plugins may add richer menus, forms, or client-side graphics (e.g. WebSocket + httpd) without changing the text core. Shared code targets Linux, *BSD, AmigaOS 3.9+, MacOS, and Windows — see [docs/PLATFORMS.md](docs/PLATFORMS.md).
+
 ## Architecture
 
 HyBBX splits **user sessions** from **RF / mesh infrastructure**.

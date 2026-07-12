@@ -4,6 +4,19 @@
 
 Booleans: `yes`/`no` (+ `true`/`false`, `on`/`off`, `1`/`0`).
 
+## Text-based operation
+
+HyBBX is a **text-first** system: sessions read and write **plain text** (lines, `/` commands, mail bodies, chat). Default settings assume classic terminal use — 80 columns, optional 2400-baud pacing, ANSI off.
+
+| Need | INI / mechanism |
+|------|-----------------|
+| Plain telnet/BBS feel | `[traffic]` defaults (`ansi=no`, `pace_output=yes`) |
+| Colour / cursor control | `[traffic] ansi=yes` |
+| Banners, MOTD, rules | `[texts]` flat files with tokens |
+| Richer UI later | Plugins or WebSocket client ([WEBSOCKET.md](WEBSOCKET.md)) — core stays line-oriented |
+
+RF and mesh paths (HBX, AX.25 UI beacons) also carry **text payloads**, not graphical desktops. Portability: same session model on Linux, *BSD, AmigaOS, MacOS, Windows — [PLATFORMS.md](PLATFORMS.md).
+
 ---
 
 ## Topology
@@ -85,7 +98,7 @@ First start creates Sysop in `users/users.ini` with a random password (10–14 c
 | `baud` | `2400` | Output pacing |
 | `line_width` | `80` | Wrap |
 | `pace_output` | `yes` | 8N1 timing |
-| `ansi` | `no` | ANSI escapes |
+| `ansi` | `no` | ANSI escapes (optional colour/menus on capable clients) |
 | `input_echo` | `no` | Local echo; `/echo` overrides |
 
 ### `[texts]`

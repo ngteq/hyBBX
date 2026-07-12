@@ -2,6 +2,8 @@
 
 HyBBX is developed on **Linux** (GCC primary, Clang). Operator documentation assumes Linux (`HTTPD_DOCROOT`, `systemctl`, `ss`).
 
+**Text-first, portable:** the product is built around **plain-text sessions** (commands, mail, chat) so the same codebase runs on constrained links and diverse hosts. Shared logic uses C99 and POSIX APIs; platform code stays behind narrow guards. That flexibility lets you deploy text telnet on AmigaOS or *BSD today and add ANSI, menus, or WebSocket graphics through plugins without rewriting core.
+
 **Portability:** HyBBX stays **POSIX+ friendly** — standard C99 and POSIX APIs first, platform code behind narrow guards (`_WIN32`, `__AMIGA__`, …). We keep `*BSD` and **AmigaOS 3.9+** working in-tree and aim to make every change **easy to port** (no Linux-only shortcuts in shared core).
 
 C99 · CMake 3.16+ · pthread on POSIX-class targets.
