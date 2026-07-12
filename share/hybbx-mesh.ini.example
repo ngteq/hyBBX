@@ -1,0 +1,77 @@
+; HyBBX v2.0.0 — Main + proxy mesh (mains_proxy) + remote Secondary RF
+; Build: -DHYBBX_PLUGIN_MAINS_PROXY=ON · Pair Secondary: hybbx-secondary.ini.example
+; Reciprocal peer INI required on remote Main. Docs: docs/MAINS_PROXY.md
+
+[service]
+name = main-west
+
+[storage]
+backend = flatfile
+path = data
+
+[auth]
+auto_login = yes
+
+[log]
+enabled = yes
+dir = logs
+level = warn
+
+[security]
+enabled = yes
+telnet = yes
+ssh = yes
+circuit = yes
+
+[mail]
+enabled = yes
+path = mail
+
+[networks]
+ax25 = no
+ssh = yes
+circuit = yes
+mains_proxy = yes
+
+[transport.telnet]
+bind = 0.0.0.0
+port = 2323
+
+[circuit]
+bind = 127.0.0.1
+port = 7323
+link_auth = yes
+link_password = changeme
+max_links = 8
+balance = yes
+
+[broadcast]
+enabled = yes
+ax25 = yes
+ax25_auto = yes
+ax25_auto_interval = 300
+
+[ax25]
+frequency1 = 27.205
+
+; Outbound proxy peer (HBX to remote Main)
+[transport.mains_proxy1]
+peer_id = main-east
+circuit_host = 192.0.2.10
+circuit_port = 7323
+link_id = main-west
+link_password = changeme
+wire = circuit
+duplex = full
+
+; Inbound registry for remote peer (match their link_id on LINK_AUTH)
+[transport.mains_proxy2]
+peer_id = main-east
+link_id = main-east
+link_password = changeme
+
+; RF bridge — remote Secondary packet_radio
+[transport.packet_radio1]
+link_id = secondary-1
+link_password = changeme
+frequency_mhz = 27.205

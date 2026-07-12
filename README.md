@@ -29,7 +29,7 @@ HyBBX splits **user sessions** from **RF / mesh infrastructure**.
 
 ### Main
 
-Central site: registered users, flat-file or SQLite storage, telnet/SSH/WebSocket listeners, internal **HBX circuit hub** on `:7323`. Sysop `/broadcast` to local online users; `/broadcast ax25` for manual RF beacon. Optional **Entertain Area** apps are plugins ([docs/ENTERTAIN.md](docs/ENTERTAIN.md)). Template: [share/hybbx.ini.example](share/hybbx.ini.example).
+Central site: registered users, flat-file or SQLite storage, telnet/SSH/WebSocket listeners, internal **HBX circuit hub** on `:7323`. Sysop `/broadcast` to local online users; `/broadcast ax25` for manual RF beacon. Optional **Entertain Area** apps are plugins ([docs/ENTERTAIN.md](docs/ENTERTAIN.md)). INI templates: [share/hybbx-standalone.ini.example](share/hybbx-standalone.ini.example) (standalone), [share/hybbx-main.ini.example](share/hybbx-main.ini.example) (Main), [share/hybbx-mesh.ini.example](share/hybbx-mesh.ini.example) (mesh).
 
 ### Secondary
 

@@ -1,6 +1,15 @@
 # Operator manual
 
-**v2.0.0** — telnet, SSH, WebSocket. Templates: `share/hybbx.ini.example`, `share/hybbx-secondary.ini.example`.
+**v2.0.0** — telnet, SSH, WebSocket. INI templates in `share/`:
+
+| Template | Use |
+|----------|-----|
+| `hybbx-standalone.ini.example` | Main + local TNC (one host) |
+| `hybbx-main.ini.example` | Main; RF on remote Secondary |
+| `hybbx-mesh.ini.example` | Main + `mains_proxy` mesh |
+| `hybbx-secondary.ini.example` | Secondary RF edge |
+
+See `share/hybbx.ini.example` for the index. Full keys: below and [TOPOLOGY.md](TOPOLOGY.md).
 
 Booleans: `yes`/`no` (+ `true`/`false`, `on`/`off`, `1`/`0`).
 

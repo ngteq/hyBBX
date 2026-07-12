@@ -1,0 +1,81 @@
+; HyBBX v2.0.0 — Main (users + HBX hub; RF on remote Secondary)
+; Pair with: share/hybbx-secondary.ini.example on the RF edge host
+; Copy: cp share/hybbx-main.ini.example hybbx.ini
+
+[service]
+name = hyBBX
+
+[storage]
+backend = flatfile
+path = data
+
+[auth]
+auto_login = yes
+
+[traffic]
+baud = 2400
+line_width = 80
+pace_output = yes
+ansi = no
+
+[log]
+enabled = yes
+dir = logs
+level = warn
+
+[security]
+enabled = yes
+telnet = yes
+ssh = yes
+websocket = yes
+circuit = yes
+
+[mail]
+enabled = yes
+path = mail
+
+[networks]
+ax25 = no
+ssh = yes
+websocket = yes
+circuit = yes
+mains_proxy = no
+
+[transport.telnet]
+bind = 0.0.0.0
+port = 2323
+
+[transport.ssh]
+enabled = yes
+bind = 0.0.0.0
+port = 3232
+hostkey_dir = keys
+
+[circuit]
+bind = 127.0.0.1
+port = 7323
+link_auth = yes
+link_password = changeme
+max_links = 8
+balance = yes
+
+[broadcast]
+enabled = yes
+ax25 = yes
+ax25_auto = yes
+ax25_auto_interval = 300
+ax25_auto_stagger = 0
+ax25_auto_message = Broadcast: @service@ online
+ax25_mycall = HYBBX
+ax25_dest = QST
+
+[ax25]
+frequency1 = 27.205
+frequency1_label = remote-A
+
+; Bridge registry — link_id/password/MHz must match Secondary [transport.packet_radioN]
+[transport.packet_radio1]
+link_id = secondary-1
+link_password = changeme
+link_role = link
+frequency_mhz = 27.205

@@ -112,16 +112,21 @@ if(HYBBX_BUILD_DAEMON)
         FILES_MATCHING PATTERN "*.h"
     )
 
-    install(FILES ${CMAKE_SOURCE_DIR}/share/hybbx.ini.example
+    install(FILES
+        ${CMAKE_SOURCE_DIR}/share/hybbx.ini.example
+        ${CMAKE_SOURCE_DIR}/share/hybbx-standalone.ini.example
+        ${CMAKE_SOURCE_DIR}/share/hybbx-main.ini.example
+        ${CMAKE_SOURCE_DIR}/share/hybbx-mesh.ini.example
+        ${CMAKE_SOURCE_DIR}/share/hybbx-secondary.ini.example
+        DESTINATION ${HYBBX_INSTALL_HOME}
+    )
+
+    install(FILES ${CMAKE_SOURCE_DIR}/share/hybbx-main.ini.example
         DESTINATION ${HYBBX_INSTALL_HOME}
         RENAME hybbx.ini
     )
 
     install(FILES ${CMAKE_SOURCE_DIR}/share/commands.yaml
-        DESTINATION ${HYBBX_INSTALL_HOME}
-    )
-
-    install(FILES ${CMAKE_SOURCE_DIR}/share/hybbx-secondary.ini.example
         DESTINATION ${HYBBX_INSTALL_HOME}
     )
 

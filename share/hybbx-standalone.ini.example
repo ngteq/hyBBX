@@ -1,0 +1,78 @@
+; HyBBX v2.0.0 — Standalone Main (users + local TNC on one host)
+; Copy: cp share/hybbx-standalone.ini.example hybbx.ini
+; Docs: docs/MANUAL.md · docs/TNCS.md · docs/TOPOLOGY.md
+
+[service]
+name = hyBBX
+
+[storage]
+backend = flatfile
+path = data
+
+[auth]
+auto_login = yes
+
+[traffic]
+baud = 2400
+line_width = 80
+pace_output = yes
+ansi = no
+
+[log]
+enabled = yes
+dir = logs
+level = warn
+
+[security]
+enabled = yes
+telnet = yes
+ssh = yes
+circuit = yes
+
+[mail]
+enabled = yes
+path = mail
+
+[networks]
+ax25 = yes
+ssh = yes
+circuit = yes
+
+[circuit]
+bind = 127.0.0.1
+port = 7323
+link_auth = yes
+link_password = changeme
+max_links = 8
+balance = yes
+
+[broadcast]
+enabled = yes
+ax25 = yes
+ax25_auto = yes
+ax25_auto_interval = 300
+ax25_auto_stagger = 0
+ax25_auto_message = Broadcast: @service@ online
+ax25_mycall = HYBBX
+ax25_dest = QST
+
+[ax25]
+frequency1 = 27.205
+frequency1_label = local-A
+
+; Local TNC — full device keys on Main (standalone). Dual-radio: add packet_radio2 + stagger=150.
+[transport.packet_radio1]
+link_id = local-radio1
+link_password = changeme
+frequency_mhz = 27.205
+circuit_host = 127.0.0.1
+circuit_port = 7323
+tnc = tnc2c
+protocol = kiss
+device = /dev/ttyUSB0
+baud = 9600
+kiss_entry = kiss_on
+modem = tcm3105
+radio_baud = 1200
+radio_band = amateur
+radio_duplex = half

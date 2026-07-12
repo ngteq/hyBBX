@@ -18,7 +18,7 @@ API: `include/hybbx/`. Config: `share/`. Sessions and commands: `src/core/`. Tra
 src/core/       session, storage, circuit, commands, commands_registry
 src/clients/    hybbx-telnet, hybbx-ssh, hybbx-terminal
 plugins/        telnet, ssh, websocket, packet_radio, entertain_* (chess, …)
-share/          hybbx.ini.example, commands.yaml
+share/          hybbx-*.ini.example (standalone, main, mesh, secondary), commands.yaml
 ```
 
 ## Architecture

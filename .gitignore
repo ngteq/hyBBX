@@ -6,6 +6,7 @@ logs/
 data/
 local/data/
 local/keys/
+local/hybbx.ini
 share/keys/
 shared/keys/
 cmake-build-*/
