@@ -46,6 +46,8 @@ path = text
 
 [log]
 enabled = yes
+dir = logs
+; Minimum severity: debug | stats | info | warn (default)
 level = warn
 
 [security]

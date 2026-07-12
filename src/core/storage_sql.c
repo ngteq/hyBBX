@@ -4,6 +4,7 @@
 #include "hybbx/password.h"
 #include "hybbx/security.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 #include "storage_private.h"
 
 #include <errno.h>
@@ -26,9 +27,8 @@
 hybbx_result_t hybbx_storage_sql_open(hybbx_storage_t *storage)
 {
     (void)storage;
-    fprintf(stderr,
-            "[storage] SQLite backend requested but hybbx was built without "
-            "libsqlite3 — use backend=flatfile or rebuild with sqlite3\n");
+    hybbx_log_warn("[storage] SQLite backend requested but hybbx was built without "
+                   "libsqlite3 — use backend=flatfile or rebuild with sqlite3");
     return HYBBX_ERR_UNSUPPORTED;
 }
 
@@ -206,7 +206,7 @@ static hybbx_result_t sql_exec(sqlite3 *db, const char *sql)
 
     rc = sqlite3_exec(db, sql, NULL, NULL, &err);
     if (rc != SQLITE_OK) {
-        fprintf(stderr, "[storage] sqlite: %s\n",
+        hybbx_log_warn("[storage] sqlite: %s",
                 err != NULL ? err : sqlite3_errmsg(db));
         sqlite3_free(err);
         return HYBBX_ERR_IO;
@@ -284,7 +284,7 @@ static hybbx_result_t sql_open_db(const char *path, sqlite3 **out_db)
     *out_db = NULL;
     rc = sqlite3_open(path, out_db);
     if (rc != SQLITE_OK) {
-        fprintf(stderr, "[storage] cannot open '%s': %s\n",
+        hybbx_log_warn("[storage] cannot open '%s': %s",
                 path, sqlite3_errmsg(*out_db));
         if (*out_db != NULL) {
             sqlite3_close(*out_db);
@@ -295,9 +295,9 @@ static hybbx_result_t sql_open_db(const char *path, sqlite3 **out_db)
 
     sqlite3_busy_timeout(*out_db, 5000);
     if (!existed) {
-        printf("[storage] created new database %s\n", path);
+        hybbx_log_info("[storage] created new database %s", path);
     } else {
-        printf("[storage] opened existing database %s\n", path);
+        hybbx_log_info("[storage] opened existing database %s", path);
     }
 
     return HYBBX_OK;
@@ -465,7 +465,7 @@ static hybbx_result_t sql_ensure_default_sysop(hybbx_storage_t *storage)
         return HYBBX_ERR_IO;
     }
 
-    printf("[storage] created default Sysop in %s (login: %s / %s)\n",
+    hybbx_log_info("[storage] created default Sysop in %s (login: %s / %s)",
            storage->sql_cfg.user_db, sysop.nickname, plain_password);
     hybbx_security_log_write("sysop_created user=%s", sysop.nickname);
     return HYBBX_OK;
@@ -545,7 +545,7 @@ static void sql_backup_one(sqlite3 *db, const char *src_path,
 
     rc = sql_copy_file(src_path, dst);
     if (rc != HYBBX_OK) {
-        fprintf(stderr, "[storage] backup failed %s -> %s\n", src_path, dst);
+        hybbx_log_warn("[storage] backup failed %s -> %s", src_path, dst);
     }
 }
 
@@ -560,14 +560,13 @@ hybbx_result_t hybbx_storage_sql_open(hybbx_storage_t *storage)
 
     if (storage->backend == HYBBX_STORAGE_MYSQL ||
         storage->backend == HYBBX_STORAGE_MARIADB) {
-        fprintf(stderr,
-                "[storage] MySQL/MariaDB backends are planned for v2.0.0 — "
-                "use flatfile or sqlite\n");
+        hybbx_log_warn("[storage] MySQL/MariaDB backends are planned for v2.0.0 — "
+                       "use flatfile or sqlite");
         return HYBBX_ERR_UNSUPPORTED;
     }
 
     if (mkdir_p(storage->path) != 0) {
-        fprintf(stderr, "[storage] cannot create data path '%s'\n",
+        hybbx_log_warn("[storage] cannot create data path '%s'",
                 storage->path);
         return HYBBX_ERR_IO;
     }
@@ -613,7 +612,7 @@ hybbx_result_t hybbx_storage_sql_open(hybbx_storage_t *storage)
         return rc;
     }
 
-    printf("[storage] sqlite user_db=%s mail_db=%s backup_interval=%us\n",
+    hybbx_log_info("[storage] sqlite user_db=%s mail_db=%s backup_interval=%us",
            storage->sql_cfg.user_db, storage->sql_cfg.mail_db,
            storage->sql_cfg.backup_interval_sec);
 
@@ -807,7 +806,7 @@ hybbx_result_t hybbx_storage_sql_foreach_user(hybbx_storage_t *storage,
         return HYBBX_ERR_BUSY;
     }
     if (rc != SQLITE_OK) {
-        fprintf(stderr, "[storage] foreach: %s\n", err != NULL ? err : "error");
+        hybbx_log_warn("[storage] foreach: %s", err != NULL ? err : "error");
         sqlite3_free(err);
         return HYBBX_ERR_IO;
     }

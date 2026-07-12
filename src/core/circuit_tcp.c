@@ -19,6 +19,7 @@
 #include "hybbx/password.h"
 #include "hybbx/socket.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -378,7 +379,7 @@ static int circuit_bandwidth_spare_link(hybbx_circuit_hub_t *hub,
     if (slot->balance != NULL &&
         hybbx_circuit_balance_action(slot->balance) == HYBBX_CIRCUIT_BAL_CANCEL) {
         hybbx_circuit_balance_spared_cancel(slot->balance);
-        printf("[circuit] secondary link %s spared — users sacrificed first\n",
+        hybbx_log_stats("[circuit] secondary link %s spared — users sacrificed first",
                slot->link_id[0] != '\0' ? slot->link_id : "?");
     }
 
@@ -423,14 +424,13 @@ static void balance_flow_ctrl_cb(void *ctx,
         if (circuit_bandwidth_spare_link(hub, slot, action)) {
             return;
         }
-        fprintf(stderr,
-                "[circuit] load-balance cancelled link %s (%s)\n",
+        hybbx_log_warn("[circuit] load-balance cancelled link %s (%s)",
                 slot->link_id[0] != '\0' ? slot->link_id : "?",
                 reason_str);
     } else if (action == HYBBX_CIRCUIT_BAL_PAUSE ||
                action == HYBBX_CIRCUIT_BAL_BREAK ||
                action == HYBBX_CIRCUIT_BAL_RESUME) {
-        printf("[circuit] load-balance %s link=%s (%s)\n",
+        hybbx_log_stats("[circuit] load-balance %s link=%s (%s)",
                hybbx_circuit_balance_action_name(action),
                slot->link_id[0] != '\0' ? slot->link_id : "?",
                reason_str);
@@ -826,7 +826,7 @@ static void on_circuit_frame(hybbx_circuit_proto_t proto, uint16_t flags,
         (void)hybbx_session_handle_input(slot->session, payload, len);
         break;
     default:
-        printf("[circuit] link=%s ignored proto=%s (%u bytes)\n",
+        hybbx_log_debug("[circuit] link=%s ignored proto=%s (%u bytes)",
                slot->link_id[0] != '\0' ? slot->link_id : "?",
                hybbx_circuit_proto_name(proto), (unsigned)len);
         break;
@@ -1042,7 +1042,7 @@ static void circuit_on_auth_frame(hybbx_circuit_proto_t proto, uint16_t flags,
     }
 
     if (!circuit_validate_link_auth(ctx, &fail_reason)) {
-        fprintf(stderr, "[circuit] link auth failed for id=%s (%s)\n",
+        hybbx_log_warn("[circuit] link auth failed for id=%s (%s)",
                 ctx->auth.id, fail_reason);
         circuit_log_auth_fail(fd, fail_reason, ctx->auth.id);
         ctx->done = 1;
@@ -1077,18 +1077,26 @@ static void circuit_on_auth_frame(hybbx_circuit_proto_t proto, uint16_t flags,
     }
     ctx->slot->profile_set = 1;
 
-    printf("[circuit] link authenticated id=%s role=%s code=%s\n",
+    hybbx_log_info("[circuit] link authenticated id=%s role=%s code=%s",
            ctx->auth.id, ctx->auth.role, code[0] != '\0' ? code : "-");
-    printf("[circuit] link QoS bandwidth=%s baud=%u duplex=%s",
-           ctx->slot->profile.bandwidth == HYBBX_CIRCUIT_BW_LOW ?
-           "low" : "high",
-           ctx->slot->profile.baud,
-           ctx->slot->profile.duplex == HYBBX_CIRCUIT_DUPLEX_HALF ?
-           "half" : "full");
-    if (ctx->slot->profile.frequency_mhz > 0.0) {
-        printf(" %.3fMHz", ctx->slot->profile.frequency_mhz);
+    {
+        char qos_msg[128];
+        int qos_len;
+
+        qos_len = snprintf(qos_msg, sizeof(qos_msg),
+                           "[circuit] link QoS bandwidth=%s baud=%u duplex=%s",
+                           ctx->slot->profile.bandwidth == HYBBX_CIRCUIT_BW_LOW ?
+                           "low" : "high",
+                           ctx->slot->profile.baud,
+                           ctx->slot->profile.duplex == HYBBX_CIRCUIT_DUPLEX_HALF ?
+                           "half" : "full");
+        if (qos_len > 0 && ctx->slot->profile.frequency_mhz > 0.0) {
+            snprintf(qos_msg + (size_t)qos_len,
+                     sizeof(qos_msg) - (size_t)qos_len,
+                     " %.3fMHz", ctx->slot->profile.frequency_mhz);
+        }
+        hybbx_log_info("%s", qos_msg);
     }
-    printf("\n");
 
     ctx->done = 1;
     ctx->ok = 1;
@@ -1177,7 +1185,7 @@ static void *circuit_link_thread(void *arg)
     hub = slot->hub;
 
     if (!circuit_wait_link_auth(slot)) {
-        fprintf(stderr, "[circuit] link authentication failed or timed out\n");
+        hybbx_log_warn("[circuit] link authentication failed or timed out");
         circuit_close_slot(slot);
         return NULL;
     }
@@ -1195,7 +1203,7 @@ static void *circuit_link_thread(void *arg)
     rc = hybbx_session_open(hub->service, &hybbx_plugin_circuit, slot,
                             &slot->session);
     if (rc != HYBBX_OK) {
-        fprintf(stderr, "[circuit] session open failed for link %s\n",
+        hybbx_log_warn("[circuit] session open failed for link %s",
                 slot->link_id[0] != '\0' ? slot->link_id : "?");
         circuit_close_slot(slot);
         return NULL;
@@ -1212,7 +1220,7 @@ static void *circuit_link_thread(void *arg)
     }
 
     slot->state = CIRCUIT_SLOT_ACTIVE;
-    printf("[circuit] link adapter attached id=%s (HBX bridge active)\n",
+    hybbx_log_info("[circuit] link adapter attached id=%s (HBX bridge active)",
            slot->link_id[0] != '\0' ? slot->link_id : "?");
 
     while (hub->running) {
@@ -1282,7 +1290,7 @@ static void *circuit_link_thread(void *arg)
         }
     }
 
-    printf("[circuit] link detached id=%s\n",
+    hybbx_log_info("[circuit] link detached id=%s",
            slot->link_id[0] != '\0' ? slot->link_id : "?");
     circuit_close_slot(slot);
     return NULL;
@@ -1351,8 +1359,7 @@ static void *circuit_accept_thread(void *arg)
                 pthread_mutex_lock(&hub->lock);
                 if (circuit_count_used_slots(hub) >= hub->max_links) {
                     pthread_mutex_unlock(&hub->lock);
-                    fprintf(stderr,
-                            "[circuit] max_links=%u reached — rejecting connection\n",
+                    hybbx_log_warn("[circuit] max_links=%u reached — rejecting connection",
                             hub->max_links);
                     close(client);
                     continue;
@@ -1373,7 +1380,7 @@ static void *circuit_accept_thread(void *arg)
 
                 if (pthread_create(&slot->thread, NULL, circuit_link_thread,
                                    slot) != 0) {
-                    fprintf(stderr, "[circuit] link thread failed\n");
+                    hybbx_log_warn("[circuit] link thread failed");
                     circuit_close_slot(slot);
                 } else {
                     pthread_detach(slot->thread);
@@ -1463,7 +1470,7 @@ hybbx_result_t hybbx_circuit_hub_start(hybbx_circuit_hub_t *hub,
         hub->listen_v6 = create_listen_socket(AF_INET6, cfg->bind6, cfg->port,
                                               backlog);
         if (hub->listen_v6 < 0) {
-            fprintf(stderr, "[circuit] IPv6 bind [%s]:%u skipped (%s)\n",
+            hybbx_log_warn("[circuit] IPv6 bind [%s]:%u skipped (%s)",
                     cfg->bind6, cfg->port, strerror(errno));
         }
     }
@@ -1473,15 +1480,26 @@ hybbx_result_t hybbx_circuit_hub_start(hybbx_circuit_hub_t *hub,
         return HYBBX_ERR_IO;
     }
 
-    printf("[circuit] internal TCP hub");
-    if (hub->listen_v4 >= 0) {
-        printf(" %s:%u", cfg->bind4, cfg->port);
+    {
+        char hub_msg[256];
+        size_t off = 0;
+
+        off = (size_t)snprintf(hub_msg, sizeof(hub_msg),
+                               "[circuit] internal TCP hub");
+        if (hub->listen_v4 >= 0) {
+            off += (size_t)snprintf(hub_msg + off, sizeof(hub_msg) - off,
+                                    " %s:%u", cfg->bind4, cfg->port);
+        }
+        if (hub->listen_v6 >= 0) {
+            off += (size_t)snprintf(hub_msg + off, sizeof(hub_msg) - off,
+                                    " [%s]:%u", cfg->bind6, cfg->port);
+        }
+        snprintf(hub_msg + off, sizeof(hub_msg) - off,
+                 " (HBX v%u, max_links=%u, bridge=%u)",
+                 (unsigned)HYBBX_CIRCUIT_VERSION, hub->max_links,
+                 hub->bridge.count);
+        hybbx_log_info("%s", hub_msg);
     }
-    if (hub->listen_v6 >= 0) {
-        printf(" [%s]:%u", cfg->bind6, cfg->port);
-    }
-    printf(" (HBX v%u, max_links=%u, bridge=%u)\n",
-           (unsigned)HYBBX_CIRCUIT_VERSION, hub->max_links, hub->bridge.count);
 
     if (pthread_create(&hub->accept_thread, NULL, circuit_accept_thread,
                        hub) != 0) {

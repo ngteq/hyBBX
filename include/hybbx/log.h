@@ -8,13 +8,15 @@
 extern "C" {
 #endif
 
-struct hybbx_config;
-
-/** File log severity (configured threshold filters lower-priority lines). */
+/**
+ * File + console log severity (least to most severe for filtering):
+ * debug → stats → info → warn (default threshold).
+ * Messages at or above the configured [log] level are emitted.
+ */
 typedef enum hybbx_log_level {
     HYBBX_LOG_DEBUG = 0,
-    HYBBX_LOG_INFO = 1,
-    HYBBX_LOG_STATS = 2,
+    HYBBX_LOG_STATS = 1,
+    HYBBX_LOG_INFO = 2,
     HYBBX_LOG_WARN = 3
 } hybbx_log_level_t;
 
@@ -32,6 +34,10 @@ const hybbx_log_config_t *hybbx_log_config_get(void);
 int hybbx_log_enabled(void);
 
 const char *hybbx_log_level_name(hybbx_log_level_t level);
+hybbx_log_level_t hybbx_log_parse_level(const char *value);
+
+/** Non-zero when @p level would be written (console and file). */
+int hybbx_log_level_visible(hybbx_log_level_t level);
 
 void hybbx_log_write(hybbx_log_level_t level, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
@@ -39,8 +45,8 @@ void hybbx_log_write(hybbx_log_level_t level, const char *fmt, ...)
 void hybbx_log_shutdown(void);
 
 #define hybbx_log_debug(...) hybbx_log_write(HYBBX_LOG_DEBUG, __VA_ARGS__)
-#define hybbx_log_info(...)  hybbx_log_write(HYBBX_LOG_INFO, __VA_ARGS__)
 #define hybbx_log_stats(...) hybbx_log_write(HYBBX_LOG_STATS, __VA_ARGS__)
+#define hybbx_log_info(...)  hybbx_log_write(HYBBX_LOG_INFO, __VA_ARGS__)
 #define hybbx_log_warn(...)  hybbx_log_write(HYBBX_LOG_WARN, __VA_ARGS__)
 
 #ifdef __cplusplus

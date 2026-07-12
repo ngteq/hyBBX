@@ -42,17 +42,6 @@ static int session_str_ieq(const char *a, const char *b)
     return *a == '\0' && *b == '\0';
 }
 
-static int session_console_show_guest_events(void)
-{
-    const hybbx_log_config_t *cfg = hybbx_log_config_get();
-
-    if (cfg == NULL) {
-        return 1;
-    }
-
-    return cfg->level <= HYBBX_LOG_STATS;
-}
-
 typedef struct hybbx_session_core {
     hybbx_session_t pub;
     hybbx_session_record_t record;
@@ -1266,11 +1255,6 @@ hybbx_result_t hybbx_session_open(hybbx_service_t *service,
         }
 
         if (!suppress_startup_text) {
-            if (session_console_show_guest_events()) {
-                printf("[session] auto-login %s on %s (session %llu)\n",
-                       core->record.username, transport->name,
-                       (unsigned long long)core->record.session_id);
-            }
             hybbx_log_stats("auto-login %s on %s (session %llu)",
                             core->record.username, transport->name,
                             (unsigned long long)core->record.session_id);
@@ -1323,9 +1307,6 @@ void hybbx_session_close(hybbx_session_t *session)
     storage = hybbx_service_get_storage(core->service);
     if (storage != NULL && core->record.session_id != 0) {
         hybbx_storage_session_end(storage, core->record.session_id);
-        printf("[session] %s disconnected (session %llu)\n",
-               core->record.username,
-               (unsigned long long)core->record.session_id);
         hybbx_log_info("%s disconnected (session %llu)",
                        core->record.username,
                        (unsigned long long)core->record.session_id);
@@ -1393,9 +1374,6 @@ hybbx_result_t hybbx_session_switch_user(hybbx_session_t *session,
     core->logged_in = 1;
     core->login_prompt = 0;
 
-    printf("[session] switched to %s on %s (session %llu)\n",
-           core->record.username, transport_name,
-           (unsigned long long)core->record.session_id);
     hybbx_log_info("switched to %s on %s (session %llu)",
                    core->record.username, transport_name,
                    (unsigned long long)core->record.session_id);

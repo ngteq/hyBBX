@@ -4,6 +4,7 @@
 #include "hybbx/link.h"
 #include "hybbx/config.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <dirent.h>
 #include <errno.h>
@@ -415,7 +416,7 @@ hybbx_result_t hybbx_link_registry_prune(hybbx_link_registry_t *reg)
         }
 
         if (last_seen > 0 && last_seen < cutoff) {
-            printf("[links] removing stale link '%s' (last auth %ld days ago)\n",
+            hybbx_log_info("[links] removing stale link '%s' (last auth %ld days ago)",
                    id, (long)((now - last_seen) / (24 * 60 * 60)));
             remove_link_files(reg, id);
         }

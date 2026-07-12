@@ -11,6 +11,7 @@
 #include "hybbx/ssh.h"
 #include "hybbx/traffic.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <libssh/callbacks.h>
 #include <libssh/libssh.h>
@@ -352,7 +353,7 @@ static void *ssh_client_thread(void *arg)
 
     if (ssh_bind_options_set(sshbind, SSH_BIND_OPTIONS_HOSTKEY,
                              g_hostkey_path) != SSH_OK) {
-        fprintf(stderr, "[ssh] host key load failed: %s\n", g_hostkey_path);
+        hybbx_log_warn("[ssh] host key load failed: %s", g_hostkey_path);
         goto cleanup;
     }
 
@@ -646,8 +647,8 @@ static hybbx_result_t ssh_plugin_start(const char *config)
         g_listen_v6 = create_listen_socket(AF_INET6, g_config.bind_v6,
                                            g_config.port);
         if (g_listen_v6 < 0) {
-            fprintf(stderr, "[ssh] IPv6 bind [%s]:%u skipped (%s)\n",
-                    g_config.bind_v6, g_config.port, strerror(errno));
+            hybbx_log_warn("[ssh] IPv6 bind [%s]:%u skipped (%s)",
+                           g_config.bind_v6, g_config.port, strerror(errno));
         }
     }
 
@@ -670,14 +671,22 @@ static hybbx_result_t ssh_plugin_start(const char *config)
         return HYBBX_ERR_IO;
     }
 
-    printf("[ssh] listening");
-    if (g_listen_v4 >= 0) {
-        printf(" IPv4 %s:%u", g_config.bind_v4, g_config.port);
+    {
+        char msg[256];
+        size_t pos = 0;
+
+        pos += (size_t)snprintf(msg + pos, sizeof(msg) - pos, "[ssh] listening");
+        if (g_listen_v4 >= 0) {
+            pos += (size_t)snprintf(msg + pos, sizeof(msg) - pos, " IPv4 %s:%u",
+                                    g_config.bind_v4, g_config.port);
+        }
+        if (g_listen_v6 >= 0) {
+            pos += (size_t)snprintf(msg + pos, sizeof(msg) - pos, " IPv6 [%s]:%u",
+                                    g_config.bind_v6, g_config.port);
+        }
+        pos += (size_t)snprintf(msg + pos, sizeof(msg) - pos, " (libssh)");
+        hybbx_log_info("%s", msg);
     }
-    if (g_listen_v6 >= 0) {
-        printf(" IPv6 [%s]:%u", g_config.bind_v6, g_config.port);
-    }
-    printf(" (libssh)\n");
 
     return HYBBX_OK;
 }
@@ -703,7 +712,7 @@ static hybbx_result_t ssh_plugin_stop(void)
     }
 
     pthread_join(g_accept_thread, NULL);
-    printf("[ssh] stop\n");
+    hybbx_log_info("[ssh] stop");
     return HYBBX_OK;
 }
 

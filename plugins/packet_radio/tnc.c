@@ -9,6 +9,8 @@
 #include "sixpack.h"
 #include "tnc_host.h"
 
+#include "hybbx/log.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -426,7 +428,7 @@ static void on_host_event(hybbx_tnc_host_state_t state, void *userdata)
         tnc->host_ready = 1;
     }
 
-    printf("[tnc] host state -> %d\n", (int)state);
+    hybbx_log_debug("[tnc] host state -> %d", (int)state);
 }
 
 static hybbx_result_t tnc_build_tx_path(hybbx_tnc_t *tnc)
@@ -636,29 +638,28 @@ hybbx_result_t hybbx_tnc_open(hybbx_tnc_t **out,
 
     rc = hybbx_serial_open(&tnc->serial, config->device, &serial_params);
     if (rc != HYBBX_OK) {
-        fprintf(stderr,
-                "[tnc] cannot open %s at %u baud (%u%c%u) — "
-                "device not available or permission denied\n",
-                config->device, config->baud, serial_params.data_bits,
-                *serial_parity_letter(config->params.serial_parity),
-                serial_params.stop_bits);
+        hybbx_log_warn("[tnc] cannot open %s at %u baud (%u%c%u) — "
+                       "device not available or permission denied",
+                       config->device, config->baud, serial_params.data_bits,
+                       *serial_parity_letter(config->params.serial_parity),
+                       serial_params.stop_bits);
         free(tnc);
         return rc;
     }
 
-    printf("[tnc] profile=%s protocol=%u device=%s host=%u %u%c%u rts_dtr=%s "
-           "kiss_entry=%s radio=%u modem=%s modulation=%s band=%s duplex=%s\n",
-           tnc_profile_name(config->tnc), (unsigned)config->protocol,
-           config->device, config->baud, serial_params.data_bits,
-           *serial_parity_letter(config->params.serial_parity),
-           serial_params.stop_bits,
-           serial_params.assert_modem_lines ? "on" : "off",
-           hybbx_kiss_entry_name(config->params.kiss_entry),
-           config->params.radio_baud,
-           modem_name(config->params.modem),
-           hybbx_packet_radio_modulation_name(config->params.modulation),
-           hybbx_packet_radio_band_name(config->params.band),
-           hybbx_packet_radio_duplex_name(config->params.duplex));
+    hybbx_log_info("[tnc] profile=%s protocol=%u device=%s host=%u %u%c%u rts_dtr=%s "
+                   "kiss_entry=%s radio=%u modem=%s modulation=%s band=%s duplex=%s",
+                   tnc_profile_name(config->tnc), (unsigned)config->protocol,
+                   config->device, config->baud, serial_params.data_bits,
+                   *serial_parity_letter(config->params.serial_parity),
+                   serial_params.stop_bits,
+                   serial_params.assert_modem_lines ? "on" : "off",
+                   hybbx_kiss_entry_name(config->params.kiss_entry),
+                   config->params.radio_baud,
+                   modem_name(config->params.modem),
+                   hybbx_packet_radio_modulation_name(config->params.modulation),
+                   hybbx_packet_radio_band_name(config->params.band),
+                   hybbx_packet_radio_duplex_name(config->params.duplex));
 
     rc = tnc_profile_init(tnc);
     if (rc != HYBBX_OK) {
@@ -667,11 +668,11 @@ hybbx_result_t hybbx_tnc_open(hybbx_tnc_t **out,
     }
 
     if (config->protocol == HYBBX_PACKET_RADIO_PROTO_KISS) {
-        printf("[tnc] KISS active (port %u)\n", config->params.kiss_port);
+        hybbx_log_info("[tnc] KISS active (port %u)", config->params.kiss_port);
     } else if (config->protocol == HYBBX_PACKET_RADIO_PROTO_SIXPACK) {
-        printf("[tnc] 6PACK active\n");
+        hybbx_log_info("[tnc] 6PACK active");
     } else {
-        printf("[tnc] TNC2 host mode active\n");
+        hybbx_log_info("[tnc] TNC2 host mode active");
     }
 
     *out = tnc;

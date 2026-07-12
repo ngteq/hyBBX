@@ -71,7 +71,7 @@ void hybbx_log_config_defaults(hybbx_log_config_t *cfg)
     cfg->level = HYBBX_LOG_WARN;
 }
 
-static hybbx_log_level_t log_parse_level(const char *value)
+hybbx_log_level_t hybbx_log_parse_level(const char *value)
 {
     if (value == NULL || value[0] == '\0') {
         return HYBBX_LOG_WARN;
@@ -80,11 +80,11 @@ static hybbx_log_level_t log_parse_level(const char *value)
     if (strcasecmp(value, "debug") == 0) {
         return HYBBX_LOG_DEBUG;
     }
-    if (strcasecmp(value, "info") == 0) {
-        return HYBBX_LOG_INFO;
-    }
     if (strcasecmp(value, "stats") == 0) {
         return HYBBX_LOG_STATS;
+    }
+    if (strcasecmp(value, "info") == 0) {
+        return HYBBX_LOG_INFO;
     }
     if (strcasecmp(value, "warn") == 0) {
         return HYBBX_LOG_WARN;
@@ -98,15 +98,24 @@ const char *hybbx_log_level_name(hybbx_log_level_t level)
     switch (level) {
     case HYBBX_LOG_DEBUG:
         return "debug";
-    case HYBBX_LOG_INFO:
-        return "info";
     case HYBBX_LOG_STATS:
         return "stats";
+    case HYBBX_LOG_INFO:
+        return "info";
     case HYBBX_LOG_WARN:
         return "warn";
     default:
         return "?";
     }
+}
+
+int hybbx_log_level_visible(hybbx_log_level_t level)
+{
+    if (!g_log_ready) {
+        return 1;
+    }
+
+    return level >= g_log_config.level;
 }
 
 const hybbx_log_config_t *hybbx_log_config_get(void)
@@ -199,6 +208,7 @@ void hybbx_log_config_apply(const struct hybbx_config *config)
 {
     const char *dir_raw;
     const char *level_raw;
+    hybbx_log_level_t parsed;
 
     hybbx_log_shutdown();
     hybbx_log_config_defaults(&g_log_config);
@@ -209,7 +219,15 @@ void hybbx_log_config_apply(const struct hybbx_config *config)
         dir_raw = hybbx_config_get(config, "log", "dir", NULL);
         level_raw = hybbx_config_get(config, "log", "level", "warn");
 
-        g_log_config.level = log_parse_level(level_raw);
+        parsed = hybbx_log_parse_level(level_raw);
+        if (level_raw != NULL && level_raw[0] != '\0' &&
+            strcmp(level_raw, hybbx_log_level_name(parsed)) != 0 &&
+            strcasecmp(level_raw, hybbx_log_level_name(parsed)) != 0) {
+            fprintf(stderr,
+                    "[log] unknown level '%s' — using warn (debug|stats|info|warn)\n",
+                    level_raw);
+        }
+        g_log_config.level = parsed;
 
         if (dir_raw != NULL && dir_raw[0] != '\0') {
             if (hybbx_path_resolve(g_log_config.dir, sizeof(g_log_config.dir),
@@ -253,26 +271,25 @@ void hybbx_log_config_apply(const struct hybbx_config *config)
 }
 #endif
 
-void hybbx_log_write(hybbx_log_level_t level, const char *fmt, ...)
+static void log_write_console(hybbx_log_level_t level, const char *message)
 {
-    char message[HYBBX_LOG_LINE_MAX];
+    FILE *out = (level == HYBBX_LOG_WARN) ? stderr : stdout;
+
+    fputs(message, out);
+    fputc('\n', out);
+    fflush(out);
+}
+
+static void log_write_file(hybbx_log_level_t level, const char *message)
+{
     char line[HYBBX_LOG_LINE_MAX + 64];
-    va_list ap;
     time_t now;
     struct tm tm_buf;
     struct tm *tm;
 
-    if (!g_log_ready || !g_log_config.enabled || fmt == NULL) {
+    if (!g_log_config.enabled) {
         return;
     }
-
-    if (level < g_log_config.level) {
-        return;
-    }
-
-    va_start(ap, fmt);
-    vsnprintf(message, sizeof(message), fmt, ap);
-    va_end(ap);
 
     pthread_mutex_lock(&g_log_lock);
 
@@ -303,6 +320,29 @@ void hybbx_log_write(hybbx_log_level_t level, const char *fmt, ...)
     fflush(g_log_file);
 
     pthread_mutex_unlock(&g_log_lock);
+}
+
+void hybbx_log_write(hybbx_log_level_t level, const char *fmt, ...)
+{
+    char message[HYBBX_LOG_LINE_MAX];
+    va_list ap;
+
+    if (fmt == NULL) {
+        return;
+    }
+
+    if (g_log_ready && !hybbx_log_level_visible(level)) {
+        return;
+    }
+
+    va_start(ap, fmt);
+    vsnprintf(message, sizeof(message), fmt, ap);
+    va_end(ap);
+
+    log_write_console(level, message);
+    if (g_log_ready) {
+        log_write_file(level, message);
+    }
 }
 
 void hybbx_log_shutdown(void)

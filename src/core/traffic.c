@@ -5,6 +5,7 @@
 #include "hybbx/session.h"
 #include "hybbx/terminal.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -67,7 +68,7 @@ void hybbx_traffic_config_apply(const struct hybbx_config *config)
             hybbx_config_get_bool(config, "traffic", "input_echo", 0);
     }
 
-    printf("[traffic] baud=%u line_width=%u pace=%s ansi=%s echo=%s\n",
+    hybbx_log_info("[traffic] baud=%u line_width=%u pace=%s ansi=%s echo=%s",
            g_traffic_config.baud, g_traffic_config.line_width,
            hybbx_bool_to_string(g_traffic_config.pace_output),
            hybbx_bool_to_string(g_traffic_config.ansi),

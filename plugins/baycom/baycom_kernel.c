@@ -6,6 +6,7 @@
 
 #include "hybbx/ax25.h"
 #include "hybbx/baycom.h"
+#include "hybbx/log.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -210,7 +211,7 @@ static int baycom_kernel_modprobe(const hybbx_baycom_config_t *cfg)
 
     rc = system(cmd);
     if (rc != 0) {
-        fprintf(stderr, "[baycom] modprobe failed (%s)\n", cfg->kernel_module);
+        hybbx_log_warn("[baycom] modprobe failed (%s)", cfg->kernel_module);
         return -1;
     }
 
@@ -310,33 +311,30 @@ hybbx_result_t baycom_kernel_open(baycom_kernel_modem_t **out,
     }
 
     if (baycom_kernel_interface_flags(km, &flags) < 0) {
-        fprintf(stderr, "[baycom] interface %s not found (load %s first)\n",
-                km->cfg.interface,
-                km->cfg.kernel_module != NULL ? km->cfg.kernel_module
-                                              : "baycom module");
+        hybbx_log_warn("[baycom] interface %s not found (load %s first)",
+                       km->cfg.interface,
+                       km->cfg.kernel_module != NULL ? km->cfg.kernel_module
+                                                     : "baycom module");
         baycom_kernel_close(km);
         return HYBBX_ERR_IO;
     }
 
     if (!(flags & IFF_UP)) {
         if (baycom_kernel_set_modem_params(km) < 0) {
-            fprintf(stderr,
-                    "[baycom] SETMODEMPAR failed (need CAP_SYS_RAWIO, iface down)\n");
+            hybbx_log_warn("[baycom] SETMODEMPAR failed (need CAP_SYS_RAWIO, iface down)");
         }
         if (baycom_kernel_set_mode(km) < 0) {
-            fprintf(stderr,
-                    "[baycom] SETMODE failed (need CAP_NET_ADMIN, iface down)\n");
+            hybbx_log_warn("[baycom] SETMODE failed (need CAP_NET_ADMIN, iface down)");
         }
         if (baycom_kernel_interface_up(km, 1) < 0) {
-            fprintf(stderr, "[baycom] failed to bring %s up\n",
-                    km->cfg.interface);
+            hybbx_log_warn("[baycom] failed to bring %s up", km->cfg.interface);
             baycom_kernel_close(km);
             return HYBBX_ERR_IO;
         }
     }
 
     if (baycom_kernel_set_channel_params(km) < 0) {
-        fprintf(stderr, "[baycom] channel params ioctl failed\n");
+        hybbx_log_warn("[baycom] channel params ioctl failed");
     }
 
     if (baycom_kernel_open_packet(km) < 0) {

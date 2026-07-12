@@ -5,6 +5,7 @@
 #include "hybbx/config.h"
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
+#include "hybbx/log.h"
 #include "storage_private.h"
 
 #include <errno.h>
@@ -729,7 +730,7 @@ static hybbx_result_t ensure_default_sysop(hybbx_storage_t *storage)
         return rc;
     }
 
-    printf("[storage] created default Sysop at %s/users/users.ini (login: %s / %s)\n",
+    hybbx_log_info("[storage] created default Sysop at %s/users/users.ini (login: %s / %s)",
            storage->path, sysop.nickname, plain_password);
     hybbx_security_log_write("sysop_created user=%s", sysop.nickname);
     return HYBBX_OK;
@@ -881,7 +882,7 @@ static hybbx_result_t migrate_passwords_cb(const hybbx_user_record_t *user,
         return rc;
     }
 
-    printf("[storage] upgraded plain password to sha256 for user %s\n",
+    hybbx_log_info("[storage] upgraded plain password to sha256 for user %s",
            user->username);
     return HYBBX_OK;
 }
@@ -963,7 +964,7 @@ static hybbx_result_t migrate_legacy_users_dat(hybbx_storage_t *storage)
         }
     }
 
-    printf("[storage] migrated legacy users.dat to INI user files\n");
+    hybbx_log_info("[storage] migrated legacy users.dat to INI user files");
     return HYBBX_OK;
 }
 
@@ -1068,7 +1069,7 @@ hybbx_result_t hybbx_storage_flatfile_open(hybbx_storage_t *storage)
     }
 
     if (mkdir_p(storage->path) != 0) {
-        fprintf(stderr, "[storage] cannot create data path '%s'\n",
+        hybbx_log_warn("[storage] cannot create data path '%s'",
                 storage->path);
         return HYBBX_ERR_IO;
     }

@@ -8,6 +8,7 @@
 #endif
 #include "hybbx/limits.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <errno.h>
 #include <pthread.h>
@@ -71,7 +72,7 @@ static int security_open_file(void)
     }
 
     if (mkdir_p(g_security_dir) != 0) {
-        fprintf(stderr, "[security] cannot create directory %s\n",
+        hybbx_log_warn("[security] cannot create directory %s",
                 g_security_dir);
         return -1;
     }
@@ -83,7 +84,7 @@ static int security_open_file(void)
 
     g_security_file = fopen(path, "a");
     if (g_security_file == NULL) {
-        fprintf(stderr, "[security] cannot open %s\n", path);
+        hybbx_log_warn("[security] cannot open %s", path);
         return -1;
     }
 
@@ -104,13 +105,13 @@ void hybbx_security_log_config_apply(const struct hybbx_config *config)
         if (dir_raw != NULL && dir_raw[0] != '\0') {
             if (hybbx_path_resolve(g_security_dir, sizeof(g_security_dir),
                                    dir_raw) != HYBBX_OK) {
-                fprintf(stderr, "[security] invalid log dir path\n");
+                hybbx_log_warn("[security] invalid log dir path");
                 return;
             }
         } else {
             if (hybbx_path_resolve(g_security_dir, sizeof(g_security_dir),
                                    HYBBX_DIR_LOGS) != HYBBX_OK) {
-                fprintf(stderr, "[security] cannot resolve default log dir\n");
+                hybbx_log_warn("[security] cannot resolve default log dir");
                 return;
             }
         }
@@ -126,7 +127,7 @@ void hybbx_security_log_config_apply(const struct hybbx_config *config)
         return;
     }
 
-    printf("[security] log=%s/%s\n", g_security_dir, HYBBX_SECURITY_LOG_FILE);
+    hybbx_log_info("[security] log=%s/%s", g_security_dir, HYBBX_SECURITY_LOG_FILE);
     hybbx_security_log_write("startup");
 }
 #else

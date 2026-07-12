@@ -2,6 +2,7 @@
 #include "hybbx/crdop.h"
 #include "hybbx/circuit.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -169,10 +170,9 @@ hybbx_result_t hybbx_ardop_config_parse(const char *config,
 
     if (out->radio_profile == HYBBX_CRDOP_PROFILE_CB &&
         hybbx_crdop_bandwidth_exceeds_cb(out->arq_bandwidth)) {
-        fprintf(stderr,
-                "[ardop] warning: arq_bandwidth=%s high for CB profile "
-                "(CRDOP Level 2 experimental)\n",
-                out->arq_bandwidth);
+        hybbx_log_warn("[ardop] warning: arq_bandwidth=%s high for CB profile "
+                       "(CRDOP Level 2 experimental)",
+                       out->arq_bandwidth);
     }
 
     if (out->ardop_host == NULL || out->mycall == NULL ||

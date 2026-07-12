@@ -1,5 +1,6 @@
 #include "hybbx/crypto_config.h"
 #include "hybbx/config.h"
+#include "hybbx/log.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -108,36 +109,31 @@ static void resolve_backends(hybbx_crypto_config_t *cfg)
 {
 #if !defined(HYBBX_HAVE_OPENSSL)
     if (cfg->password_hash == HYBBX_PASSWORD_HASH_OPENSSL) {
-        fprintf(stderr,
-                "[crypto] password_hash=openssl requested but HyBBX was not "
-                "built with OpenSSL; using tinysha256\n");
+        hybbx_log_warn("[crypto] password_hash=openssl requested but HyBBX was not "
+                       "built with OpenSSL; using tinysha256");
         cfg->password_hash = HYBBX_PASSWORD_HASH_TINYSHA256;
     }
     if (cfg->aes_gcm == HYBBX_AES_GCM_OPENSSL) {
-        fprintf(stderr,
-                "[crypto] aes_gcm=openssl requested but HyBBX was not built "
-                "with OpenSSL; using tinyaes\n");
+        hybbx_log_warn("[crypto] aes_gcm=openssl requested but HyBBX was not built "
+                       "with OpenSSL; using tinyaes");
         cfg->aes_gcm = HYBBX_AES_GCM_TINYAES;
     }
     if (cfg->random == HYBBX_RANDOM_OPENSSL) {
-        fprintf(stderr,
-                "[crypto] random=openssl requested but HyBBX was not built "
-                "with OpenSSL; using system\n");
+        hybbx_log_warn("[crypto] random=openssl requested but HyBBX was not built "
+                       "with OpenSSL; using system");
         cfg->random = HYBBX_RANDOM_SYSTEM;
     }
 #endif
 
 #if !defined(HYBBX_HAVE_LIBSODIUM)
     if (cfg->chacha == HYBBX_CHACHA_LIBSODIUM) {
-        fprintf(stderr,
-                "[crypto] chacha=libsodium requested but HyBBX was not built "
-                "with libsodium; using monocypher\n");
+        hybbx_log_warn("[crypto] chacha=libsodium requested but HyBBX was not built "
+                       "with libsodium; using monocypher");
         cfg->chacha = HYBBX_CHACHA_MONOCYPHER;
     }
     if (cfg->x25519 == HYBBX_X25519_LIBSODIUM) {
-        fprintf(stderr,
-                "[crypto] x25519=libsodium requested but HyBBX was not built "
-                "with libsodium; using monocypher\n");
+        hybbx_log_warn("[crypto] x25519=libsodium requested but HyBBX was not built "
+                       "with libsodium; using monocypher");
         cfg->x25519 = HYBBX_X25519_MONOCYPHER;
     }
 #endif
@@ -182,7 +178,7 @@ void hybbx_crypto_config_apply(const hybbx_config_t *config)
     resolve_backends(&g_crypto_config);
     g_crypto_config_ready = 1;
 
-    printf("[crypto] password_hash=%s aes_gcm=%s chacha=%s x25519=%s random=%s\n",
+    hybbx_log_info("[crypto] password_hash=%s aes_gcm=%s chacha=%s x25519=%s random=%s",
            hybbx_password_hash_backend_name(g_crypto_config.password_hash),
            hybbx_aes_gcm_backend_name(g_crypto_config.aes_gcm),
            hybbx_chacha_backend_name(g_crypto_config.chacha),

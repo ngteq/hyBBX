@@ -53,6 +53,7 @@ Registry: [share/commands.yaml](../share/commands.yaml). Layout: [COMMANDS.md](C
 - C99, `hybbx_` prefix, `hybbx_result_t`
 - INI booleans: `hybbx_parse_bool()`
 - Limits: `include/hybbx/limits.h`
+- **Logging:** use `hybbx_log_debug/stats/info/warn` for operational messages; `[log] level` filters console and file (`debug` → `stats` → `info` → `warn`)
 - **Portability:** prefer POSIX+ APIs in `src/core/` and shared helpers; no Linux-only calls without a guarded fallback. Platform branches: `_WIN32`, `__AMIGA__`, `__APPLE__`, or dedicated files (e.g. `serial_port.c`). After serial/socket/client changes, confirm `*BSD` (FreeBSD, NetBSD, OpenBSD, …) and AmigaOS cross-build paths still compile.
 
 ## Testing

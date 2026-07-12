@@ -57,13 +57,24 @@ Users (telnet :2323, SSH :3232, WebSocket via proxy) ──► Main (storage, ma
 
 ### `[log]`
 
+Daily file log: `yyyymmdd-hybbx.log` under `dir`. Same `level` filters **console and file** (stdout; `warn` → stderr). Use `debug` while developing or reproducing GitHub issues; production default is `warn`.
+
 | Key | Default | Description |
 |-----|---------|-------------|
-| `enabled` | `yes` | File logging (`yyyymmdd-hybbx.log`) |
+| `enabled` | `yes` | Write `yyyymmdd-hybbx.log` |
 | `dir` | `logs` | Log directory under install root |
-| `level` | `warn` | `debug` \| `info` \| `stats` \| `warn` |
+| `level` | `warn` | Minimum severity (see table below) |
 
-`security.log` is always written to the same directory (independent of `enabled`).
+| Level | Typical content |
+|-------|-----------------|
+| `debug` | Verbose internals (ignored protos, load-balance detail, TNC host state) |
+| `stats` | Operational events (RF TX, auto-login, broadcast sent, circuit flow) |
+| `info` | Lifecycle (listening, link auth, storage opened, disconnect) |
+| `warn` | Failures, auth errors, bind/open errors (default) |
+
+Order (least → most severe): `debug` → `stats` → `info` → `warn`. At `warn`, only warnings appear; at `debug`, everything is logged.
+
+`security.log` is always written to the same directory (independent of `enabled` and `level`).
 
 ### `[storage]`
 

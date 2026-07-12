@@ -3,6 +3,7 @@
 #include "hybbx/auth.h"
 #include "hybbx/limits.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -648,7 +649,7 @@ hybbx_result_t hybbx_commands_registry_init(void)
     if (hybbx_path_resolve(path, sizeof(path), HYBBX_FILE_COMMANDS) == HYBBX_OK) {
         rc = parse_commands_yaml(&g_registry, path);
         if (rc == HYBBX_OK) {
-            printf("[commands] loaded %s (%u verbs)\n", path,
+            hybbx_log_info("[commands] loaded %s (%u verbs)", path,
                    g_registry.command_count);
             return HYBBX_OK;
         }
@@ -658,13 +659,13 @@ hybbx_result_t hybbx_commands_registry_init(void)
         HYBBX_OK) {
         rc = parse_commands_yaml(&g_registry, path);
         if (rc == HYBBX_OK) {
-            printf("[commands] loaded %s (%u verbs)\n", path,
+            hybbx_log_info("[commands] loaded %s (%u verbs)", path,
                    g_registry.command_count);
             return HYBBX_OK;
         }
     }
 
-    fprintf(stderr, "[commands] failed to load " HYBBX_FILE_COMMANDS "\n");
+    hybbx_log_warn("[commands] failed to load " HYBBX_FILE_COMMANDS);
     return HYBBX_ERR_IO;
 }
 

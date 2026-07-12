@@ -595,7 +595,7 @@ static void service_apply_service(struct hybbx_service_internal *svc,
         svc->max_online = HYBBX_DEFAULT_MAX_ONLINE;
     }
 
-    printf("[service] max_online=%u\n", svc->max_online);
+    hybbx_log_info("[service] max_online=%u", svc->max_online);
 }
 
 static int str_ieq_local(const char *a, const char *b)
@@ -676,7 +676,7 @@ static hybbx_result_t service_open_storage(struct hybbx_service_internal *svc,
 
     rc = hybbx_path_resolve(path_resolved, sizeof(path_resolved), path_raw);
     if (rc != HYBBX_OK) {
-        fprintf(stderr, "[storage] invalid path '%s'\n",
+        hybbx_log_warn("[storage] invalid path '%s'",
                 path_raw != NULL ? path_raw : "");
         return HYBBX_ERR_IO;
     }
@@ -696,12 +696,12 @@ static hybbx_result_t service_open_storage(struct hybbx_service_internal *svc,
 
     svc->storage = hybbx_storage_open(&options);
     if (svc->storage == NULL) {
-        fprintf(stderr, "[storage] cannot open '%s' (writable?)\n",
+        hybbx_log_warn("[storage] cannot open '%s' (writable?)",
                 path_resolved);
         return HYBBX_ERR_IO;
     }
 
-    printf("[storage] backend=%s path=%s\n", backend_str, path_resolved);
+    hybbx_log_info("[storage] backend=%s path=%s", backend_str, path_resolved);
     return HYBBX_OK;
 }
 
@@ -724,7 +724,7 @@ static void service_apply_auth(struct hybbx_service_internal *svc,
         config, "auth", "guest_timeout_minutes",
         HYBBX_DEFAULT_GUEST_TIMEOUT_MINUTES, 1u, 24u * 60u);
 
-    printf("[service] guest_timeout_minutes=%u\n", svc->guest_timeout_minutes);
+    hybbx_log_info("[service] guest_timeout_minutes=%u", svc->guest_timeout_minutes);
 }
 
 static hybbx_result_t service_apply_circuit(struct hybbx_service_internal *svc,
@@ -1111,7 +1111,7 @@ static void apply_transport_cb(const hybbx_transport_plugin_t *plugin,
 
     rc = hybbx_service_load_transport(ctx->service, plugin->name);
     if (rc != HYBBX_OK) {
-        fprintf(stderr, "[service] %s: plugin load failed (%s)\n",
+        hybbx_log_warn("[service] %s: plugin load failed (%s)",
                 plugin->name, hybbx_result_name(rc));
         if (transport_start_failure_is_fatal(plugin->name)) {
             ctx->last_error = rc;
@@ -1135,7 +1135,7 @@ static void apply_transport_cb(const hybbx_transport_plugin_t *plugin,
     free(transport_config);
 
     if (rc != HYBBX_OK) {
-        fprintf(stderr, "[service] %s: start failed (%s)\n", plugin->name,
+        hybbx_log_warn("[service] %s: start failed (%s)", plugin->name,
                 hybbx_result_name(rc));
         if (transport_start_failure_is_fatal(plugin->name)) {
             ctx->last_error = rc;

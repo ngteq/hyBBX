@@ -26,11 +26,12 @@ Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** =
 4. Booleans: `hybbx_parse_bool()` — `yes`/`no`
 5. Buffers: [limits.h](include/hybbx/limits.h)
 6. **Portability:** POSIX+ friendly — C99 and portable POSIX in shared code; keep `*BSD` (FreeBSD, NetBSD, OpenBSD, …) and **AmigaOS 3.9+** compatible; isolate platform code (`_WIN32`, `__AMIGA__`, …). New core changes should stay easy to port.
-7. **Docs — technical only.** Operator/INI → [MANUAL.md](docs/MANUAL.md) + `share/*.ini.example`. Commands → [commands.yaml](share/commands.yaml) + [COMMANDS.md](docs/COMMANDS.md). Build → [BUILD.md](docs/BUILD.md). No planning, roadmap, or feature-status docs.
-8. **Commands:** user groups are Sysop, Admin, Mod, User, Guest only (no “Staff”). Help: two lines (`/<verb> …` + `Help: …`); headers use `/help <cmd> for more`. Output: one blank line before `/command` reply, none after (not chat/mail compose). `/broadcast` (alias `/announce`) = Sysop → all online users on **local Main** only.
-9. **Proxy network** (`mains_proxy`): user services (`proxymail`, `proxychat`, future) only — no Sysop/Admin/Mod actions across proxy links.
-10. **Version:** current `HYBBX_VERSION_STRING` only in code and brief doc headers. As-is software — compact text, no upgrade/history bloat.
-11. **Documentation — Linux-based.** Operator docs in `docs/`, `text/`, README, and share examples assume Linux (`HTTPD_DOCROOT`, `systemctl`, `ss`). Platform targets belong in [PLATFORMS.md](docs/PLATFORMS.md) only — each OS in its own section (Linux, AmigaOS 3.9+, *BSD [FreeBSD, NetBSD, OpenBSD, …], **MacOS X+**, **Windows 10+**; spell **MacOS**, not macOS). Do not mix MacOS into *BSD rubrics elsewhere.
+7. **Logging:** `[log] level` = `debug` \| `stats` \| `info` \| `warn` (default). `hybbx_log_*` writes console + daily file when enabled. See [MANUAL.md](docs/MANUAL.md) `[log]`.
+8. **Docs — technical only.** Operator/INI → [MANUAL.md](docs/MANUAL.md) + `share/*.ini.example`. Commands → [commands.yaml](share/commands.yaml) + [COMMANDS.md](docs/COMMANDS.md). Build → [BUILD.md](docs/BUILD.md). No planning, roadmap, or feature-status docs.
+9. **Commands:** user groups are Sysop, Admin, Mod, User, Guest only (no “Staff”). Help: two lines (`/<verb> …` + `Help: …`); headers use `/help <cmd> for more`. Output: one blank line before `/command` reply, none after (not chat/mail compose). `/broadcast` (alias `/announce`) = Sysop → all online users on **local Main** only.
+10. **Proxy network** (`mains_proxy`): user services (`proxymail`, `proxychat`, future) only — no Sysop/Admin/Mod actions across proxy links.
+11. **Version:** current `HYBBX_VERSION_STRING` only in code and brief doc headers. As-is software — compact text, no upgrade/history bloat.
+12. **Documentation — Linux-based.** Operator docs in `docs/`, `text/`, README, and share examples assume Linux (`HTTPD_DOCROOT`, `systemctl`, `ss`). Platform targets belong in [PLATFORMS.md](docs/PLATFORMS.md) only — each OS in its own section (Linux, AmigaOS 3.9+, *BSD [FreeBSD, NetBSD, OpenBSD, …], **MacOS X+**, **Windows 10+**; spell **MacOS**, not macOS). Do not mix MacOS into *BSD rubrics elsewhere.
 
 ## Doc map
 

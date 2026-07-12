@@ -1,4 +1,5 @@
 #include "hybbx/tnc.h"
+#include "hybbx/log.h"
 
 #include <stdio.h>
 
@@ -189,9 +190,8 @@ hybbx_result_t hybbx_tnc_finalize_radio_duplex(hybbx_packet_radio_config_t *cfg)
 
     if (cfg->params.band == HYBBX_PACKET_RADIO_BAND_CB &&
         cfg->params.duplex == HYBBX_PACKET_RADIO_DUPLEX_FULL) {
-        fprintf(stderr,
-                "[tnc] radio_band=cb allows half-duplex only; "
-                "ignoring radio_duplex=full\n");
+        hybbx_log_warn("[tnc] radio_band=cb allows half-duplex only; "
+                       "ignoring radio_duplex=full");
         cfg->params.duplex = HYBBX_PACKET_RADIO_DUPLEX_HALF;
     }
 

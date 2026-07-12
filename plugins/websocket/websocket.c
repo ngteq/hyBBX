@@ -13,6 +13,7 @@
 #include "hybbx/util.h"
 #include "ws_proto.h"
 #include "ws_tls.h"
+#include "hybbx/log.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -145,10 +146,9 @@ static void log_bind_failure(const char *bind_addr, unsigned port)
 
     hybbx_socket_log_bind_failure("websocket", bind_addr, port);
     if (err == EACCES && port < 1024u) {
-        fprintf(stderr,
-                "[websocket] port %u is privileged — run as root, grant "
-                "bind permission, or set port >= 1024 in hybbx.ini\n",
-                port);
+        hybbx_log_warn("[websocket] port %u is privileged — run as root, grant "
+                       "bind permission, or set port >= 1024 in hybbx.ini",
+                       port);
     }
 }
 
@@ -617,9 +617,8 @@ static hybbx_result_t ws_plugin_start(const char *config)
         g_listen_v6 = create_listen_socket(AF_INET6, g_config.bind_v6,
                                            g_config.port);
         if (g_listen_v6 < 0) {
-            fprintf(stderr,
-                    "[websocket] IPv6 bind [%s]:%u skipped (%s)\n",
-                    g_config.bind_v6, g_config.port, strerror(errno));
+            hybbx_log_warn("[websocket] IPv6 bind [%s]:%u skipped (%s)",
+                           g_config.bind_v6, g_config.port, strerror(errno));
         }
     }
 
@@ -642,9 +641,8 @@ static hybbx_result_t ws_plugin_start(const char *config)
             tls_rc = hybbx_ws_tls_server_start(cert_dir);
         }
         if (tls_rc != HYBBX_OK) {
-            fprintf(stderr,
-                    "[websocket] TLS init failed (%d), plain ws only\n",
-                    (int)tls_rc);
+            hybbx_log_warn("[websocket] TLS init failed (%d), plain ws only",
+                           (int)tls_rc);
         }
     }
 
@@ -664,16 +662,25 @@ static hybbx_result_t ws_plugin_start(const char *config)
         return HYBBX_ERR_IO;
     }
 
-    printf("[websocket] listening");
-    if (g_listen_v4 >= 0) {
-        printf(" IPv4 %s:%u", g_config.bind_v4, g_config.port);
+    {
+        char msg[384];
+        size_t pos = 0;
+
+        pos += (size_t)snprintf(msg + pos, sizeof(msg) - pos, "[websocket] listening");
+        if (g_listen_v4 >= 0) {
+            pos += (size_t)snprintf(msg + pos, sizeof(msg) - pos, " IPv4 %s:%u",
+                                    g_config.bind_v4, g_config.port);
+        }
+        if (g_listen_v6 >= 0) {
+            pos += (size_t)snprintf(msg + pos, sizeof(msg) - pos, " IPv6 [%s]:%u",
+                                    g_config.bind_v6, g_config.port);
+        }
+        pos += (size_t)snprintf(msg + pos, sizeof(msg) - pos,
+                                " path=%s max_connections=%u (%s, forward-proxy)",
+                                g_config.path, g_config.max_connections,
+                                hybbx_ws_tls_server_enabled() ? "wss" : "ws");
+        hybbx_log_info("%s", msg);
     }
-    if (g_listen_v6 >= 0) {
-        printf(" IPv6 [%s]:%u", g_config.bind_v6, g_config.port);
-    }
-    printf(" path=%s max_connections=%u (%s, forward-proxy)\n", g_config.path,
-           g_config.max_connections,
-           hybbx_ws_tls_server_enabled() ? "wss" : "ws");
 
     return HYBBX_OK;
 }
@@ -700,7 +707,7 @@ static hybbx_result_t ws_plugin_stop(void)
 
     pthread_join(g_accept_thread, NULL);
     hybbx_ws_tls_server_stop();
-    printf("[websocket] stop\n");
+    hybbx_log_info("[websocket] stop");
     return HYBBX_OK;
 }
 

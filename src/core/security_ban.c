@@ -9,6 +9,7 @@
 #include "hybbx/socket.h"
 #include "hybbx/storage.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <ctype.h>
 #include <pthread.h>
@@ -963,9 +964,9 @@ void hybbx_security_ban_config_apply(const struct hybbx_config *config)
     pthread_mutex_unlock(&g_lock);
 
     if (g_cfg.enabled) {
-        printf("[security] ban enabled maxretry=%u findtime=%us bantime=%us "
+        hybbx_log_info("[security] ban enabled maxretry=%u findtime=%us bantime=%us "
                "abuse_maxretry=%u abuse_findtime=%us "
-               "rate_limit=%u/%us backend=%d\n",
+               "rate_limit=%u/%us backend=%d",
                g_cfg.maxretry, g_cfg.findtime_sec, g_cfg.bantime_sec,
                g_cfg.abuse_maxretry, g_cfg.abuse_findtime_sec,
                g_cfg.rate_limit, g_cfg.rate_window_sec, (int)g_cfg.backend);

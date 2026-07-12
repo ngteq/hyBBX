@@ -2,6 +2,7 @@
 #include "hybbx/service.h"
 #include "hybbx/session.h"
 #include "hybbx/plugin.h"
+#include "hybbx/log.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -184,7 +185,7 @@ unsigned hybbx_bandwidth_policy_apply(hybbx_service_t *service,
 
         if (target != NULL) {
             hybbx_session_set_bandwidth_paused(target, 1);
-            printf("[bandwidth] paused user %s (QoS: AX.25 before TCP)\n",
+            hybbx_log_stats("[bandwidth] paused user %s (QoS: AX.25 before TCP)",
                    hybbx_session_display_name(target));
             affected = 1;
         }
@@ -198,7 +199,7 @@ unsigned hybbx_bandwidth_policy_apply(hybbx_service_t *service,
         }
 
         if (target != NULL) {
-            printf("[bandwidth] disconnecting user %s (break)\n",
+            hybbx_log_stats("[bandwidth] disconnecting user %s (break)",
                    hybbx_session_display_name(target));
             hybbx_session_disconnect_bandwidth(target);
             affected = 1;
@@ -207,7 +208,7 @@ unsigned hybbx_bandwidth_policy_apply(hybbx_service_t *service,
     }
     case HYBBX_CIRCUIT_BAL_CANCEL:
         for (i = 0; i + 1 < ctx.count; i++) {
-            printf("[bandwidth] disconnecting user %s (cancel)\n",
+            hybbx_log_stats("[bandwidth] disconnecting user %s (cancel)",
                    hybbx_session_display_name(ctx.entries[i].session));
             hybbx_session_disconnect_bandwidth(ctx.entries[i].session);
             affected++;

@@ -2,6 +2,7 @@
 
 #include "hybbx/kiss.h"
 #include "serial_port.h"
+#include "hybbx/log.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -128,7 +129,7 @@ hybbx_result_t baycom_kiss_open(baycom_kiss_modem_t **out,
 
     rc = kiss_apply_channel_params(km);
     if (rc != HYBBX_OK) {
-        fprintf(stderr, "[baycom] kiss channel params failed\n");
+        hybbx_log_warn("[baycom] kiss channel params failed");
     }
 
     *out = km;

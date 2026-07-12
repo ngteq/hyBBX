@@ -1,5 +1,6 @@
 #include "hybbx/ssh.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <libssh/libssh.h>
 #include <stdio.h>
@@ -44,14 +45,14 @@ static hybbx_result_t generate_ed25519_keypair(const char *priv_path,
 
     rc = ssh_pki_generate(SSH_KEYTYPE_ED25519, 0, &key);
     if (rc != SSH_OK || key == NULL) {
-        fprintf(stderr, "[ssh] Ed25519 generate failed (rc=%d)\n", rc);
+        hybbx_log_warn("[ssh] Ed25519 generate failed (rc=%d)", rc);
         return HYBBX_ERR_IO;
     }
 
     rc = ssh_pki_export_privkey_file(key, NULL, NULL, NULL, priv_path);
     if (rc != SSH_OK) {
-        fprintf(stderr, "[ssh] export private key failed: %s\n",
-                ssh_get_error(key));
+        hybbx_log_warn("[ssh] export private key failed: %s",
+                       ssh_get_error(key));
         ssh_key_free(key);
         return HYBBX_ERR_IO;
     }
@@ -59,7 +60,7 @@ static hybbx_result_t generate_ed25519_keypair(const char *priv_path,
     rc = ssh_pki_export_pubkey_file(key, pub_path);
     ssh_key_free(key);
     if (rc != SSH_OK) {
-        fprintf(stderr, "[ssh] export public key failed\n");
+        hybbx_log_warn("[ssh] export public key failed");
         return HYBBX_ERR_IO;
     }
 
@@ -124,21 +125,20 @@ hybbx_result_t hybbx_ssh_keys_ensure(const char *keys_dir,
     }
 
     if (stat(priv_path, &st) == 0 && hostkey_needs_rotation(priv_path)) {
-        fprintf(stderr,
-                "[ssh] host key older than %u days — rotating %s\n",
-                HYBBX_SSH_HOSTKEY_VALID_DAYS, priv_path);
+        hybbx_log_warn("[ssh] host key older than %u days — rotating %s",
+                       HYBBX_SSH_HOSTKEY_VALID_DAYS, priv_path);
         (void)unlink(priv_path);
         (void)unlink(pub_path);
     }
 
     if (stat(priv_path, &st) != 0) {
         if (generate_ed25519_keypair(priv_path, pub_path) != HYBBX_OK) {
-            fprintf(stderr, "[ssh] failed to generate host key in %s\n",
-                    resolved_dir);
+            hybbx_log_warn("[ssh] failed to generate host key in %s",
+                           resolved_dir);
             return HYBBX_ERR_IO;
         }
-        printf("[ssh] generated host key %s (valid %u days)\n", priv_path,
-               HYBBX_SSH_HOSTKEY_VALID_DAYS);
+        hybbx_log_info("[ssh] generated host key %s (valid %u days)", priv_path,
+                       HYBBX_SSH_HOSTKEY_VALID_DAYS);
     }
 
     hybbx_strlcpy(hostkey_path, priv_path, hostkey_path_len);

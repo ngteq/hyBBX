@@ -103,10 +103,10 @@ void hybbx_ax25_frequency_apply(hybbx_ax25_frequency_table_t *table,
     table->count = loaded;
 
     if (table->count > 0) {
-        printf("[ax25] %u configured frequencies (%.3f … %.3f MHz)\n",
+        hybbx_log_info("[ax25] %u configured frequencies (%.3f … %.3f MHz)",
                table->count, table->mhz[0], table->mhz[table->count - 1]);
     } else {
-        printf("[ax25] no frequencies in INI (set frequency1 … in [ax25])\n");
+        hybbx_log_info("[ax25] no frequencies in INI (set frequency1 … in [ax25])");
     }
 }
 
@@ -174,7 +174,7 @@ void hybbx_broadcast_config_apply(hybbx_broadcast_config_t *cfg,
 
     hybbx_ax25_frequency_apply(&cfg->frequencies, config);
 
-    printf("[broadcast] announce=%s ax25_auto=%s interval=%us stagger=%us (min %us)\n",
+    hybbx_log_info("[broadcast] announce=%s ax25_auto=%s interval=%us stagger=%us (min %us)",
            cfg->enabled ? "yes" : "no",
            cfg->ax25_auto ? "yes" : "no",
            cfg->ax25_auto_interval_sec,
@@ -238,12 +238,11 @@ static void broadcast_ax25_log_deferred(double frequency_mhz, const char *reason
 
     g_ax25_defer_log_sec = 0;
     if (frequency_mhz > 0.0) {
-        printf("[broadcast] ax25 %.3f MHz deferred (%s)\n",
+        hybbx_log_stats("[broadcast] ax25 %.3f MHz deferred (%s)",
                frequency_mhz, reason);
     } else {
-        printf("[broadcast] ax25 auto deferred (%s)\n", reason);
+        hybbx_log_stats("[broadcast] ax25 auto deferred (%s)", reason);
     }
-    hybbx_log_stats("[broadcast] ax25 deferred: %s", reason);
 }
 
 static int broadcast_ax25_rate_ok(unsigned interval_sec)
@@ -462,10 +461,10 @@ static hybbx_result_t broadcast_ax25_send(hybbx_service_t *service,
     }
 
     if (frequency_mhz > 0.0) {
-        printf("[broadcast] ax25 %.3f MHz (%u hub): %s\n",
+        hybbx_log_stats("[broadcast] ax25 %.3f MHz (%u hub): %s",
                frequency_mhz, sent_links, message);
     } else {
-        printf("[broadcast] ax25 all qualifying links (%u hub): %s\n",
+        hybbx_log_stats("[broadcast] ax25 all qualifying links (%u hub): %s",
                sent_links, message);
     }
 
@@ -516,7 +515,7 @@ hybbx_result_t hybbx_broadcast_ax25_manual(hybbx_service_t *service)
         return HYBBX_ERR_INVALID;
     }
 
-    printf("[broadcast] ax25 manual sequential (%u link(s)): %s\n",
+    hybbx_log_info("[broadcast] ax25 manual sequential (%u link(s)): %s",
            link_count, message);
 
     for (i = 0; i < link_count; i++) {
@@ -536,12 +535,12 @@ hybbx_result_t hybbx_broadcast_ax25_manual(hybbx_service_t *service)
         }
 
         if (rc == HYBBX_ERR_BUSY) {
-            printf("[broadcast] ax25 manual %.3f MHz deferred (balancer busy)\n",
+            hybbx_log_stats("[broadcast] ax25 manual %.3f MHz deferred (balancer busy)",
                    target_mhz);
             continue;
         }
 
-        printf("[broadcast] ax25 manual %.3f MHz failed (%d)\n",
+        hybbx_log_warn("[broadcast] ax25 manual %.3f MHz failed (%d)",
                target_mhz, (int)rc);
     }
 
@@ -743,7 +742,7 @@ hybbx_result_t hybbx_broadcast_announce(hybbx_service_t *service,
     ctx.message = message;
     hybbx_service_visit_sessions(service, broadcast_announce_visitor, &ctx);
 
-    printf("[broadcast] announce to local Main (%zu bytes): %s\n",
+    hybbx_log_stats("[broadcast] announce to local Main (%zu bytes): %s",
            msg_len, message);
     return HYBBX_OK;
 }

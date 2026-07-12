@@ -6,6 +6,7 @@
 #include "hybbx/circuit_tcp.h"
 #include "hybbx/circuit_balance.h"
 #include "hybbx/crdop.h"
+#include "hybbx/log.h"
 
 #include <pthread.h>
 #include <stdio.h>
@@ -85,16 +86,16 @@ static void on_modem_event(const char *event, const char *detail, void *userdata
 
     if (strcmp(event, "connected") == 0) {
         if (detail != NULL && detail[0] != '\0') {
-            printf("[%s] RF link up (%s)\n", link_tag(), detail);
+            hybbx_log_stats("[%s] RF link up (%s)", link_tag(), detail);
         } else {
-            printf("[%s] RF link up\n", link_tag());
+            hybbx_log_stats("[%s] RF link up", link_tag());
         }
         g_modem_reconnect_backoff_ms = 1000u;
         return;
     }
 
     if (strcmp(event, "disconnected") == 0) {
-        printf("[%s] RF link down\n", link_tag());
+        hybbx_log_stats("[%s] RF link down", link_tag());
     }
 }
 
@@ -117,20 +118,20 @@ static void on_circuit_flow_ctrl(hybbx_circuit_proto_t proto, uint16_t flags,
     switch (action) {
     case HYBBX_CIRCUIT_BAL_PAUSE:
         g_circuit_flow_paused = 1;
-        printf("[%s] circuit flow pause (%s)\n", link_tag(), reason);
+        hybbx_log_stats("[%s] circuit flow pause (%s)", link_tag(), reason);
         break;
     case HYBBX_CIRCUIT_BAL_BREAK:
         g_circuit_flow_paused = 0;
         hybbx_circuit_decoder_init(&g_circuit_dec);
-        printf("[%s] circuit flow break (%s)\n", link_tag(), reason);
+        hybbx_log_stats("[%s] circuit flow break (%s)", link_tag(), reason);
         break;
     case HYBBX_CIRCUIT_BAL_CANCEL:
         g_circuit_flow_cancel = 1;
-        fprintf(stderr, "[%s] circuit flow cancel (%s)\n", link_tag(), reason);
+        hybbx_log_warn("[%s] circuit flow cancel (%s)", link_tag(), reason);
         break;
     case HYBBX_CIRCUIT_BAL_RESUME:
         g_circuit_flow_paused = 0;
-        printf("[%s] circuit flow resume (%s)\n", link_tag(), reason);
+        hybbx_log_stats("[%s] circuit flow resume (%s)", link_tag(), reason);
         break;
     default:
         break;
@@ -305,16 +306,15 @@ static hybbx_result_t link_connect_circuit(void)
                     continue;
                 }
             }
-            printf("[%s] linked to internal circuit %s:%u (HBX)\n",
-                   link_tag(), host, port);
+            hybbx_log_info("[%s] linked to internal circuit %s:%u (HBX)",
+                           link_tag(), host, port);
             return HYBBX_OK;
         }
         link_poll_sleep_ms(100);
     }
 
-    fprintf(stderr,
-            "[%s] could not connect to internal circuit %s:%u\n",
-            link_tag(), host, port);
+    hybbx_log_warn("[%s] could not connect to internal circuit %s:%u",
+                   link_tag(), host, port);
     return HYBBX_ERR_IO;
 }
 
@@ -378,34 +378,34 @@ hybbx_result_t ardop_link_start(const ardop_link_plugin_t *plugin,
 
     rc = plugin->parse_config(config, &g_active_config);
     if (rc != HYBBX_OK) {
-        fprintf(stderr, "[%s] invalid configuration\n", link_tag());
+        hybbx_log_warn("[%s] invalid configuration", link_tag());
         return rc;
     }
 
-    printf("[%s] external modem %s:%u mycall=%s arq=%s profile=%s circuit=%s:%u "
-           "link_id=%s\n",
-           link_tag(),
-           g_active_config.ardop_host,
-           g_active_config.ardop_port,
-           g_active_config.mycall,
-           g_active_config.arq_bandwidth,
-           hybbx_crdop_profile_name(g_active_config.radio_profile),
-           g_active_config.circuit_host,
-           g_active_config.circuit_port,
-           g_active_config.link_id != NULL ? g_active_config.link_id : "?");
+    hybbx_log_info("[%s] external modem %s:%u mycall=%s arq=%s profile=%s circuit=%s:%u "
+                   "link_id=%s",
+                   link_tag(),
+                   g_active_config.ardop_host,
+                   g_active_config.ardop_port,
+                   g_active_config.mycall,
+                   g_active_config.arq_bandwidth,
+                   hybbx_crdop_profile_name(g_active_config.radio_profile),
+                   g_active_config.circuit_host,
+                   g_active_config.circuit_port,
+                   g_active_config.link_id != NULL ? g_active_config.link_id : "?");
 
     if (g_active_config.radio_profile == HYBBX_CRDOP_PROFILE_CB) {
-        printf("[%s] CB half-duplex profile (experimental Level 2)\n",
-               link_tag());
+        hybbx_log_info("[%s] CB half-duplex profile (experimental Level 2)",
+                       link_tag());
     }
     if (g_active_config.frequency_mhz > 0.0) {
-        printf("[%s] frequency_mhz=%.3f\n", link_tag(),
-               g_active_config.frequency_mhz);
+        hybbx_log_info("[%s] frequency_mhz=%.3f", link_tag(),
+                       g_active_config.frequency_mhz);
     }
 
     modem_hint = plugin->modem_hint != NULL ? plugin->modem_hint : "ARDOPC";
-    printf("[%s] operator must run external %s separately (e.g. ardopc TCPIP %u)\n",
-           link_tag(), modem_hint, g_active_config.ardop_port);
+    hybbx_log_info("[%s] operator must run external %s separately (e.g. ardopc TCPIP %u)",
+                   link_tag(), modem_hint, g_active_config.ardop_port);
 
     g_host = ardop_host_create(&g_active_config, on_modem_data, on_modem_event,
                                NULL, link_tag());
@@ -416,21 +416,19 @@ hybbx_result_t ardop_link_start(const ardop_link_plugin_t *plugin,
 
     rc = ardop_host_connect(g_host);
     if (rc != HYBBX_OK) {
-        fprintf(stderr,
-                "[%s] external modem not reachable yet — will retry in poll loop\n",
-                link_tag());
+        hybbx_log_warn("[%s] external modem not reachable yet — will retry in poll loop",
+                       link_tag());
     }
 
     rc = link_connect_circuit();
     if (rc != HYBBX_OK) {
-        fprintf(stderr,
-                "[%s] circuit hub not reachable — HBX uplink deferred\n",
-                link_tag());
+        hybbx_log_warn("[%s] circuit hub not reachable — HBX uplink deferred",
+                       link_tag());
     }
 
     g_running = 1;
     if (pthread_create(&g_poll_thread, NULL, link_poll_thread, NULL) != 0) {
-        fprintf(stderr, "[%s] poll thread failed\n", link_tag());
+        hybbx_log_warn("[%s] poll thread failed", link_tag());
         link_shutdown();
         return HYBBX_ERR_IO;
     }
@@ -442,7 +440,7 @@ hybbx_result_t ardop_link_start(const ardop_link_plugin_t *plugin,
 hybbx_result_t ardop_link_stop(const ardop_link_plugin_t *plugin)
 {
     (void)plugin;
-    printf("[%s] stop\n", link_tag());
+    hybbx_log_info("[%s] stop", link_tag());
     link_shutdown();
     return HYBBX_OK;
 }

@@ -4,6 +4,7 @@
 #include "hybbx/config.h"
 #include "hybbx/util.h"
 #include "hybbx/traffic.h"
+#include "hybbx/log.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -109,7 +110,7 @@ void hybbx_chat_config_apply(hybbx_chat_config_t *chat,
         }
     }
 
-    printf("[chat] channels=%u message_max=%u\n",
+    hybbx_log_info("[chat] channels=%u message_max=%u",
            chat->channel_count, chat->message_max);
 }
 

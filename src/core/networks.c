@@ -1,6 +1,7 @@
 #include "hybbx/networks.h"
 #include "hybbx/config.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -98,8 +99,8 @@ void hybbx_networks_config_apply(hybbx_networks_config_t *networks,
                                                         "mains_proxy", 0);
     }
 
-    printf("[networks] telnet=static ssh=%s ax25=%s baycom=%s ardop=%s crdop=%s "
-           "websocket=%s circuit=%s mains_proxy=%s\n",
+    hybbx_log_info("[networks] telnet=static ssh=%s ax25=%s baycom=%s ardop=%s crdop=%s "
+           "websocket=%s circuit=%s mains_proxy=%s",
            hybbx_bool_to_string(networks->ssh),
            hybbx_bool_to_string(networks->ax25),
            hybbx_bool_to_string(networks->baycom),

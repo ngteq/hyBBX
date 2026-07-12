@@ -9,6 +9,7 @@
 #include "hybbx/mains_proxy.h"
 #include "hybbx/limits.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -102,7 +103,7 @@ static hybbx_result_t mains_proxy_start(const char *config)
 
     rc = mains_proxy_parse_instances(config, &g_state.mesh);
     if (rc != HYBBX_OK) {
-        fprintf(stderr, "[mains_proxy] invalid peer configuration\n");
+        hybbx_log_warn("[mains_proxy] invalid peer configuration");
         return rc;
     }
 

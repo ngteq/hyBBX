@@ -3,6 +3,7 @@
 
 #include "hybbx/socket.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -214,7 +215,7 @@ static void ardop_host_handle_ctrl_line(ardop_host_t *host, char *line)
     }
 
     if (strncmp(line, "VERSION", 7) == 0) {
-        printf("[%s] modem %s\n", host_log_tag(host), line);
+        hybbx_log_debug("[%s] modem %s", host_log_tag(host), line);
         (void)ardop_host_send_rdy(host);
         return;
     }
@@ -247,7 +248,7 @@ static void ardop_host_handle_ctrl_line(ardop_host_t *host, char *line)
 
     if (strncmp(line, "FAULT", 5) == 0 ||
         strncmp(line, "CRCFAULT", 8) == 0) {
-        fprintf(stderr, "[%s] TNC fault: %s\n", host_log_tag(host), line);
+        hybbx_log_warn("[%s] TNC fault: %s", host_log_tag(host), line);
         (void)ardop_host_send_rdy(host);
         return;
     }
@@ -294,7 +295,7 @@ static void ardop_host_process_ctrl_rx(ardop_host_t *host)
 
         memcpy(frame, host->ctrl_rx, msg_len);
         if (!ardop_crc16_valid(frame, (unsigned short)msg_len)) {
-            fprintf(stderr, "[%s] control CRC fault\n", host_log_tag(host));
+            hybbx_log_warn("[%s] control CRC fault", host_log_tag(host));
             host->ctrl_len = 0;
             return;
         }
@@ -418,10 +419,10 @@ static hybbx_result_t ardop_host_send_init(ardop_host_t *host)
     }
 
     host->init_sent = 1;
-    printf("[%s] host init sent (external %s at %s:%u)\n",
-           host_log_tag(host), host_modem_name(host),
-           host->cfg.ardop_host != NULL ? host->cfg.ardop_host : "?",
-           host->cfg.ardop_port);
+    hybbx_log_info("[%s] host init sent (external %s at %s:%u)",
+                   host_log_tag(host), host_modem_name(host),
+                   host->cfg.ardop_host != NULL ? host->cfg.ardop_host : "?",
+                   host->cfg.ardop_port);
     return HYBBX_OK;
 }
 
@@ -501,23 +502,23 @@ hybbx_result_t ardop_host_connect(ardop_host_t *host)
 
     host->ctrl_fd = ardop_host_tcp_connect(h, port);
     if (host->ctrl_fd < 0) {
-        fprintf(stderr, "[%s] cannot connect to %s control %s:%u\n",
-                host_log_tag(host), host_modem_name(host), h, port);
+        hybbx_log_warn("[%s] cannot connect to %s control %s:%u",
+                       host_log_tag(host), host_modem_name(host), h, port);
         return HYBBX_ERR_IO;
     }
 
     host->data_fd = ardop_host_tcp_connect(h, port + 1u);
     if (host->data_fd < 0) {
-        fprintf(stderr, "[%s] cannot connect to %s data %s:%u\n",
-                host_log_tag(host), host_modem_name(host), h, port + 1u);
+        hybbx_log_warn("[%s] cannot connect to %s data %s:%u",
+                       host_log_tag(host), host_modem_name(host), h, port + 1u);
         ardop_host_disconnect(host);
         return HYBBX_ERR_IO;
     }
 
     host->tnc_ready = 0;
     host->init_sent = 0;
-    printf("[%s] connected to external %s %s:%u (data %u)\n",
-           host_log_tag(host), host_modem_name(host), h, port, port + 1u);
+    hybbx_log_info("[%s] connected to external %s %s:%u (data %u)",
+                   host_log_tag(host), host_modem_name(host), h, port, port + 1u);
 
     (void)ardop_host_send_init(host);
     {

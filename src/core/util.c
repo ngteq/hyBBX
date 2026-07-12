@@ -5,6 +5,9 @@
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
 #include "hybbx/socket.h"
+#if !defined(HYBBX_CLIENT_BUILD)
+#include "hybbx/log.h"
+#endif
 
 #include <ctype.h>
 #include <errno.h>
@@ -551,7 +554,7 @@ void hybbx_time_config_apply(const struct hybbx_config *config)
 
     g_time_format_ready = 1;
 
-    printf("[time] clock=%s seconds=%s date=%s\n",
+    hybbx_log_info("[time] clock=%s seconds=%s date=%s",
            g_time_format.clock_12h ? "12h" : "24h",
            hybbx_bool_to_string(g_time_format.seconds),
            hybbx_date_format_name(g_time_format.date_format));
@@ -758,6 +761,15 @@ void hybbx_socket_log_bind_failure(const char *component, const char *addr,
         return;
     }
 
+#if !defined(HYBBX_CLIENT_BUILD)
+    hybbx_log_warn("[%s] failed to bind %s:%u (%s)", component, addr, port,
+                   strerror(err));
+    if (err == EADDRINUSE) {
+        hybbx_log_warn("[%s] port %u already in use — another HyBBX instance may "
+                       "already be running (ss -tlnp | grep %u)",
+                       component, port, port);
+    }
+#else
     fprintf(stderr, "[%s] failed to bind %s:%u (%s)\n", component, addr, port,
             strerror(err));
     if (err == EADDRINUSE) {
@@ -766,6 +778,7 @@ void hybbx_socket_log_bind_failure(const char *component, const char *addr,
                 "already be running (ss -tlnp | grep %u)\n",
                 component, port, port);
     }
+#endif
 }
 
 hybbx_result_t hybbx_socket_peer_name(int fd, char *buf, size_t buf_len)

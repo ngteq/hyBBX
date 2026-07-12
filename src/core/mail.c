@@ -5,6 +5,7 @@
 #include "hybbx/auth.h"
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
+#include "hybbx/log.h"
 #include "mail_sql.h"
 
 #include <ctype.h>
@@ -411,7 +412,7 @@ void hybbx_mail_config_apply(hybbx_mail_config_t *mail,
         }
     }
 
-    printf("[mail] enabled=%s max_messages=%u recycle_days=%u root=%s\n",
+    hybbx_log_info("[mail] enabled=%s max_messages=%u recycle_days=%u root=%s",
            hybbx_bool_to_string(mail->enabled), mail->max_messages,
            mail->recycle_days,
            mail->root[0] != '\0' ? mail->root : "(unset)");

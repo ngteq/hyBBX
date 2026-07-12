@@ -1,4 +1,5 @@
 #include "hybbx/limits.h"
+#include "hybbx/log.h"
 #include "hybbx/util.h"
 
 #include <stdio.h>
@@ -42,6 +43,18 @@ int main(void)
     check_str("result ok", hybbx_result_name(HYBBX_OK), "ok");
     check_str("result invalid", hybbx_result_name(HYBBX_ERR_INVALID), "invalid");
     check_str("result unknown", hybbx_result_name((hybbx_result_t)-99), "unknown");
+
+    check_int("log parse debug", (int)hybbx_log_parse_level("debug"),
+              (int)HYBBX_LOG_DEBUG);
+    check_int("log parse stats", (int)hybbx_log_parse_level("stats"),
+              (int)HYBBX_LOG_STATS);
+    check_int("log parse info", (int)hybbx_log_parse_level("info"),
+              (int)HYBBX_LOG_INFO);
+    check_int("log parse warn", (int)hybbx_log_parse_level("warn"),
+              (int)HYBBX_LOG_WARN);
+    check_int("log parse unknown", (int)hybbx_log_parse_level("verbose"),
+              (int)HYBBX_LOG_WARN);
+    check_str("log name stats", hybbx_log_level_name(HYBBX_LOG_STATS), "stats");
 
     {
         char path[HYBBX_PATH_MAX];

@@ -9,6 +9,7 @@
 #include "hybbx/circuit_tcp.h"
 #include "hybbx/proxymail.h"
 #include "hybbx/proxychat.h"
+#include "hybbx/log.h"
 
 #include <errno.h>
 #include <poll.h>
@@ -423,8 +424,7 @@ static hybbx_result_t proxy_peer_connect(mains_proxy_peer_runtime_t *peer)
     }
 
     if (cfg->wire == HYBBX_MAINS_PROXY_WIRE_AX25) {
-        fprintf(stderr,
-                "[mains_proxy] peer '%s': wire=ax25 not active — use circuit\n",
+        hybbx_log_warn("[mains_proxy] peer '%s': wire=ax25 not active — use circuit",
                 peer_label);
         return HYBBX_ERR_UNSUPPORTED;
     }
@@ -434,8 +434,7 @@ static hybbx_result_t proxy_peer_connect(mains_proxy_peer_runtime_t *peer)
     }
 
     if (cfg->link_id[0] == '\0' || cfg->link_password[0] == '\0') {
-        fprintf(stderr,
-                "[mains_proxy] peer '%s' missing link_id or link_password\n",
+        hybbx_log_warn("[mains_proxy] peer '%s' missing link_id or link_password",
                 peer_label);
         return HYBBX_ERR_INVALID;
     }
@@ -467,13 +466,12 @@ static hybbx_result_t proxy_peer_connect(mains_proxy_peer_runtime_t *peer)
 
         g_rt.live_links++;
         peer->reconnect_ms = 0;
-        printf("[mains_proxy] linked to peer %s via HBX %s:%u link_id=%s\n",
+        hybbx_log_info("[mains_proxy] linked to peer %s via HBX %s:%u link_id=%s",
                peer_label, host, port, link_id);
         return HYBBX_OK;
     }
 
-    fprintf(stderr,
-            "[mains_proxy] could not link peer '%s' at %s:%u\n",
+    hybbx_log_warn("[mains_proxy] could not link peer '%s' at %s:%u",
             peer_label, host, port);
     return HYBBX_ERR_IO;
 }
@@ -614,21 +612,18 @@ hybbx_result_t hybbx_mains_proxy_peer_parse(const char *config,
     if (legacy_host && out->circuit_host[0] == '\0') {
         hybbx_strlcpy(out->circuit_host, out->host,
                       sizeof(out->circuit_host));
-        fprintf(stderr,
-                "[mains_proxy] peer '%s': deprecated key host= — use "
-                "circuit_host= (mapped for now)\n",
+        hybbx_log_warn("[mains_proxy] peer '%s': deprecated key host= — use "
+                       "circuit_host= (mapped for now)",
                 out->peer_id[0] != '\0' ? out->peer_id : "(unnamed)");
     } else if (legacy_host) {
-        fprintf(stderr,
-                "[mains_proxy] peer '%s': deprecated key host= ignored "
-                "(circuit_host set)\n",
+        hybbx_log_warn("[mains_proxy] peer '%s': deprecated key host= ignored "
+                       "(circuit_host set)",
                 out->peer_id[0] != '\0' ? out->peer_id : "(unnamed)");
     }
 
     if (legacy_port) {
-        fprintf(stderr,
-                "[mains_proxy] peer '%s': deprecated key port= ignored — "
-                "use circuit_port= (HBX hub, default %u)\n",
+        hybbx_log_warn("[mains_proxy] peer '%s': deprecated key port= ignored — "
+                       "use circuit_port= (HBX hub, default %u)",
                 out->peer_id[0] != '\0' ? out->peer_id : "(unnamed)",
                 (unsigned)HYBBX_CIRCUIT_DEFAULT_PORT);
     }
@@ -696,14 +691,14 @@ hybbx_result_t hybbx_mains_proxy_mesh_start(hybbx_service_t *service,
     }
 
     if (configured == 0) {
-        printf("[mains_proxy] no active peers configured\n");
+        hybbx_log_warn("[mains_proxy] no active peers configured");
         return HYBBX_ERR_NOT_FOUND;
     }
 
     mesh->running = 1;
     g_rt.mesh.running = 1;
 
-    printf("[mains_proxy] mesh started (%u peer(s) configured, %u HBX link(s))\n",
+    hybbx_log_info("[mains_proxy] mesh started (%u peer(s) configured, %u HBX link(s))",
            configured, linked);
 
     return HYBBX_OK;
@@ -714,7 +709,7 @@ void hybbx_mains_proxy_mesh_stop(hybbx_mains_proxy_mesh_t *mesh)
     unsigned i;
 
     if (mesh != NULL && mesh->running) {
-        printf("[mains_proxy] mesh stopped\n");
+        hybbx_log_info("[mains_proxy] mesh stopped");
         mesh->running = 0;
     }
 
@@ -781,7 +776,7 @@ void hybbx_mains_proxy_mesh_tick(hybbx_service_t *service,
         }
 
         if ((pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) != 0) {
-            printf("[mains_proxy] peer '%s' disconnected\n",
+            hybbx_log_stats("[mains_proxy] peer '%s' disconnected",
                    peer->config.peer_id[0] != '\0' ? peer->config.peer_id
                                                    : "(unnamed)");
             proxy_peer_disconnect(peer);

@@ -14,6 +14,7 @@
 #include "hybbx/security_ban.h"
 #include "hybbx/ax25.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <pthread.h>
 #include <stdio.h>
@@ -239,12 +240,11 @@ static void instance_log_rf_tx(packet_radio_instance_t *inst,
     instance_format_call(path != NULL ? &path->dest : NULL, dst, sizeof(dst));
 
     if (rc == HYBBX_OK) {
-        printf("[packet_radio%u] RF TX %s>%s (%zu bytes)\n",
-               inst->index + 1, src, dst, payload_len);
+        hybbx_log_stats("[packet_radio%u] RF TX %s>%s (%zu bytes)",
+                        inst->index + 1, src, dst, payload_len);
     } else {
-        fprintf(stderr,
-                "[packet_radio%u] RF TX failed %s>%s (%zu bytes, rc=%d)\n",
-                inst->index + 1, src, dst, payload_len, (int)rc);
+        hybbx_log_warn("[packet_radio%u] RF TX failed %s>%s (%zu bytes, rc=%d)",
+                      inst->index + 1, src, dst, payload_len, (int)rc);
     }
 }
 
@@ -310,7 +310,7 @@ static void instance_circuit_reconnect(packet_radio_instance_t *inst)
 
     instance_circuit_disconnect(inst);
     if (instance_connect_circuit(inst) == HYBBX_OK) {
-        printf("[packet_radio%u] circuit reconnected\n", inst->index + 1);
+        hybbx_log_info("[packet_radio%u] circuit reconnected", inst->index + 1);
     }
 }
 
@@ -337,24 +337,24 @@ static void instance_on_circuit_flow_ctrl(packet_radio_instance_t *inst,
     switch (action) {
     case HYBBX_CIRCUIT_BAL_PAUSE:
         inst->flow_paused = 1;
-        printf("[packet_radio%u] circuit flow pause (%s)\n", inst->index + 1,
-               reason);
+        hybbx_log_stats("[packet_radio%u] circuit flow pause (%s)",
+                        inst->index + 1, reason);
         break;
     case HYBBX_CIRCUIT_BAL_BREAK:
         inst->flow_paused = 0;
         hybbx_circuit_decoder_init(&inst->circuit_dec);
-        printf("[packet_radio%u] circuit flow break (%s)\n", inst->index + 1,
-               reason);
+        hybbx_log_stats("[packet_radio%u] circuit flow break (%s)",
+                        inst->index + 1, reason);
         break;
     case HYBBX_CIRCUIT_BAL_CANCEL:
         inst->flow_cancel = 1;
-        fprintf(stderr, "[packet_radio%u] circuit flow cancel (%s)\n",
-                inst->index + 1, reason);
+        hybbx_log_warn("[packet_radio%u] circuit flow cancel (%s)",
+                       inst->index + 1, reason);
         break;
     case HYBBX_CIRCUIT_BAL_RESUME:
         inst->flow_paused = 0;
-        printf("[packet_radio%u] circuit flow resume (%s)\n", inst->index + 1,
-               reason);
+        hybbx_log_stats("[packet_radio%u] circuit flow resume (%s)",
+                        inst->index + 1, reason);
         break;
     default:
         break;
@@ -387,9 +387,8 @@ static void on_circuit_downlink(hybbx_circuit_proto_t proto, uint16_t flags,
     case HYBBX_CIRCUIT_PROTO_AX25: {
         hybbx_result_t rc = hybbx_tnc_send_frame(inst->tnc, payload, len);
         if (rc != HYBBX_OK) {
-            fprintf(stderr,
-                    "[packet_radio%u] RF TX frame failed (rc=%d, %zu bytes)\n",
-                    inst->index + 1, (int)rc, len);
+            hybbx_log_warn("[packet_radio%u] RF TX frame failed (rc=%d, %zu bytes)",
+                           inst->index + 1, (int)rc, len);
         }
         break;
     }
@@ -401,9 +400,8 @@ static void on_circuit_downlink(hybbx_circuit_proto_t proto, uint16_t flags,
         if (ui_len > 0) {
             (void)instance_tx_ax25_ui(inst, &path, ui, ui_len);
         } else {
-            fprintf(stderr,
-                    "[packet_radio%u] AX25_UI unpack failed (%zu bytes)\n",
-                    inst->index + 1, len);
+            hybbx_log_warn("[packet_radio%u] AX25_UI unpack failed (%zu bytes)",
+                           inst->index + 1, len);
         }
         break;
     }
@@ -447,11 +445,10 @@ static hybbx_result_t instance_connect_circuit(packet_radio_instance_t *inst)
 
     if (inst->config.link_password == NULL ||
         inst->config.link_password[0] == '\0') {
-        fprintf(stderr,
-                "[packet_radio%u] missing link_password for HBX LINK_AUTH; "
-                "set link_password in [transport.packet_radioN] "
-                "(hub logs link_auth_fail reason=timeout_no_link_auth)\n",
-                inst->index + 1);
+        hybbx_log_warn("[packet_radio%u] missing link_password for HBX LINK_AUTH; "
+                       "set link_password in [transport.packet_radioN] "
+                       "(hub logs link_auth_fail reason=timeout_no_link_auth)",
+                       inst->index + 1);
         return HYBBX_ERR_INVALID;
     }
 
@@ -496,16 +493,15 @@ static hybbx_result_t instance_connect_circuit(packet_radio_instance_t *inst)
                     continue;
                 }
             }
-            printf("[packet_radio%u] linked to internal circuit %s:%u (HBX)\n",
-                   inst->index + 1, host, port);
+            hybbx_log_info("[packet_radio%u] linked to internal circuit %s:%u (HBX)",
+                           inst->index + 1, host, port);
             return HYBBX_OK;
         }
         packet_radio_poll_sleep_ms(100);
     }
 
-    fprintf(stderr,
-            "[packet_radio%u] could not connect to internal circuit %s:%u\n",
-            inst->index + 1, host, port);
+    hybbx_log_warn("[packet_radio%u] could not connect to internal circuit %s:%u",
+                   inst->index + 1, host, port);
     return HYBBX_ERR_IO;
 }
 
@@ -554,9 +550,8 @@ static void instance_drain_circuit(packet_radio_instance_t *inst)
                                                     sizeof(buf), &read_len);
 
         if (rc == HYBBX_ERR_IO) {
-            fprintf(stderr,
-                    "[packet_radio%u] circuit disconnected — reconnecting\n",
-                    inst->index + 1);
+            hybbx_log_warn("[packet_radio%u] circuit disconnected — reconnecting",
+                           inst->index + 1);
             instance_circuit_reconnect(inst);
             return;
         }
@@ -606,7 +601,7 @@ static void packet_radio_poll_instances(void)
 
         if (pr < 0) {
             if (errno != EINTR) {
-                fprintf(stderr, "[packet_radio] poll failed\n");
+                hybbx_log_warn("[packet_radio] poll failed");
             }
         } else if (pr > 0) {
             nfds_t j;
@@ -623,10 +618,9 @@ static void packet_radio_poll_instances(void)
                         packet_radio_instance_t *inst =
                             &g_instances[map[j].instance_index];
 
-                        fprintf(stderr,
-                                "[packet_radio%u] circuit hangup — "
-                                "reconnecting\n",
-                                inst->index + 1);
+                        hybbx_log_warn("[packet_radio%u] circuit hangup — "
+                                       "reconnecting",
+                                       inst->index + 1);
                         instance_circuit_reconnect(inst);
                     }
                     continue;
@@ -731,28 +725,28 @@ static hybbx_result_t instance_start(packet_radio_instance_t *inst,
 
     rc = hybbx_packet_radio_config_parse(config, &inst->config);
     if (rc != HYBBX_OK) {
-        fprintf(stderr, "[packet_radio%u] invalid configuration\n", index + 1);
+        hybbx_log_warn("[packet_radio%u] invalid configuration", index + 1);
         instance_shutdown(inst);
         return rc;
     }
 
-    printf("[packet_radio%u] tnc=%s protocol=%s device_type=%s device=%s "
-           "band=%s duplex=%s modulation=%s circuit=%s:%u "
-           "(HBX over internal TCP)\n",
-           index + 1,
-           tnc_name(inst->config.tnc),
-           protocol_name(inst->config.protocol),
-           device_type_name(inst->config.device_type),
-           inst->config.device,
-           hybbx_packet_radio_band_name(inst->config.params.band),
-           hybbx_packet_radio_duplex_name(inst->config.params.duplex),
-           hybbx_packet_radio_modulation_name(inst->config.params.modulation),
-           inst->config.circuit_host,
-           inst->config.circuit_port);
+    hybbx_log_info("[packet_radio%u] tnc=%s protocol=%s device_type=%s device=%s "
+                   "band=%s duplex=%s modulation=%s circuit=%s:%u "
+                   "(HBX over internal TCP)",
+                   index + 1,
+                   tnc_name(inst->config.tnc),
+                   protocol_name(inst->config.protocol),
+                   device_type_name(inst->config.device_type),
+                   inst->config.device,
+                   hybbx_packet_radio_band_name(inst->config.params.band),
+                   hybbx_packet_radio_duplex_name(inst->config.params.duplex),
+                   hybbx_packet_radio_modulation_name(inst->config.params.modulation),
+                   inst->config.circuit_host,
+                   inst->config.circuit_port);
     if (inst->config.frequency_mhz != NULL &&
         inst->config.frequency_mhz[0] != '\0') {
-        printf("[packet_radio%u] frequency_mhz=%s\n", index + 1,
-               inst->config.frequency_mhz);
+        hybbx_log_info("[packet_radio%u] frequency_mhz=%s", index + 1,
+                       inst->config.frequency_mhz);
     }
 
     rc = instance_connect_circuit(inst);
@@ -838,8 +832,8 @@ static hybbx_result_t packet_radio_start(const char *config)
         section_num++;
 
         if (!hybbx_packet_radio_section_is_local_edge(scratch)) {
-            printf("[packet_radio%u] bridge registry only — no local TNC\n",
-                   section_num);
+            hybbx_log_info("[packet_radio%u] bridge registry only — no local TNC",
+                           section_num);
             cursor = sep != NULL ? sep + 1 : cursor + len;
             if (sep == NULL) {
                 break;
@@ -869,19 +863,19 @@ static hybbx_result_t packet_radio_start(const char *config)
     g_radio_running = 1;
     if (pthread_create(&g_poll_thread, NULL, packet_radio_poll_thread,
                        NULL) != 0) {
-        fprintf(stderr, "[packet_radio] poll thread failed\n");
+        hybbx_log_warn("[packet_radio] poll thread failed");
         packet_radio_shutdown();
         return HYBBX_ERR_IO;
     }
     g_poll_thread_started = 1;
 
-    printf("[packet_radio] %u TNC instance(s) active\n", started);
+    hybbx_log_info("[packet_radio] %u TNC instance(s) active", started);
     return HYBBX_OK;
 }
 
 static hybbx_result_t packet_radio_stop(void)
 {
-    printf("[packet_radio] stop\n");
+    hybbx_log_info("[packet_radio] stop");
     packet_radio_shutdown();
     return HYBBX_OK;
 }

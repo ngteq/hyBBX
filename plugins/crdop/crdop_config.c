@@ -1,5 +1,6 @@
 #include "hybbx/ardop.h"
 #include "hybbx/crdop.h"
+#include "hybbx/log.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -170,9 +171,8 @@ hybbx_result_t hybbx_crdop_config_parse(const char *config,
     }
 
     if (hybbx_crdop_bandwidth_exceeds_cb(out->arq_bandwidth)) {
-        fprintf(stderr,
-                "[crdop] warning: arq_bandwidth=%s high for CB profile\n",
-                out->arq_bandwidth);
+        hybbx_log_warn("[crdop] warning: arq_bandwidth=%s high for CB profile",
+                       out->arq_bandwidth);
     }
 
     if (out->ardop_host == NULL || out->mycall == NULL ||

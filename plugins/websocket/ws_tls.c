@@ -3,6 +3,7 @@
 #include "hybbx/limits.h"
 #include "hybbx/util.h"
 #include "hybbx/websocket.h"
+#include "hybbx/log.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -183,8 +184,8 @@ hybbx_result_t hybbx_ws_tls_ensure_certs(const char *cert_dir)
 
     rc = generate_self_signed(cert_path, key_path);
     if (rc == HYBBX_OK) {
-        printf("[websocket] created self-signed TLS certificate in %s\n",
-               cert_dir);
+        hybbx_log_info("[websocket] created self-signed TLS certificate in %s",
+                       cert_dir);
     }
 
     return rc;

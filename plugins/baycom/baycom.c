@@ -10,6 +10,7 @@
 #include "hybbx/circuit_balance.h"
 #include "hybbx/limits.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include "baycom_modem.h"
 
@@ -148,16 +149,15 @@ static hybbx_result_t instance_connect_circuit(baycom_instance_t *inst)
                     continue;
                 }
             }
-            printf("[baycom%u] linked to internal circuit %s:%u (HBX)\n",
-                   inst->index + 1, host, port);
+            hybbx_log_info("[baycom%u] linked to internal circuit %s:%u (HBX)",
+                           inst->index + 1, host, port);
             return HYBBX_OK;
         }
         baycom_poll_sleep_ms(100);
     }
 
-    fprintf(stderr,
-            "[baycom%u] could not connect to internal circuit %s:%u\n",
-            inst->index + 1, host, port);
+    hybbx_log_warn("[baycom%u] could not connect to internal circuit %s:%u",
+                   inst->index + 1, host, port);
     return HYBBX_ERR_IO;
 }
 
@@ -179,21 +179,21 @@ static void instance_on_circuit_flow_ctrl(baycom_instance_t *inst,
     switch (action) {
     case HYBBX_CIRCUIT_BAL_PAUSE:
         inst->flow_paused = 1;
-        printf("[baycom%u] circuit flow pause (%s)\n", inst->index + 1, reason);
+        hybbx_log_stats("[baycom%u] circuit flow pause (%s)", inst->index + 1, reason);
         break;
     case HYBBX_CIRCUIT_BAL_BREAK:
         inst->flow_paused = 0;
         hybbx_circuit_decoder_init(&inst->circuit_dec);
-        printf("[baycom%u] circuit flow break (%s)\n", inst->index + 1, reason);
+        hybbx_log_stats("[baycom%u] circuit flow break (%s)", inst->index + 1, reason);
         break;
     case HYBBX_CIRCUIT_BAL_CANCEL:
         inst->flow_cancel = 1;
-        fprintf(stderr, "[baycom%u] circuit flow cancel (%s)\n",
-                inst->index + 1, reason);
+        hybbx_log_warn("[baycom%u] circuit flow cancel (%s)",
+                       inst->index + 1, reason);
         break;
     case HYBBX_CIRCUIT_BAL_RESUME:
         inst->flow_paused = 0;
-        printf("[baycom%u] circuit flow resume (%s)\n", inst->index + 1, reason);
+        hybbx_log_stats("[baycom%u] circuit flow resume (%s)", inst->index + 1, reason);
         break;
     default:
         break;
@@ -303,35 +303,45 @@ static hybbx_result_t instance_start(baycom_instance_t *inst,
 
     rc = hybbx_baycom_config_parse(config, &inst->config);
     if (rc != HYBBX_OK) {
-        fprintf(stderr, "[baycom%u] invalid configuration\n", index + 1);
+        hybbx_log_warn("[baycom%u] invalid configuration", index + 1);
         instance_shutdown(inst);
         return rc;
     }
 
-    printf("[baycom%u] backend=%s mode=%s",
-           index + 1,
-           hybbx_baycom_backend_name(inst->config.backend),
-           hybbx_baycom_modem_mode_name(inst->config.mode));
+    {
+        char msg[512];
+        size_t pos = 0;
 
-    if (inst->config.backend == HYBBX_BAYCOM_BACKEND_KERNEL) {
-        printf(" interface=%s module=%s iobase=0x%x irq=%u radio_baud=%u",
-               inst->config.interface != NULL ? inst->config.interface : "?",
-               inst->config.kernel_module != NULL ? inst->config.kernel_module
-                                                  : "?",
-               inst->config.iobase, inst->config.irq, inst->config.radio_baud);
-    } else {
-        printf(" device=%s serial_baud=%u",
-               inst->config.device != NULL ? inst->config.device : "?",
-               inst->config.serial_baud);
+        pos += (size_t)snprintf(msg + pos, sizeof(msg) - pos,
+                                "[baycom%u] backend=%s mode=%s",
+                                index + 1,
+                                hybbx_baycom_backend_name(inst->config.backend),
+                                hybbx_baycom_modem_mode_name(inst->config.mode));
+
+        if (inst->config.backend == HYBBX_BAYCOM_BACKEND_KERNEL) {
+            pos += (size_t)snprintf(msg + pos, sizeof(msg) - pos,
+                                    " interface=%s module=%s iobase=0x%x irq=%u radio_baud=%u",
+                                    inst->config.interface != NULL ? inst->config.interface : "?",
+                                    inst->config.kernel_module != NULL ? inst->config.kernel_module
+                                                                       : "?",
+                                    inst->config.iobase, inst->config.irq, inst->config.radio_baud);
+        } else {
+            pos += (size_t)snprintf(msg + pos, sizeof(msg) - pos,
+                                    " device=%s serial_baud=%u",
+                                    inst->config.device != NULL ? inst->config.device : "?",
+                                    inst->config.serial_baud);
+        }
+
+        pos += (size_t)snprintf(msg + pos, sizeof(msg) - pos,
+                                " circuit=%s:%u (HBX over internal TCP)",
+                                inst->config.circuit_host, inst->config.circuit_port);
+        hybbx_log_info("%s", msg);
     }
-
-    printf(" circuit=%s:%u (HBX over internal TCP)\n",
-           inst->config.circuit_host, inst->config.circuit_port);
 
     if (inst->config.frequency_mhz != NULL &&
         inst->config.frequency_mhz[0] != '\0') {
-        printf("[baycom%u] frequency_mhz=%s\n", index + 1,
-               inst->config.frequency_mhz);
+        hybbx_log_info("[baycom%u] frequency_mhz=%s", index + 1,
+                       inst->config.frequency_mhz);
     }
 
     rc = instance_connect_circuit(inst);
@@ -343,8 +353,8 @@ static hybbx_result_t instance_start(baycom_instance_t *inst,
     rc = baycom_modem_open(&inst->modem, &inst->config, on_modem_ax25_frame,
                            inst);
     if (rc != HYBBX_OK) {
-        fprintf(stderr, "[baycom%u] modem open failed (%s)\n", index + 1,
-                hybbx_result_name(rc));
+        hybbx_log_warn("[baycom%u] modem open failed (%s)", index + 1,
+                       hybbx_result_name(rc));
         instance_shutdown(inst);
         return rc;
     }
