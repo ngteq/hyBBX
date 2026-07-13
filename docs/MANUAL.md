@@ -253,14 +253,14 @@ httpd document root. See [WEBSOCKET.md](WEBSOCKET.md).
 | `enabled` | `yes` | |
 | `ax25` | `yes` | QST UI to low/half-duplex links |
 | `ax25_auto` | `yes` | Periodic AX.25 QST beacon |
-| `ax25_auto_interval` | `600` | Seconds between beacon cycles (minimum 600) |
-| `ax25_auto_stagger` | `0` | Seconds between link phases in one cycle (`150` typical for dual-radio) |
+| `ax25_auto_interval` | `900` | Seconds between auto beacon cycles (minimum 900; INI may only increase) |
+| `ax25_auto_stagger` | *(ignored)* | Legacy key — links always send sequentially with fixed link gap |
 | `ax25_auto_message` | `Broadcast: @service@ online` | Auto-beacon text (`@service@` = service name); also used by `/broadcast ax25` |
 | `tcp` | `yes` | Log only — no outbound TCP beacon |
 | `ax25_mycall` | `HYBBX` | |
 | `ax25_dest` | `QST` | |
 
-Sysop `/broadcast <message>` announces to logged-in local users only (not circuit/TNC links). `/broadcast ax25` sends `ax25_auto_message` instantly to each packet-radio link in sequence. INI `ax25_auto` runs periodic beacons (minimum 600 s interval, 180 s band idle, optional stagger).
+Sysop `/broadcast <message>` announces to logged-in local users only (not circuit/TNC links). `/broadcast ax25` sends `ax25_auto_message` to each packet-radio link in sequence (minimum 60 s between links; per-link minimum 900 s). INI `ax25_auto` runs one sequential cycle per interval (minimum 900 s, 180 s band idle after RF traffic, 60 s between links, per-link minimum 900 s).
 
 ### `[ax25]`
 

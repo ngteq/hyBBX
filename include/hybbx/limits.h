@@ -81,10 +81,16 @@
 #define HYBBX_HISTORY_MAX 25u
 
 /** AX.25 auto-beacon minimum interval (seconds); INI may only increase this. */
-#define HYBBX_BROADCAST_AX25_INTERVAL_MIN_SEC 600u
+#define HYBBX_BROADCAST_AX25_INTERVAL_MIN_SEC 900u
+
+/** Per-link minimum between any AX.25 broadcast TX (manual or auto). */
+#define HYBBX_BROADCAST_AX25_LINK_MIN_SEC 900u
 
 /** RF channel must be idle this long before an auto AX.25 beacon may TX. */
 #define HYBBX_BROADCAST_AX25_BAND_IDLE_SEC 180u
+
+/** Minimum pause between successive link TX in one broadcast (seconds). */
+#define HYBBX_BROADCAST_AX25_LINK_GAP_SEC 60u
 
 /** Default max25d TCP listen port (MAX25 max25d.ini.example). */
 #define HYBBX_MAX25_DEFAULT_PORT 7325u
