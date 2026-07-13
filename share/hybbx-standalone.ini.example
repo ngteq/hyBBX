@@ -60,7 +60,7 @@ ax25_dest = QST
 frequency1 = 27.205
 frequency1_label = local-A
 
-; Local TNC — full device keys on Main (standalone). Dual-radio: add packet_radio2 + stagger=150.
+; Local TNC — full device keys on Main (standalone). Dual-radio: add packet_radio2 (60s link gap).
 [transport.packet_radio1]
 link_id = local-radio1
 link_password = changeme

@@ -23,7 +23,7 @@ Configured outside `[security]`; they shape traffic on slow links:
 | `[chat]` | `message_max` | Truncate/deny oversized lines |
 | `[mail]` | `max_messages`, `body_max`, `subject_max` | Mailbox caps |
 | Conference | *(fixed)* | Max 2 invites per target / 30 min |
-| AX.25 broadcast | *(fixed)* | Min 600 s between auto-beacon cycles; 180 s band idle |
+| AX.25 broadcast | *(fixed)* | Min 900 s auto cycle; 180 s band idle; 60 s between links; 900 s per-link min |
 
 These are **not** security events. A busy user on a slow link is expected.
 

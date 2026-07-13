@@ -49,7 +49,7 @@ All paths between HyBBX processes use HBX v1 on the internal circuit hub. The ap
 | Packet radio / BayCom / ARDOP / CRDOP | Transport plugin on Secondary → HBX client |
 | AX.25 auto-beacon (INI) | Main → HBX → Secondary links (sequential, per-link timing) |
 | `/broadcast <msg>` (Sysop) | Logged-in local Main users (telnet/SSH/WebSocket) |
-| `/broadcast ax25` (Sysop) | Instant sequential RF beacon (`ax25_auto_message`) |
+| `/broadcast ax25` (Sysop) | Sequential RF beacon (`ax25_auto_message`; 60 s link gap) |
 | Entertain Area apps | Main plugins only — [ENTERTAIN.md](ENTERTAIN.md) |
 | Proxy network (`mains_proxy`) | Main ↔ Main via HBX circuit client |
 

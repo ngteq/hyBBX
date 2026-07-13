@@ -365,7 +365,7 @@ Input: `/command` … · `;` and `#` lines ignored · other text → area handle
 | `/deleteme` | User (own account) |
 | `/shutdown`, `/restart` | Sysop |
 | `/broadcast <message>` | Sysop — local online users |
-| `/broadcast ax25` | Sysop — instant RF beacon (INI `ax25_auto_message`) |
+| `/broadcast ax25` | Sysop — sequential RF beacon (INI `ax25_auto_message`; 60 s link gap) |
 
 ---
 

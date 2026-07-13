@@ -7,7 +7,7 @@
 # No Sysop/Admin/Mod actions cross proxy links — ever.
 #
 # /broadcast (alias /announce): Sysop local announce or /broadcast ax25 RF trigger.
-# INI [broadcast] ax25_auto is periodic staggered beacon — not /broadcast ax25.
+# INI [broadcast] ax25_auto is periodic sequential beacon — not /broadcast ax25.
 #
 # Help format (2 lines, max 80 cols):
 #   /<verb> placeholders
@@ -396,4 +396,4 @@ commands:
     group: sysop
     min: Sysop
     line1: "/broadcast message | ax25"
-    line2: "Help: Local announce or instant RF beacon (INI message). More: /announce"
+    line2: "Help: Local announce or sequential RF beacon (60s/link gap). More: /announce"

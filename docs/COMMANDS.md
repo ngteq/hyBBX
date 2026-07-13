@@ -68,7 +68,7 @@ Help: mail to user@other-main. More: list read send delete recycle.
 Help: Local announce to online users. More: /announce /broadcast ax25
 
 /broadcast ax25
-Help: Instant RF beacon (ax25_auto_message) to all packet-radio links.
+Help: Sequential RF beacon (ax25_auto_message; 60s between links).
 ```
 
 ## `/broadcast` (announce)
@@ -85,7 +85,7 @@ Help: Instant RF beacon (ax25_auto_message) to all packet-radio links.
 ### `/broadcast ax25`
 
 - **No custom RF text** — uses INI `ax25_auto_message` (`@service@` token)
-- Sends immediately to each qualifying packet-radio link **one after another** (K24 → K25)
+- Qualifying packet-radio links TX **one after another** (minimum 60 s between links; per-link minimum 900 s between any AX.25 broadcast)
 - Separate from periodic INI **`ax25_auto`** beacons (sequential multi-link cycle; see [MANUAL.md](MANUAL.md) `[broadcast]`)
 
 INI `[broadcast]` **ax25_auto** is background infrastructure — see [MANUAL.md](MANUAL.md).
