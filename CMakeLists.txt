@@ -186,7 +186,7 @@ endif()
 # Self-contained tree under CMAKE_INSTALL_PREFIX/hybbx:
 #
 #   hybbx/               install root (HYBBX_INSTALL_HOME)
-#     hybbx              executable
+#     hybbxd             daemon executable
 #     hybbx-start        start script (CMake install only)
 #     hybbx.ini          configuration
 #     text/              banner, motd, news

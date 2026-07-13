@@ -26,8 +26,8 @@ else()
 endif()
 
 target_link_libraries(hybbx_plugin_websocket PRIVATE hybbx_core Threads::Threads)
-target_link_libraries(hybbx PRIVATE hybbx_plugin_websocket)
-target_compile_definitions(hybbx PRIVATE HYBBX_HAVE_PLUGIN_WEBSOCKET)
+target_link_libraries(hybbxd PRIVATE hybbx_plugin_websocket)
+target_compile_definitions(hybbxd PRIVATE HYBBX_HAVE_PLUGIN_WEBSOCKET)
 hybbx_apply_hardening(hybbx_plugin_websocket)
 
 install(TARGETS hybbx_plugin_websocket

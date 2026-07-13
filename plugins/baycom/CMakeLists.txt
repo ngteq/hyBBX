@@ -25,8 +25,8 @@ target_link_libraries(hybbx_plugin_baycom PRIVATE hybbx_core Threads::Threads)
 if(HYBBX_PLATFORM_AMIGAOS)
     target_link_libraries(hybbx_plugin_baycom PRIVATE amiga)
 endif()
-target_link_libraries(hybbx PRIVATE hybbx_plugin_baycom)
-target_compile_definitions(hybbx PRIVATE HYBBX_HAVE_PLUGIN_BAYCOM)
+target_link_libraries(hybbxd PRIVATE hybbx_plugin_baycom)
+target_compile_definitions(hybbxd PRIVATE HYBBX_HAVE_PLUGIN_BAYCOM)
 hybbx_apply_hardening(hybbx_plugin_baycom)
 
 install(TARGETS hybbx_plugin_baycom

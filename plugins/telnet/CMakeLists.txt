@@ -15,8 +15,8 @@ target_compile_definitions(hybbx_plugin_telnet
 )
 
 target_link_libraries(hybbx_plugin_telnet PRIVATE hybbx_core Threads::Threads)
-target_link_libraries(hybbx PRIVATE hybbx_plugin_telnet)
-target_compile_definitions(hybbx PRIVATE HYBBX_HAVE_PLUGIN_TELNET)
+target_link_libraries(hybbxd PRIVATE hybbx_plugin_telnet)
+target_compile_definitions(hybbxd PRIVATE HYBBX_HAVE_PLUGIN_TELNET)
 hybbx_apply_hardening(hybbx_plugin_telnet)
 
 install(TARGETS hybbx_plugin_telnet

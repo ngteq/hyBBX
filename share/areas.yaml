@@ -1,0 +1,66 @@
+# HyBBX menu layout — areas, per-level menu, and full index.
+# Command help, aliases, access, and account rights: commands.yaml (loaded after).
+
+meta:
+  menu_header: "HyBBX commands /help <cmd> for more"
+  index_header: "HyBBX command-index /help <cmd> for more"
+  alias_header: "HyBBX aliases /help <cmd> for more"
+
+user_groups:
+  - Sysop
+  - Admin
+  - Mod
+  - User
+  - Guest
+
+areas:
+  - label: General
+    commands: [help, menu, index, alias, news, banner, motd, rules, who, users, session, version]
+  - label: Screen
+    commands: [clear, echo]
+  - label: Areas
+    commands: [leave, main, chat, conference, mail, proxymail, proxychat, exit]
+  - label: Account
+    commands: [login, changeme, register, deleteme]
+  - label: Admin
+    commands: [usercreate, activate, changeuser, promote, demote, delete]
+  - label: Sysop
+    commands: [deleteuser, shutdown, restart, broadcast]
+
+menu:
+  Guest:
+    - General
+    - Screen
+    - Account
+    - Areas
+  User:
+    - General
+    - Screen
+    - Areas
+    - Account
+  Mod:
+    - General
+    - Screen
+    - Areas
+    - Account
+  Admin:
+    - General
+    - Screen
+    - Areas
+    - Account
+    - Admin
+  Sysop:
+    - General
+    - Screen
+    - Areas
+    - Account
+    - Admin
+    - Sysop
+
+index:
+  - General
+  - Screen
+  - Areas
+  - Account
+  - Admin
+  - Sysop

@@ -53,12 +53,6 @@ static int str_ieq(const char *a, const char *b)
 
 static void cmd_deny_privilege(hybbx_session_t *session);
 
-static int cmd_help_shows_deleteme(hybbx_user_level_t level)
-{
-    return !hybbx_user_level_is_sysop(level) &&
-           !hybbx_user_level_is_guest(level);
-}
-
 static const char *cmd_help_unknown(hybbx_session_t *session)
 {
     if (hybbx_session_is_guest(session) ||
@@ -144,34 +138,9 @@ static hybbx_result_t cmd_help_topic(hybbx_session_t *session, const char *topic
 
     canonical = hybbx_commands_registry_canonical(topic);
 
-    if (!hybbx_commands_registry_verb_allowed(level, canonical) ||
-        (str_ieq(canonical, "deleteme") && !cmd_help_shows_deleteme(level))) {
+    if (!hybbx_commands_registry_help_allowed(level, canonical)) {
         hybbx_session_write_line(session, cmd_help_unknown(session));
         return HYBBX_ERR_NOT_FOUND;
-    }
-
-    if (str_ieq(canonical, "usercreate") &&
-        !hybbx_auth_may_create_user(level)) {
-        cmd_deny_privilege(session);
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "activate") && !hybbx_auth_may_activate(level)) {
-        cmd_deny_privilege(session);
-        return HYBBX_OK;
-    }
-
-    if (str_ieq(canonical, "deleteuser") &&
-        !hybbx_user_level_is_sysop(level)) {
-        cmd_deny_privilege(session);
-        return HYBBX_OK;
-    }
-
-    if ((str_ieq(canonical, "shutdown") || str_ieq(canonical, "restart") ||
-         str_ieq(canonical, "broadcast")) &&
-        !hybbx_user_level_is_sysop(level)) {
-        cmd_deny_privilege(session);
-        return HYBBX_OK;
     }
 
     def = hybbx_commands_registry_find(canonical);
@@ -207,6 +176,19 @@ static hybbx_result_t cmd_news(hybbx_service_t *service, hybbx_session_t *sessio
         hybbx_session_write_line(session, "(no news available)");
     }
 
+    return HYBBX_OK;
+}
+
+static hybbx_result_t cmd_banner(hybbx_service_t *service, hybbx_session_t *session)
+{
+    const hybbx_texts_config_t *texts = hybbx_service_get_texts(service);
+
+    if (texts == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    (void)hybbx_texts_send_banner(texts, session, HYBBX_VERSION_STRING,
+                                  hybbx_service_get_name(service));
     return HYBBX_OK;
 }
 
@@ -614,7 +596,7 @@ static hybbx_result_t cmd_activate(hybbx_service_t *service,
     }
 
     actor_level = hybbx_session_user_level(session);
-    if (!hybbx_auth_may_activate(actor_level)) {
+    if (!hybbx_commands_registry_verb_allowed(actor_level, "activate")) {
         cmd_deny_privilege(session);
         return HYBBX_ERR_DENIED;
     }
@@ -685,7 +667,7 @@ static hybbx_result_t cmd_promote(hybbx_service_t *service,
         return rc;
     }
 
-    if (!hybbx_auth_may_promote(actor_level, target.level, target.active,
+    if (!hybbx_commands_registry_may_promote(actor_level, target.level, target.active,
                                 new_level)) {
         if (actor_level == HYBBX_LEVEL_MOD || actor_level == HYBBX_LEVEL_USER) {
             cmd_deny_privilege(session);
@@ -752,7 +734,7 @@ static hybbx_result_t cmd_demote(hybbx_service_t *service,
     }
 
     old_level = target.level;
-    if (!hybbx_auth_may_demote(actor_level, target.level)) {
+    if (!hybbx_commands_registry_may_demote(actor_level, target.level)) {
         if (actor_level == HYBBX_LEVEL_MOD || actor_level == HYBBX_LEVEL_USER) {
             cmd_deny_privilege(session);
         } else if (target.level == HYBBX_LEVEL_ADMIN) {
@@ -817,7 +799,7 @@ static hybbx_result_t cmd_delete(hybbx_service_t *service,
         return HYBBX_OK;
     }
 
-    if (!hybbx_auth_may_delete(actor_level, target.level)) {
+    if (!hybbx_commands_registry_may_delete(actor_level, target.level)) {
         if (actor_level == HYBBX_LEVEL_MOD || actor_level == HYBBX_LEVEL_USER) {
             cmd_deny_privilege(session);
         } else if (target.level == HYBBX_LEVEL_ADMIN) {
@@ -974,7 +956,8 @@ static hybbx_result_t cmd_register(hybbx_service_t *service,
                                    hybbx_session_t *session,
                                    const hybbx_parsed_command_t *cmd)
 {
-    if (!hybbx_auth_may_register(hybbx_session_user_level(session)) &&
+    if (!hybbx_commands_registry_verb_allowed(hybbx_session_user_level(session),
+                                            "register") &&
         !(hybbx_session_login_prompt(session) &&
           !hybbx_session_logged_in(session))) {
         hybbx_session_write_line(session,
@@ -1162,7 +1145,7 @@ static hybbx_result_t cmd_userchange(hybbx_service_t *service,
         return HYBBX_OK;
     }
 
-    if (!hybbx_auth_may_userchange(actor_level, user.level)) {
+    if (!hybbx_commands_registry_may_userchange(actor_level, user.level)) {
         if (actor_level == HYBBX_LEVEL_ADMIN &&
             user.level == HYBBX_LEVEL_ADMIN) {
             hybbx_session_write_line(session,
@@ -1229,7 +1212,7 @@ static hybbx_result_t cmd_userdelete(hybbx_service_t *service,
         return HYBBX_OK;
     }
 
-    if (!hybbx_auth_may_userdelete(actor_level, target.level)) {
+    if (!hybbx_commands_registry_may_userdelete(actor_level, target.level)) {
         hybbx_session_write_line(session,
             "The Sysop account is permanent and cannot be deleted.");
         return HYBBX_OK;
@@ -2144,6 +2127,10 @@ hybbx_result_t hybbx_command_dispatch(hybbx_service_t *service,
 
     if (str_ieq(cmd->verb, "news")) {
         return cmd_news(service, session);
+    }
+
+    if (str_ieq(cmd->verb, "banner") || str_ieq(cmd->verb, "loginmsg")) {
+        return cmd_banner(service, session);
     }
 
     if (str_ieq(cmd->verb, "motd")) {

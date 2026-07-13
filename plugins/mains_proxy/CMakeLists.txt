@@ -11,8 +11,8 @@ target_compile_definitions(hybbx_plugin_mains_proxy
 )
 
 target_link_libraries(hybbx_plugin_mains_proxy PRIVATE hybbx_core)
-target_link_libraries(hybbx PRIVATE hybbx_plugin_mains_proxy)
-target_compile_definitions(hybbx PRIVATE HYBBX_HAVE_PLUGIN_MAINS_PROXY)
+target_link_libraries(hybbxd PRIVATE hybbx_plugin_mains_proxy)
+target_compile_definitions(hybbxd PRIVATE HYBBX_HAVE_PLUGIN_MAINS_PROXY)
 
 hybbx_apply_hardening(hybbx_plugin_mains_proxy)
 

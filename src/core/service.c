@@ -1049,7 +1049,7 @@ void hybbx_service_restart_exec(const hybbx_service_t *service)
         return;
     }
 
-    binary = svc->launch_binary[0] != '\0' ? svc->launch_binary : "hybbx";
+    binary = svc->launch_binary[0] != '\0' ? svc->launch_binary : HYBBX_DAEMON_BINARY;
     config_path = svc->config_path[0] != '\0' ? svc->config_path : NULL;
 
     argv[0] = (char *)binary;

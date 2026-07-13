@@ -63,52 +63,6 @@ int hybbx_user_level_is_guest(hybbx_user_level_t level);
 /** Non-zero when @p level is Sysop or Admin. */
 int hybbx_user_level_is_sysop_or_admin(hybbx_user_level_t level);
 
-/** Non-zero when @p actor may activate pending registered accounts. */
-int hybbx_auth_may_activate(hybbx_user_level_t actor);
-
-/** Non-zero when @p actor may self-register via `/register` (guests only). */
-int hybbx_auth_may_register(hybbx_user_level_t actor);
-
-/** Non-zero when @p actor may create user accounts via `/usercreate` (Sysop, Admin). */
-int hybbx_auth_may_create_user(hybbx_user_level_t actor);
-
-/** Non-zero when @p actor may update own profile via `/changeme` (not guests). */
-int hybbx_auth_may_changeme(hybbx_user_level_t actor);
-
-/**
- * Non-zero when @p actor may overwrite another account via `/changeuser`.
- * Sysop: Admin, Mod, User. Admin: Mod, User only. Not Sysop or guests.
- */
-int hybbx_auth_may_userchange(hybbx_user_level_t actor,
-                              hybbx_user_level_t target_level);
-
-/**
- * Non-zero when @p actor may delete another account via `/deleteuser` (Sysop only;
- * any non-Sysop target).
- */
-int hybbx_auth_may_userdelete(hybbx_user_level_t actor,
-                              hybbx_user_level_t target_level);
-
-/**
- * Non-zero when @p actor may promote a user at @p target_level to @p new_level.
- * Target must be active and not a guest. Sysop: admin; Sysop or Admin: mod.
- */
-int hybbx_auth_may_promote(hybbx_user_level_t actor,
-                           hybbx_user_level_t target_level,
-                           int target_active,
-                           hybbx_user_level_t new_level);
-
-/** Non-zero when @p actor may demote a user at @p target_level to user. */
-int hybbx_auth_may_demote(hybbx_user_level_t actor,
-                          hybbx_user_level_t target_level);
-
-/**
- * Non-zero when @p actor may delete an account at @p target_level.
- * Sysop account is never deletable. Admins cannot delete Admins.
- */
-int hybbx_auth_may_delete(hybbx_user_level_t actor,
-                          hybbx_user_level_t target_level);
-
 /** Non-zero when @p level is the protected Sysop account tier. */
 int hybbx_user_level_is_sysop(hybbx_user_level_t level);
 

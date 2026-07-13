@@ -15,12 +15,13 @@ typedef struct hybbx_command_def {
     char verb[HYBBX_CMD_VERB_MAX];
     char group[16];
     hybbx_user_level_t min_level;
+    hybbx_user_level_t max_level; /* 0 = no upper cap */
     int only_level; /* HYBBX_LEVEL_* when set; else 0 */
     char line1[HYBBX_COMMANDS_HELP_LINE_MAX];
     char line2[HYBBX_COMMANDS_HELP_LINE_MAX];
 } hybbx_command_def_t;
 
-/** Load commands.yaml from install root. Call once at service startup. */
+/** Load areas.yaml then commands.yaml from install root. Call once at service startup. */
 hybbx_result_t hybbx_commands_registry_init(void);
 
 void hybbx_commands_registry_shutdown(void);
@@ -32,6 +33,26 @@ const char *hybbx_commands_registry_canonical(const char *topic);
 
 int hybbx_commands_registry_verb_allowed(hybbx_user_level_t level,
                                          const char *verb);
+
+int hybbx_commands_registry_help_allowed(hybbx_user_level_t level,
+                                         const char *verb);
+
+int hybbx_commands_registry_may_userchange(hybbx_user_level_t actor,
+                                           hybbx_user_level_t target);
+
+int hybbx_commands_registry_may_userdelete(hybbx_user_level_t actor,
+                                           hybbx_user_level_t target);
+
+int hybbx_commands_registry_may_promote(hybbx_user_level_t actor,
+                                        hybbx_user_level_t target,
+                                        int target_active,
+                                        hybbx_user_level_t new_level);
+
+int hybbx_commands_registry_may_demote(hybbx_user_level_t actor,
+                                         hybbx_user_level_t target);
+
+int hybbx_commands_registry_may_delete(hybbx_user_level_t actor,
+                                       hybbx_user_level_t target);
 
 void hybbx_commands_registry_show_menu(struct hybbx_session *session);
 void hybbx_commands_registry_show_index(struct hybbx_session *session);

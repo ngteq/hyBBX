@@ -38,8 +38,8 @@ if(HYBBX_PLUGIN_ARDOP)
     )
 
     target_link_libraries(hybbx_plugin_ardop PRIVATE hybbx_ardop_common)
-    target_link_libraries(hybbx PRIVATE hybbx_plugin_ardop)
-    target_compile_definitions(hybbx PRIVATE HYBBX_HAVE_PLUGIN_ARDOP)
+    target_link_libraries(hybbxd PRIVATE hybbx_plugin_ardop)
+    target_compile_definitions(hybbxd PRIVATE HYBBX_HAVE_PLUGIN_ARDOP)
     hybbx_apply_hardening(hybbx_plugin_ardop)
 
     install(TARGETS hybbx_plugin_ardop

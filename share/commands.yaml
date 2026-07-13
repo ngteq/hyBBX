@@ -1,150 +1,40 @@
-# HyBBX command registry — source for /help /menu /index /alias.
-#
-# User groups (only these five): Sysop, Admin, Mod, User, Guest.
-# Internal storage: sysop admin mod user guest (auth.h).
-#
-# Proxy network: links user services only (proxymail, proxychat).
-# No Sysop/Admin/Mod actions cross proxy links — ever.
-#
-# /broadcast (alias /announce): Sysop local announce or /broadcast ax25 RF trigger.
-# INI [broadcast] ax25_auto is periodic sequential beacon — not /broadcast ax25.
+# HyBBX command registry — help text, aliases, access levels, account rights.
+# Menu layout and user groups: areas.yaml (loaded first).
 #
 # Help format (2 lines, max 80 cols):
 #   /<verb> placeholders
 #   Help: summary. More: subcommands or aliases
 # No square brackets in session help/menu text.
 
-meta:
-  menu_header: "HyBBX commands /help <cmd> for more"
-  index_header: "HyBBX command-index /help <cmd> for more"
-  alias_header: "HyBBX aliases /help <cmd> for more"
-  command_output: "blank line before /command output; no blank line after"
-
-user_groups:
-  - Sysop
-  - Admin
-  - Mod
-  - User
-  - Guest
-
-groups:
-  general:
-    - help
-    - menu
-    - index
-    - alias
-    - news
-    - motd
-    - rules
-    - who
-    - users
-    - session
-    - version
-  screen:
-    - clear
-    - echo
-  areas:
-    - leave
-    - main
-    - chat
-    - conference
-    - mail
-    - proxymail
-    - proxychat
-    - exit
-  account:
-    - login
-    - changeme
-    - register
-    - deleteme
-  admin:
-    - usercreate
-    - activate
-    - changeuser
-    - promote
-    - demote
-    - delete
-  sysop:
-    - deleteuser
-    - shutdown
-    - restart
-    - broadcast
-
-menu:
-  Guest:
-    - general_guest
-    - screen
-    - account_guest
-  User:
-    - general
-    - screen
-    - areas
-    - account_user
-  Mod:
-    - general
-    - screen
-    - areas
-    - account_user
-  Admin:
-    - general
-    - screen
-    - areas
-    - account_user
-    - admin
-  Sysop:
-    - general
-    - screen
-    - areas
-    - account_user
-    - admin
-    - sysop
-
-index:
-  - general
-  - screen
-  - areas
-  - account_index
-  - admin_index
-  - sysop
-
-menu_layouts:
-  general_guest:
-    - label: General
-      verbs: [help, menu, index, alias, news, motd, rules, session, version]
-    - label: Screen
-      group: screen
-  general:
-    - label: General
-      group: general
-  areas:
-    - label: Areas
-      group: areas
-  account_guest:
-    - label: Account
-      verbs: [login, register]
-    - continuation: [exit]
-  account_user:
-    - label: Account
-      verbs: [login, changeme]
-      optional: [deleteme]
-  account_index:
-    - label: Account
-      verbs: [login, changeme, register, deleteme]
-  admin_full:
-    - label: Admin
-      group: admin
-      omit: [delete]
-    - continuation_group: admin
-      verbs: [delete]
-  admin_activate:
-    - label: Admin
-      verbs: [activate]
-  admin_index:
-    - label: Admin
-      group: admin
-  sysop:
-    - label: Sysop
-      group: sysop
+rights:
+  userchange:
+    - actor: Sysop
+      targets: [Admin, Mod, User]
+    - actor: Admin
+      targets: [Mod, User]
+  userdelete:
+    - actor: Sysop
+      targets: [Admin, Mod, User, Guest]
+  delete:
+    - actor: Sysop
+      targets: [Admin, Mod, User]
+    - actor: Admin
+      targets: [Mod, User]
+  promote:
+    - actor: Sysop
+      to: Admin
+      from: [User, Mod]
+    - actor: Sysop
+      to: Mod
+      from: [User]
+    - actor: Admin
+      to: Mod
+      from: [User]
+  demote:
+    - actor: Sysop
+      from: [Admin, Mod]
+    - actor: Admin
+      from: [Mod]
 
 aliases:
   help:
@@ -152,6 +42,8 @@ aliases:
     - command
     - cmd
     - commands
+  banner:
+    - loginmsg
   rules:
     - legal
   who:
@@ -191,19 +83,19 @@ commands:
     group: general
     min: Guest
     line1: "/help cmd"
-    line2: "Help: List commands or show one command. More: /menu /index /alias."
+    line2: "Help: Full command-index or /help <cmd>. More: /menu /alias."
 
   menu:
     group: general
     min: Guest
     line1: "/menu"
-    line2: "Help: Your command menu. Same as /help with no argument."
+    line2: "Help: Full command-index for this Main. Same as /index."
 
   index:
     group: general
     min: Guest
     line1: "/index"
-    line2: "Help: Full command-index for this Main. Same for every account."
+    line2: "Help: Full command-index for this Main. Same as /menu."
 
   alias:
     group: general
@@ -216,6 +108,12 @@ commands:
     min: Guest
     line1: "/news"
     line2: "Help: Show system news from news.txt."
+
+  banner:
+    group: general
+    min: Guest
+    line1: "/banner"
+    line2: "Help: Show login banner from banner.txt. More: /loginmsg"
 
   motd:
     group: general
@@ -335,6 +233,7 @@ commands:
   deleteme:
     group: account
     min: User
+    max: Admin
     line1: "/deleteme yes|no"
     line2: "Help: Permanently delete own account."
 

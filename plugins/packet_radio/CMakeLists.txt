@@ -25,8 +25,8 @@ target_link_libraries(hybbx_plugin_packet_radio PRIVATE hybbx_core Threads::Thre
 if(HYBBX_PLATFORM_AMIGAOS)
     target_link_libraries(hybbx_plugin_packet_radio PRIVATE amiga)
 endif()
-target_link_libraries(hybbx PRIVATE hybbx_plugin_packet_radio)
-target_compile_definitions(hybbx PRIVATE HYBBX_HAVE_PLUGIN_PACKET_RADIO)
+target_link_libraries(hybbxd PRIVATE hybbx_plugin_packet_radio)
+target_compile_definitions(hybbxd PRIVATE HYBBX_HAVE_PLUGIN_PACKET_RADIO)
 hybbx_apply_hardening(hybbx_plugin_packet_radio)
 
 install(TARGETS hybbx_plugin_packet_radio

@@ -29,7 +29,7 @@ MAX25 owns TNC boot-wait, BayCom kernel lifecycle, and CRDOPC start; HyBBX plugi
 5. Buffers: [limits.h](include/hybbx/limits.h)
 6. **Portability:** POSIX+ friendly — C99 and portable POSIX in shared code; keep `*BSD` (FreeBSD, NetBSD, OpenBSD, …) and **AmigaOS 3.9+** compatible; isolate platform code (`_WIN32`, `__AMIGA__`, …). New core changes should stay easy to port.
 7. **Logging:** `[log] level` = `debug` \| `stats` \| `info` \| `warn` (default). `hybbx_log_*` writes console + daily file when enabled. See [MANUAL.md](docs/MANUAL.md) `[log]`.
-8. **Docs — technical only.** Operator/INI → [MANUAL.md](docs/MANUAL.md) + `share/*.ini.example`. Commands → [commands.yaml](share/commands.yaml) + [COMMANDS.md](docs/COMMANDS.md). Build → [BUILD.md](docs/BUILD.md). No planning, roadmap, or feature-status docs.
+8. **Docs — technical only.** Operator/INI → [MANUAL.md](docs/MANUAL.md) + `share/*.ini.example`. Commands → `share/areas.yaml` + [commands.yaml](share/commands.yaml) + [COMMANDS.md](docs/COMMANDS.md). Build → [BUILD.md](docs/BUILD.md). No planning, roadmap, or feature-status docs.
 9. **Commands:** user groups are Sysop, Admin, Mod, User, Guest only (no “Staff”). Help: two lines (`/<verb> …` + `Help: …`); headers use `/help <cmd> for more`. Output: one blank line before `/command` reply, none after (not chat/mail compose). `/broadcast` (alias `/announce`) = Sysop → all online users on **local Main** only.
 10. **Proxy network** (`mains_proxy`): user services (`proxymail`, `proxychat`) only — no Sysop/Admin/Mod actions across proxy links.
 11. **Version:** current `HYBBX_VERSION_STRING` only in code and brief doc headers. As-is software — compact text, no upgrade/history bloat.
@@ -42,7 +42,8 @@ MAX25 owns TNC boot-wait, BayCom kernel lifecycle, and CRDOPC start; HyBBX plugi
 |------|-----|
 | [MANUAL.md](docs/MANUAL.md) | INI + operator |
 | [COMMANDS.md](docs/COMMANDS.md) | Command registry, help layout |
-| [commands.yaml](share/commands.yaml) | Command registry data |
+| [commands.yaml](share/commands.yaml) | Command registry (help, aliases, access) |
+| [areas.yaml](share/areas.yaml) | Menu/index area layout |
 | [BUILD.md](docs/BUILD.md) | CMake |
 | [DEVELOPMENT.md](docs/DEVELOPMENT.md) | Code rules |
 | [TOPOLOGY.md](docs/TOPOLOGY.md) | Main, Secondary, mains-proxy; **HBX** (Hybrid Bridge eXchange v1) |

@@ -1,6 +1,5 @@
 #include "hybbx/commands_registry.h"
 #include "hybbx/session.h"
-#include "hybbx/auth.h"
 #include "hybbx/limits.h"
 #include "hybbx/util.h"
 #include "hybbx/log.h"
@@ -10,30 +9,18 @@
 #include <string.h>
 #include <ctype.h>
 
-typedef struct cmd_group {
-    char name[16];
-    char verbs[HYBBX_COMMANDS_VERBS_PER_GROUP][HYBBX_CMD_VERB_MAX];
-    unsigned count;
-} cmd_group_t;
-
-typedef struct menu_block {
-    char label[16];
-    char group[16];
+typedef struct menu_subarea {
     char verbs[HYBBX_COMMANDS_VERBS_PER_GROUP][HYBBX_CMD_VERB_MAX];
     unsigned verb_count;
-    char omit[HYBBX_COMMANDS_VERBS_PER_GROUP][HYBBX_CMD_VERB_MAX];
-    unsigned omit_count;
-    char optional[4][HYBBX_CMD_VERB_MAX];
-    unsigned optional_count;
-    int continuation;
-    int wrap;
-} menu_block_t;
+} menu_subarea_t;
 
-typedef struct menu_layout {
-    char name[32];
-    menu_block_t blocks[HYBBX_COMMANDS_MENU_BLOCKS];
-    unsigned block_count;
-} menu_layout_t;
+typedef struct menu_area {
+    char label[16];
+    char verbs[HYBBX_COMMANDS_VERBS_PER_GROUP][HYBBX_CMD_VERB_MAX];
+    unsigned verb_count;
+    menu_subarea_t subareas[HYBBX_AREAS_SUB_MAX];
+    unsigned subarea_count;
+} menu_area_t;
 
 typedef struct alias_entry {
     char canonical[HYBBX_CMD_VERB_MAX];
@@ -41,22 +28,49 @@ typedef struct alias_entry {
     unsigned alias_count;
 } alias_entry_t;
 
+typedef struct target_right_rule {
+    hybbx_user_level_t actor;
+    hybbx_user_level_t targets[5];
+    unsigned target_count;
+} target_right_rule_t;
+
+typedef struct promote_right_rule {
+    hybbx_user_level_t actor;
+    hybbx_user_level_t to_level;
+    hybbx_user_level_t from_levels[4];
+    unsigned from_count;
+} promote_right_rule_t;
+
+typedef struct demote_right_rule {
+    hybbx_user_level_t actor;
+    hybbx_user_level_t from_levels[4];
+    unsigned from_count;
+} demote_right_rule_t;
+
 typedef struct commands_registry {
     int loaded;
     char menu_header[HYBBX_COMMANDS_HEADER_MAX];
     char index_header[HYBBX_COMMANDS_HEADER_MAX];
     char alias_header[HYBBX_COMMANDS_HEADER_MAX];
-    cmd_group_t groups[HYBBX_COMMANDS_GROUP_MAX];
-    unsigned group_count;
-    menu_layout_t layouts[HYBBX_COMMANDS_MENU_LAYOUTS];
-    unsigned layout_count;
-    char menu_levels[HYBBX_COMMANDS_MENU_LEVELS][16];
-    char menu_level_layouts[HYBBX_COMMANDS_MENU_LEVELS]
-                           [HYBBX_COMMANDS_MENU_BLOCKS][32];
-    unsigned menu_level_layout_count[HYBBX_COMMANDS_MENU_LEVELS];
+    menu_area_t areas[HYBBX_AREAS_MAX];
+    unsigned area_count;
+    char menu_levels[HYBBX_MENU_LEVELS_MAX][16];
+    char menu_area_labels[HYBBX_MENU_LEVELS_MAX]
+                         [HYBBX_MENU_AREAS_PER_LEVEL][16];
+    unsigned menu_area_count[HYBBX_MENU_LEVELS_MAX];
     unsigned menu_level_count;
-    char index_layouts[HYBBX_COMMANDS_MENU_BLOCKS][32];
-    unsigned index_layout_count;
+    char index_labels[HYBBX_MENU_AREAS_PER_LEVEL][16];
+    unsigned index_label_count;
+    target_right_rule_t userchange_rules[HYBBX_RIGHTS_TARGET_RULES_MAX];
+    unsigned userchange_rule_count;
+    target_right_rule_t userdelete_rules[HYBBX_RIGHTS_TARGET_RULES_MAX];
+    unsigned userdelete_rule_count;
+    target_right_rule_t delete_rules[HYBBX_RIGHTS_TARGET_RULES_MAX];
+    unsigned delete_rule_count;
+    promote_right_rule_t promote_rules[HYBBX_RIGHTS_PROMOTE_RULES_MAX];
+    unsigned promote_rule_count;
+    demote_right_rule_t demote_rules[HYBBX_RIGHTS_DEMOTE_RULES_MAX];
+    unsigned demote_rule_count;
     alias_entry_t aliases[HYBBX_COMMANDS_ALIASES_MAX];
     unsigned alias_count;
     hybbx_command_def_t commands[HYBBX_COMMANDS_MAX];
@@ -200,67 +214,581 @@ static int parse_bracket_list(const char *value, char out[][HYBBX_CMD_VERB_MAX],
     return 0;
 }
 
+static int parse_level_list(const char *value, hybbx_user_level_t *out,
+                            unsigned max, unsigned *count)
+{
+    char tokens[8][HYBBX_CMD_VERB_MAX];
+    unsigned n = 0;
+    unsigned i;
+
+    if (value == NULL || count == NULL) {
+        return 0;
+    }
+
+    if (parse_bracket_list(value, tokens, max, &n) != 0) {
+        return -1;
+    }
+
+    *count = 0;
+    for (i = 0; i < n && *count < max; i++) {
+        out[*count] = hybbx_user_level_parse(tokens[i]);
+        (*count)++;
+    }
+
+    return 0;
+}
+
 static hybbx_user_level_t level_from_name(const char *name)
 {
-    if (name == NULL) {
-        return HYBBX_LEVEL_USER;
-    }
-
-    if (str_ieq(name, "Sysop")) {
-        return HYBBX_LEVEL_SYSOP;
-    }
-    if (str_ieq(name, "Admin")) {
-        return HYBBX_LEVEL_ADMIN;
-    }
-    if (str_ieq(name, "Mod")) {
-        return HYBBX_LEVEL_MOD;
-    }
-    if (str_ieq(name, "User")) {
-        return HYBBX_LEVEL_USER;
-    }
-
-    return HYBBX_LEVEL_GUEST;
+    return hybbx_user_level_parse(name);
 }
 
-static cmd_group_t *group_find(commands_registry_t *reg, const char *name)
+static const char *menu_level_name(hybbx_user_level_t level)
+{
+    switch (level) {
+    case HYBBX_LEVEL_SYSOP:
+        return "Sysop";
+    case HYBBX_LEVEL_ADMIN:
+        return "Admin";
+    case HYBBX_LEVEL_MOD:
+        return "Mod";
+    case HYBBX_LEVEL_USER:
+        return "User";
+    default:
+        return "Guest";
+    }
+}
+
+static const menu_area_t *area_find(const char *label)
 {
     unsigned i;
 
-    for (i = 0; i < reg->group_count; i++) {
-        if (str_ieq(reg->groups[i].name, name)) {
-            return &reg->groups[i];
+    if (label == NULL) {
+        return NULL;
+    }
+
+    for (i = 0; i < g_registry.area_count; i++) {
+        if (str_ieq(g_registry.areas[i].label, label)) {
+            return &g_registry.areas[i];
         }
     }
 
     return NULL;
 }
 
-static menu_layout_t *layout_find(commands_registry_t *reg, const char *name)
-{
-    unsigned i;
-
-    for (i = 0; i < reg->layout_count; i++) {
-        if (str_ieq(reg->layouts[i].name, name)) {
-            return &reg->layouts[i];
-        }
-    }
-
-    return NULL;
-}
-
-static int verb_in_list(const char *verb,
-                        const char list[][HYBBX_CMD_VERB_MAX],
-                        unsigned count)
+static int level_in_list(hybbx_user_level_t level,
+                         const hybbx_user_level_t *list,
+                         unsigned count)
 {
     unsigned i;
 
     for (i = 0; i < count; i++) {
-        if (str_ieq(list[i], verb)) {
+        if (list[i] == level) {
             return 1;
         }
     }
 
     return 0;
+}
+
+static int command_level_allowed(const hybbx_command_def_t *def,
+                                 hybbx_user_level_t level)
+{
+    if (def == NULL) {
+        return 0;
+    }
+
+    if (def->only_level != 0 && level != (hybbx_user_level_t)def->only_level) {
+        return 0;
+    }
+
+    if (level > def->min_level) {
+        return 0;
+    }
+
+    if (def->max_level != 0 && level < def->max_level) {
+        return 0;
+    }
+
+    return 1;
+}
+
+static int target_right_allowed(const target_right_rule_t *rules,
+                                unsigned rule_count,
+                                hybbx_user_level_t actor,
+                                hybbx_user_level_t target)
+{
+    unsigned i;
+
+    if (hybbx_user_level_is_sysop(target) ||
+        hybbx_user_level_is_guest(target)) {
+        return 0;
+    }
+
+    for (i = 0; i < rule_count; i++) {
+        if (rules[i].actor == actor &&
+            level_in_list(target, rules[i].targets, rules[i].target_count)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static hybbx_result_t parse_areas_yaml(commands_registry_t *reg, const char *path)
+{
+    FILE *fp;
+    char buf[HYBBX_CONFIG_LINE_MAX];
+    enum {
+        SEC_NONE,
+        SEC_META,
+        SEC_AREAS,
+        SEC_MENU,
+        SEC_INDEX
+    } section = SEC_NONE;
+    menu_area_t *area = NULL;
+    menu_subarea_t *subarea = NULL;
+    char cur_menu_level[16];
+
+    if (reg == NULL || path == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    cur_menu_level[0] = '\0';
+
+    fp = fopen(path, "r");
+    if (fp == NULL) {
+        return HYBBX_ERR_IO;
+    }
+
+    while (fgets(buf, sizeof(buf), fp) != NULL) {
+        char *line = buf;
+        char *colon;
+        unsigned indent;
+
+        indent = line_indent(line);
+        trim_inplace(line);
+        if (line[0] == '\0' || line[0] == '#') {
+            continue;
+        }
+
+        if (indent == 0 && line[strlen(line) - 1] == ':') {
+            line[strlen(line) - 1] = '\0';
+            area = NULL;
+            subarea = NULL;
+            cur_menu_level[0] = '\0';
+
+            if (str_ieq(line, "meta")) {
+                section = SEC_META;
+            } else if (str_ieq(line, "areas")) {
+                section = SEC_AREAS;
+            } else if (str_ieq(line, "menu")) {
+                section = SEC_MENU;
+            } else if (str_ieq(line, "index")) {
+                section = SEC_INDEX;
+            } else {
+                section = SEC_NONE;
+            }
+            continue;
+        }
+
+        if (section == SEC_META && indent >= 2) {
+            colon = strchr(line, ':');
+            if (colon == NULL) {
+                continue;
+            }
+            *colon = '\0';
+            strip_quotes(colon + 1);
+            if (str_ieq(line_key(line), "menu_header")) {
+                hybbx_strlcpy(reg->menu_header, colon + 1,
+                              sizeof(reg->menu_header));
+            } else if (str_ieq(line_key(line), "index_header")) {
+                hybbx_strlcpy(reg->index_header, colon + 1,
+                              sizeof(reg->index_header));
+            } else if (str_ieq(line_key(line), "alias_header")) {
+                hybbx_strlcpy(reg->alias_header, colon + 1,
+                              sizeof(reg->alias_header));
+            }
+            continue;
+        }
+
+        if (section == SEC_AREAS) {
+            if (indent == 2 && line[0] == '-') {
+                if (reg->area_count >= HYBBX_AREAS_MAX) {
+                    continue;
+                }
+                area = &reg->areas[reg->area_count++];
+                memset(area, 0, sizeof(*area));
+                subarea = NULL;
+
+                line++;
+                trim_inplace(line);
+                colon = strchr(line, ':');
+                if (colon != NULL) {
+                    *colon = '\0';
+                    strip_quotes(colon + 1);
+                    if (str_ieq(line_key(line), "label")) {
+                        hybbx_strlcpy(area->label, colon + 1, sizeof(area->label));
+                    } else if (str_ieq(line_key(line), "commands")) {
+                        parse_bracket_list(colon + 1, area->verbs,
+                                           HYBBX_COMMANDS_VERBS_PER_GROUP,
+                                           &area->verb_count);
+                    }
+                }
+                continue;
+            }
+
+            if (area == NULL) {
+                continue;
+            }
+
+            if (indent == 4 && line[0] == '-') {
+                if (area->subarea_count < HYBBX_AREAS_SUB_MAX) {
+                    subarea = &area->subareas[area->subarea_count++];
+                    memset(subarea, 0, sizeof(*subarea));
+                }
+                continue;
+            }
+
+            if (indent >= 4) {
+                colon = strchr(line, ':');
+                if (colon == NULL) {
+                    continue;
+                }
+                *colon = '\0';
+                strip_quotes(colon + 1);
+                if (str_ieq(line_key(line), "label")) {
+                    hybbx_strlcpy(area->label, colon + 1, sizeof(area->label));
+                } else if (str_ieq(line_key(line), "commands")) {
+                    parse_bracket_list(colon + 1, area->verbs,
+                                       HYBBX_COMMANDS_VERBS_PER_GROUP,
+                                       &area->verb_count);
+                }
+                continue;
+            }
+
+            if (indent >= 6 && subarea != NULL) {
+                colon = strchr(line, ':');
+                if (colon == NULL) {
+                    continue;
+                }
+                *colon = '\0';
+                strip_quotes(colon + 1);
+                if (str_ieq(line_key(line), "commands")) {
+                    parse_bracket_list(colon + 1, subarea->verbs,
+                                       HYBBX_COMMANDS_VERBS_PER_GROUP,
+                                       &subarea->verb_count);
+                }
+            }
+            continue;
+        }
+
+        if (section == SEC_MENU) {
+            if (indent == 2 && line[strlen(line) - 1] == ':') {
+                line[strlen(line) - 1] = '\0';
+                if (reg->menu_level_count < HYBBX_MENU_LEVELS_MAX) {
+                    hybbx_strlcpy(reg->menu_levels[reg->menu_level_count],
+                                  line_key(line),
+                                  sizeof(reg->menu_levels[0]));
+                    hybbx_strlcpy(cur_menu_level, line_key(line),
+                                  sizeof(cur_menu_level));
+                    reg->menu_level_count++;
+                }
+                continue;
+            }
+
+            if (indent >= 4 && line[0] == '-' && cur_menu_level[0] != '\0') {
+                unsigned i;
+
+                for (i = 0; i < reg->menu_level_count; i++) {
+                    unsigned n;
+
+                    if (!str_ieq(reg->menu_levels[i], cur_menu_level)) {
+                        continue;
+                    }
+
+                    n = reg->menu_area_count[i];
+                    if (n >= HYBBX_MENU_AREAS_PER_LEVEL) {
+                        break;
+                    }
+
+                    line++;
+                    trim_inplace(line);
+                    hybbx_strlcpy(reg->menu_area_labels[i][n], line, 16);
+                    reg->menu_area_count[i]++;
+                    break;
+                }
+            }
+            continue;
+        }
+
+        if (section == SEC_INDEX && indent >= 2 && line[0] == '-') {
+            if (reg->index_label_count < HYBBX_MENU_AREAS_PER_LEVEL) {
+                line++;
+                trim_inplace(line);
+                hybbx_strlcpy(reg->index_labels[reg->index_label_count],
+                              line, 16);
+                reg->index_label_count++;
+            }
+        }
+    }
+
+    fclose(fp);
+
+    if (reg->menu_header[0] == '\0' || reg->index_header[0] == '\0' ||
+        reg->area_count == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (reg->index_label_count == 0) {
+        unsigned i;
+
+        for (i = 0; i < reg->area_count &&
+                    reg->index_label_count < HYBBX_MENU_AREAS_PER_LEVEL;
+             i++) {
+            hybbx_strlcpy(reg->index_labels[reg->index_label_count],
+                          reg->areas[i].label, 16);
+            reg->index_label_count++;
+        }
+    }
+
+    return HYBBX_OK;
+}
+
+static hybbx_result_t parse_commands_yaml(commands_registry_t *reg,
+                                            const char *path)
+{
+    FILE *fp;
+    char buf[HYBBX_CONFIG_LINE_MAX];
+    enum {
+        SEC_NONE,
+        SEC_RIGHTS,
+        SEC_ALIASES,
+        SEC_COMMANDS
+    } section = SEC_NONE;
+    enum {
+        RIGHT_NONE,
+        RIGHT_USERCHANGE,
+        RIGHT_USERDELETE,
+        RIGHT_DELETE,
+        RIGHT_PROMOTE,
+        RIGHT_DEMOTE
+    } right_kind = RIGHT_NONE;
+    char cur_alias_canonical[HYBBX_CMD_VERB_MAX];
+    hybbx_command_def_t *cmd = NULL;
+    target_right_rule_t *target_rule = NULL;
+    promote_right_rule_t *promote_rule = NULL;
+    demote_right_rule_t *demote_rule = NULL;
+
+    if (reg == NULL || path == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    cur_alias_canonical[0] = '\0';
+
+    fp = fopen(path, "r");
+    if (fp == NULL) {
+        return HYBBX_ERR_IO;
+    }
+
+    while (fgets(buf, sizeof(buf), fp) != NULL) {
+        char *line = buf;
+        char *colon;
+        unsigned indent;
+
+        indent = line_indent(line);
+        trim_inplace(line);
+        if (line[0] == '\0' || line[0] == '#') {
+            continue;
+        }
+
+        if (indent == 0 && line[strlen(line) - 1] == ':') {
+            line[strlen(line) - 1] = '\0';
+            cmd = NULL;
+            target_rule = NULL;
+            promote_rule = NULL;
+            demote_rule = NULL;
+
+            if (str_ieq(line, "rights")) {
+                section = SEC_RIGHTS;
+                right_kind = RIGHT_NONE;
+            } else if (str_ieq(line, "aliases")) {
+                section = SEC_ALIASES;
+                right_kind = RIGHT_NONE;
+            } else if (str_ieq(line, "commands")) {
+                section = SEC_COMMANDS;
+                right_kind = RIGHT_NONE;
+            } else {
+                section = SEC_NONE;
+            }
+            continue;
+        }
+
+        if (section == SEC_RIGHTS) {
+            if (indent == 2 && line[strlen(line) - 1] == ':') {
+                line[strlen(line) - 1] = '\0';
+                target_rule = NULL;
+                promote_rule = NULL;
+                demote_rule = NULL;
+
+                if (str_ieq(line_key(line), "userchange")) {
+                    right_kind = RIGHT_USERCHANGE;
+                } else if (str_ieq(line_key(line), "userdelete")) {
+                    right_kind = RIGHT_USERDELETE;
+                } else if (str_ieq(line_key(line), "delete")) {
+                    right_kind = RIGHT_DELETE;
+                } else if (str_ieq(line_key(line), "promote")) {
+                    right_kind = RIGHT_PROMOTE;
+                } else if (str_ieq(line_key(line), "demote")) {
+                    right_kind = RIGHT_DEMOTE;
+                } else {
+                    right_kind = RIGHT_NONE;
+                }
+                continue;
+            }
+
+            if (indent == 4 && line[0] == '-') {
+                if (right_kind == RIGHT_USERCHANGE &&
+                    reg->userchange_rule_count < HYBBX_RIGHTS_TARGET_RULES_MAX) {
+                    target_rule =
+                        &reg->userchange_rules[reg->userchange_rule_count++];
+                    memset(target_rule, 0, sizeof(*target_rule));
+                } else if (right_kind == RIGHT_USERDELETE &&
+                           reg->userdelete_rule_count <
+                               HYBBX_RIGHTS_TARGET_RULES_MAX) {
+                    target_rule =
+                        &reg->userdelete_rules[reg->userdelete_rule_count++];
+                    memset(target_rule, 0, sizeof(*target_rule));
+                } else if (right_kind == RIGHT_DELETE &&
+                           reg->delete_rule_count <
+                               HYBBX_RIGHTS_TARGET_RULES_MAX) {
+                    target_rule =
+                        &reg->delete_rules[reg->delete_rule_count++];
+                    memset(target_rule, 0, sizeof(*target_rule));
+                } else if (right_kind == RIGHT_PROMOTE &&
+                           reg->promote_rule_count <
+                               HYBBX_RIGHTS_PROMOTE_RULES_MAX) {
+                    promote_rule =
+                        &reg->promote_rules[reg->promote_rule_count++];
+                    memset(promote_rule, 0, sizeof(*promote_rule));
+                } else if (right_kind == RIGHT_DEMOTE &&
+                           reg->demote_rule_count <
+                               HYBBX_RIGHTS_DEMOTE_RULES_MAX) {
+                    demote_rule =
+                        &reg->demote_rules[reg->demote_rule_count++];
+                    memset(demote_rule, 0, sizeof(*demote_rule));
+                }
+                continue;
+            }
+
+            if (indent >= 6) {
+                colon = strchr(line, ':');
+                if (colon == NULL) {
+                    continue;
+                }
+                *colon = '\0';
+                strip_quotes(colon + 1);
+
+                if (target_rule != NULL) {
+                    if (str_ieq(line_key(line), "actor")) {
+                        target_rule->actor = level_from_name(colon + 1);
+                    } else if (str_ieq(line_key(line), "targets")) {
+                        parse_level_list(colon + 1, target_rule->targets, 5,
+                                         &target_rule->target_count);
+                    }
+                } else if (promote_rule != NULL) {
+                    if (str_ieq(line_key(line), "actor")) {
+                        promote_rule->actor = level_from_name(colon + 1);
+                    } else if (str_ieq(line_key(line), "to")) {
+                        promote_rule->to_level = level_from_name(colon + 1);
+                    } else if (str_ieq(line_key(line), "from")) {
+                        parse_level_list(colon + 1, promote_rule->from_levels,
+                                         4, &promote_rule->from_count);
+                    }
+                } else if (demote_rule != NULL) {
+                    if (str_ieq(line_key(line), "actor")) {
+                        demote_rule->actor = level_from_name(colon + 1);
+                    } else if (str_ieq(line_key(line), "from")) {
+                        parse_level_list(colon + 1, demote_rule->from_levels,
+                                         4, &demote_rule->from_count);
+                    }
+                }
+            }
+            continue;
+        }
+
+        if (section == SEC_ALIASES) {
+            if (indent == 2 && line[strlen(line) - 1] == ':') {
+                alias_entry_t *entry;
+
+                line[strlen(line) - 1] = '\0';
+                if (reg->alias_count >= HYBBX_COMMANDS_ALIASES_MAX) {
+                    continue;
+                }
+                entry = &reg->aliases[reg->alias_count++];
+                hybbx_strlcpy(entry->canonical, line_key(line),
+                              sizeof(entry->canonical));
+                hybbx_strlcpy(cur_alias_canonical, line_key(line),
+                              sizeof(cur_alias_canonical));
+                continue;
+            }
+            if (indent >= 4 && line[0] == '-' && cur_alias_canonical[0] != '\0') {
+                alias_entry_t *entry = &reg->aliases[reg->alias_count - 1];
+
+                if (entry->alias_count < HYBBX_COMMANDS_ALIAS_PER) {
+                    line++;
+                    trim_inplace(line);
+                    strip_quotes(line);
+                    hybbx_strlcpy(entry->aliases[entry->alias_count], line,
+                                  HYBBX_CMD_VERB_MAX);
+                    entry->alias_count++;
+                }
+            }
+            continue;
+        }
+
+        if (section == SEC_COMMANDS) {
+            if (indent == 2 && line[strlen(line) - 1] == ':') {
+                line[strlen(line) - 1] = '\0';
+                if (reg->command_count < HYBBX_COMMANDS_MAX) {
+                    cmd = &reg->commands[reg->command_count++];
+                    memset(cmd, 0, sizeof(*cmd));
+                    cmd->min_level = HYBBX_LEVEL_GUEST;
+                    hybbx_strlcpy(cmd->verb, line_key(line), sizeof(cmd->verb));
+                }
+                continue;
+            }
+            if (indent >= 4 && cmd != NULL) {
+                colon = strchr(line, ':');
+                if (colon == NULL) {
+                    continue;
+                }
+                *colon = '\0';
+                strip_quotes(colon + 1);
+                if (str_ieq(line_key(line), "group")) {
+                    hybbx_strlcpy(cmd->group, colon + 1, sizeof(cmd->group));
+                } else if (str_ieq(line_key(line), "min")) {
+                    cmd->min_level = level_from_name(colon + 1);
+                } else if (str_ieq(line_key(line), "max")) {
+                    cmd->max_level = level_from_name(colon + 1);
+                } else if (str_ieq(line_key(line), "only")) {
+                    cmd->only_level = (int)level_from_name(colon + 1);
+                } else if (str_ieq(line_key(line), "line1")) {
+                    hybbx_strlcpy(cmd->line1, colon + 1, sizeof(cmd->line1));
+                } else if (str_ieq(line_key(line), "line2")) {
+                    hybbx_strlcpy(cmd->line2, colon + 1, sizeof(cmd->line2));
+                }
+            }
+        }
+    }
+
+    fclose(fp);
+
+    if (reg->command_count == 0) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    return HYBBX_OK;
 }
 
 static void build_alias_lines(commands_registry_t *reg)
@@ -311,362 +839,55 @@ static void build_alias_lines(commands_registry_t *reg)
     }
 }
 
-static hybbx_result_t parse_commands_yaml(commands_registry_t *reg,
-                                          const char *path)
-{
-    FILE *fp;
-    char buf[HYBBX_CONFIG_LINE_MAX];
-    enum {
-        SEC_NONE,
-        SEC_META,
-        SEC_GROUPS,
-        SEC_MENU,
-        SEC_MENU_LAYOUTS,
-        SEC_INDEX,
-        SEC_ALIASES,
-        SEC_COMMANDS
-    } section = SEC_NONE;
-    char cur_group[16];
-    char cur_layout[32];
-    char cur_command[HYBBX_CMD_VERB_MAX];
-    char cur_alias_canonical[HYBBX_CMD_VERB_MAX];
-    char cur_menu_level[16];
-    menu_layout_t *layout = NULL;
-    hybbx_command_def_t *cmd = NULL;
-    unsigned i;
-
-    if (reg == NULL || path == NULL) {
-        return HYBBX_ERR_INVALID;
-    }
-
-    memset(reg, 0, sizeof(*reg));
-    cur_group[0] = '\0';
-    cur_layout[0] = '\0';
-    cur_command[0] = '\0';
-    cur_alias_canonical[0] = '\0';
-    cur_menu_level[0] = '\0';
-
-    fp = fopen(path, "r");
-    if (fp == NULL) {
-        return HYBBX_ERR_IO;
-    }
-
-    while (fgets(buf, sizeof(buf), fp) != NULL) {
-        char *line = buf;
-        char *colon;
-        unsigned indent;
-
-        indent = line_indent(line);
-        trim_inplace(line);
-        if (line[0] == '\0' || line[0] == '#') {
-            continue;
-        }
-
-        if (indent == 0 && line[strlen(line) - 1] == ':') {
-            line[strlen(line) - 1] = '\0';
-            layout = NULL;
-            cmd = NULL;
-
-            if (str_ieq(line, "meta")) {
-                section = SEC_META;
-            } else if (str_ieq(line, "groups")) {
-                section = SEC_GROUPS;
-            } else if (str_ieq(line, "menu")) {
-                section = SEC_MENU;
-            } else if (str_ieq(line, "menu_layouts")) {
-                section = SEC_MENU_LAYOUTS;
-            } else if (str_ieq(line, "index")) {
-                section = SEC_INDEX;
-            } else if (str_ieq(line, "aliases")) {
-                section = SEC_ALIASES;
-            } else if (str_ieq(line, "commands")) {
-                section = SEC_COMMANDS;
-            } else {
-                section = SEC_NONE;
-            }
-            continue;
-        }
-
-        if (section == SEC_META && indent >= 2) {
-            colon = strchr(line, ':');
-            if (colon == NULL) {
-                continue;
-            }
-            *colon = '\0';
-            strip_quotes(colon + 1);
-            if (str_ieq(line_key(line), "menu_header")) {
-                hybbx_strlcpy(reg->menu_header, colon + 1,
-                              sizeof(reg->menu_header));
-            } else if (str_ieq(line_key(line), "index_header")) {
-                hybbx_strlcpy(reg->index_header, colon + 1,
-                              sizeof(reg->index_header));
-            } else if (str_ieq(line_key(line), "alias_header")) {
-                hybbx_strlcpy(reg->alias_header, colon + 1,
-                              sizeof(reg->alias_header));
-            }
-            continue;
-        }
-
-        if (section == SEC_GROUPS) {
-            if (indent == 2 && line[strlen(line) - 1] == ':') {
-                line[strlen(line) - 1] = '\0';
-                if (reg->group_count < HYBBX_COMMANDS_GROUP_MAX) {
-                    hybbx_strlcpy(reg->groups[reg->group_count].name,
-                                  line_key(line),
-                                  sizeof(reg->groups[0].name));
-                    hybbx_strlcpy(cur_group, line_key(line), sizeof(cur_group));
-                    reg->group_count++;
-                }
-                continue;
-            }
-            if (indent >= 4 && line[0] == '-' && cur_group[0] != '\0') {
-                cmd_group_t *grp = group_find(reg, cur_group);
-
-                if (grp == NULL || grp->count >= HYBBX_COMMANDS_VERBS_PER_GROUP) {
-                    continue;
-                }
-                line++;
-                trim_inplace(line);
-                hybbx_strlcpy(grp->verbs[grp->count], line, HYBBX_CMD_VERB_MAX);
-                grp->count++;
-            }
-            continue;
-        }
-
-        if (section == SEC_MENU_LAYOUTS) {
-            if (indent == 2 && line[strlen(line) - 1] == ':') {
-                line[strlen(line) - 1] = '\0';
-                if (reg->layout_count < HYBBX_COMMANDS_MENU_LAYOUTS) {
-                    hybbx_strlcpy(reg->layouts[reg->layout_count].name,
-                                  line_key(line),
-                                  sizeof(reg->layouts[0].name));
-                    hybbx_strlcpy(cur_layout, line_key(line),
-                                  sizeof(cur_layout));
-                    layout = &reg->layouts[reg->layout_count];
-                    reg->layout_count++;
-                }
-                continue;
-            }
-
-            if (layout == NULL) {
-                continue;
-            }
-
-            if (indent == 4 && line[0] == '-') {
-                if (layout->block_count < HYBBX_COMMANDS_MENU_BLOCKS) {
-                    menu_block_t *block =
-                        &layout->blocks[layout->block_count++];
-                    char *payload = line + 1;
-
-                    memset(block, 0, sizeof(*block));
-                    trim_inplace(payload);
-                    colon = strchr(payload, ':');
-                    if (colon != NULL) {
-                        *colon = '\0';
-                        strip_quotes(colon + 1);
-                        if (str_ieq(payload, "continuation")) {
-                            block->continuation = 1;
-                            parse_bracket_list(colon + 1, block->verbs,
-                                               HYBBX_COMMANDS_VERBS_PER_GROUP,
-                                               &block->verb_count);
-                        } else if (str_ieq(payload, "label")) {
-                            hybbx_strlcpy(block->label, colon + 1,
-                                          sizeof(block->label));
-                        }
-                    }
-                }
-                continue;
-            }
-
-            if (indent >= 6 && layout->block_count > 0) {
-                menu_block_t *block =
-                    &layout->blocks[layout->block_count - 1];
-
-                colon = strchr(line, ':');
-                if (colon == NULL) {
-                    continue;
-                }
-                *colon = '\0';
-                strip_quotes(colon + 1);
-
-                if (str_ieq(line_key(line), "label")) {
-                    hybbx_strlcpy(block->label, colon + 1, sizeof(block->label));
-                } else if (str_ieq(line_key(line), "group")) {
-                    hybbx_strlcpy(block->group, colon + 1, sizeof(block->group));
-                } else if (str_ieq(line_key(line), "wrap")) {
-                    block->wrap = hybbx_parse_bool(colon + 1, 0);
-                } else if (str_ieq(line_key(line), "verbs") ||
-                           str_ieq(line_key(line), "continuation")) {
-                    if (str_ieq(line_key(line), "continuation")) {
-                        block->continuation = 1;
-                    }
-                    parse_bracket_list(colon + 1, block->verbs,
-                                       HYBBX_COMMANDS_VERBS_PER_GROUP,
-                                       &block->verb_count);
-                } else if (str_ieq(line_key(line), "omit")) {
-                    parse_bracket_list(colon + 1, block->omit,
-                                       HYBBX_COMMANDS_VERBS_PER_GROUP,
-                                       &block->omit_count);
-                } else if (str_ieq(line_key(line), "optional")) {
-                    parse_bracket_list(colon + 1, block->optional, 4,
-                                       &block->optional_count);
-                } else if (str_ieq(line_key(line), "continuation_group")) {
-                    hybbx_strlcpy(block->group, colon + 1, sizeof(block->group));
-                    block->continuation = 1;
-                }
-            }
-            continue;
-        }
-
-        if (section == SEC_MENU) {
-            if (indent == 2 && line[strlen(line) - 1] == ':') {
-                line[strlen(line) - 1] = '\0';
-                if (reg->menu_level_count < HYBBX_COMMANDS_MENU_LEVELS) {
-                    hybbx_strlcpy(reg->menu_levels[reg->menu_level_count],
-                                  line_key(line),
-                                  sizeof(reg->menu_levels[0]));
-                    hybbx_strlcpy(cur_menu_level, line_key(line),
-                                  sizeof(cur_menu_level));
-                    reg->menu_level_count++;
-                }
-                continue;
-            }
-            if (indent >= 4 && line[0] == '-' && cur_menu_level[0] != '\0') {
-                for (i = 0; i < reg->menu_level_count; i++) {
-                    if (!str_ieq(reg->menu_levels[i], cur_menu_level)) {
-                        continue;
-                    }
-                    unsigned n = reg->menu_level_layout_count[i];
-
-                    if (n >= HYBBX_COMMANDS_MENU_BLOCKS) {
-                        break;
-                    }
-                    line++;
-                    trim_inplace(line);
-                    hybbx_strlcpy(reg->menu_level_layouts[i][n], line, 32);
-                    reg->menu_level_layout_count[i]++;
-                    break;
-                }
-            }
-            continue;
-        }
-
-        if (section == SEC_INDEX) {
-            if (indent >= 2 && line[0] == '-') {
-                if (reg->index_layout_count < HYBBX_COMMANDS_MENU_BLOCKS) {
-                    line++;
-                    trim_inplace(line);
-                    hybbx_strlcpy(reg->index_layouts[reg->index_layout_count],
-                                  line, 32);
-                    reg->index_layout_count++;
-                }
-            }
-            continue;
-        }
-
-        if (section == SEC_ALIASES) {
-            if (indent == 2 && line[strlen(line) - 1] == ':') {
-                alias_entry_t *entry;
-
-                line[strlen(line) - 1] = '\0';
-                if (reg->alias_count >= HYBBX_COMMANDS_ALIASES_MAX) {
-                    continue;
-                }
-                entry = &reg->aliases[reg->alias_count++];
-                hybbx_strlcpy(entry->canonical, line_key(line),
-                              sizeof(entry->canonical));
-                hybbx_strlcpy(cur_alias_canonical, line_key(line),
-                              sizeof(cur_alias_canonical));
-                continue;
-            }
-            if (indent >= 4 && line[0] == '-' && cur_alias_canonical[0] != '\0') {
-                alias_entry_t *entry = &reg->aliases[reg->alias_count - 1];
-
-                if (entry->alias_count < HYBBX_COMMANDS_ALIAS_PER) {
-                    line++;
-                    trim_inplace(line);
-                    strip_quotes(line);
-                    hybbx_strlcpy(entry->aliases[entry->alias_count], line,
-                                  HYBBX_CMD_VERB_MAX);
-                    entry->alias_count++;
-                }
-            }
-            continue;
-        }
-
-        if (section == SEC_COMMANDS) {
-            if (indent == 2 && line[strlen(line) - 1] == ':') {
-                line[strlen(line) - 1] = '\0';
-                if (reg->command_count < HYBBX_COMMANDS_MAX) {
-                    cmd = &reg->commands[reg->command_count++];
-                    memset(cmd, 0, sizeof(*cmd));
-                    hybbx_strlcpy(cmd->verb, line_key(line), sizeof(cmd->verb));
-                    hybbx_strlcpy(cur_command, line_key(line),
-                                  sizeof(cur_command));
-                }
-                continue;
-            }
-            if (indent >= 4 && cmd != NULL) {
-                colon = strchr(line, ':');
-                if (colon == NULL) {
-                    continue;
-                }
-                *colon = '\0';
-                strip_quotes(colon + 1);
-                if (str_ieq(line_key(line), "group")) {
-                    hybbx_strlcpy(cmd->group, colon + 1, sizeof(cmd->group));
-                } else if (str_ieq(line_key(line), "min")) {
-                    cmd->min_level = level_from_name(colon + 1);
-                } else if (str_ieq(line_key(line), "only")) {
-                    cmd->only_level = (int)level_from_name(colon + 1);
-                } else if (str_ieq(line_key(line), "line1")) {
-                    hybbx_strlcpy(cmd->line1, colon + 1, sizeof(cmd->line1));
-                } else if (str_ieq(line_key(line), "line2")) {
-                    hybbx_strlcpy(cmd->line2, colon + 1, sizeof(cmd->line2));
-                }
-            }
-        }
-    }
-
-    fclose(fp);
-
-    if (reg->menu_header[0] == '\0' || reg->command_count == 0) {
-        return HYBBX_ERR_INVALID;
-    }
-
-    build_alias_lines(reg);
-    reg->loaded = 1;
-    return HYBBX_OK;
-}
-
-hybbx_result_t hybbx_commands_registry_init(void)
+static hybbx_result_t load_yaml_file(const char *rel_share,
+                                     hybbx_result_t (*parse_fn)(commands_registry_t *,
+                                                                const char *),
+                                     const char *label)
 {
     char path[HYBBX_PATH_MAX];
     hybbx_result_t rc;
 
+    if (hybbx_path_resolve(path, sizeof(path), rel_share) == HYBBX_OK) {
+        rc = parse_fn(&g_registry, path);
+        if (rc == HYBBX_OK) {
+            hybbx_log_info("[commands] loaded %s (%s)", path, label);
+            return HYBBX_OK;
+        }
+    }
+
+    return HYBBX_ERR_IO;
+}
+
+hybbx_result_t hybbx_commands_registry_init(void)
+{
+    hybbx_result_t rc;
+
     hybbx_commands_registry_shutdown();
 
-    if (hybbx_path_resolve(path, sizeof(path), HYBBX_FILE_COMMANDS) == HYBBX_OK) {
-        rc = parse_commands_yaml(&g_registry, path);
-        if (rc == HYBBX_OK) {
-            hybbx_log_info("[commands] loaded %s (%u verbs)", path,
-                   g_registry.command_count);
-            return HYBBX_OK;
-        }
+    rc = load_yaml_file(HYBBX_FILE_AREAS, parse_areas_yaml, "areas");
+    if (rc != HYBBX_OK) {
+        rc = load_yaml_file("share/areas.yaml", parse_areas_yaml, "areas");
+    }
+    if (rc != HYBBX_OK) {
+        hybbx_log_warn("[commands] failed to load " HYBBX_FILE_AREAS);
+        return HYBBX_ERR_IO;
     }
 
-    if (hybbx_path_resolve(path, sizeof(path), "share/commands.yaml") ==
-        HYBBX_OK) {
-        rc = parse_commands_yaml(&g_registry, path);
-        if (rc == HYBBX_OK) {
-            hybbx_log_info("[commands] loaded %s (%u verbs)", path,
-                   g_registry.command_count);
-            return HYBBX_OK;
-        }
+    rc = load_yaml_file(HYBBX_FILE_COMMANDS, parse_commands_yaml, "commands");
+    if (rc != HYBBX_OK) {
+        rc = load_yaml_file("share/commands.yaml", parse_commands_yaml, "commands");
+    }
+    if (rc != HYBBX_OK) {
+        hybbx_log_warn("[commands] failed to load " HYBBX_FILE_COMMANDS);
+        hybbx_commands_registry_shutdown();
+        return HYBBX_ERR_IO;
     }
 
-    hybbx_log_warn("[commands] failed to load " HYBBX_FILE_COMMANDS);
-    return HYBBX_ERR_IO;
+    build_alias_lines(&g_registry);
+    g_registry.loaded = 1;
+    hybbx_log_info("[commands] registry ready (%u areas, %u verbs)",
+                   g_registry.area_count, g_registry.command_count);
+    return HYBBX_OK;
 }
 
 void hybbx_commands_registry_shutdown(void)
@@ -720,12 +941,6 @@ const char *hybbx_commands_registry_canonical(const char *topic)
     return topic;
 }
 
-static int cmd_help_shows_deleteme(hybbx_user_level_t level)
-{
-    return !hybbx_user_level_is_sysop(level) &&
-           !hybbx_user_level_is_guest(level);
-}
-
 int hybbx_commands_registry_verb_allowed(hybbx_user_level_t level,
                                          const char *verb)
 {
@@ -746,42 +961,108 @@ int hybbx_commands_registry_verb_allowed(hybbx_user_level_t level,
         return 0;
     }
 
-    if (def->only_level != 0 && level != (hybbx_user_level_t)def->only_level) {
+    return command_level_allowed(def, level);
+}
+
+int hybbx_commands_registry_help_allowed(hybbx_user_level_t level,
+                                         const char *verb)
+{
+    return hybbx_commands_registry_verb_allowed(level, verb);
+}
+
+int hybbx_commands_registry_may_userchange(hybbx_user_level_t actor,
+                                           hybbx_user_level_t target)
+{
+    if (!g_registry.loaded) {
         return 0;
     }
 
-    if (level > def->min_level) {
+    return target_right_allowed(g_registry.userchange_rules,
+                                g_registry.userchange_rule_count,
+                                actor, target);
+}
+
+int hybbx_commands_registry_may_userdelete(hybbx_user_level_t actor,
+                                           hybbx_user_level_t target)
+{
+    unsigned i;
+
+    if (!g_registry.loaded || hybbx_user_level_is_sysop(target)) {
         return 0;
     }
 
-    if (str_ieq(canonical, "register")) {
-        return hybbx_auth_may_register(level);
-    }
-    if (str_ieq(canonical, "changeme")) {
-        return hybbx_auth_may_changeme(level);
-    }
-    if (str_ieq(canonical, "usercreate")) {
-        return hybbx_auth_may_create_user(level);
-    }
-    if (str_ieq(canonical, "activate")) {
-        return hybbx_auth_may_activate(level);
-    }
-    if (str_ieq(canonical, "changeuser")) {
-        return hybbx_user_level_is_sysop_or_admin(level);
-    }
-    if (str_ieq(canonical, "deleteuser")) {
-        return hybbx_user_level_is_sysop(level);
-    }
-    if (str_ieq(canonical, "promote") || str_ieq(canonical, "demote") ||
-        str_ieq(canonical, "delete")) {
-        return level == HYBBX_LEVEL_SYSOP || level == HYBBX_LEVEL_ADMIN;
-    }
-    if (str_ieq(canonical, "shutdown") || str_ieq(canonical, "restart") ||
-        str_ieq(canonical, "broadcast") || str_ieq(canonical, "announce")) {
-        return hybbx_user_level_is_sysop(level);
+    for (i = 0; i < g_registry.userdelete_rule_count; i++) {
+        const target_right_rule_t *rule = &g_registry.userdelete_rules[i];
+
+        if (rule->actor == actor &&
+            level_in_list(target, rule->targets, rule->target_count)) {
+            return 1;
+        }
     }
 
-    return 1;
+    return 0;
+}
+
+int hybbx_commands_registry_may_delete(hybbx_user_level_t actor,
+                                       hybbx_user_level_t target)
+{
+    if (!g_registry.loaded) {
+        return 0;
+    }
+
+    if (target == HYBBX_LEVEL_SYSOP) {
+        return 0;
+    }
+
+    return target_right_allowed(g_registry.delete_rules,
+                                g_registry.delete_rule_count,
+                                actor, target);
+}
+
+int hybbx_commands_registry_may_promote(hybbx_user_level_t actor,
+                                        hybbx_user_level_t target,
+                                        int target_active,
+                                        hybbx_user_level_t new_level)
+{
+    unsigned i;
+
+    if (!g_registry.loaded || !target_active ||
+        hybbx_user_level_is_guest(target) ||
+        target == HYBBX_LEVEL_SYSOP) {
+        return 0;
+    }
+
+    for (i = 0; i < g_registry.promote_rule_count; i++) {
+        const promote_right_rule_t *rule = &g_registry.promote_rules[i];
+
+        if (rule->actor == actor && rule->to_level == new_level &&
+            level_in_list(target, rule->from_levels, rule->from_count)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int hybbx_commands_registry_may_demote(hybbx_user_level_t actor,
+                                         hybbx_user_level_t target)
+{
+    unsigned i;
+
+    if (!g_registry.loaded) {
+        return 0;
+    }
+
+    for (i = 0; i < g_registry.demote_rule_count; i++) {
+        const demote_right_rule_t *rule = &g_registry.demote_rules[i];
+
+        if (rule->actor == actor &&
+            level_in_list(target, rule->from_levels, rule->from_count)) {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 static void emit_menu_line(hybbx_session_t *session, const char *label,
@@ -820,151 +1101,156 @@ static void format_verbs_line(char *out, size_t out_len,
     }
 }
 
-static void render_menu_block(hybbx_session_t *session,
-                              const menu_block_t *block, int show_optional)
+static unsigned collect_area_verbs(const menu_area_t *area,
+                                   hybbx_user_level_t level,
+                                   int filter_access,
+                                   char out[][HYBBX_CMD_VERB_MAX],
+                                   unsigned max)
 {
-    char cmds[HYBBX_LINE_MAX];
-    char line1[HYBBX_LINE_MAX];
-    char verbs[HYBBX_COMMANDS_VERBS_PER_GROUP][HYBBX_CMD_VERB_MAX];
     unsigned count = 0;
     unsigned i;
-    const cmd_group_t *grp;
+    unsigned j;
 
-    if (block->continuation) {
-        format_verbs_line(cmds, sizeof(cmds), block->verbs, block->verb_count);
-        emit_menu_line(session, "", cmds, 1);
+    if (area == NULL) {
+        return 0;
+    }
+
+    for (i = 0; i < area->verb_count && count < max; i++) {
+        if (filter_access &&
+            !hybbx_commands_registry_verb_allowed(level, area->verbs[i])) {
+            continue;
+        }
+        hybbx_strlcpy(out[count], area->verbs[i], HYBBX_CMD_VERB_MAX);
+        count++;
+    }
+
+    for (i = 0; i < area->subarea_count; i++) {
+        const menu_subarea_t *sub = &area->subareas[i];
+
+        for (j = 0; j < sub->verb_count && count < max; j++) {
+            if (filter_access &&
+                !hybbx_commands_registry_verb_allowed(level, sub->verbs[j])) {
+                continue;
+            }
+            hybbx_strlcpy(out[count], sub->verbs[j], HYBBX_CMD_VERB_MAX);
+            count++;
+        }
+    }
+
+    return count;
+}
+
+static void render_area(hybbx_session_t *session, const menu_area_t *area,
+                        hybbx_user_level_t level, int filter_access)
+{
+    char cmds[HYBBX_LINE_MAX];
+    char verbs[HYBBX_COMMANDS_VERBS_PER_GROUP][HYBBX_CMD_VERB_MAX];
+    unsigned count;
+    unsigned i;
+
+    if (area == NULL) {
         return;
     }
 
-    if (block->verb_count > 0) {
-        count = block->verb_count;
-        memcpy(verbs, block->verbs, sizeof(verbs));
-    } else if (block->group[0] != '\0') {
-        grp = group_find(&g_registry, block->group);
-        if (grp == NULL) {
-            return;
-        }
-        for (i = 0; i < grp->count && count < HYBBX_COMMANDS_VERBS_PER_GROUP;
-             i++) {
-            if (verb_in_list(grp->verbs[i], block->omit, block->omit_count)) {
-                continue;
-            }
-            hybbx_strlcpy(verbs[count], grp->verbs[i], HYBBX_CMD_VERB_MAX);
-            count++;
-        }
-    }
-
-    if (show_optional) {
-        for (i = 0; i < block->optional_count &&
-                    count < HYBBX_COMMANDS_VERBS_PER_GROUP;
-             i++) {
-            hybbx_strlcpy(verbs[count], block->optional[i], HYBBX_CMD_VERB_MAX);
-            count++;
-        }
+    count = collect_area_verbs(area, level, filter_access, verbs,
+                               HYBBX_COMMANDS_VERBS_PER_GROUP);
+    if (count == 0) {
+        return;
     }
 
     format_verbs_line(cmds, sizeof(cmds),
                       (const char (*)[HYBBX_CMD_VERB_MAX])verbs, count);
+    emit_menu_line(session, area->label, cmds, 0);
 
-    if (!block->wrap) {
-        emit_menu_line(session, block->label, cmds, 0);
-        return;
-    }
+    if (!filter_access) {
+        for (i = 0; i < area->subarea_count; i++) {
+            const menu_subarea_t *sub = &area->subareas[i];
+            char sub_verbs[HYBBX_COMMANDS_VERBS_PER_GROUP][HYBBX_CMD_VERB_MAX];
+            unsigned sub_count = 0;
+            unsigned j;
 
-    snprintf(line1, sizeof(line1), "  %-10s %s", block->label, "");
-    hybbx_session_write_line(session, line1);
-    emit_menu_line(session, "", cmds, 1);
-}
+            for (j = 0; j < sub->verb_count; j++) {
+                hybbx_strlcpy(sub_verbs[sub_count], sub->verbs[j],
+                              HYBBX_CMD_VERB_MAX);
+                sub_count++;
+            }
 
-static void render_layout(hybbx_session_t *session, const char *layout_name,
-                          int show_optional)
-{
-    menu_layout_t *layout = layout_find(&g_registry, layout_name);
-    unsigned i;
-
-    if (layout == NULL) {
-        return;
-    }
-
-    for (i = 0; i < layout->block_count; i++) {
-        render_menu_block(session, &layout->blocks[i], show_optional);
-    }
-}
-
-static const char *menu_level_name(hybbx_user_level_t level)
-{
-    switch (level) {
-    case HYBBX_LEVEL_SYSOP:
-        return "Sysop";
-    case HYBBX_LEVEL_ADMIN:
-        return "Admin";
-    case HYBBX_LEVEL_MOD:
-        return "Mod";
-    case HYBBX_LEVEL_USER:
-        return "User";
-    default:
-        return "Guest";
-    }
-}
-
-static void render_menu_for_level(hybbx_session_t *session,
-                                  hybbx_user_level_t level, int index_mode)
-{
-    const char *level_name = menu_level_name(level);
-    unsigned i;
-    unsigned j;
-
-    for (i = 0; i < g_registry.menu_level_count; i++) {
-        if (!str_ieq(g_registry.menu_levels[i], level_name)) {
-            continue;
-        }
-
-        for (j = 0; j < g_registry.menu_level_layout_count[i]; j++) {
-            const char *layout_name = g_registry.menu_level_layouts[i][j];
-            int show_optional = cmd_help_shows_deleteme(level);
-
-            if (!index_mode &&
-                (str_ieq(layout_name, "admin") ||
-                 str_ieq(layout_name, "admin_full"))) {
-                if (hybbx_auth_may_create_user(level)) {
-                    render_layout(session, "admin_full", show_optional);
-                } else if (hybbx_auth_may_activate(level)) {
-                    render_layout(session, "admin_activate", show_optional);
-                }
+            if (sub_count == 0) {
                 continue;
             }
 
-            render_layout(session, layout_name, show_optional);
+            format_verbs_line(cmds, sizeof(cmds),
+                              (const char (*)[HYBBX_CMD_VERB_MAX])sub_verbs,
+                              sub_count);
+            emit_menu_line(session, "", cmds, 1);
         }
-        return;
     }
+}
+
+static void render_area_labels(hybbx_session_t *session,
+                               const char labels[][16],
+                               unsigned label_count,
+                               hybbx_user_level_t level,
+                               int filter_access)
+{
+    unsigned i;
+
+    for (i = 0; i < label_count; i++) {
+        const menu_area_t *area = area_find(labels[i]);
+
+        if (area != NULL) {
+            render_area(session, area, level, filter_access);
+        }
+    }
+}
+
+static unsigned menu_layout_index(hybbx_user_level_t level)
+{
+    const char *level_name = menu_level_name(level);
+    unsigned i;
+
+    for (i = 0; i < g_registry.menu_level_count; i++) {
+        if (str_ieq(g_registry.menu_levels[i], level_name)) {
+            return i;
+        }
+    }
+
+    return g_registry.menu_level_count;
 }
 
 void hybbx_commands_registry_show_menu(hybbx_session_t *session)
 {
     hybbx_user_level_t level;
+    unsigned layout;
 
     if (session == NULL || !g_registry.loaded) {
         return;
     }
 
     level = hybbx_session_user_level(session);
+    layout = menu_layout_index(level);
+
     hybbx_session_write_line(session, g_registry.menu_header);
-    render_menu_for_level(session, level, 0);
+    if (layout < g_registry.menu_level_count) {
+        render_area_labels(session,
+                           (const char (*)[16])
+                               g_registry.menu_area_labels[layout],
+                           g_registry.menu_area_count[layout],
+                           level, 1);
+    }
 }
 
 void hybbx_commands_registry_show_index(hybbx_session_t *session)
 {
-    unsigned i;
-
     if (session == NULL || !g_registry.loaded) {
         return;
     }
 
     hybbx_session_write_line(session, g_registry.index_header);
-    for (i = 0; i < g_registry.index_layout_count; i++) {
-        render_layout(session, g_registry.index_layouts[i], 1);
-    }
+    render_area_labels(session,
+                       (const char (*)[16])g_registry.index_labels,
+                       g_registry.index_label_count,
+                       HYBBX_LEVEL_GUEST, 0);
 }
 
 void hybbx_commands_registry_show_aliases(hybbx_session_t *session)

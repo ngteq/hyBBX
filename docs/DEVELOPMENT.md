@@ -18,7 +18,7 @@ API: `include/hybbx/`. Config: `share/`. Sessions and commands: `src/core/`. Tra
 src/core/       session, storage, circuit, commands, commands_registry
 src/clients/    hybbx-telnet, hybbx-ssh, hybbx-terminal
 plugins/        telnet, ssh, websocket, packet_radio, entertain_* (chess, …)
-share/          hybbx-*.ini.example (standalone, main, mesh, secondary), commands.yaml
+share/          hybbx-*.ini.example (standalone, main, mesh, secondary), areas.yaml, commands.yaml
 ```
 
 ## Architecture
@@ -39,10 +39,10 @@ Secondary / proxy network / RF plugins → HBX circuit :7323 only
 
 ## Commands
 
-Registry: [share/commands.yaml](../share/commands.yaml). Layout: [COMMANDS.md](COMMANDS.md).
+Registry: [share/commands.yaml](../share/commands.yaml) (help, aliases, access, rights). Layout: [share/areas.yaml](../share/areas.yaml) (menu/index areas). See [COMMANDS.md](COMMANDS.md).
 
 - User groups: Sysop, Admin, Mod, User, Guest — never “Staff”
-- `/help` and `/menu` (no args): filtered menu for this session
+- `/help` and `/menu` (no args): filtered menu from `areas.yaml` for this session level
 - `/index`: full command-index for every account
 - `/alias`: alias map
 - Help topics: two lines, ≤80 cols, no square brackets in session text
@@ -68,7 +68,7 @@ ctest --test-dir build --output-on-failure
 | Change | Update |
 |--------|--------|
 | INI / operator | MANUAL.md + `share/*.ini.example` |
-| Commands | commands.yaml, COMMANDS.md, commands_registry.c |
+| Commands | areas.yaml, commands.yaml, COMMANDS.md, commands_registry.c |
 | Build | BUILD.md |
 | Transport plugin | matching doc in `docs/` (TNCS, WEBSOCKET, …) |
 

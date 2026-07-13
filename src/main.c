@@ -1,5 +1,5 @@
 /*
- * hybbx — centralized server daemon (main).
+ * hybbxd — centralized server daemon (main).
  * Plugins: CMake HYBBX_PLUGIN_* ; config: -c path/to/hybbx.ini
  * Standalone clients: src/clients/hybbx-telnet, hybbx-terminal
  */
@@ -13,6 +13,7 @@
 #include "hybbx/config.h"
 #include "hybbx/command.h"
 #include "hybbx/commands_registry.h"
+#include "hybbx/daemon_wrap.h"
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
 
@@ -84,6 +85,10 @@ static void print_usage(const char *prog)
             "\n"
             "Options:\n"
             "  -c, --config <file>  Load INI configuration file\n"
+            "  -f, --foreground     Run in foreground (default)\n"
+            "  --screen [name]       Run detached in GNU screen (default: hybbxd)\n"
+            "  --tmux [name]         Run detached in tmux (default: hybbxd)\n"
+            "  --attach              Attach to screen/tmux session (with --screen/--tmux)\n"
             "  -h, --help           Show this help\n"
             "  -V, --version        Show version\n"
             "\n"
@@ -206,8 +211,12 @@ int main(int argc, char *argv[])
     hybbx_config_t config;
     const char *config_path = NULL;
     char discovered_config[HYBBX_PATH_MAX];
+    hybbx_daemon_launch_opts_t launch;
     int have_config = 0;
     int i;
+    hybbx_result_t rc;
+
+    hybbx_daemon_launch_opts_defaults(&launch);
 
     for (i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
@@ -217,6 +226,32 @@ int main(int argc, char *argv[])
         if (strcmp(argv[i], "-V") == 0 || strcmp(argv[i], "--version") == 0) {
             print_version();
             return EXIT_SUCCESS;
+        }
+        if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--foreground") == 0) {
+            launch.foreground = 1;
+            continue;
+        }
+        if (strcmp(argv[i], "--attach") == 0) {
+            launch.attach = 1;
+            continue;
+        }
+        if (strcmp(argv[i], "--screen") == 0) {
+            launch.use_screen = 1;
+            if (i + 1 < argc && argv[i + 1][0] != '-' &&
+                strcmp(argv[i + 1], "-c") != 0 &&
+                strcmp(argv[i + 1], "--config") != 0) {
+                hybbx_strlcpy(launch.session, argv[++i], sizeof(launch.session));
+            }
+            continue;
+        }
+        if (strcmp(argv[i], "--tmux") == 0) {
+            launch.use_tmux = 1;
+            if (i + 1 < argc && argv[i + 1][0] != '-' &&
+                strcmp(argv[i + 1], "-c") != 0 &&
+                strcmp(argv[i + 1], "--config") != 0) {
+                hybbx_strlcpy(launch.session, argv[++i], sizeof(launch.session));
+            }
+            continue;
         }
         if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--config") == 0) {
             if (i + 1 >= argc) {
@@ -229,6 +264,11 @@ int main(int argc, char *argv[])
 
         fprintf(stderr, "Unknown option: %s\n", argv[i]);
         print_usage(argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    rc = hybbx_daemon_apply_launch_opts(&launch, argv[0], argc, argv);
+    if (rc != HYBBX_OK) {
         return EXIT_FAILURE;
     }
 
@@ -250,7 +290,7 @@ int main(int argc, char *argv[])
     }
 
     if (config_path != NULL) {
-        hybbx_result_t rc = hybbx_config_load(&config, config_path);
+        rc = hybbx_config_load(&config, config_path);
 
         if (rc != HYBBX_OK) {
             fprintf(stderr, "Failed to load config '%s'\n", config_path);

@@ -23,7 +23,7 @@ Tests: `-DHYBBX_BUILD_TESTS=ON` → `ctest --test-dir build`
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `HYBBX_BUILD_DAEMON` | ON | `hybbx` + core |
+| `HYBBX_BUILD_DAEMON` | ON | `hybbxd` + core |
 | `HYBBX_BUILD_CLIENTS` | ON | CLI clients |
 | `HYBBX_BUILD_CLIENT_SSH` | ON | `hybbx-ssh` (requires libssh) |
 | `HYBBX_CLIENTS_ONLY` | OFF | Clients without daemon |
@@ -62,6 +62,21 @@ Only telnet and packet_radio plugins build on AmigaOS for the full daemon.
 cmake --install build --prefix /path
 ```
 
-→ `<prefix>/hybbx/` (`hybbx`, `hybbx-start`, `hybbx.ini`, `text/`, `data/`, `logs/`, `lib/`).
+→ `<prefix>/hybbx/` (`hybbxd`, `hybbx-start`, `hybbx.ini`, `text/`, `data/`, `logs/`, `lib/`).
+
+## hybbxd — screen / tmux
+
+Daemon binary: **`hybbxd`** (install root still `hybbx/`).
+
+| Command | Effect |
+|---------|--------|
+| `hybbxd -c hybbx.ini` | Foreground (default) |
+| `hybbxd --screen -c hybbx.ini` | Detached GNU screen session `hybbxd` |
+| `hybbxd --tmux -c hybbx.ini` | Detached tmux session `hybbxd` |
+| `hybbxd --screen --attach` | Attach: `screen -r hybbxd` |
+| `hybbxd --tmux --attach` | Attach: `tmux attach -t hybbxd` |
+| `hybbx-start --tmux` | Start script forwards wrap flags to `hybbxd` |
+
+Custom session name: `--screen mysess` or `--tmux mysess`.
 
 CRDOPC is **not** built by HyBBX — [CRDOP.md](CRDOP.md).

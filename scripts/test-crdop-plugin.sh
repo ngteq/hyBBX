@@ -3,7 +3,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD="${ROOT}/build"
-HYBBX="${BUILD}/src/hybbx"
+HYBBX="${BUILD}/src/hybbxd"
 MOCK_PORT=18517
 TMPDIR="${ROOT}/local/test-crdop-$$"
 mkdir -p "${TMPDIR}"

@@ -11,6 +11,8 @@
 
 See `share/hybbx.ini.example` for the index. Full keys: below and [TOPOLOGY.md](TOPOLOGY.md).
 
+Daemon binary: **`hybbxd`**. Start: `hybbx-start` or `hybbxd -c hybbx.ini`. Detached: `hybbx-start --screen` or `hybbx-start --tmux`; attach: `hybbxd --screen --attach` / `hybbxd --tmux --attach`. See [BUILD.md](BUILD.md).
+
 Booleans: `yes`/`no` (+ `true`/`false`, `on`/`off`, `1`/`0`).
 
 ## Text-based operation
@@ -334,6 +336,7 @@ Input: `/command` … · `;` and `#` lines ignored · other text → area handle
 | Command | Description |
 |---------|-------------|
 | `/help` | List or `/help <cmd>` |
+| `/banner`, `/loginmsg` | Login banner (`text/banner.txt`) |
 | `/motd` | Message of the day |
 | `/news` | System news |
 | `/rules`, `/legal` | `text/rules.txt` |

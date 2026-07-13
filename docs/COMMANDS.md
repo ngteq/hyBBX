@@ -1,6 +1,6 @@
 # Command registry and help layout
 
-**v2.0.0** — source of commands: [share/commands.yaml](../share/commands.yaml). Operator summary: [MANUAL.md](MANUAL.md).
+**v2.0.0** — layout: [share/areas.yaml](../share/areas.yaml); commands: [share/commands.yaml](../share/commands.yaml). Operator summary: [MANUAL.md](MANUAL.md).
 
 ## User groups
 
@@ -18,7 +18,7 @@ Exactly five levels (`include/hybbx/auth.h`). Use these names in help, menus, an
 
 | Input | Output |
 |-------|--------|
-| `/help`, `/menu` | Menu — commands **this session can use** |
+| `/help`, `/menu` | Filtered menu for this session (from `areas.yaml` + access) |
 | `/index` | Full command-index — **same list for every account** |
 | `/alias` | Alias map |
 | `/help <cmd>` | Two-line topic (see below) |
@@ -33,7 +33,7 @@ HyBBX aliases /help <cmd> for more
 
 Menu groups (fixed order): **General**, **Screen**, **Areas**, **Account**, **Admin**, **Sysop**.
 
-Layout and wording are identical across account types; only which verbs appear changes by level.
+Layout and wording are identical across account types; `/index` lists every command. `/help` and `/menu` show only areas and commands allowed for the session level.
 
 ## Help topic format
 
@@ -103,7 +103,11 @@ No administrative commands cross proxy links.
 
 ## Registry
 
-Commands load from `share/commands.yaml` at startup (`commands_registry.c`). When changing commands: update YAML, then [MANUAL.md](MANUAL.md) and this file.
+`share/areas.yaml` (loaded first): headers, user groups, area layout, per-level `/help`/`/menu`, and full `/index`.
+
+`share/commands.yaml`: command help lines, aliases, `min`/`max`/`only` access, and `rights` for account admin actions (`commands_registry.c`).
+
+When changing commands: update both YAML files, then [MANUAL.md](MANUAL.md) and this file.
 
 ## See also
 

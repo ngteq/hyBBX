@@ -39,6 +39,7 @@ if(HYBBX_BUILD_DAEMON)
         core/max25.c
         core/security.c
         core/security_ban.c
+        core/daemon_wrap.c
         clients/circuit_client.c
         clients/link_auth.c
         ${CMAKE_SOURCE_DIR}/third_party/tinysha256/tinysha256.c
@@ -97,11 +98,11 @@ if(HYBBX_BUILD_DAEMON)
         target_link_libraries(hybbx_core PRIVATE ${SQLITE3_LIBRARIES})
     endif()
 
-    add_executable(hybbx main.c)
-    target_link_libraries(hybbx PRIVATE hybbx_core)
-    hybbx_apply_hardening_executable(hybbx)
+    add_executable(hybbxd main.c)
+    target_link_libraries(hybbxd PRIVATE hybbx_core)
+    hybbx_apply_hardening_executable(hybbxd)
 
-    install(TARGETS hybbx hybbx_core
+    install(TARGETS hybbxd hybbx_core
         EXPORT HyBBXTargets
         RUNTIME DESTINATION ${HYBBX_INSTALL_HOME}
         LIBRARY DESTINATION ${HYBBX_INSTALL_HOME}/lib
@@ -128,6 +129,7 @@ if(HYBBX_BUILD_DAEMON)
     )
 
     install(FILES ${CMAKE_SOURCE_DIR}/share/commands.yaml
+        ${CMAKE_SOURCE_DIR}/share/areas.yaml
         DESTINATION ${HYBBX_INSTALL_HOME}
     )
 
