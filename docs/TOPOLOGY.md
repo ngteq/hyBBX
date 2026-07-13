@@ -9,7 +9,7 @@ User-facing paths are **text-first** (line-oriented sessions, `/` commands). Tra
 | Role | Process | Typical `[networks]` | Hosts |
 |------|---------|----------------------|-------|
 | **Main** | `hybbx` | `circuit=yes`, `mains_proxy` optional | Users (telnet/SSH/WebSocket), storage, HBX hub `:7323` |
-| **Secondary** | `hybbx` (separate host) | `circuit=no`, `ax25=yes` | RF edge; HBX client to Main |
+| **Secondary** | `hybbx` (separate host) | `circuit=no`, `ax25=yes` | RF host; HBX client to Main |
 | **Standalone Main** | `hybbx` | `ax25=yes` on same box | Lab / single-host |
 
 **Secondary** is infrastructure (link adapter), not a telnet user. Multiple Secondaries need unique `link_id` per active link; `max_links` on Main (default 8, max 16).
@@ -21,7 +21,7 @@ User-facing paths are **text-first** (line-oriented sessions, `/` commands). Tra
 | **Remote Secondary** | Secondary (`device`, `tnc`, `circuit_host`) | Bridge registry only (`link_id`, password) |
 | **Local TNC on Main** | Same box as users | Full TNC keys (`device`, `tnc`, …) |
 
-Bridge-registry rows on Main are skipped at start (no serial open). A missing or unplugged TNC logs a warning and that edge instance does not start; other transports keep running.
+Bridge-registry rows on Main are skipped at start (no serial open). A missing or unplugged TNC logs a warning and that link instance does not start; other transports keep running.
 
 ## Default layout
 
@@ -46,23 +46,16 @@ All paths between HyBBX processes use HBX v1 on the internal circuit hub. The ap
 |------|------------|
 | Localhost Secondary | TCP → Main `:7323`, `LINK_AUTH` |
 | Remote Secondary | TCP → Main `:7323` |
-| Packet radio / BayCom / ARDOP / CRDOP | Plugin edge → HBX client |
-| AX.25 auto-beacon (INI) | Main → HBX → Secondary extenders (staggered) |
+| Packet radio / BayCom / ARDOP / CRDOP | Transport plugin on Secondary → HBX client |
+| AX.25 auto-beacon (INI) | Main → HBX → Secondary links (sequential, per-link timing) |
 | `/broadcast <msg>` (Sysop) | Logged-in local Main users (telnet/SSH/WebSocket) |
 | `/broadcast ax25` (Sysop) | Instant sequential RF beacon (`ax25_auto_message`) |
 | Entertain Area apps | Main plugins only — [ENTERTAIN.md](ENTERTAIN.md) |
 | Proxy network (`mains_proxy`) | Main ↔ Main via HBX circuit client |
 
-Edge daemons authenticate with per-link `link_password`. User wire auth (telnet/SSH) is separate from HBX link auth.
+Secondary hosts authenticate with per-link `link_password`. User wire auth (telnet/SSH) is separate from HBX link auth.
 
 Protocol: `include/hybbx/circuit.h` — default port `7323`, max 16 concurrent links.
-
-## RF production notes
-
-- TNC2C (`protocol=kiss`, 19200 8N1) links to HBX with `LINK_AUTH` (`link_id=packet-radio1`).
-- AX.25 broadcast TX verified end-to-end (HyBBX log + on-air audio).
-- Broadcast TX uses circuit balancer low-priority reserve.
-- Dual TNC broadcast works on AX25SRV production (staggered `ax25_auto_stagger`).
 
 ## Proxy network (`mains_proxy`)
 

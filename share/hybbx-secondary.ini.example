@@ -1,4 +1,4 @@
-; HyBBX v2.0.0 — Secondary (RF edge → Main HBX hub)
+; HyBBX v2.0.0 — Secondary (RF host → Main HBX hub)
 ; Pair with: share/hybbx-main.ini.example or share/hybbx-mesh.ini.example
 ; link_id / link_password / frequency_mhz must match Main [transport.packet_radioN]
 

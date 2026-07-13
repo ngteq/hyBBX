@@ -24,7 +24,7 @@ Do not run minicom and HyBBX on the same port. Only one process owns `/dev/tty*`
 
 | Protocol | INI `protocol=` | Use |
 |----------|-----------------|-----|
-| KISS | `kiss` (default) | Secondary RF edge, APRS-style AX.25 frames |
+| KISS | `kiss` (default) | Secondary RF host, APRS-style AX.25 frames |
 | TNC2 host converse | `hostmode`, `host`, `tnc2` | Interactive host session (not WA8DED JHOST binary) |
 | 6PACK | `sixpack` | DF6BU 6PACK over serial |
 
@@ -109,13 +109,13 @@ ax25 = yes
 [transport.packet_radio1]
 tnc = tnc2c
 device = /dev/ttyUSB0
-link_id = edge-a
+link_id = packet-radio1
 ...
 
 [transport.packet_radio2]
 tnc = tnc2
 device = /dev/ttyUSB1
-link_id = edge-b
+link_id = packet-radio2
 ...
 ```
 

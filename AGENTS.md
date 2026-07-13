@@ -4,7 +4,7 @@ Humans: [CONTRIBUTING.md](CONTRIBUTING.md). **v2.0.0**.
 
 ## Product
 
-Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** = remote edge (HBX client to Main). No modem DSP inside `hybbx`.
+Plugin-only session daemon. **Main** = users + telnet + HBX hub. **Secondary** = remote RF host (HBX client to Main). No modem DSP inside `hybbx`.
 
 **Text-first:** users work in plain-text terminals (`/` commands, mail, chat, line output). Core and operator docs assume text sessions on low-bandwidth links. **Extensible:** plugins and transports may add ANSI, menus, or client graphics (WebSocket/httpd) without moving wire or game logic into `src/core/`. **Portable:** POSIX+ C99 shared code — Linux, *BSD, AmigaOS 3.9+, MacOS, Windows ([PLATFORMS.md](docs/PLATFORMS.md)).
 

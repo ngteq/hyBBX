@@ -33,7 +33,7 @@ Central site: registered users, flat-file or SQLite storage, telnet/SSH/WebSocke
 
 ### Secondary
 
-Remote **edge** only — no public user logins. Runs `hybbx` with `circuit=no`, connects to Main as an HBX client (`circuit_host`, `link_id`, `link_password`). Hosts packet radio, ARDOP, CRDOP, or BayCom plugins; modem/TNC stays **external**. Template: [share/hybbx-secondary.ini.example](share/hybbx-secondary.ini.example).
+Remote **Secondary host** only — no public user logins. Runs `hybbx` with `circuit=no`, connects to Main as an HBX client (`circuit_host`, `link_id`, `link_password`). Hosts packet radio, ARDOP, CRDOP, or BayCom plugins; modem/TNC stays **external**. Template: [share/hybbx-secondary.ini.example](share/hybbx-secondary.ini.example).
 
 Multiple Secondaries on one Main need unique `link_id` values (up to 16 links).
 

@@ -3,6 +3,6 @@
 ;   hybbx-standalone.ini.example   Main + local TNC (one host, lab/single-box)
 ;   hybbx-main.ini.example         Main only — RF on remote Secondary
 ;   hybbx-mesh.ini.example         Main + mains_proxy mesh + remote Secondary
-;   hybbx-secondary.ini.example    Secondary RF edge (pairs with main or mesh)
+;   hybbx-secondary.ini.example    Secondary RF host (pairs with main or mesh)
 ;
 ; Default install uses hybbx-main.ini.example. Full keys: docs/MANUAL.md

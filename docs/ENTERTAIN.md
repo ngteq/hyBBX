@@ -19,7 +19,7 @@ Opt-in like other plugins: CMake `HYBBX_PLUGIN_*`, `[networks]` flag, register i
 
 ## Operator
 
-Entertain plugins run on **Main** only. Secondary remains RF/HBX edge infrastructure.
+Entertain plugins run on **Main** only. Secondary remains RF/HBX link infrastructure.
 
 Enable per plugin when installed:
 

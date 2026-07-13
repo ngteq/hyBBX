@@ -86,7 +86,7 @@ Help: Instant RF beacon (ax25_auto_message) to all packet-radio links.
 
 - **No custom RF text** — uses INI `ax25_auto_message` (`@service@` token)
 - Sends immediately to each qualifying packet-radio link **one after another** (K24 → K25)
-- Separate from periodic INI **`ax25_auto`** beacons (time-staggered by `ax25_auto_stagger`)
+- Separate from periodic INI **`ax25_auto`** beacons (sequential multi-link cycle; see [MANUAL.md](MANUAL.md) `[broadcast]`)
 
 INI `[broadcast]` **ax25_auto** is background infrastructure — see [MANUAL.md](MANUAL.md).
 

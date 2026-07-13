@@ -7,7 +7,7 @@
 | `hybbx-standalone.ini.example` | Main + local TNC (one host) |
 | `hybbx-main.ini.example` | Main; RF on remote Secondary |
 | `hybbx-mesh.ini.example` | Main + `mains_proxy` mesh |
-| `hybbx-secondary.ini.example` | Secondary RF edge |
+| `hybbx-secondary.ini.example` | Secondary RF host |
 
 See `share/hybbx.ini.example` for the index. Full keys: below and [TOPOLOGY.md](TOPOLOGY.md).
 
@@ -285,7 +285,7 @@ On **Main**: metadata per remote Secondary (`link_id`, `link_password`, `link_ro
 
 On **Secondary**: TNC settings + `circuit_host`, `circuit_port`, matching `link_id` / password.
 With `[circuit] link_auth = yes` (default), `link_password` is required on the
-edge side; missing password causes `link_auth_fail ... reason=timeout_no_link_auth`.
+Secondary side; missing password causes `link_auth_fail ... reason=timeout_no_link_auth`.
 
 | TNC key | Notes |
 |---------|-------|

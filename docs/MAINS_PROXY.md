@@ -10,7 +10,7 @@ The **proxy network** links HyBBX **Main** or **Secondary** instances for **pure
 
 Local `/mail`, `/chat`, and `/broadcast` stay on each node only.
 
-A **Secondary** may run `mains_proxy` as an outbound HBX client to a remote Main (same pattern as packet-radio edge links). On a **Main**, peers may attach directly (full or half duplex).
+A **Secondary** may run `mains_proxy` as an outbound HBX client to a remote Main (same pattern as packet-radio Secondary links). On a **Main**, peers may attach directly (full or half duplex).
 
 **Opt-in:** `-DHYBBX_PLUGIN_MAINS_PROXY=ON` and `[networks] mains_proxy=yes`.
 
