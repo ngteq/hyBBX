@@ -230,8 +230,38 @@ static void tnc_serial_pause_ms(unsigned ms)
 #endif
 }
 
-/** Leave KISS (crash/kill) so host commands (MYCALL, kiss on) work again. */
-static hybbx_result_t tnc_kiss_wakeup_host(hybbx_tnc_t *tnc)
+static hybbx_result_t tnc_send_jhost0(hybbx_tnc_t *tnc)
+{
+    static const uint8_t nuls[300] = { 0 };
+    static const uint8_t jhost0[] = {
+        0x00, 0x01, 0x06, 'J', 'H', 'O', 'S', 'T', ' ', '0', '\r'
+    };
+    hybbx_result_t rc;
+
+    rc = send_raw(tnc, nuls, sizeof(nuls));
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+    tnc_serial_pause_ms(150);
+    return send_raw(tnc, jhost0, sizeof(jhost0));
+}
+
+static hybbx_result_t tnc_send_restart_escape(hybbx_tnc_t *tnc)
+{
+    unsigned i;
+
+    for (i = 0; i < 3u; i++) {
+        if (send_raw(tnc, (const uint8_t *)"\x03", 1) != HYBBX_OK) {
+            return HYBBX_ERR_IO;
+        }
+        tnc_serial_pause_ms(80);
+    }
+    tnc_serial_pause_ms(300);
+    return send_cmd(tnc, "RESTART");
+}
+
+/** Leave KISS/host/transparency → terminal (TheFirmware ladder). */
+static hybbx_result_t tnc_recover_terminal_mode(hybbx_tnc_t *tnc)
 {
     if (tnc == NULL) {
         return HYBBX_ERR_INVALID;
@@ -239,11 +269,37 @@ static hybbx_result_t tnc_kiss_wakeup_host(hybbx_tnc_t *tnc)
 
     tnc->kiss_active = 0;
     (void)tnc_send_kiss_return_frame(tnc);
-    tnc_serial_pause_ms(250);
-    drain_serial(tnc, 12);
-    (void)send_cmd(tnc, "");
+    tnc_serial_pause_ms(400);
+    drain_serial(tnc, 8);
+
+    (void)tnc_send_jhost0(tnc);
+    tnc_serial_pause_ms(800);
+    drain_serial(tnc, 8);
+
+    (void)send_cmd(tnc, "kiss off");
+    tnc_serial_pause_ms(400);
     drain_serial(tnc, 6);
+    (void)send_cmd(tnc, "INFO");
+    drain_serial(tnc, 12);
+
+    (void)tnc_send_restart_escape(tnc);
+    tnc_serial_pause_ms(1200);
+    drain_serial(tnc, 8);
+    (void)send_cmd(tnc, "kiss off");
+    tnc_serial_pause_ms(300);
+    drain_serial(tnc, 4);
+
     return HYBBX_OK;
+}
+
+/** Leave KISS (crash/kill) so host commands (MYCALL, kiss on) work again. */
+static hybbx_result_t tnc_kiss_wakeup_host(hybbx_tnc_t *tnc)
+{
+    if (tnc == NULL) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    return tnc_recover_terminal_mode(tnc);
 }
 
 static hybbx_result_t tnc_enter_kiss_by_entry(hybbx_tnc_t *tnc,
@@ -528,6 +584,11 @@ static hybbx_result_t tnc_profile_init(hybbx_tnc_t *tnc)
             tnc->kiss_entry_used = HYBBX_KISS_ENTRY_NONE;
             hybbx_log_info("[tnc] KISS attach (MAX25 prep assumed)");
             return HYBBX_OK;
+        }
+
+        if (tnc_profile_thefirmware(tnc->config.tnc)) {
+            (void)tnc_recover_terminal_mode(tnc);
+            hybbx_log_info("[tnc] TheFirmware terminal recovery before KISS entry");
         }
 
         rc = tnc_enter_kiss_mode(tnc);
