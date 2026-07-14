@@ -2,6 +2,7 @@
 #include "hybbx/tnc.h"
 #include "hybbx/circuit.h"
 #include "hybbx/util.h"
+#include "hybbx/log.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -521,6 +522,16 @@ hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
 
     value = find_kv(config, "tnc", scratch, sizeof(scratch));
     out->tnc = parse_tnc(value);
+
+    if (out->tnc == HYBBX_PACKET_RADIO_TNC_BAYCOM ||
+        out->tnc == HYBBX_PACKET_RADIO_TNC_PCCOM) {
+        hybbx_log_warn("[packet_radio] tnc=%s rejected — BayCom/PC-COM hardware "
+                       "belongs in MAX25-Stack; HyBBX uses tnc=tnc2c "
+                       "with kiss_entry=none after max25d prep",
+                       hybbx_packet_radio_tnc_name(out->tnc));
+        hybbx_packet_radio_config_free(out);
+        return HYBBX_ERR_INVALID;
+    }
 
     value = find_kv(config, "protocol", scratch, sizeof(scratch));
     if (value != NULL) {

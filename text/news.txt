@@ -1,5 +1,5 @@
 News
 
-HyBBX v2.0.0 — dual AX.25 broadcast, MAX25 RF prep, HBX circuit hub.
+HyBBX v2.4.0 — MAX25-minimal RF boundary; BayCom runtime default off; mandatory max25d prep.
 
 Welcome. Type /help for commands.

@@ -916,19 +916,15 @@ static hybbx_result_t packet_radio_start(const char *config)
     cursor = hybbx_max25_config_skip_prefix(config, &max25);
     local_edges = packet_radio_count_local_edges(cursor);
     if (local_edges > 0u) {
-        const int had_max25_prefix = (cursor != config);
-
-        if (!had_max25_prefix) {
-            hybbx_max25_config_defaults(&max25);
-            max25.check = 1;
-        }
         if (max25.check && hybbx_max25_probe(&max25) != HYBBX_OK) {
-            hybbx_log_warn("[packet_radio] no local AX.25 — max25d required "
-                           "([max25] check=no to disable)");
-            return HYBBX_OK;
+            hybbx_log_warn("[packet_radio] local RF requires max25d at %s:%u "
+                           "— start MAX25 prep or set [max25] check=no",
+                           max25.host, max25.port);
+            return HYBBX_ERR_IO;
         }
         if (max25.check) {
-            hybbx_log_info("[packet_radio] max25d reachable at %s:%u",
+            hybbx_log_info("[packet_radio] max25d reachable at %s:%u — "
+                           "KISS attach only (hardware via MAX25)",
                            max25.host, max25.port);
         }
     }

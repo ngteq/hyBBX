@@ -1,4 +1,4 @@
-; HyBBX v2.0.0 — Main + proxy mesh (mains_proxy) + remote Secondary RF
+; HyBBX v2.4.0 — Main + proxy mesh (mains_proxy) + remote Secondary RF
 ; Build: -DHYBBX_PLUGIN_MAINS_PROXY=ON · Pair Secondary: hybbx-secondary.ini.example
 ; Reciprocal peer INI required on remote Main. Docs: docs/MAINS_PROXY.md
 
@@ -29,6 +29,7 @@ path = mail
 
 [networks]
 ax25 = no
+baycom = no
 ssh = yes
 circuit = yes
 mains_proxy = yes

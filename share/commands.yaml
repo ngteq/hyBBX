@@ -129,7 +129,7 @@ commands:
 
   who:
     group: general
-    min: User
+    min: Guest
     line1: "/who"
     line2: "Help: Online users and connection type. More: /online"
 

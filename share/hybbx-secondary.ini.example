@@ -1,5 +1,6 @@
-; HyBBX v2.0.0 — Secondary (RF host → Main HBX hub)
+; HyBBX v2.4.0 — Secondary (RF host → Main HBX hub)
 ; Pair with: share/hybbx-main.ini.example or share/hybbx-mesh.ini.example
+; Prerequisite: max25d preps serial on this host — HyBBX KISS attach only.
 ; link_id / link_password / frequency_mhz must match Main [transport.packet_radioN]
 
 [service]
@@ -19,7 +20,13 @@ level = warn
 
 [networks]
 ax25 = yes
+baycom = no
 circuit = no
+
+[max25]
+check = yes
+host = 127.0.0.1
+port = 7325
 
 [transport.packet_radio1]
 circuit_host = main.example.com
@@ -31,7 +38,7 @@ tnc = tnc2c
 protocol = kiss
 device = /dev/ttyUSB0
 baud = 9600
-kiss_entry = kiss_on
+kiss_entry = none
 modem = tcm3105
 radio_baud = 1200
 radio_band = amateur

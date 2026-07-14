@@ -1,4 +1,4 @@
-; HyBBX v2.0.0 — INI topology templates (pick one, copy to hybbx.ini)
+; HyBBX v2.4.0 — INI topology templates (pick one, copy to hybbx.ini)
 ;
 ;   hybbx-standalone.ini.example   Main + local TNC (one host, lab/single-box)
 ;   hybbx-main.ini.example         Main only — RF on remote Secondary

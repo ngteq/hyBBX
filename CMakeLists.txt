@@ -29,7 +29,7 @@ if(NOT DEFINED ENV{CC} AND NOT CMAKE_C_COMPILER)
 endif()
 
 project(HyBBX
-    VERSION 2.0.0
+    VERSION 2.4.0
     DESCRIPTION "C99 transport service: centralized daemon + link/repeater edge"
     LANGUAGES C
 )
@@ -55,7 +55,7 @@ option(HYBBX_PLUGIN_PACKET_RADIO "Build packet radio transport"     ON)
 option(HYBBX_PLUGIN_ARDOP       "Build ARDOP host-client transport"  ON)
 option(HYBBX_PLUGIN_CRDOP       "Build CRDOP CB host-client transport" ON)
 option(HYBBX_PLUGIN_SSH         "Build SSH transport (requires libssh)" ON)
-option(HYBBX_PLUGIN_BAYCOM       "Build BayCom PR-Stack transport"    OFF)
+option(HYBBX_PLUGIN_BAYCOM       "Build BayCom PR-Stack transport (runtime default off)" ON)
 option(HYBBX_PLUGIN_MAINS_PROXY  "Build Main-to-Main mesh proxy"    OFF)
 option(HYBBX_PLUGIN_WEBSOCKET   "Build WebSocket forward-proxy transport" ON)
 option(HYBBX_BUILD_TESTS        "Build unit tests"                  OFF)

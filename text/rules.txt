@@ -1,4 +1,4 @@
-HyBBX — Terms of use (v2.0.0)
+HyBBX — Terms of use (v2.4.0)
 
 HyBBX is a session service for low-bandwidth links: mail, chat,
 conference, and commands over telnet, SSH, or WebSocket. RF paths

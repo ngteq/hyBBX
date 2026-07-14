@@ -1,5 +1,6 @@
-; HyBBX v2.0.0 — Standalone Main (users + local TNC on one host)
+; HyBBX v2.4.0 — Standalone Main (users + local TNC on one host)
 ; Copy: cp share/hybbx-standalone.ini.example hybbx.ini
+; Prerequisite: max25d (MAX25-Stack) preps serial — HyBBX KISS attach only.
 ; Docs: docs/MANUAL.md · docs/TNCS.md · docs/TOPOLOGY.md
 
 [service]
@@ -35,8 +36,14 @@ path = mail
 
 [networks]
 ax25 = yes
+baycom = no
 ssh = yes
 circuit = yes
+
+[max25]
+check = yes
+host = 127.0.0.1
+port = 7325
 
 [circuit]
 bind = 127.0.0.1
@@ -71,7 +78,7 @@ tnc = tnc2c
 protocol = kiss
 device = /dev/ttyUSB0
 baud = 9600
-kiss_entry = kiss_on
+kiss_entry = none
 modem = tcm3105
 radio_baud = 1200
 radio_band = amateur
