@@ -106,6 +106,9 @@
 /** Default TCP connect timeout for max25d reachability probe (ms). */
 #define HYBBX_MAX25_PROBE_TIMEOUT_MS 3000u
 
+/** Wait up to this long for max25d when [max25] check=yes (ms). */
+#define HYBBX_MAX25_PROBE_WAIT_MS 120000u
+
 /** AX.25 on-air payload cap (1200 baud; keep UI frames short). */
 #define HYBBX_BROADCAST_AX25_MESSAGE_MAX 48u
 

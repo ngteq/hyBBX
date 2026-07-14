@@ -917,12 +917,25 @@ static hybbx_result_t packet_radio_start(const char *config)
     cursor = hybbx_max25_config_skip_prefix(config, &max25);
     local_edges = packet_radio_count_local_edges(cursor);
     if (local_edges > 0u) {
-        if (max25.check &&
-            hybbx_max25_probe(&max25, &max25_status) != HYBBX_OK) {
-            hybbx_log_warn("[packet_radio] local RF requires max25d at %s:%u "
-                           "— start MAX25 prep or set [max25] check=no",
-                           max25.host, max25.port);
-            return HYBBX_ERR_IO;
+        if (max25.check) {
+            unsigned waited_ms = 0;
+            const unsigned step_ms = 2000u;
+
+            while (hybbx_max25_probe(&max25, &max25_status) != HYBBX_OK) {
+                if (waited_ms >= HYBBX_MAX25_PROBE_WAIT_MS) {
+                    hybbx_log_warn("[packet_radio] local RF requires max25d at %s:%u "
+                                   "— start MAX25 prep or set [max25] check=no",
+                                   max25.host, max25.port);
+                    return HYBBX_ERR_IO;
+                }
+                if (waited_ms == 0u) {
+                    hybbx_log_info("[max25] waiting for max25d at %s:%u (up to %u s)",
+                                   max25.host, max25.port,
+                                   HYBBX_MAX25_PROBE_WAIT_MS / 1000u);
+                }
+                packet_radio_poll_sleep_ms(step_ms);
+                waited_ms += step_ms;
+            }
         }
     }
 
