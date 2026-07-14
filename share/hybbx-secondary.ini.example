@@ -27,6 +27,7 @@ circuit = no
 check = yes
 host = 127.0.0.1
 port = 7325
+; error/voice STATUS: max25d [reporting] only (3×20s passes, 50% min good, defaults)
 
 [transport.packet_radio1]
 circuit_host = main.example.com

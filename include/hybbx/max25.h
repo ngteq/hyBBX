@@ -51,8 +51,9 @@ void hybbx_max25_status_clear(hybbx_max25_status_t *status);
 /**
  * TCP connect + M25/1 connect handshake (`OK` + `STATUS …`).
  * Returns @ref HYBBX_OK when max25d responds; @p status_out receives
- * `error=` / `voice=` / `stack=` / `serial=` as reported (valid or invalid).
- * HyBBX accepts both without override — only TCP/handshake failure is fatal.
+ * `error=` / `voice=` / `stack=` / `serial=` as reported by MAX25 (valid or invalid).
+ * Data-quality rules (3×20s passes, CALLID, min % good) live in max25d only —
+ * HyBBX accepts STATUS without override; only TCP/handshake failure is fatal.
  */
 hybbx_result_t hybbx_max25_probe(const hybbx_max25_config_t *cfg,
                                    hybbx_max25_status_t *status_out);
