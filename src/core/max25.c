@@ -73,6 +73,7 @@ void hybbx_max25_config_defaults(hybbx_max25_config_t *cfg)
     }
 
     memset(cfg, 0, sizeof(*cfg));
+    cfg->check = 1;
     hybbx_strlcpy(cfg->host, HYBBX_MAX25_DEFAULT_HOST, sizeof(cfg->host));
     cfg->port = HYBBX_MAX25_DEFAULT_PORT;
     cfg->timeout_ms = HYBBX_MAX25_PROBE_TIMEOUT_MS;
@@ -83,11 +84,11 @@ void hybbx_max25_config_apply(hybbx_max25_config_t *cfg,
 {
     const char *host;
 
-    hybbx_max25_config_defaults(cfg);
     if (cfg == NULL || config == NULL) {
         return;
     }
 
+    hybbx_max25_config_defaults(cfg);
     cfg->check = hybbx_config_get_bool(config, "max25", "check", 1);
     host = hybbx_config_get(config, "max25", "host", HYBBX_MAX25_DEFAULT_HOST);
     hybbx_strlcpy(cfg->host, host, sizeof(cfg->host));
@@ -177,10 +178,125 @@ const char *hybbx_max25_config_skip_prefix(const char *config,
     return sep != NULL ? sep + 1 : config + len;
 }
 
+void hybbx_max25_status_clear(hybbx_max25_status_t *status)
+{
+    if (status == NULL) {
+        return;
+    }
+
+    memset(status, 0, sizeof(*status));
+}
+
 #if !defined(_WIN32) && !defined(__AMIGA__)
 
-static hybbx_result_t max25_tcp_probe_host(const char *host, unsigned port,
-                                           unsigned timeout_ms)
+static void max25_status_assign(char *dst, size_t dst_len, const char *value)
+{
+    if (dst == NULL || dst_len == 0) {
+        return;
+    }
+
+    dst[0] = '\0';
+    if (value == NULL || value[0] == '\0') {
+        return;
+    }
+
+    hybbx_strlcpy(dst, value, dst_len);
+}
+
+static void max25_status_parse_line(const char *line,
+                                    hybbx_max25_status_t *status)
+{
+    char buf[512];
+    char *save = NULL;
+    char *tok;
+    const char *payload;
+
+    if (status == NULL || line == NULL) {
+        return;
+    }
+
+    if (strncmp(line, "STATUS ", 7) != 0) {
+        return;
+    }
+
+    payload = line + 7;
+    if (strlen(payload) >= sizeof(buf)) {
+        return;
+    }
+
+    hybbx_strlcpy(buf, payload, sizeof(buf));
+
+    for (tok = strtok_r(buf, " ", &save); tok != NULL;
+         tok = strtok_r(NULL, " ", &save)) {
+        char *eq = strchr(tok, '=');
+
+        if (eq == NULL) {
+            continue;
+        }
+
+        *eq = '\0';
+        if (strcmp(tok, "error") == 0) {
+            max25_status_assign(status->error, sizeof(status->error), eq + 1);
+        } else if (strcmp(tok, "voice") == 0) {
+            max25_status_assign(status->voice, sizeof(status->voice), eq + 1);
+        } else if (strcmp(tok, "stack") == 0) {
+            max25_status_assign(status->stack, sizeof(status->stack), eq + 1);
+        } else if (strcmp(tok, "serial") == 0) {
+            max25_status_assign(status->serial, sizeof(status->serial), eq + 1);
+        }
+    }
+}
+
+static int max25_read_line(int fd, char *buf, size_t buflen,
+                           unsigned timeout_ms)
+{
+    size_t pos = 0;
+    unsigned elapsed = 0;
+    const unsigned step_ms = 50u;
+
+    if (buf == NULL || buflen == 0) {
+        return -1;
+    }
+
+    buf[0] = '\0';
+
+    while (pos + 1 < buflen && elapsed <= timeout_ms) {
+        struct pollfd pfd;
+        char ch;
+        ssize_t n;
+
+        pfd.fd = fd;
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+
+        if (poll(&pfd, 1, (int)step_ms) <= 0) {
+            elapsed += step_ms;
+            continue;
+        }
+
+        n = recv(fd, &ch, 1, 0);
+        if (n <= 0) {
+            return -1;
+        }
+
+        if (ch == '\n') {
+            buf[pos] = '\0';
+            while (pos > 0 && (buf[pos - 1] == '\r' || buf[pos - 1] == ' ')) {
+                buf[--pos] = '\0';
+            }
+            return 0;
+        }
+
+        if (ch != '\r') {
+            buf[pos++] = ch;
+        }
+    }
+
+    return -1;
+}
+
+static int max25_tcp_connect(const char *host, unsigned port,
+                             unsigned timeout_ms, int *out_fd)
 {
     struct sockaddr_in6 addr6;
     struct sockaddr_in addr4;
@@ -193,8 +309,14 @@ static hybbx_result_t max25_tcp_probe_host(const char *host, unsigned port,
     int so_error = 0;
     socklen_t so_len = sizeof(so_error);
 
+    if (out_fd == NULL) {
+        return -1;
+    }
+
+    *out_fd = -1;
+
     if (host == NULL || host[0] == '\0' || port == 0u) {
-        return HYBBX_ERR_INVALID;
+        return -1;
     }
 
     if (strchr(host, ':') != NULL) {
@@ -202,7 +324,7 @@ static hybbx_result_t max25_tcp_probe_host(const char *host, unsigned port,
         addr6.sin6_family = AF_INET6;
         addr6.sin6_port = htons((uint16_t)port);
         if (inet_pton(AF_INET6, host, &addr6.sin6_addr) != 1) {
-            return HYBBX_ERR_INVALID;
+            return -1;
         }
         fd = socket(AF_INET6, SOCK_STREAM, 0);
         addr = (const struct sockaddr *)&addr6;
@@ -212,7 +334,7 @@ static hybbx_result_t max25_tcp_probe_host(const char *host, unsigned port,
         addr4.sin_family = AF_INET;
         addr4.sin_port = htons((uint16_t)port);
         if (inet_pton(AF_INET, host, &addr4.sin_addr) != 1) {
-            return HYBBX_ERR_INVALID;
+            return -1;
         }
         fd = socket(AF_INET, SOCK_STREAM, 0);
         addr = (const struct sockaddr *)&addr4;
@@ -220,56 +342,106 @@ static hybbx_result_t max25_tcp_probe_host(const char *host, unsigned port,
     }
 
     if (fd < 0) {
-        return HYBBX_ERR_IO;
+        return -1;
     }
 
     flags = fcntl(fd, F_GETFL, 0);
     if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) != 0) {
         close(fd);
-        return HYBBX_ERR_IO;
+        return -1;
     }
 
     rc = connect(fd, addr, addr_len);
-    if (rc == 0) {
+    if (rc != 0 && errno != EINPROGRESS) {
         close(fd);
-        return HYBBX_OK;
+        return -1;
     }
-    if (errno != EINPROGRESS) {
+    if (rc != 0) {
+        pfd.fd = fd;
+        pfd.events = POLLOUT;
+        pfd.revents = 0;
+
+        rc = poll(&pfd, 1, (int)timeout_ms);
+        if (rc <= 0) {
+            close(fd);
+            return -1;
+        }
+
+        if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &so_error, &so_len) != 0 ||
+            so_error != 0) {
+            close(fd);
+            return -1;
+        }
+    }
+
+    if (fcntl(fd, F_SETFL, flags & ~O_NONBLOCK) != 0) {
+        close(fd);
+        return -1;
+    }
+
+    *out_fd = fd;
+    return 0;
+}
+
+static void max25_log_accepted_status(const hybbx_max25_config_t *cfg,
+                                      const hybbx_max25_status_t *status)
+{
+    const char *error = status->error[0] != '\0' ? status->error : "n/a";
+    const char *voice = status->voice[0] != '\0' ? status->voice : "n/a";
+    const char *stack = status->stack[0] != '\0' ? status->stack : "n/a";
+    const char *serial = status->serial[0] != '\0' ? status->serial : "n/a";
+
+    hybbx_log_info("[max25] max25d at %s:%u — STATUS accepted "
+                   "(error=%s voice=%s stack=%s serial=%s; MAX25 reporting only)",
+                   cfg->host, cfg->port, error, voice, stack, serial);
+}
+
+static hybbx_result_t max25_handshake(const hybbx_max25_config_t *cfg,
+                                    hybbx_max25_status_t *status)
+{
+    char line[512];
+    int fd = -1;
+
+    if (max25_tcp_connect(cfg->host, cfg->port, cfg->timeout_ms, &fd) != 0) {
+        return HYBBX_ERR_IO;
+    }
+
+    if (max25_read_line(fd, line, sizeof(line), cfg->timeout_ms) != 0 ||
+        strcmp(line, "OK") != 0) {
         close(fd);
         return HYBBX_ERR_IO;
     }
 
-    pfd.fd = fd;
-    pfd.events = POLLOUT;
-    pfd.revents = 0;
-
-    rc = poll(&pfd, 1, (int)timeout_ms);
-    if (rc <= 0) {
+    if (max25_read_line(fd, line, sizeof(line), cfg->timeout_ms) != 0 ||
+        strncmp(line, "STATUS ", 7) != 0) {
         close(fd);
         return HYBBX_ERR_IO;
     }
 
-    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &so_error, &so_len) != 0 ||
-        so_error != 0) {
-        close(fd);
-        return HYBBX_ERR_IO;
-    }
-
+    max25_status_parse_line(line, status);
+    status->handshake_ok = 1;
     close(fd);
     return HYBBX_OK;
 }
 
 #endif /* !WIN32 && !AMIGA */
 
-hybbx_result_t hybbx_max25_probe(const hybbx_max25_config_t *cfg)
+hybbx_result_t hybbx_max25_probe(const hybbx_max25_config_t *cfg,
+                                 hybbx_max25_status_t *status_out)
 {
 #if defined(_WIN32) || defined(__AMIGA__)
     (void)cfg;
+    if (status_out != NULL) {
+        hybbx_max25_status_clear(status_out);
+    }
     return HYBBX_OK;
 #else
     hybbx_result_t rc;
 
     if (cfg == NULL || !cfg->check) {
+        if (status_out != NULL) {
+            hybbx_max25_status_clear(status_out);
+        }
         return HYBBX_OK;
     }
 
@@ -277,12 +449,24 @@ hybbx_result_t hybbx_max25_probe(const hybbx_max25_config_t *cfg)
         return HYBBX_ERR_INVALID;
     }
 
-    rc = max25_tcp_probe_host(cfg->host, cfg->port, cfg->timeout_ms);
+    if (status_out != NULL) {
+        hybbx_max25_status_clear(status_out);
+    }
+
+    rc = max25_handshake(cfg, status_out);
     if (rc != HYBBX_OK) {
         hybbx_log_warn("[max25] max25d unreachable at %s:%u (timeout %u ms)",
                        cfg->host, cfg->port, cfg->timeout_ms);
+        return rc;
     }
 
-    return rc;
+    if (status_out != NULL) {
+        max25_log_accepted_status(cfg, status_out);
+    } else {
+        hybbx_log_info("[max25] max25d reachable at %s:%u — M25/1 handshake OK",
+                       cfg->host, cfg->port);
+    }
+
+    return HYBBX_OK;
 #endif
 }

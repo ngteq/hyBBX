@@ -19,9 +19,18 @@ typedef struct hybbx_max25_config {
     unsigned timeout_ms;
 } hybbx_max25_config_t;
 
+/** Snapshot from max25d M25/1 STATUS (read-only; HyBBX never overrides). */
+typedef struct hybbx_max25_status {
+    int handshake_ok;
+    char error[16];
+    char voice[16];
+    char stack[32];
+    char serial[64];
+} hybbx_max25_status_t;
+
 void hybbx_max25_config_defaults(hybbx_max25_config_t *cfg);
 
-/** Load `[max25]` from INI. `check` defaults to `yes`. */
+/** Load `[max25]` from INI. `check` defaults to `yes`. Reporting is MAX25-only. */
 void hybbx_max25_config_apply(hybbx_max25_config_t *cfg,
                               const hybbx_config_t *config);
 
@@ -37,11 +46,16 @@ void hybbx_max25_config_parse_kv(const char *max25_kv,
 const char *hybbx_max25_config_skip_prefix(const char *config,
                                            hybbx_max25_config_t *cfg);
 
+void hybbx_max25_status_clear(hybbx_max25_status_t *status);
+
 /**
- * TCP connect probe to max25d (no M25/1 handshake). Returns @ref HYBBX_OK when
- * the port accepts a connection within @p cfg->timeout_ms.
+ * TCP connect + M25/1 connect handshake (`OK` + `STATUS …`).
+ * Returns @ref HYBBX_OK when max25d responds; @p status_out receives
+ * `error=` / `voice=` / `stack=` / `serial=` as reported (valid or invalid).
+ * HyBBX accepts both without override — only TCP/handshake failure is fatal.
  */
-hybbx_result_t hybbx_max25_probe(const hybbx_max25_config_t *cfg);
+hybbx_result_t hybbx_max25_probe(const hybbx_max25_config_t *cfg,
+                                   hybbx_max25_status_t *status_out);
 
 #ifdef __cplusplus
 }

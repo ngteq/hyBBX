@@ -899,6 +899,7 @@ static hybbx_result_t packet_radio_start(const char *config)
     char scratch[4096];
     const char *cursor;
     hybbx_max25_config_t max25;
+    hybbx_max25_status_t max25_status;
     hybbx_result_t rc = HYBBX_OK;
     unsigned started = 0;
     unsigned section_num = 0;
@@ -916,16 +917,12 @@ static hybbx_result_t packet_radio_start(const char *config)
     cursor = hybbx_max25_config_skip_prefix(config, &max25);
     local_edges = packet_radio_count_local_edges(cursor);
     if (local_edges > 0u) {
-        if (max25.check && hybbx_max25_probe(&max25) != HYBBX_OK) {
+        if (max25.check &&
+            hybbx_max25_probe(&max25, &max25_status) != HYBBX_OK) {
             hybbx_log_warn("[packet_radio] local RF requires max25d at %s:%u "
                            "— start MAX25 prep or set [max25] check=no",
                            max25.host, max25.port);
             return HYBBX_ERR_IO;
-        }
-        if (max25.check) {
-            hybbx_log_info("[packet_radio] max25d reachable at %s:%u — "
-                           "KISS attach only (hardware via MAX25)",
-                           max25.host, max25.port);
         }
     }
 
