@@ -1,85 +1,37 @@
-# Development
+# Development · HyBBX 2.4.0
 
-[AGENTS.md](../AGENTS.md) · [CONTRIBUTING.md](../CONTRIBUTING.md) · **v2.0.0**
+Contributor build, test, and code layout reference.
 
-## Toolchain
+## Workflow matrix
 
-CMake 3.16+, GCC or Clang, pthread. **POSIX+ first** — shared code uses C99 and portable POSIX APIs; isolate OS-specific paths (see [PLATFORMS.md](PLATFORMS.md)). Keep `*BSD` (FreeBSD, NetBSD, OpenBSD, …), **AmigaOS 3.9+**, MacOS, and Windows builds working when you touch core, clients, or serial/socket code.
+| Step | Command |
+|------|---------|
+| Debug build | `cmake -B build -DCMAKE_BUILD_TYPE=Debug && cmake --build build` |
+| Tests | `-DHYBBX_BUILD_TESTS=ON && ctest --test-dir build` |
+| Clients only | `-DHYBBX_CLIENTS_ONLY=ON` |
+| Format / lint | project scripts in `scripts/` |
 
-```bash
-./scripts/dev-setup.sh
-```
+## Layout matrix
 
-## Layout
+| Path | Content |
+|------|---------|
+| `src/` | Daemon core |
+| `plugins/` | Transport plugins |
+| `include/hybbx/` | Public headers |
+| `share/` | INI templates, YAML registries |
+| `tests/` | Unit tests (opt-in build) |
 
-API: `include/hybbx/`. Config: `share/`. Sessions and commands: `src/core/`. Transports: `plugins/`. Full INI: [MANUAL.md](MANUAL.md).
+## v2.4.0 dev notes matrix
 
-```
-src/core/       session, storage, circuit, commands, commands_registry
-src/clients/    hybbx-telnet, hybbx-ssh, hybbx-terminal
-plugins/        telnet, ssh, websocket, packet_radio, entertain_* (chess, …)
-share/          hybbx-*.ini.example (standalone, main, mesh, secondary), areas.yaml, commands.yaml
-```
+| Topic | Rule |
+|-------|------|
+| MAX25 boundary | No BayCom/PC-COM in `packet_radio` |
+| Local TNC tests | Mock max25d `:7325` recommended |
+| Live secrets | `./local/` only |
 
-## Architecture
+## Related
 
-```
-Users → telnet | ssh | websocket → Main (sessions, storage)
-Secondary / proxy network / RF plugins → HBX circuit :7323 only
-```
-
-- **Text-first:** core I/O is line-oriented plain text; `[traffic]` controls width, pace, optional ANSI
-- **Extensible:** plugins add transports, entertain apps, or richer clients — no wire/game parsing in core
-- **Portable:** POSIX+ C99 in shared code; platform branches in dedicated files — [PLATFORMS.md](PLATFORMS.md)
-- No wire-protocol parsing in `src/core/`
-- Inter-node: HBX/Circuit + `LINK_AUTH` only
-- Built-in `[security]` in `src/core/security_ban.c` — [SECURITY.md](SECURITY.md)
-- Plugins: `hybbx_transport_plugin_t` — register in `src/main.c`
-- **Entertain Area:** every game/app is a plugin in `plugins/` — never `src/core/`. See [ENTERTAIN.md](ENTERTAIN.md).
-
-## Commands
-
-Registry: [share/commands.yaml](../share/commands.yaml) (help, aliases, access, rights). Layout: [share/areas.yaml](../share/areas.yaml) (menu/index areas). See [COMMANDS.md](COMMANDS.md).
-
-- User groups: Sysop, Admin, Mod, User, Guest — never “Staff”
-- `/help` and `/menu` (no args): filtered menu from `areas.yaml` for this session level
-- `/index`: full command-index for every account
-- `/alias`: alias map
-- Help topics: two lines, ≤80 cols, no square brackets in session text
-- `/broadcast` / `/announce`: Sysop → all online sessions on local Main
-
-## Conventions
-
-- C99, `hybbx_` prefix, `hybbx_result_t`
-- INI booleans: `hybbx_parse_bool()`
-- Limits: `include/hybbx/limits.h`
-- **Logging:** use `hybbx_log_debug/stats/info/warn` for operational messages; `[log] level` filters console and file (`debug` → `stats` → `info` → `warn`)
-- **Portability:** prefer POSIX+ APIs in `src/core/` and shared helpers; no Linux-only calls without a guarded fallback. Platform branches: `_WIN32`, `__AMIGA__`, `__APPLE__`, or dedicated files (e.g. `serial_port.c`). After serial/socket/client changes, confirm `*BSD` (FreeBSD, NetBSD, OpenBSD, …) and AmigaOS cross-build paths still compile.
-
-## Testing
-
-```bash
-cmake -B build -DHYBBX_BUILD_TESTS=ON && cmake --build build
-ctest --test-dir build --output-on-failure
-```
-
-## Doc duty
-
-| Change | Update |
-|--------|--------|
-| INI / operator | MANUAL.md + `share/*.ini.example` |
-| Commands | areas.yaml, commands.yaml, COMMANDS.md, commands_registry.c |
-| Build | BUILD.md |
-| Transport plugin | matching doc in `docs/` (TNCS, WEBSOCKET, …) |
-
-Technical docs only — no planning or status matrices.
-
-## Git
-
-- **Only** `ngteq <info@un1t.me>` — author and committer (`.git/config`)
-- **Only** SSH push: `~/.ssh/id_ed25519_ngteq` → `git@github.com:ngteq/hyBBX.git`
-- Agents: commit/push only when the user asks
-
-## RF prep (MAX25)
-
-TNC, BayCom PR-Stack, and CRDOP soft-modem **lifecycle** live in **MainAX25-Stack (MAX25)** — not in HyBBX. MAX25 owns boot-wait, DTR/RTS power-on, host `MYCALL`, `kiss on`, TXDELAY/Persist defaults, and modem line setup. HyBBX `packet_radio` opens serial **after** prep and attaches with `kiss_entry=none` (default). Contract: MAX25 `docs/HYBBX.md` + `share/hybbx-*.ini.example`.
+| Goal | Doc |
+|------|-----|
+| Build | [BUILD.md](BUILD.md) |
+| Contributing | [../CONTRIBUTING.md](../CONTRIBUTING.md) |

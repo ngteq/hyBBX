@@ -1,5 +1,1 @@
-News
-
-HyBBX v2.4.0 — MAX25-minimal RF boundary; BayCom runtime default off; mandatory max25d prep.
-
-Welcome. Type /help for commands.
+HyBBX 2.4.0 — MAX25-minimal RF boundary: local packet_radio requires reachable max25d when [max25] check=yes; kiss_entry=none after MAX25 prep; tnc=baycom and tnc=pccom rejected in packet_radio; BayCom transport plugin built but disabled at runtime ([networks] baycom=no). Includes v2.0.0-p2 baseline (menu registry, TNC recovery, broadcast fixes).

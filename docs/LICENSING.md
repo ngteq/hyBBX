@@ -1,39 +1,26 @@
-# Licensing
+# Licensing · HyBBX 2.4.0
 
-**v2.0.0** · not legal advice.
+HyBBX and shipped components — license reference.
 
-## HyBBX
+## License matrix
 
-| Item | License |
-|------|---------|
-| Core, plugins, clients, docs | **GPL-3.0** — [LICENSE.txt](../LICENSE.txt) (copyright: HyBBX contributors) |
+| Component | License |
+|-----------|---------|
+| HyBBX core + plugins | GPL-3.0 — [LICENSE.txt](../LICENSE.txt) |
+| Bundled crypto (tinysha256, tinyaes, monocypher) | respective upstream licenses |
+| Optional OpenSSL / libsodium | upstream licenses when enabled |
 
-## Bundled in HyBBX binary
+## Distribution matrix
 
-| Component | Path | License |
-|-----------|------|---------|
-| Monocypher | `third_party/monocypher/` | BSD-2 or CC0 |
-| tiny-AES-c | `third_party/tinyaes/` | Public domain |
-| tinysha256 | `third_party/tinysha256/` | Unlicense |
+| Item | Rule |
+|------|------|
+| Source offer | GPL-3.0 compliance required for derivatives |
+| Operator config | `./local/` — not part of distribution |
+| Third-party deps | Document in build output / package metadata |
 
-Optional link-time: OpenSSL, libsodium — their licenses if enabled.
+## Related
 
-## External modems (not shipped with HyBBX)
-
-HyBBX is **plugin-only** — no ARDOPC/CRDOPC/TNC DSP in tree.
-
-| Program | Typical license | HyBBX plugin |
-|---------|-----------------|--------------|
-| ARDOPC (g8bpq) | GPL-3.0 (packaging) | `ardop` — GPL-3.0 |
-| ardopcf (pflarue) | MIT | `ardop` — GPL-3.0 |
-| CRDOPC (external) | MIT | `crdop` — GPL-3.0 |
-
-Plugins talk to external processes over TCP — no DSP linking.
-
-## Distributor checklist
-
-1. Ship [LICENSE.txt](../LICENSE.txt)
-2. Include Monocypher / tiny-AES-c / tinysha256 notices
-3. If bundling ARDOPC or CRDOPC separately, ship their LICENSE/NOTICE
-
-Details: [ARDOP.md](ARDOP.md), [CRDOP.md](CRDOP.md).
+| Goal | Doc |
+|------|-----|
+| Build options | [BUILD.md](BUILD.md) |
+| Root README | [../README.md](../README.md) |

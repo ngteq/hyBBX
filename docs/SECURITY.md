@@ -1,58 +1,38 @@
-# Security and spam policy
+# Security · HyBBX 2.4.0
 
-**v2.0.0** — built-in `[security]` in core (`security.log`, `security_ban.c`). No separate spam plugin.
+Built-in `[security]` — network protection and abuse in one subsystem.
 
-HyBBX treats **network security** and **spam control** as one subsystem: same `[security]` section, same `security.log`, same short cool-down bans.
-
-## Two layers
+## Layer matrix
 
 | Layer | What | Ban? |
 |-------|------|------|
-| **Soft limits** | Normal use, RF pacing, message size | **No** — drop, pace, or reject single actions |
-| **Abuse** | Brute-force, connection flood, *excessive* spam | **Yes** — short IP ban (`bantime`, default 10 min) |
+| **Soft limits** | RF pacing, message size, traffic shaping | **No** |
+| **Abuse** | Brute-force, connection flood, excessive spam | **Yes** — short IP/CALLID cool-down |
 
-Normal chat, mail, or guest activity must never trigger a ban. Only repeated **abuse** crosses into `[security]`.
-
-## Soft limits (no bans)
-
-Configured outside `[security]`; they shape traffic on slow links:
+## Soft limit matrix
 
 | Area | Keys | Effect |
 |------|------|--------|
 | `[traffic]` | `baud`, `pace_output`, `line_width` | Output pacing |
-| `[chat]` | `message_max` | Truncate/deny oversized lines |
-| `[mail]` | `max_messages`, `body_max`, `subject_max` | Mailbox caps |
-| Conference | *(fixed)* | Max 2 invites per target / 30 min |
-| AX.25 broadcast | *(fixed)* | Min 900 s auto cycle; 180 s band idle; 60 s between links; 900 s per-link min |
+| `[chat]` | `message_max` | Truncate oversized lines |
+| `[mail]` | `max_messages`, `body_max` | Mailbox caps |
+| AX.25 broadcast | fixed | Min 900 s auto cycle; 60 s between links |
 
-These are **not** security events. A busy user on a slow link is expected.
-
-## `[security]` — when bans apply
+## Ban trigger matrix
 
 | Target | Event | Default threshold |
 |--------|-------|-------------------|
-| **IP** | `login_fail` | 5 failures / 10 min |
-| **IP** | `link_auth_fail` | 5 failures / 10 min |
-| **IP** | `rate_limit` (connection flood) | 30 / 60 s |
-| **IP** | `abuse:*` *(hook)* | 30 events / 10 min |
-| **CALLID** | `link_auth_fail` (`link_id`) | same as login |
-| **CALLID** | `abuse:*` *(hook)* | same as IP abuse |
-| **CALLID** | `config` (`ban_callid=`) | immediate, permanent |
+| **IP** | `login_fail` | 5 / 10 min |
+| **IP** | `link_auth_fail` | 5 / 10 min |
+| **IP** | `rate_limit` | 30 / 60 s |
+| **CALLID** | `link_auth_fail` | same as login |
+| **CALLID** | `ban_callid=` config | immediate, permanent |
 
-**CALLID** = AX.25 callsign (`CALL` or `CALL-SSID`) or HBX `link_id`. Packet-radio RX and circuit `LINK_AUTH` check the ban list before accepting traffic. `iptables`/`nftables` apply to IPs only.
+CALLID = AX.25 callsign or HBX `link_id`. Optional `iptables`/`nftables` via `ban_backend`.
 
-Policy: **short cool-down bans** for dynamic abuse; **permanent** only via `ban_callid` in INI.
+## Related
 
-INI keys: [MANUAL.md](MANUAL.md#security). Optional `iptables` / `nftables` via `ban_backend`. External fail2ban filters in `share/fail2ban/` remain optional.
-
-## Abuse hook
-
-`hybbx_security_ban_abuse_report(ip, category)` counts toward `abuse_maxretry` / `abuse_findtime`. Plugins and core call it for repeated flood patterns — not for every rejected message.
-
-## Content policy
-
-No automated content classifier in core. Moderator role (`mod`) exists for operator policy. IP/CALLID bans cover network abuse only.
-
-## Inter-node
-
-All HyBBX-to-HyBBX paths use **HBX/Circuit** + `link_password`. See [TOPOLOGY.md](TOPOLOGY.md).
+| Goal | Doc |
+|------|-----|
+| Manual `[security]` | [MANUAL.md](MANUAL.md) |
+| Topology link auth | [TOPOLOGY.md](TOPOLOGY.md) |

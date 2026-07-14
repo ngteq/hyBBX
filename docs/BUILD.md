@@ -1,82 +1,44 @@
-# Build
+# Build · HyBBX 2.4.0
 
-[PLATFORMS.md](PLATFORMS.md) · [MANUAL.md](MANUAL.md) · **v2.0.0**
+POSIX+ build reference. Platforms: [PLATFORMS.md](PLATFORMS.md).
 
-HyBBX targets POSIX+ systems first; `*BSD` (FreeBSD, NetBSD, OpenBSD, …) and AmigaOS 3.9+ stay supported in-tree ([PLATFORMS.md](PLATFORMS.md#amigaos-39)).
+## Build matrix
 
-## Build and run
+| Step | Command |
+|------|---------|
+| Release build | `cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build` |
+| Run | `./scripts/hybbx.sh` |
+| Test | `-DHYBBX_BUILD_TESTS=ON` → `ctest --test-dir build` |
+| Telnet smoke | `telnet 127.0.0.1 2323` |
+| SSH smoke | `ssh 127.0.0.1 -p 3232` |
 
-```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-./scripts/hybbx.sh
-telnet 127.0.0.1 2323
-```
-
-SSH: `ssh 127.0.0.1 -p 3232`. WebSocket: [WEBSOCKET.md](WEBSOCKET.md).
-
-Empty data dir → **Sysop** with a random password (printed on first start; change with `/changeme`). `auto_login = yes` → guest; `/login` for registered users.
-
-Tests: `-DHYBBX_BUILD_TESTS=ON` → `ctest --test-dir build`
-
-## CMake options
+## CMake options matrix
 
 | Option | Default | Description |
 |--------|---------|-------------|
 | `HYBBX_BUILD_DAEMON` | ON | `hybbxd` + core |
 | `HYBBX_BUILD_CLIENTS` | ON | CLI clients |
-| `HYBBX_BUILD_CLIENT_SSH` | ON | `hybbx-ssh` (requires libssh) |
-| `HYBBX_CLIENTS_ONLY` | OFF | Clients without daemon |
-| `HYBBX_BUILD_PLUGINS` | ON | Transport plugins |
-| `HYBBX_PLUGIN_TELNET` | ON | Telnet |
 | `HYBBX_PLUGIN_PACKET_RADIO` | ON | Packet radio |
-| `HYBBX_PLUGIN_BAYCOM` | OFF | BayCom PR-Stack plugin (opt-in; [BAYCOM.md](BAYCOM.md)) |
-| `HYBBX_PLUGIN_MAINS_PROXY` | OFF | Main-to-Main mesh proxy (opt-in; [MAINS_PROXY.md](MAINS_PROXY.md)) |
+| `HYBBX_PLUGIN_BAYCOM` | ON | BayCom plugin (v2.4.0 built; runtime off) |
+| `HYBBX_PLUGIN_MAINS_PROXY` | OFF | Main-to-Main mesh proxy |
 | `HYBBX_PLUGIN_ARDOP` | ON | ARDOP plugin |
 | `HYBBX_PLUGIN_CRDOP` | ON | CRDOP plugin |
-| `HYBBX_PLUGIN_SSH` | ON | SSH (requires libssh) |
-| `HYBBX_PLUGIN_WEBSOCKET` | ON | WebSocket forward-proxy (port 4591; OpenSSL → wss) |
+| `HYBBX_PLUGIN_SSH` | ON | SSH (libssh) |
+| `HYBBX_PLUGIN_WEBSOCKET` | ON | WebSocket proxy |
 | `HYBBX_BUILD_TESTS` | OFF | Unit tests |
-| `HYBBX_HARDENING` | ON | Stack protector, RELRO/PIE |
-| `HYBBX_CRYPTO_OPENSSL` | OFF | Optional OpenSSL (`libssl`) |
-| `HYBBX_CRYPTO_LIBSODIUM` | OFF | Optional libsodium |
-| `HYBBX_STORAGE_SQLITE` | ON | Optional SQLite storage (`libsqlite3`) |
+| `HYBBX_STORAGE_SQLITE` | ON | SQLite backend |
 
-**Defaults (no host deps):** flatfile storage + built-in crypto (`tinysha256`, `tinyaes`, `monocypher`). **Recommended when packages are available:** `-DHYBBX_CRYPTO_OPENSSL=ON` and `[storage] backend = sqlite` in `hybbx.ini` (after building with libsqlite3).
+## Config matrix
 
-```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release \
-  -DHYBBX_CRYPTO_OPENSSL=ON -DHYBBX_STORAGE_SQLITE=ON
-```
+| Item | Value |
+|------|-------|
+| Live INI | `./local/hybbx.ini` (gitignored) |
+| Templates | `share/hybbx-*.ini.example` |
+| Secrets | `./local/` only — never commit |
 
-Clients-only: `-DHYBBX_CLIENTS_ONLY=ON` or `./scripts/build-clients.sh`.
+## Related
 
-## AmigaOS cross-build
-
-See [PLATFORMS.md](PLATFORMS.md#amigaos-39). `hybbx-telnet` only: `./scripts/build-amiga-telnet.sh`.
-Only telnet and packet_radio plugins build on AmigaOS for the full daemon.
-
-## Install
-
-```bash
-cmake --install build --prefix /path
-```
-
-→ `<prefix>/hybbx/` (`hybbxd`, `hybbx-start`, `hybbx.ini`, `text/`, `data/`, `logs/`, `lib/`).
-
-## hybbxd — screen / tmux
-
-Daemon binary: **`hybbxd`** (install root still `hybbx/`).
-
-| Command | Effect |
-|---------|--------|
-| `hybbxd -c hybbx.ini` | Foreground (default) |
-| `hybbxd --screen -c hybbx.ini` | Detached GNU screen session `hybbxd` |
-| `hybbxd --tmux -c hybbx.ini` | Detached tmux session `hybbxd` |
-| `hybbxd --screen --attach` | Attach: `screen -r hybbxd` |
-| `hybbxd --tmux --attach` | Attach: `tmux attach -t hybbxd` |
-| `hybbx-start --tmux` | Start script forwards wrap flags to `hybbxd` |
-
-Custom session name: `--screen mysess` or `--tmux mysess`.
-
-CRDOPC is **not** built by HyBBX — [CRDOP.md](CRDOP.md).
+| Goal | Doc |
+|------|-----|
+| Platforms | [PLATFORMS.md](PLATFORMS.md) |
+| Developer | [DEVELOPMENT.md](DEVELOPMENT.md) |

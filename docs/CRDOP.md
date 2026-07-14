@@ -1,69 +1,35 @@
-# CRDOP plugin
+# CRDOP plugin · HyBBX 2.4.0
 
-**v2.0.0** · sources: `plugins/crdop/`. External modem: **CRDOPC** (not in HyBBX tree). Verify RF on site after deploy.
+HyBBX transport for MAX25-SoftModem (CRDOP) — acoustic AX.25 over soundcard.
 
-CB-oriented digital bridge. Separate protocol from ARDOP — [ARDOP.md](ARDOP.md).
+## Integration matrix
 
-## Model
+| Layer | Owner |
+|-------|-------|
+| Soft-modem prep, TCP 8515/8516 | MAX25 `soft-crdop` |
+| HyBBX transport | `crdop` plugin |
+| INI merge | `share/hybbx/crdop-host.ini.example` |
 
-| Layer | Component |
-|-------|-----------|
-| HyBBX | `crdop` plugin → HBX `terminal` |
-| Modem | **CRDOPC** (external build) |
-| Wire | ARDOP-compatible host TCP — control **N**, data **N+1** |
+## Config matrix
 
-Plugin applies CB defaults (`500MAX`, half-duplex QoS, `crdop-link`).
+| Item | Value |
+|------|-------|
+| Enable | `[networks] crdop=yes` |
+| CMake | `HYBBX_PLUGIN_CRDOP=ON` (default) |
+| `modem_host` | MAX25 host (loopback or LAN) |
+| `modem_port` | `8515` (control) |
 
-**RF prep:** CRDOPC build and lifecycle live in **MainAX25-Stack (MAX25)** `hardware/soft-modems` — not in HyBBX. Start MAX25 (or CRDOPC) before enabling this plugin.
+## Start order matrix
 
-## CRDOPC (external)
+| # | Action |
+|---|--------|
+| 1 | `max25-ctl start --hardware soft-modems --device soft-crdop` |
+| 2 | Merge CRDOP host INI fragment |
+| 3 | Start HyBBX with `[networks] crdop=yes` |
 
-Build and install CRDOPC via MAX25 soft-modem prep (or upstream CRDOP), then start it **before** HyBBX (default control port **8515**).
+## Related
 
-## INI (Secondary typical)
-
-```ini
-[networks]
-crdop = yes
-
-[transport.crdop1]
-enabled = yes
-modem_host = 127.0.0.1
-modem_port = 8515
-mycall = CB-0
-listen = yes
-circuit_host = main.example.com
-circuit_port = 7323
-link_id = secondary-crdop
-link_password = secret
-```
-
-Main: matching `[transport.crdop1]` bridge entry.
-
-## Source tree
-
-```
-plugins/crdop/
-  crdop.c, crdop_config.c    Plugin + CB INI parse
-include/hybbx/crdop.h
-```
-
-Host TCP via shared `hybbx_ardop_common` helpers.
-
-**CMake:** `HYBBX_PLUGIN_CRDOP=ON`. CRDOP-only: `-DHYBBX_PLUGIN_ARDOP=OFF`. Kind: `HYBBX_TRANSPORT_CRDOP` (5).
-
-## Local test
-
-```bash
-./scripts/test-crdop-plugin.sh
-```
-
-Mock host TCP only — not RF.
-
-## Licensing
-
-Plugin: GPL-3.0. CRDOPC: MIT — [LICENSING.md](LICENSING.md).
-
-## See also
-
-[ARDOP.md](ARDOP.md) · [MANUAL.md](MANUAL.md) · [BUILD.md](BUILD.md)
+| Goal | Doc |
+|------|-----|
+| MAX25 CRDOP | MAX25-Stack `docs/CRDOP.md` |
+| Manual | [MANUAL.md](MANUAL.md) |

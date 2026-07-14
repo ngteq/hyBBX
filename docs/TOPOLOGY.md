@@ -1,89 +1,43 @@
-# HyBBX topology
+# Topology · HyBBX 2.4.0
 
-**v2.0.0** — Main, Secondary, and mains-proxy mesh. INI: [MANUAL.md](MANUAL.md). Mesh detail: [MAINS_PROXY.md](MAINS_PROXY.md).
+Main, Secondary, and mains-proxy mesh layout.
 
-User-facing paths are **text-first** (line-oriented sessions, `/` commands). Transports and plugins may add ANSI, menus, or client graphics; HBX/RF payloads remain plain text unless a plugin defines otherwise.
-
-## Roles
+## Role matrix
 
 | Role | Process | Typical `[networks]` | Hosts |
 |------|---------|----------------------|-------|
-| **Main** | `hybbx` | `circuit=yes`, `mains_proxy` optional | Users (telnet/SSH/WebSocket), storage, HBX hub `:7323` |
-| **Secondary** | `hybbx` (separate host) | `circuit=no`, `ax25=yes` | RF host; HBX client to Main |
-| **Standalone Main** | `hybbx` | `ax25=yes` on same box | Lab / single-host |
+| **Main** | `hybbxd` | `circuit=yes` | Users, storage, HBX hub `:7323` |
+| **Secondary** | `hybbxd` (remote) | `circuit=no`, `ax25=yes` | RF; HBX client to Main |
+| **Standalone Main** | `hybbxd` | `ax25=yes` on same box | Lab / dual local TNC |
 
-**Secondary** is infrastructure (link adapter), not a telnet user. Multiple Secondaries need unique `link_id` per active link; `max_links` on Main (default 8, max 16).
-
-### RF attachment (both valid)
+## RF attachment matrix
 
 | Layout | TNC host | Main `[transport.packet_radioN]` |
-|--------|----------|--------------------------------|
-| **Remote Secondary** | Secondary (`device`, `tnc`, `circuit_host`) | Bridge registry only (`link_id`, password) |
-| **Local TNC on Main** | Same box as users | Full TNC keys (`device`, `tnc`, …) |
+|--------|----------|----------------------------------|
+| Remote Secondary | Secondary (`device`, `tnc`, `circuit_host`) | Bridge registry only (`link_id`, password) |
+| Local TNC on Main | Same box as users | Full TNC keys (`device`, `tnc`, …) |
 
-Bridge-registry rows on Main are skipped at start (no serial open). A missing or unplugged TNC logs a warning and that link instance does not start; other transports keep running.
+## HBX/Circuit matrix
 
-## Default layout
+| Item | Value |
+|------|-------|
+| Protocol | HBX v1 — magic `HBX` |
+| Default port | `7323` |
+| Max links | 16 (default `max_links=8`) |
+| Auth | Per-link `link_password` |
+| Scope | Sole inter-node transport — core never sees raw KISS |
 
-```
-Users (telnet :2323, SSH :3232, WebSocket) ──► Main (storage, mail, chat)
-                                                      ▲
-                                                      │ HBX/TCP :7323
-                                                 Secondary (packet_radio / ardop / crdop / baycom)
-```
+## Broadcast matrix
 
-Remote RF: run Secondary near the TNC; point `circuit_host` at Main. Main holds user sessions and the HBX hub; Secondary translates serial/KISS/AX.25 ↔ HBX frames.
+| Command | Scope | Level |
+|---------|-------|-------|
+| `/broadcast <msg>` | Local logged-in users | Sysop |
+| `/broadcast ax25` | Sequential RF beacon (60 s link gap) | Sysop |
 
-## HBX/Circuit — sole inter-node transport
+## Related
 
-**HBX — Hybrid Bridge eXchange (v1)** — HyBBX-internal framed protocol on the circuit TCP hub. Multiplexes link-layer payloads (AX.25, …) and application streams (terminal, proxymail, proxychat) between Main, Secondary, and proxy peers. Header magic: `H` `B` `X`.
-
-In running text: **HBX** or **HBX/Circuit** — **Circuit** = TCP hub (`:7323`), **HBX** = framing on top.
-
-All paths between HyBBX processes use HBX v1 on the internal circuit hub. The application core never sees KISS, AX.25 on-air framing, or serial — only typed HBX frames on TCP (loopback or routed).
-
-| Path | Attachment |
-|------|------------|
-| Localhost Secondary | TCP → Main `:7323`, `LINK_AUTH` |
-| Remote Secondary | TCP → Main `:7323` |
-| Packet radio / BayCom / ARDOP / CRDOP | Transport plugin on Secondary → HBX client |
-| AX.25 auto-beacon (INI) | Main → HBX → Secondary links (sequential, per-link timing) |
-| `/broadcast <msg>` (Sysop) | Logged-in local Main users (telnet/SSH/WebSocket) |
-| `/broadcast ax25` (Sysop) | Sequential RF beacon (`ax25_auto_message`; 60 s link gap) |
-| Entertain Area apps | Main plugins only — [ENTERTAIN.md](ENTERTAIN.md) |
-| Proxy network (`mains_proxy`) | Main ↔ Main via HBX circuit client |
-
-Secondary hosts authenticate with per-link `link_password`. User wire auth (telnet/SSH) is separate from HBX link auth.
-
-Protocol: `include/hybbx/circuit.h` — default port `7323`, max 16 concurrent links.
-
-## Proxy network (`mains_proxy`)
-
-Link Main or Secondary instances for **pure service linking** — proxymail and proxychat only. **No user accounts, rights, or other Main data cross proxy links.** **No Sysop, Admin, or Mod actions cross proxy links.**
-
-```
-Main-A  <--- HBX circuit :7323 + LINK_AUTH (role=proxy) --->  Main-B
-   ^                                                          ^
-   | optional Secondary / AX.25                             |
-   +----------------------------------------------------------+
-```
-
-- **Opt-in:** `-DHYBBX_PLUGIN_MAINS_PROXY=ON` and `[networks] mains_proxy=yes`
-- Peers use `circuit_host`, `circuit_port`, `link_id`, `link_password` (not a separate mesh TCP port)
-- `wire=circuit` (default); `wire=ax25` reserved
-- Secondary may run outbound `mains_proxy`; configure reciprocal `[transport.mains_proxyN]` on each peer
-
-Inter-Main mail and chat: `/proxymail` and `/proxychat`. INI keys: [MAINS_PROXY.md](MAINS_PROXY.md). `/broadcast` stays on each local node only.
-
-## Choosing a layout
-
-| Goal | Layout |
-|------|--------|
-| Users + one local TNC | Standalone Main |
-| Users in DC, RF at remote site | Main + Secondary |
-| Two BBS communities linked | Two Mains + `mains_proxy` |
-| High RF fan-out | Main + multiple Secondaries (`link_id` each) |
-
-## See also
-
-[MANUAL.md](MANUAL.md) · [TNCS.md](TNCS.md) · [BUILD.md](BUILD.md)
+| Goal | Doc |
+|------|-----|
+| Manual | [MANUAL.md](MANUAL.md) |
+| Mesh proxy | [MAINS_PROXY.md](MAINS_PROXY.md) |
+| Dual-TNC | [AX25SRV-OPERATOR-GUIDE.md](AX25SRV-OPERATOR-GUIDE.md) |
