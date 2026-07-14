@@ -13,7 +13,8 @@
  * INI `[broadcast]` ax25_auto: periodic AX.25 QST UI beacon over HBX to
  * Secondary extenders (low-bandwidth + half-duplex links). Separate from
  * `/broadcast`; not a user command. One sequential cycle per interval (min
- * 900 s); 180 s band idle; 60 s between links; per-link min 900 s.
+ * 900 s); 180 s own-channel idle before each link TX; 180 s between links;
+ * per-link min 900 s. Busy channel defers until idle.
  */
 
 #include "hybbx/ax25.h"
@@ -96,6 +97,9 @@ hybbx_result_t hybbx_broadcast_ax25(struct hybbx_service *service,
  * Periodic AX.25 auto-beacon (call once per second from Main service loop).
  */
 void hybbx_broadcast_ax25_tick(struct hybbx_service *service);
+
+/** Abort an in-flight sequential AX.25 cycle (hub stop / shutdown). */
+void hybbx_broadcast_ax25_seq_cancel(void);
 
 #ifdef __cplusplus
 }

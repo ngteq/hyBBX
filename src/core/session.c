@@ -1551,6 +1551,20 @@ int hybbx_session_is_guest(const hybbx_session_t *session)
     return hybbx_user_level_is_guest(hybbx_session_user_level(session));
 }
 
+int hybbx_session_is_interactive_user(const hybbx_session_t *session)
+{
+    hybbx_transport_kind_t kind;
+
+    if (session == NULL || session->transport == NULL) {
+        return 0;
+    }
+
+    kind = session->transport->kind;
+    return kind == HYBBX_TRANSPORT_TELNET ||
+           kind == HYBBX_TRANSPORT_SSH ||
+           kind == HYBBX_TRANSPORT_WEBSOCKET;
+}
+
 int hybbx_session_logged_in(const hybbx_session_t *session)
 {
     const hybbx_session_core_t *core;

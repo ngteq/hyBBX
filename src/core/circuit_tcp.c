@@ -591,6 +591,29 @@ unsigned hybbx_circuit_hub_active_link_count(const hybbx_circuit_hub_t *hub)
     return count;
 }
 
+static double circuit_slot_effective_frequency_mhz(
+    const hybbx_circuit_link_slot_t *slot,
+    const hybbx_circuit_hub_t *hub)
+{
+    double mhz;
+
+    if (slot == NULL) {
+        return 0.0;
+    }
+
+    mhz = slot->profile.frequency_mhz;
+    if (mhz <= 0.0 && slot->link_id[0] != '\0' && hub != NULL) {
+        const hybbx_circuit_bridge_entry_t *be =
+            hybbx_circuit_bridge_find(&hub->bridge, slot->link_id);
+
+        if (be != NULL && be->frequency_mhz > 0.0) {
+            mhz = be->frequency_mhz;
+        }
+    }
+
+    return mhz;
+}
+
 hybbx_result_t hybbx_circuit_hub_multicast_hbx(hybbx_circuit_hub_t *hub,
                                                const uint8_t *frame, size_t len,
                                                double frequency_mhz,
@@ -619,10 +642,13 @@ hybbx_result_t hybbx_circuit_hub_multicast_hbx(hybbx_circuit_hub_t *hub,
         if (require_broadcast_qos && !circuit_slot_broadcast_qos(slot)) {
             continue;
         }
-        if (frequency_mhz > 0.0 && slot->profile.frequency_mhz > 0.0 &&
-            !hybbx_ax25_frequency_match(frequency_mhz,
-                                         slot->profile.frequency_mhz)) {
-            continue;
+        if (frequency_mhz > 0.0) {
+            double slot_mhz = circuit_slot_effective_frequency_mhz(slot, hub);
+
+            if (slot_mhz <= 0.0 ||
+                !hybbx_ax25_frequency_match(frequency_mhz, slot_mhz)) {
+                continue;
+            }
         }
         if (require_broadcast_qos && circuit_frame_is_ax25_broadcast_tx(frame, len) &&
             !circuit_slot_can_send_low_prio(hub, slot)) {
@@ -638,6 +664,9 @@ hybbx_result_t hybbx_circuit_hub_multicast_hbx(hybbx_circuit_hub_t *hub,
              * without reaching RF.
              */
             rc = circuit_slot_send_raw(slot, frame, len);
+            if (rc == HYBBX_OK) {
+                hybbx_circuit_hub_note_rf_activity(hub, slot->link_id);
+            }
         } else {
             rc = circuit_slot_send_hbx(slot, frame, len);
         }
@@ -663,6 +692,43 @@ hybbx_result_t hybbx_circuit_hub_multicast_hbx(hybbx_circuit_hub_t *hub,
     }
 
     return last_err;
+}
+
+hybbx_result_t hybbx_circuit_hub_send_hbx_slot(hybbx_circuit_hub_t *hub,
+                                               unsigned slot_index,
+                                               const uint8_t *frame, size_t len,
+                                               int require_broadcast_qos)
+{
+    hybbx_circuit_link_slot_t *slot;
+    hybbx_result_t rc;
+
+    if (hub == NULL || frame == NULL || len == 0 ||
+        slot_index >= HYBBX_CIRCUIT_MAX_LINKS) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    slot = &hub->slots[slot_index];
+    if (slot->state != CIRCUIT_SLOT_ACTIVE || slot->fd < 0) {
+        return HYBBX_ERR_DENIED;
+    }
+    if (require_broadcast_qos && !circuit_slot_broadcast_qos(slot)) {
+        return HYBBX_ERR_DENIED;
+    }
+    if (require_broadcast_qos && circuit_frame_is_ax25_broadcast_tx(frame, len) &&
+        !circuit_slot_can_send_low_prio(hub, slot)) {
+        return HYBBX_ERR_BUSY;
+    }
+
+    if (require_broadcast_qos && circuit_frame_is_ax25_broadcast_tx(frame, len)) {
+        rc = circuit_slot_send_raw(slot, frame, len);
+        if (rc == HYBBX_OK) {
+            hybbx_circuit_hub_note_rf_activity(hub, slot->link_id);
+        }
+    } else {
+        rc = circuit_slot_send_hbx(slot, frame, len);
+    }
+
+    return rc;
 }
 
 double hybbx_circuit_hub_link_frequency_mhz(const hybbx_circuit_hub_t *hub)
@@ -762,15 +828,8 @@ unsigned hybbx_circuit_hub_broadcast_links(const hybbx_circuit_hub_t *hub,
             break;
         }
 
-        out[count].frequency_mhz = slot->profile.frequency_mhz;
-        if (out[count].frequency_mhz <= 0.0 && slot->link_id[0] != '\0') {
-            const hybbx_circuit_bridge_entry_t *be =
-                hybbx_circuit_bridge_find(&hub->bridge, slot->link_id);
-
-            if (be != NULL && be->frequency_mhz > 0.0) {
-                out[count].frequency_mhz = be->frequency_mhz;
-            }
-        }
+        out[count].frequency_mhz =
+            circuit_slot_effective_frequency_mhz(slot, hub);
         out[count].slot_index = i;
         hybbx_strlcpy(out[count].link_id, slot->link_id,
                       sizeof(out[count].link_id));
@@ -1443,6 +1502,14 @@ static void *circuit_accept_thread(void *arg)
                 slot->fd = client;
                 slot->state = CIRCUIT_SLOT_CONNECTING;
                 slot->balance = hybbx_circuit_balance_create(&hub->config.balance);
+                if (slot->balance == NULL) {
+                    hybbx_log_warn("[circuit] balance alloc failed — rejecting link");
+                    close(client);
+                    slot->fd = -1;
+                    slot->state = CIRCUIT_SLOT_FREE;
+                    pthread_mutex_unlock(&hub->lock);
+                    continue;
+                }
                 pthread_mutex_unlock(&hub->lock);
 
                 if (pthread_create(&slot->thread, NULL, circuit_link_thread,
@@ -1583,6 +1650,7 @@ void hybbx_circuit_hub_stop(hybbx_circuit_hub_t *hub)
         return;
     }
 
+    hybbx_broadcast_ax25_seq_cancel();
     hub->running = 0;
 
     if (hub->listen_v4 >= 0) {
@@ -1657,29 +1725,83 @@ int hybbx_circuit_hub_link_band_idle(const hybbx_circuit_hub_t *hub,
                                      unsigned min_idle_sec)
 {
     const hybbx_circuit_link_slot_t *slot;
+    hybbx_circuit_hub_t *mutable_hub;
     time_t now;
+    time_t last_rf;
     time_t idle_since;
+    circuit_slot_state_t state;
+    int fd;
 
     if (hub == NULL || slot_index >= HYBBX_CIRCUIT_MAX_LINKS ||
         min_idle_sec == 0) {
         return 0;
     }
 
+    mutable_hub = (hybbx_circuit_hub_t *)hub;
+    pthread_mutex_lock(&mutable_hub->lock);
     slot = &hub->slots[slot_index];
-    if (slot->state != CIRCUIT_SLOT_ACTIVE || slot->fd < 0) {
+    state = slot->state;
+    fd = slot->fd;
+    last_rf = slot->last_rf_activity;
+    pthread_mutex_unlock(&mutable_hub->lock);
+
+    if (state != CIRCUIT_SLOT_ACTIVE || fd < 0) {
         return 0;
     }
-    if (slot->last_rf_activity == 0) {
+    if (last_rf == 0) {
         return 1;
     }
 
     now = time(NULL);
-    idle_since = now - slot->last_rf_activity;
+    idle_since = now - last_rf;
     if (idle_since < 0) {
         return 0;
     }
 
     return (unsigned)idle_since >= min_idle_sec;
+}
+
+time_t hybbx_circuit_hub_link_band_ready_at(const hybbx_circuit_hub_t *hub,
+                                            unsigned slot_index,
+                                            unsigned min_idle_sec)
+{
+    hybbx_circuit_hub_t *mutable_hub;
+    const hybbx_circuit_link_slot_t *slot;
+    circuit_slot_state_t state;
+    int fd;
+    time_t last_rf;
+    time_t now;
+
+    if (hub == NULL || slot_index >= HYBBX_CIRCUIT_MAX_LINKS ||
+        min_idle_sec == 0) {
+        return (time_t)-1;
+    }
+
+    mutable_hub = (hybbx_circuit_hub_t *)hub;
+    pthread_mutex_lock(&mutable_hub->lock);
+    slot = &hub->slots[slot_index];
+    state = slot->state;
+    fd = slot->fd;
+    last_rf = slot->last_rf_activity;
+    pthread_mutex_unlock(&mutable_hub->lock);
+
+    if (state != CIRCUIT_SLOT_ACTIVE || fd < 0) {
+        return (time_t)-1;
+    }
+
+    now = time(NULL);
+    if (now == (time_t)-1) {
+        return (time_t)-1;
+    }
+    if (last_rf == 0) {
+        return now;
+    }
+
+    if ((unsigned)(now - last_rf) >= min_idle_sec) {
+        return now;
+    }
+
+    return last_rf + (time_t)min_idle_sec;
 }
 
 static hybbx_result_t circuit_plugin_init(hybbx_service_t *service)

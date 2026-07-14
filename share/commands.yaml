@@ -131,7 +131,7 @@ commands:
     group: general
     min: Guest
     line1: "/who"
-    line2: "Help: Online users and connection type. More: /online"
+    line2: "Help: Online interactive users (telnet/SSH/Web). More: /online"
 
   users:
     group: general
@@ -295,4 +295,4 @@ commands:
     group: sysop
     min: Sysop
     line1: "/broadcast message | ax25"
-    line2: "Help: Local announce or sequential RF beacon (60s/link gap). More: /announce"
+    line2: "Help: Local announce or sequential RF beacon (180s band idle + link gap). More: /announce"

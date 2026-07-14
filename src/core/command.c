@@ -264,6 +264,10 @@ static void who_list_visitor(hybbx_session_t *session, void *userdata)
         return;
     }
 
+    if (!hybbx_session_is_interactive_user(session)) {
+        return;
+    }
+
     name = hybbx_session_display_name(session);
     rec = hybbx_session_record(session);
     transport = who_transport_label(rec != NULL ? rec->transport : NULL);

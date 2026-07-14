@@ -95,7 +95,10 @@
 #define HYBBX_BROADCAST_AX25_BAND_IDLE_SEC 180u
 
 /** Minimum pause between successive link TX in one broadcast (seconds). */
-#define HYBBX_BROADCAST_AX25_LINK_GAP_SEC 60u
+#define HYBBX_BROADCAST_AX25_LINK_GAP_SEC 180u
+
+/** Retry delay when a sequential broadcast step is deferred (band busy, etc.). */
+#define HYBBX_BROADCAST_AX25_DEFER_RETRY_SEC 30u
 
 /** Default max25d TCP listen port (MAX25 max25d.ini.example). */
 #define HYBBX_MAX25_DEFAULT_PORT 7325u

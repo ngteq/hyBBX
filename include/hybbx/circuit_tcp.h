@@ -80,6 +80,15 @@ hybbx_result_t hybbx_circuit_hub_multicast_hbx(hybbx_circuit_hub_t *hub,
                                                int require_broadcast_qos,
                                                unsigned *sent_out);
 
+/**
+ * Send HBX to one circuit slot (sequential AX.25 broadcast).
+ * @p slot_index must be an active broadcast-QoS link when @p require_broadcast_qos.
+ */
+hybbx_result_t hybbx_circuit_hub_send_hbx_slot(hybbx_circuit_hub_t *hub,
+                                               unsigned slot_index,
+                                               const uint8_t *frame, size_t len,
+                                               int require_broadcast_qos);
+
 double hybbx_circuit_hub_link_frequency_mhz(const hybbx_circuit_hub_t *hub);
 
 /** Non-zero when link QoS is low-bandwidth and half-duplex (AX.25 broadcast allowed). */
@@ -109,6 +118,14 @@ void hybbx_circuit_hub_note_rf_activity(hybbx_circuit_hub_t *hub,
 int hybbx_circuit_hub_link_band_idle(const hybbx_circuit_hub_t *hub,
                                      unsigned slot_index,
                                      unsigned min_idle_sec);
+
+/**
+ * Earliest time a broadcast may TX on @p slot_index (now if already idle).
+ * Returns (time_t)-1 when the slot is unavailable.
+ */
+time_t hybbx_circuit_hub_link_band_ready_at(const hybbx_circuit_hub_t *hub,
+                                            unsigned slot_index,
+                                            unsigned min_idle_sec);
 
 /** Link adapter: connect to the internal circuit hub (TCP client). */
 hybbx_result_t hybbx_circuit_link_connect(const char *host, unsigned port,

@@ -122,7 +122,11 @@ static void bridge_load_section(const char *section, void *userdata)
         value = hybbx_config_get(ctx->reg_config, section, "frequency", NULL);
     }
     if (value != NULL && value[0] != '\0') {
-        entry->frequency_mhz = strtod(value, NULL);
+        double mhz = strtod(value, NULL);
+
+        if (mhz > 0.0) {
+            entry->frequency_mhz = mhz;
+        }
     }
 
     ctx->reg->count++;

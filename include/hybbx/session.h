@@ -53,6 +53,8 @@ hybbx_result_t hybbx_session_set_remote(hybbx_session_t *session,
                                         const char *remote);
 hybbx_user_level_t hybbx_session_user_level(const hybbx_session_t *session);
 int hybbx_session_is_guest(const hybbx_session_t *session);
+/** Non-zero for telnet, SSH, or WebSocket — not plugin/link transports. */
+int hybbx_session_is_interactive_user(const hybbx_session_t *session);
 /** Non-zero when the session has completed login (guest or registered). */
 int hybbx_session_logged_in(const hybbx_session_t *session);
 /** Non-zero when auto_login is off: banner + prompt, registered login only. */

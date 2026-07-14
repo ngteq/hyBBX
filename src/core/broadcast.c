@@ -158,12 +158,32 @@ void hybbx_broadcast_config_apply(hybbx_broadcast_config_t *cfg,
     dest = hybbx_config_get(config, "broadcast", "ax25_dest", NULL);
     auto_msg = hybbx_config_get(config, "broadcast", "ax25_auto_message", NULL);
     if (mycall != NULL && mycall[0] != '\0') {
-        hybbx_strlcpy(cfg->ax25_mycall, mycall, sizeof(cfg->ax25_mycall));
+        hybbx_ax25_address_t addr;
+
+        if (hybbx_ax25_address_parse(mycall, &addr) == HYBBX_OK) {
+            hybbx_strlcpy(cfg->ax25_mycall, mycall, sizeof(cfg->ax25_mycall));
+        } else {
+            hybbx_log_warn("[broadcast] ax25_mycall=%s invalid — using HYBBX",
+                           mycall);
+        }
     }
     if (dest != NULL && dest[0] != '\0') {
-        hybbx_strlcpy(cfg->ax25_dest, dest, sizeof(cfg->ax25_dest));
+        hybbx_ax25_address_t addr;
+
+        if (hybbx_ax25_address_parse(dest, &addr) == HYBBX_OK) {
+            hybbx_strlcpy(cfg->ax25_dest, dest, sizeof(cfg->ax25_dest));
+        } else {
+            hybbx_log_warn("[broadcast] ax25_dest=%s invalid — using QST", dest);
+            hybbx_strlcpy(cfg->ax25_dest, "QST", sizeof(cfg->ax25_dest));
+        }
     }
     if (auto_msg != NULL && auto_msg[0] != '\0') {
+        size_t msg_len = strlen(auto_msg);
+
+        if (msg_len > HYBBX_BROADCAST_AX25_MESSAGE_MAX) {
+            hybbx_log_warn("[broadcast] ax25_auto_message truncated (%zu > %u)",
+                           msg_len, (unsigned)HYBBX_BROADCAST_AX25_MESSAGE_MAX);
+        }
         hybbx_strlcpy(cfg->ax25_auto_message, auto_msg,
                       sizeof(cfg->ax25_auto_message));
     }
@@ -209,12 +229,10 @@ static hybbx_result_t broadcast_build_path(const hybbx_broadcast_config_t *cfg,
 static time_t g_ax25_last_sent;
 static time_t g_ax25_link_last_sent[HYBBX_CIRCUIT_MAX_LINKS];
 static unsigned g_ax25_auto_tick;
-static unsigned g_ax25_link_retry[HYBBX_CIRCUIT_MAX_LINKS];
 static unsigned g_ax25_defer_log_sec;
 
 typedef struct broadcast_ax25_seq {
     int active;
-    int check_band_idle;
     hybbx_service_t *service;
     hybbx_circuit_hub_t *hub;
     hybbx_circuit_broadcast_link_t links[HYBBX_CIRCUIT_MAX_LINKS];
@@ -230,18 +248,14 @@ static double broadcast_link_target_mhz(const hybbx_broadcast_config_t *cfg,
                                         const hybbx_circuit_broadcast_link_t *link,
                                         unsigned link_index)
 {
-    double mhz;
+    (void)cfg;
+    (void)link_index;
 
     if (link == NULL) {
         return 0.0;
     }
 
-    mhz = link->frequency_mhz;
-    if (mhz <= 0.0 && cfg != NULL && link_index < cfg->frequencies.count) {
-        mhz = cfg->frequencies.mhz[link_index];
-    }
-
-    return mhz;
+    return link->frequency_mhz;
 }
 
 static void broadcast_ax25_log_deferred(double frequency_mhz, const char *reason)
@@ -262,6 +276,18 @@ static void broadcast_ax25_log_deferred(double frequency_mhz, const char *reason
     } else {
         hybbx_log_stats("[broadcast] ax25 auto deferred (%s)", reason);
     }
+}
+
+static void broadcast_ax25_seq_defer_until(time_t resume_at, double target_mhz,
+                                           const char *reason)
+{
+    time_t now = time(NULL);
+
+    broadcast_ax25_log_deferred(target_mhz, reason);
+    if (now != (time_t)-1 && (resume_at == (time_t)-1 || resume_at <= now)) {
+        resume_at = now + (time_t)HYBBX_BROADCAST_AX25_DEFER_RETRY_SEC;
+    }
+    g_ax25_seq.resume_at = resume_at;
 }
 
 static int broadcast_hub_link_band_idle(hybbx_circuit_hub_t *hub,
@@ -383,6 +409,117 @@ static size_t broadcast_expand_service_token(char *out, size_t out_len,
     return pos;
 }
 
+static hybbx_result_t broadcast_ax25_send_slot(hybbx_service_t *service,
+                                               unsigned slot_index,
+                                               const char *message,
+                                               int enforce_rate_limit)
+{
+    const hybbx_broadcast_config_t *cfg;
+    hybbx_circuit_hub_t *hub;
+    hybbx_ax25_path_t path;
+    uint8_t frame[HYBBX_CIRCUIT_MAX_FRAME];
+    size_t frame_len;
+    size_t msg_len;
+    hybbx_result_t rc;
+    hybbx_circuit_broadcast_link_t links[HYBBX_CIRCUIT_MAX_LINKS];
+    unsigned link_count;
+    unsigned i;
+    const char *link_id = "";
+    double target_mhz = 0.0;
+
+    if (service == NULL || message == NULL || message[0] == '\0' ||
+        slot_index >= HYBBX_CIRCUIT_MAX_LINKS) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    cfg = hybbx_service_get_broadcast(service);
+    if (cfg == NULL || !cfg->enabled || !cfg->ax25_enabled) {
+        return HYBBX_ERR_UNSUPPORTED;
+    }
+
+    hub = hybbx_service_circuit_hub(service);
+    if (hub == NULL || !hybbx_circuit_hub_running(hub)) {
+        return HYBBX_ERR_BUSY;
+    }
+
+    link_count = hybbx_circuit_hub_broadcast_links(hub, links,
+                                                   HYBBX_CIRCUIT_MAX_LINKS);
+    for (i = 0; i < link_count; i++) {
+        if (links[i].slot_index == slot_index) {
+            link_id = links[i].link_id;
+            target_mhz = links[i].frequency_mhz;
+            break;
+        }
+    }
+    if (link_id[0] == '\0') {
+        return HYBBX_ERR_DENIED;
+    }
+
+    if (!hybbx_circuit_hub_link_band_idle(hub, slot_index,
+                                          HYBBX_BROADCAST_AX25_BAND_IDLE_SEC)) {
+        return HYBBX_ERR_BUSY;
+    }
+
+    if (enforce_rate_limit &&
+        !broadcast_ax25_link_rate_ok(slot_index,
+                                     HYBBX_BROADCAST_AX25_LINK_MIN_SEC)) {
+        return HYBBX_ERR_BUSY;
+    }
+
+    msg_len = strlen(message);
+    if (msg_len > HYBBX_BROADCAST_AX25_MESSAGE_MAX) {
+        return HYBBX_ERR_INVALID;
+    }
+
+    if (!hybbx_circuit_hub_link_broadcast_qos(hub)) {
+        return HYBBX_ERR_BUSY;
+    }
+
+    rc = broadcast_build_path(cfg, &path);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    {
+        uint8_t ax25_frame[HYBBX_AX25_FRAME_MAX];
+        size_t ax25_len = hybbx_ax25_build_ui(&path,
+                                              (const uint8_t *)message, msg_len,
+                                              ax25_frame, sizeof(ax25_frame));
+
+        if (ax25_len == 0) {
+            return HYBBX_ERR_IO;
+        }
+
+        hybbx_log_debug("[broadcast] ax25 path %s>%s payload=%zu slot=%u",
+                        path.source.call, path.dest.call, msg_len, slot_index);
+
+        frame_len = hybbx_circuit_encode(HYBBX_CIRCUIT_PROTO_AX25,
+                                         HYBBX_CIRCUIT_FLAG_TX,
+                                         ax25_frame, ax25_len,
+                                         frame, sizeof(frame));
+    }
+    if (frame_len == 0) {
+        return HYBBX_ERR_IO;
+    }
+
+    rc = hybbx_circuit_hub_send_hbx_slot(hub, slot_index, frame, frame_len, 1);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
+
+    broadcast_ax25_mark_link_sent(slot_index);
+
+    if (target_mhz > 0.0) {
+        hybbx_log_stats("[broadcast] ax25 link=%s %.3f MHz (slot %u): %s",
+                        link_id, target_mhz, slot_index, message);
+    } else {
+        hybbx_log_stats("[broadcast] ax25 link=%s (slot %u): %s",
+                        link_id, slot_index, message);
+    }
+
+    return HYBBX_OK;
+}
+
 static hybbx_result_t broadcast_ax25_send(hybbx_service_t *service,
                                             double frequency_mhz,
                                             const char *message,
@@ -498,7 +635,6 @@ static hybbx_result_t broadcast_ax25_send(hybbx_service_t *service,
                 continue;
             }
             broadcast_ax25_mark_link_sent(links[i].slot_index);
-            g_ax25_link_retry[links[i].slot_index] = 0;
         }
     } else {
         broadcast_ax25_mark_sent();
@@ -526,18 +662,16 @@ static int broadcast_ax25_seq_start(hybbx_service_t *service,
                                     hybbx_circuit_hub_t *hub,
                                     const hybbx_circuit_broadcast_link_t *links,
                                     unsigned link_count,
-                                    const char *message,
-                                    int check_band_idle)
+                                    const char *message)
 {
     if (g_ax25_seq.active || service == NULL || hub == NULL ||
         links == NULL || link_count == 0 || message == NULL ||
-        message[0] == '\0') {
+        message[0] == '\0' || link_count > HYBBX_CIRCUIT_MAX_LINKS) {
         return 0;
     }
 
     memset(&g_ax25_seq, 0, sizeof(g_ax25_seq));
     g_ax25_seq.active = 1;
-    g_ax25_seq.check_band_idle = check_band_idle;
     g_ax25_seq.service = service;
     g_ax25_seq.hub = hub;
     memcpy(g_ax25_seq.links, links,
@@ -554,8 +688,15 @@ static void broadcast_ax25_seq_advance(void)
     unsigned idx;
     double target_mhz;
     hybbx_result_t rc;
+    int advance = 0;
 
     if (!g_ax25_seq.active) {
+        return;
+    }
+
+    if (g_ax25_seq.hub == NULL ||
+        !hybbx_circuit_hub_running(g_ax25_seq.hub)) {
+        g_ax25_seq.active = 0;
         return;
     }
 
@@ -564,7 +705,7 @@ static void broadcast_ax25_seq_advance(void)
         return;
     }
 
-    if (g_ax25_seq.next_index > 0 && now < g_ax25_seq.resume_at) {
+    if (g_ax25_seq.resume_at != 0 && now < g_ax25_seq.resume_at) {
         return;
     }
 
@@ -585,30 +726,56 @@ static void broadcast_ax25_seq_advance(void)
     if (target_mhz <= 0.0) {
         hybbx_log_stats("[broadcast] ax25 skip link=%s (no MHz)",
                         g_ax25_seq.links[idx].link_id);
-    } else if (g_ax25_seq.check_band_idle &&
-               !broadcast_hub_link_band_idle(g_ax25_seq.hub,
+        advance = 1;
+    } else if (!broadcast_hub_link_band_idle(g_ax25_seq.hub,
                                              g_ax25_seq.links[idx].slot_index)) {
-        broadcast_ax25_log_deferred(target_mhz, "band busy");
-        g_ax25_link_retry[g_ax25_seq.links[idx].slot_index] = 1;
+        time_t ready = hybbx_circuit_hub_link_band_ready_at(
+            g_ax25_seq.hub, g_ax25_seq.links[idx].slot_index,
+            HYBBX_BROADCAST_AX25_BAND_IDLE_SEC);
+
+        broadcast_ax25_seq_defer_until(ready, target_mhz, "band busy");
+        return;
     } else if (!broadcast_ax25_link_rate_ok(g_ax25_seq.links[idx].slot_index,
                                             HYBBX_BROADCAST_AX25_LINK_MIN_SEC)) {
-        broadcast_ax25_log_deferred(target_mhz, "link rate");
+        broadcast_ax25_seq_defer_until(
+            now + (time_t)HYBBX_BROADCAST_AX25_DEFER_RETRY_SEC,
+            target_mhz, "link rate");
+        return;
     } else {
-        rc = broadcast_ax25_send(g_ax25_seq.service, target_mhz,
-                                 g_ax25_seq.message, 0);
+        rc = broadcast_ax25_send_slot(g_ax25_seq.service,
+                                      g_ax25_seq.links[idx].slot_index,
+                                      g_ax25_seq.message, 0);
         if (rc == HYBBX_OK) {
-            g_ax25_link_retry[g_ax25_seq.links[idx].slot_index] = 0;
             g_ax25_defer_log_sec = 0;
+            advance = 1;
         } else if (rc == HYBBX_ERR_BUSY) {
-            g_ax25_link_retry[g_ax25_seq.links[idx].slot_index] = 1;
-            broadcast_ax25_log_deferred(target_mhz, "balancer busy");
+            if (!hybbx_circuit_hub_running(g_ax25_seq.hub)) {
+                g_ax25_seq.active = 0;
+                return;
+            }
+            {
+                time_t ready = hybbx_circuit_hub_link_band_ready_at(
+                    g_ax25_seq.hub, g_ax25_seq.links[idx].slot_index,
+                    HYBBX_BROADCAST_AX25_BAND_IDLE_SEC);
+
+                broadcast_ax25_seq_defer_until(ready, target_mhz,
+                                               "band busy");
+            }
+            return;
         } else if (rc == HYBBX_ERR_DENIED) {
-            g_ax25_link_retry[g_ax25_seq.links[idx].slot_index] = 1;
-            broadcast_ax25_log_deferred(target_mhz, "no qualifying link");
+            broadcast_ax25_seq_defer_until(
+                now + (time_t)HYBBX_BROADCAST_AX25_DEFER_RETRY_SEC,
+                target_mhz, "no qualifying link");
+            return;
         } else {
             hybbx_log_warn("[broadcast] ax25 %.3f MHz failed (%d)",
                            target_mhz, (int)rc);
+            advance = 1;
         }
+    }
+
+    if (!advance) {
+        return;
     }
 
     g_ax25_seq.next_index++;
@@ -616,7 +783,14 @@ static void broadcast_ax25_seq_advance(void)
         g_ax25_seq.resume_at = now + (time_t)HYBBX_BROADCAST_AX25_LINK_GAP_SEC;
     } else {
         g_ax25_seq.active = 0;
+        g_ax25_seq.resume_at = 0;
     }
+}
+
+void hybbx_broadcast_ax25_seq_cancel(void)
+{
+    g_ax25_seq.active = 0;
+    g_ax25_seq.resume_at = 0;
 }
 
 hybbx_result_t hybbx_broadcast_ax25_manual(hybbx_service_t *service)
@@ -661,7 +835,7 @@ hybbx_result_t hybbx_broadcast_ax25_manual(hybbx_service_t *service)
     hybbx_log_info("[broadcast] ax25 manual sequential (%u link(s)): %s",
                    link_count, message);
 
-    if (!broadcast_ax25_seq_start(service, hub, links, link_count, message, 0)) {
+    if (!broadcast_ax25_seq_start(service, hub, links, link_count, message)) {
         return HYBBX_ERR_BUSY;
     }
 
@@ -727,7 +901,7 @@ void hybbx_broadcast_ax25_tick(hybbx_service_t *service)
     hybbx_log_info("[broadcast] ax25 auto sequential (%u link(s)): %s",
                    link_count, message);
 
-    if (!broadcast_ax25_seq_start(service, hub, links, link_count, message, 1)) {
+    if (!broadcast_ax25_seq_start(service, hub, links, link_count, message)) {
         return;
     }
 
@@ -740,20 +914,6 @@ typedef struct broadcast_announce_ctx {
     const char *from_name;
     const char *message;
 } broadcast_announce_ctx_t;
-
-static int broadcast_announce_is_local_user(const hybbx_session_t *session)
-{
-    hybbx_transport_kind_t kind;
-
-    if (session == NULL || session->transport == NULL) {
-        return 1;
-    }
-
-    kind = session->transport->kind;
-    return kind == HYBBX_TRANSPORT_TELNET ||
-           kind == HYBBX_TRANSPORT_SSH ||
-           kind == HYBBX_TRANSPORT_WEBSOCKET;
-}
 
 static void broadcast_announce_visitor(hybbx_session_t *session, void *userdata)
 {
@@ -770,7 +930,7 @@ static void broadcast_announce_visitor(hybbx_session_t *session, void *userdata)
      * it floods low-bandwidth circuit queues and triggers load-balance
      * pause/break on packet-radio links.
      */
-    if (!broadcast_announce_is_local_user(session)) {
+    if (!hybbx_session_is_interactive_user(session)) {
         return;
     }
     if (!hybbx_session_logged_in(session)) {

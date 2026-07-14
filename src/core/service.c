@@ -499,7 +499,10 @@ void hybbx_service_visit_sessions(hybbx_service_t *service,
 
     if (count > 0) {
         snapshot = calloc(count, sizeof(*snapshot));
-        if (snapshot != NULL) {
+        if (snapshot == NULL) {
+            hybbx_log_warn("[service] session snapshot OOM (%zu sessions) — skipped",
+                           count);
+        } else {
             i = 0;
             for (node = svc->sessions; node != NULL; node = node->next) {
                 if (node->session != NULL) {
@@ -775,6 +778,12 @@ static hybbx_result_t service_apply_circuit(struct hybbx_service_internal *svc,
         config, "circuit", "balance_queue_break", 32768u, 1024u, 1048576u);
     cfg.balance.queue_cancel = (size_t)hybbx_config_get_uint(
         config, "circuit", "balance_queue_cancel", 131072u, 4096u, 4194304u);
+    if (cfg.balance.queue_pause > cfg.balance.queue_break) {
+        cfg.balance.queue_break = cfg.balance.queue_pause;
+    }
+    if (cfg.balance.queue_break > cfg.balance.queue_cancel) {
+        cfg.balance.queue_cancel = cfg.balance.queue_break;
+    }
     cfg.max_links = hybbx_config_get_uint(
         config, "circuit", "max_links", HYBBX_CIRCUIT_DEFAULT_MAX_LINKS,
         1u, HYBBX_CIRCUIT_MAX_LINKS);
