@@ -44,12 +44,6 @@ cmake -B build-test -DHYBBX_BUILD_TESTS=ON && cmake --build build-test && ctest 
 ./scripts/hybbx.sh
 ```
 
-## Config (one path)
-
-1. Pick template under `share/hybbx-*.ini.example`.
-2. Copy to **`local/hybbx.ini`** (gitignored).
-3. Run vault `local-generate-secrets.sh` — live secrets in `./local/` only.
-
 ## Related
 
 | Goal | Doc |
