@@ -54,12 +54,9 @@ cmake -B build-test -DHYBBX_BUILD_TESTS=ON && cmake --build build-test && ctest 
 | RF + MAX25 order | [TNCS.md](docs/TNCS.md) · [MASTER-GUIDE.md](docs/MASTER-GUIDE.md) |
 | Full index | [docs/README.md](docs/README.md) |
 
-<br>
+<br><br>
 
-<p align="center">
-</p>
 <p align="center"><sub><strong>UN1TME/UN1T.me</a></strong></sub><br>
-<img width="160" height="120" alt="un1tme-hybbx" src="https://github.com/user-attachments/assets/0023605b-fd69-467f-867e-6237da442bdd" /></p>
 <sub>
 | Protocol | Host | Port | Command / URL |
 |----------|------|------|---------------|
@@ -68,4 +65,5 @@ cmake -B build-test -DHYBBX_BUILD_TESTS=ON && cmake --build build-test && ctest 
 | HTTPS | `hybbx.un1t.me` | 443 | [https://hybbx.un1t.me/](https://hybbx.un1t.me/) |
 | HTTP | `hybbx.un1t.me` | 80 | [http://hybbx.un1t.me/](http://hybbx.un1t.me/) |
 Telnet **:2323** · SSH **:3232** · HTTP(S) **:80/:443** (proxy) · Primary RF **27.245 MHz / CB25**
-</sub>
+<img width="160" height="120" alt="un1tme-hybbx" src="https://github.com/user-attachments/assets/0023605b-fd69-467f-867e-6237da442bdd" />
+</sub></p>
