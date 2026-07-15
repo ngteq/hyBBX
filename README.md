@@ -56,11 +56,18 @@ cmake -B build-test -DHYBBX_BUILD_TESTS=ON && cmake --build build-test && ctest 
 
 <br><br>
 
-<p align="center"><sub><strong>UN1TME/UN1T.me - BBX</strong><br>
-| Protocol | Host | Port | Command / URL |
-|----------|------|------|---------------|
-| Telnet | `hybbx.un1t.me` | 2323 | `telnet hybbx.un1t.me 2323` |
-| SSH | `hybbx.un1t.me` | 3232 | `ssh hybbx.un1t.me -p 3232` |
-| HTTPS | `hybbx.un1t.me` | 443 | [https://hybbx.un1t.me/](https://hybbx.un1t.me/) |
-| HTTP | `hybbx.un1t.me` | 80 | [http://hybbx.un1t.me/](http://hybbx.un1t.me/) |
-Telnet **:2323** · SSH **:3232** · HTTP(S) **:80/:443** (proxy) · Primary RF **27.245 MHz / CB25**</sub></p>
+<div align="center">
+<sub>
+<strong>UN1TME/UN1T.me · BBX</strong>
+<br><br>
+<table>
+<tr><th>Protocol</th><th>Host</th><th>Port</th><th>Command / URL</th></tr>
+<tr><td align="center">Telnet</td><td align="center"><code>hybbx.un1t.me</code></td><td align="center">2323</td><td align="center"><code>telnet hybbx.un1t.me 2323</code></td></tr>
+<tr><td align="center">SSH</td><td align="center"><code>hybbx.un1t.me</code></td><td align="center">3232</td><td align="center"><code>ssh hybbx.un1t.me -p 3232</code></td></tr>
+<tr><td align="center">HTTPS</td><td align="center"><code>hybbx.un1t.me</code></td><td align="center">443</td><td align="center"><a href="https://hybbx.un1t.me/">https://hybbx.un1t.me/</a></td></tr>
+<tr><td align="center">HTTP</td><td align="center"><code>hybbx.un1t.me</code></td><td align="center">80</td><td align="center"><a href="http://hybbx.un1t.me/">http://hybbx.un1t.me/</a></td></tr>
+</table>
+<br>
+Telnet <strong>:2323</strong> · SSH <strong>:3232</strong> · HTTP(S) <strong>:80/:443</strong> (proxy) · Primary RF <strong>27.245 MHz / CB25</strong>
+</sub>
+</div>
