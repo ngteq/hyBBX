@@ -1,4 +1,4 @@
-# HyBBX · 2.4.0
+# HyBBX · 2.4.1
 
 C99 BBX daemon: text wire, `/` commands, mail, chat, conference. Main + Secondary topology over HBX; RF via external modems and MAX25 stack.
 

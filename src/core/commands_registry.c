@@ -1065,6 +1065,9 @@ int hybbx_commands_registry_may_demote(hybbx_user_level_t actor,
     return 0;
 }
 
+#define MENU_LABEL_PREFIX_LEN 13u
+#define MENU_CMD_FIELD_MAX (HYBBX_LINE_MAX - MENU_LABEL_PREFIX_LEN)
+
 static void emit_menu_line(hybbx_session_t *session, const char *label,
                            const char *cmds, int continuation)
 {
@@ -1098,6 +1101,56 @@ static void format_verbs_line(char *out, size_t out_len,
             break;
         }
         off += (size_t)n;
+    }
+}
+
+static void emit_verbs_wrapped(hybbx_session_t *session, const char *label,
+                               const char verbs[][HYBBX_CMD_VERB_MAX],
+                               unsigned count)
+{
+    char chunk[MENU_CMD_FIELD_MAX + 1];
+    size_t off = 0;
+    unsigned physical_line = 0;
+    unsigned i;
+
+    for (i = 0; i < count; i++) {
+        char token[HYBBX_CMD_VERB_MAX + 4];
+        int n;
+
+        if (verbs[i][0] == '\0') {
+            continue;
+        }
+
+        n = snprintf(token, sizeof(token), "%s/%s",
+                     off > 0 ? " " : "", verbs[i]);
+        if (n < 0) {
+            continue;
+        }
+
+        if (off > 0 && (size_t)n + off > MENU_CMD_FIELD_MAX) {
+            chunk[off] = '\0';
+            emit_menu_line(session, physical_line == 0 ? label : "", chunk,
+                           physical_line > 0);
+            physical_line++;
+            off = 0;
+            n = snprintf(token, sizeof(token), "/%s", verbs[i]);
+            if (n < 0) {
+                continue;
+            }
+        }
+
+        if ((size_t)n >= sizeof(chunk) - off) {
+            break;
+        }
+
+        memcpy(chunk + off, token, (size_t)n);
+        off += (size_t)n;
+    }
+
+    if (off > 0) {
+        chunk[off] = '\0';
+        emit_menu_line(session, physical_line == 0 ? label : "", chunk,
+                       physical_line > 0);
     }
 }
 
@@ -1158,9 +1211,7 @@ static void render_area(hybbx_session_t *session, const menu_area_t *area,
         return;
     }
 
-    format_verbs_line(cmds, sizeof(cmds),
-                      (const char (*)[HYBBX_CMD_VERB_MAX])verbs, count);
-    emit_menu_line(session, area->label, cmds, 0);
+    emit_verbs_wrapped(session, area->label, verbs, count);
 
     if (!filter_access) {
         for (i = 0; i < area->subarea_count; i++) {

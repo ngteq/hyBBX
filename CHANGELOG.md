@@ -1,6 +1,16 @@
-# Changelog · HyBBX 2.4.0
+# Changelog · HyBBX
 
 All notable changes to HyBBX are documented here.
+
+## [HyBBX 2.4.1]
+
+Version `2.4.1`. Patch release.
+
+### Menu / help display
+
+| Fix | Detail |
+|-----|--------|
+| General area wrap | `/menu` and `/index` split long verb lists across continuation lines (80-col wire format) — fixes truncated `/users /` and missing `/session` `/version` |
 
 ## [HyBBX 2.4.0]
 
