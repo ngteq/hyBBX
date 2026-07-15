@@ -23,14 +23,18 @@ C99 BBX daemon: text wire, `/` commands, mail, chat, conference. Main + Secondar
 | HBX | 7323 | Link auth + `link_password` |
 | MAX25 KISS | via max25d :7325 | v2.4.0 attach-only |
 
-## v2.4.0 RF boundary matrix
+## MAX25 attach matrix
 
 | Rule | Value |
 |------|-------|
-| `tnc=baycom\|pccom` in `packet_radio` | **rejected** |
 | `kiss_entry` (local TNC) | `none` (MAX25 prep assumed) |
 | `[max25] check` | `yes` (default) — start fails if max25d down |
-| `[networks] baycom` | `no` (default) — BayCom hardware via MAX25 |
+
+## Optional plugins (example INI)
+
+| Plugin | CMake | Example `[networks]` |
+|--------|-------|----------------------|
+| BayCom | built (`HYBBX_PLUGIN_BAYCOM=ON`) | `baycom=no` — see [docs/BAYCOM.md](docs/BAYCOM.md) |
 
 ## Build · test · run
 

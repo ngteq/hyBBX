@@ -525,9 +525,10 @@ hybbx_result_t hybbx_packet_radio_config_parse(const char *config,
 
     if (out->tnc == HYBBX_PACKET_RADIO_TNC_BAYCOM ||
         out->tnc == HYBBX_PACKET_RADIO_TNC_PCCOM) {
-        hybbx_log_warn("[packet_radio] tnc=%s rejected — BayCom/PC-COM hardware "
-                       "belongs in MAX25-Stack; HyBBX uses tnc=tnc2c "
-                       "with kiss_entry=none after max25d prep",
+        hybbx_log_warn("[packet_radio] tnc=%s is not a packet_radio profile — "
+                       "use tnc=tnc2c (or generic) with kiss_entry=none after "
+                       "max25d prep; BayCom hardware uses the baycom transport "
+                       "plugin ([networks] baycom=yes)",
                        hybbx_packet_radio_tnc_name(out->tnc));
         hybbx_packet_radio_config_free(out);
         return HYBBX_ERR_INVALID;

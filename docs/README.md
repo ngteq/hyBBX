@@ -13,7 +13,7 @@ One-line role: compact doc map — start at MASTER-GUIDE for linear operator flo
 | TNC profiles | [TNCS.md](TNCS.md) |
 | Clients | [CLIENTS.md](CLIENTS.md) |
 | Commands | [COMMANDS.md](COMMANDS.md) |
-| BayCom (legacy plugin) | [BAYCOM.md](BAYCOM.md) |
+| BayCom transport plugin | [BAYCOM.md](BAYCOM.md) |
 | CRDOP | [CRDOP.md](CRDOP.md) |
 | ARDOP | [ARDOP.md](ARDOP.md) |
 | Build | [BUILD.md](BUILD.md) |

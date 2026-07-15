@@ -2,11 +2,10 @@
 
 Single `packet_radio` transport — up to 8 instances per process. MAX25 owns RF prep; HyBBX attach-only in v2.4.0.
 
-## v2.4.0 boundary matrix
+## packet_radio / MAX25 matrix
 
 | Rule | Value |
 |------|-------|
-| `tnc=baycom\|pccom` | **rejected** — use MAX25 + `baycom` plugin |
 | `kiss_entry` | `none` (default) — MAX25 sends `kiss on` |
 | `[max25] check` | `yes` — probe max25d `:7325` before serial open |
 | Serial ownership | One process per `/dev/tty*` |
@@ -36,10 +35,8 @@ Single `packet_radio` transport — up to 8 instances per process. MAX25 owns RF
 | `mfj1278` | `mfj-1278` | 7E1 | `none` | off |
 | `kantronics` | `kpc`, `kpc3` | 8N1 | `none` | off |
 | `generic` | `tnc` | 8N1 | `none` | off |
-| ~~`baycom`~~ | — | — | **rejected in v2.4.0** | — |
-| ~~`pccom`~~ | — | — | **rejected in v2.4.0** | — |
 
-For kernel SER12/PAR96 use [`baycom`](BAYCOM.md) plugin after MAX25 prep — not `packet_radio`.
+BayCom hardware: optional [`baycom`](BAYCOM.md) transport plugin — not a `packet_radio` TNC profile.
 
 ## AX.25 source matrix
 

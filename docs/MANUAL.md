@@ -40,7 +40,6 @@ Telnet, SSH, WebSocket operator reference. INI templates in `share/` — copy to
 | `kiss_entry` | `none` | MAX25 owns KISS entry |
 | `kiss_exit` | `none` | No `kiss off` on shutdown |
 | `[max25] check` | `yes` | Local TNC start fails if max25d down |
-| `tnc=baycom\|pccom` | rejected | Use MAX25 + `baycom` plugin instead |
 
 ## Daemon matrix
 

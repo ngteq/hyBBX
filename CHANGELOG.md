@@ -12,6 +12,12 @@ Version `2.4.1`. Patch release.
 |-----|--------|
 | General area wrap | `/menu` and `/index` split long verb lists across continuation lines (80-col wire format) — fixes truncated `/users /` and missing `/session` `/version` |
 
+### Docs — BayCom plugin
+
+| Change | Detail |
+|--------|--------|
+| Wording | BayCom = optional transport plugin (CMake ON; example INI `baycom=no`) — removed misleading “rejected” labels |
+
 ## [HyBBX 2.4.0]
 
 Version `2.4.0`. Product label **HyBBX 2.4.0**.
@@ -23,8 +29,7 @@ Version `2.4.0`. Product label **HyBBX 2.4.0**.
 | MAX25-minimal boundary | MAX25 owns hardware prep; HyBBX probes max25d and attaches KISS only |
 | `[max25] check=yes` | Local `packet_radio` **requires** reachable max25d TCP `:7325` |
 | `kiss_entry=none` | Default after MAX25 prep — HyBBX does not send `kiss on` |
-| `tnc=baycom\|pccom` | **Rejected** in `packet_radio` — use MAX25 for BayCom/PC-COM |
-| `[networks] baycom=no` | Runtime default off; plugin built (`HYBBX_PLUGIN_BAYCOM=ON`) |
+| BayCom plugin | Built by default; example INI templates set `[networks] baycom=no` |
 
 ### Operator INI matrix
 
