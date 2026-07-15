@@ -70,5 +70,8 @@ cmake -B build-test -DHYBBX_BUILD_TESTS=ON && cmake --build build-test && ctest 
 <br>
 <strong>hybbx.un1t.me</strong> Telnet <strong>:2323</strong> · SSH <strong>:3232</strong> · HTTP(S) <strong>:80/:443</strong> · Primary RF <strong>27.245 MHz / CB25</strong>
 </sub>
+<br><br>
+<a href="https://github.com/user-attachments/assets/75bab047-12f8-4720-b1fa-2cd2dc86ad16">
+<img width="80" height="60" alt="UN1TME/UN1T.me BBX — sysop menu" src="https://github.com/user-attachments/assets/75bab047-12f8-4720-b1fa-2cd2dc86ad16" />
+</a>
 </div>
-<img width="80" height="60" alt="UN1TME/UN1T.me-BBX" src="https://github.com/user-attachments/assets/75bab047-12f8-4720-b1fa-2cd2dc86ad16" />
