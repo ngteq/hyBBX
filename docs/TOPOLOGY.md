@@ -40,4 +40,4 @@ Main, Secondary, and mains-proxy mesh layout.
 |------|-----|
 | Manual | [MANUAL.md](MANUAL.md) |
 | Mesh proxy | [MAINS_PROXY.md](MAINS_PROXY.md) |
-| Dual-TNC | [AX25SRV-OPERATOR-GUIDE.md](AX25SRV-OPERATOR-GUIDE.md) |
+| Dual-TNC | [DUAL-TNC-OPERATOR-GUIDE.md](DUAL-TNC-OPERATOR-GUIDE.md) |

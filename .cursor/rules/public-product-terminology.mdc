@@ -1,0 +1,31 @@
+---
+description: Public product terminology — HyBBX BBX (not BBS); never AX25SRV in shipped docs
+alwaysApply: true
+---
+
+# Public product terminology (static rule)
+
+**Scope:** GitHub-facing and shipped `*.md` in this repo. Full spec: MASTER vault [AGENT-INDEX §0.16](https://github.com/ngteq/0-RESEARCHES/blob/main/AGENT-INDEX.md#016-public-product-terminology-static-rule) · `operations/2026-07-15-public-product-terminology-rule.md`.
+
+## HyBBX — use BBX, not BBS
+
+| Context | Term |
+|---------|------|
+| HyBBX product / UN1TME instance | **BBX** |
+| Forbidden in HyBBX public copy | **BBS** |
+
+## Other projects — BBS allowed
+
+| Context | Term |
+|---------|------|
+| MAX25-Stack, baycom-pr, generic packet apps | **BBS** OK |
+| Referring to HyBBX by name | **HyBBX** or **BBX** — not “HyBBX BBS” |
+
+## AX25SRV — never public
+
+| Scope | Rule |
+|-------|------|
+| Shipped docs (README, `docs/*.md`, GitHub) | **Never** `AX25SRV`, `ax25srv` in prose, titles, or filenames |
+| Replace with | “dual-TNC operator flow”, `DUAL-TNC-OPERATOR-GUIDE.md`, `hybbx.un1t.me`, “UN1TME” |
+
+**Relation:** document-standard · terms-exclusion

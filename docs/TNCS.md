@@ -56,4 +56,4 @@ For kernel SER12/PAR96 use [`baycom`](BAYCOM.md) plugin after MAX25 prep — not
 |------|-----|
 | Manual | [MANUAL.md](MANUAL.md) |
 | BayCom plugin | [BAYCOM.md](BAYCOM.md) |
-| Dual-TNC | [AX25SRV-OPERATOR-GUIDE.md](AX25SRV-OPERATOR-GUIDE.md) |
+| Dual-TNC | [DUAL-TNC-OPERATOR-GUIDE.md](DUAL-TNC-OPERATOR-GUIDE.md) |

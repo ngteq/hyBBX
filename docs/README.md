@@ -7,7 +7,7 @@ One-line role: compact doc map — start at MASTER-GUIDE for linear operator flo
 | Role | Document |
 |------|----------|
 | Master operator guide | [MASTER-GUIDE.md](MASTER-GUIDE.md) |
-| Dual-TNC / AX25SRV flow | [AX25SRV-OPERATOR-GUIDE.md](AX25SRV-OPERATOR-GUIDE.md) |
+| Dual-TNC operator flow | [DUAL-TNC-OPERATOR-GUIDE.md](DUAL-TNC-OPERATOR-GUIDE.md) |
 | Full manual | [MANUAL.md](MANUAL.md) |
 | Topology | [TOPOLOGY.md](TOPOLOGY.md) |
 | TNC profiles | [TNCS.md](TNCS.md) |
