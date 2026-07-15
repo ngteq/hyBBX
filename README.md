@@ -57,9 +57,9 @@ cmake -B build-test -DHYBBX_BUILD_TESTS=ON && cmake --build build-test && ctest 
 <br>
 
 <p align="center">
-<a href="./un1tme-hybbx.jpg"><img src="./un1tme-hybbx.jpg" alt="UN1TME HyBBX — sysop menu" width="360"></a>
 </p>
 <p align="center"><sub><strong><a href="https://un1t.me/">UN1T.me</a></strong> · <strong>UN1TME BBX</strong> — live packet-radio BBS (EU/DE/BW)</sub></p>
+<img align="center" width="160" height="120" alt="un1tme-hybbx" src="https://github.com/user-attachments/assets/0023605b-fd69-467f-867e-6237da442bdd" />
 <sub>
 | Protocol | Host | Port | Command / URL |
 |----------|------|------|---------------|
@@ -69,4 +69,3 @@ cmake -B build-test -DHYBBX_BUILD_TESTS=ON && cmake --build build-test && ctest 
 | HTTP | `hybbx.un1t.me` | 80 | [http://hybbx.un1t.me/](http://hybbx.un1t.me/) |
 Telnet **:2323** · SSH **:3232** · HTTP(S) **:80/:443** (proxy) · Primary RF **27.245 MHz / CB25**
 </sub>
-<img width="320" height="240" alt="un1tme-hybbx" src="https://github.com/user-attachments/assets/0023605b-fd69-467f-867e-6237da442bdd" />
