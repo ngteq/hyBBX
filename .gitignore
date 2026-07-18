@@ -1,6 +1,7 @@
 # Build artifacts
 build/
 build-*/
+bin/
 out/
 logs/
 data/
@@ -9,7 +10,10 @@ local/keys/
 local/hybbx.ini
 share/keys/
 shared/keys/
+share/data-proxy/
+share/data-secondary/
 cmake-build-*/
+.cursor/cache/
 
 # IDE
 .idea/
