@@ -1,0 +1,49 @@
+; HyBBX v2.4.1 — Secondary instance (hybbxsd)
+; Peer other Mains via mains_proxy only — not a local user BBX (no hybbxd role).
+; Optional TCP transports: telnet, ssh. No WebSocket, no in-process RF.
+; ARDOP/CRDOP/AX.25: MAX25-Stack only (relay/gateway/digipeater toward hybbxpd / Main).
+; Copy: cp share/hybbxsd-secondary.ini.example hybbx.ini
+
+[service]
+name = hyBBX-secondary
+
+[storage]
+backend = flatfile
+path = data-secondary
+
+[auth]
+auto_login = no
+
+[log]
+enabled = yes
+dir = logs
+level = warn
+
+[networks]
+; All transport plugins optional except mains_proxy (forced on at runtime).
+telnet = no
+ssh = no
+ax25 = no
+baycom = no
+ardop = no
+crdop = no
+websocket = no
+circuit = no
+mains_proxy = yes
+
+[transport.mains_proxy]
+enabled = yes
+
+; Example optional edge transports (uncomment as needed):
+; [transport.telnet]
+; bind = 0.0.0.0
+; port = 2323
+;
+; [transport.ssh]
+; bind = 0.0.0.0
+; port = 3232
+
+[max25]
+check = yes
+host = 127.0.0.1
+port = 7325

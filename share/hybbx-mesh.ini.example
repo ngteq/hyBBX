@@ -1,3 +1,4 @@
+; SUPERSEDED — use share/hybbxd-main.ini.example + hybbxsd-secondary / hybbxpd-proxy
 ; HyBBX v2.4.0 — Main + proxy mesh (mains_proxy) + remote Secondary RF
 ; Build: -DHYBBX_PLUGIN_MAINS_PROXY=ON · Pair Secondary: hybbx-secondary.ini.example
 ; Reciprocal peer INI required on remote Main. Docs: docs/MAINS_PROXY.md

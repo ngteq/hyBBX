@@ -1,4 +1,5 @@
 #include "hybbx/networks.h"
+#include "hybbx/instance.h"
 #include "hybbx/config.h"
 #include "hybbx/util.h"
 #include "hybbx/log.h"
@@ -44,6 +45,7 @@ void hybbx_networks_config_defaults(hybbx_networks_config_t *networks)
         return;
     }
 
+    networks->telnet = 1;
     networks->ax25 = 0;
     networks->baycom = 0;
     networks->ardop = 0;
@@ -65,6 +67,11 @@ void hybbx_networks_config_apply(hybbx_networks_config_t *networks,
 
     if (config == NULL) {
         return;
+    }
+
+    if (networks_has_key(config, "telnet")) {
+        networks->telnet = hybbx_config_get_bool(config, "networks",
+                                                 "telnet", 1);
     }
 
     networks->ax25 = hybbx_config_get_bool(config, "networks", "ax25", 0);
@@ -99,16 +106,17 @@ void hybbx_networks_config_apply(hybbx_networks_config_t *networks,
                                                         "mains_proxy", 0);
     }
 
-    hybbx_log_info("[networks] telnet=static ssh=%s ax25=%s baycom=%s ardop=%s crdop=%s "
-           "websocket=%s circuit=%s mains_proxy=%s",
-           hybbx_bool_to_string(networks->ssh),
-           hybbx_bool_to_string(networks->ax25),
-           hybbx_bool_to_string(networks->baycom),
-           hybbx_bool_to_string(networks->ardop),
-           hybbx_bool_to_string(networks->crdop),
-           hybbx_bool_to_string(networks->websocket),
-           hybbx_bool_to_string(networks->circuit),
-           hybbx_bool_to_string(networks->mains_proxy));
+    hybbx_log_info("[networks] telnet=%s ssh=%s ax25=%s baycom=%s ardop=%s "
+                   "crdop=%s websocket=%s circuit=%s mains_proxy=%s",
+                   hybbx_bool_to_string(networks->telnet),
+                   hybbx_bool_to_string(networks->ssh),
+                   hybbx_bool_to_string(networks->ax25),
+                   hybbx_bool_to_string(networks->baycom),
+                   hybbx_bool_to_string(networks->ardop),
+                   hybbx_bool_to_string(networks->crdop),
+                   hybbx_bool_to_string(networks->websocket),
+                   hybbx_bool_to_string(networks->circuit),
+                   hybbx_bool_to_string(networks->mains_proxy));
 }
 
 int hybbx_networks_is_static_transport(const char *plugin_name)
@@ -117,7 +125,15 @@ int hybbx_networks_is_static_transport(const char *plugin_name)
         return 0;
     }
 
-    return str_ieq(plugin_name, "telnet");
+    switch (hybbx_instance_role()) {
+    case HYBBX_INSTANCE_MAIN:
+        return str_ieq(plugin_name, "websocket");
+    case HYBBX_INSTANCE_SECONDARY:
+        return str_ieq(plugin_name, "mains_proxy");
+    case HYBBX_INSTANCE_PROXY:
+    default:
+        return 0;
+    }
 }
 
 int hybbx_networks_transport_wanted(const char *plugin_name,
@@ -127,12 +143,20 @@ int hybbx_networks_transport_wanted(const char *plugin_name,
         return 0;
     }
 
+    if (!hybbx_instance_plugin_allowed(plugin_name)) {
+        return 0;
+    }
+
     if (hybbx_networks_is_static_transport(plugin_name)) {
         return 1;
     }
 
     if (networks == NULL) {
         return 0;
+    }
+
+    if (str_ieq(plugin_name, "telnet")) {
+        return networks->telnet;
     }
 
     if (str_ieq(plugin_name, "packet_radio")) {

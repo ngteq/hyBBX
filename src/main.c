@@ -16,6 +16,7 @@
 #include "hybbx/daemon_wrap.h"
 #include "hybbx/util.h"
 #include "hybbx/limits.h"
+#include "hybbx/instance.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,43 +52,59 @@ extern const hybbx_transport_plugin_t hybbx_plugin_mains_proxy;
 static void register_builtin_plugins(void)
 {
 #ifdef HYBBX_HAVE_PLUGIN_TELNET
-    hybbx_registry_register(&hybbx_plugin_telnet);
+    if (hybbx_instance_plugin_allowed("telnet")) {
+        hybbx_registry_register(&hybbx_plugin_telnet);
+    }
 #endif
 #ifdef HYBBX_HAVE_PLUGIN_PACKET_RADIO
-    hybbx_registry_register(&hybbx_plugin_packet_radio);
+    if (hybbx_instance_plugin_allowed("packet_radio")) {
+        hybbx_registry_register(&hybbx_plugin_packet_radio);
+    }
 #endif
 #ifdef HYBBX_HAVE_PLUGIN_ARDOP
-    hybbx_registry_register(&hybbx_plugin_ardop);
+    if (hybbx_instance_plugin_allowed("ardop")) {
+        hybbx_registry_register(&hybbx_plugin_ardop);
+    }
 #endif
 #ifdef HYBBX_HAVE_PLUGIN_CRDOP
-    hybbx_registry_register(&hybbx_plugin_crdop);
+    if (hybbx_instance_plugin_allowed("crdop")) {
+        hybbx_registry_register(&hybbx_plugin_crdop);
+    }
 #endif
 #ifdef HYBBX_HAVE_PLUGIN_SSH
-    hybbx_registry_register(&hybbx_plugin_ssh);
+    if (hybbx_instance_plugin_allowed("ssh")) {
+        hybbx_registry_register(&hybbx_plugin_ssh);
+    }
 #endif
 #ifdef HYBBX_HAVE_PLUGIN_WEBSOCKET
-    hybbx_registry_register(&hybbx_plugin_websocket);
+    if (hybbx_instance_plugin_allowed("websocket")) {
+        hybbx_registry_register(&hybbx_plugin_websocket);
+    }
 #endif
 #ifdef HYBBX_HAVE_PLUGIN_BAYCOM
-    hybbx_registry_register(&hybbx_plugin_baycom);
+    if (hybbx_instance_plugin_allowed("baycom")) {
+        hybbx_registry_register(&hybbx_plugin_baycom);
+    }
 #endif
 #ifdef HYBBX_HAVE_PLUGIN_MAINS_PROXY
-    hybbx_registry_register(&hybbx_plugin_mains_proxy);
+    if (hybbx_instance_plugin_allowed("mains_proxy")) {
+        hybbx_registry_register(&hybbx_plugin_mains_proxy);
+    }
 #endif
 }
 
 static void print_usage(const char *prog)
 {
     fprintf(stderr,
-            "HyBBX %s — centralized transport daemon\n"
+            "HyBBX %s — %s instance (%s)\n"
             "\n"
             "Usage: %s [options]\n"
             "\n"
             "Options:\n"
             "  -c, --config <file>  Load INI configuration file\n"
             "  -f, --foreground     Run in foreground (default)\n"
-            "  --screen [name]       Run detached in GNU screen (default: hybbxd)\n"
-            "  --tmux [name]         Run detached in tmux (default: hybbxd)\n"
+            "  --screen [name]       Run detached in GNU screen (default: %s)\n"
+            "  --tmux [name]         Run detached in tmux (default: %s)\n"
             "  --attach              Attach to screen/tmux session (with --screen/--tmux)\n"
             "  -h, --help           Show this help\n"
             "  -V, --version        Show version\n"
@@ -97,12 +114,21 @@ static void print_usage(const char *prog)
             "  ; or # ...         Ignored (comment)\n"
             "  other input        Ignored (local, not HyBBX)\n"
             "\n",
-            HYBBX_VERSION_STRING, prog);
+            HYBBX_VERSION_STRING,
+            hybbx_instance_role_name(),
+            hybbx_instance_binary_name(),
+            prog,
+            hybbx_instance_binary_name(),
+            hybbx_instance_binary_name());
 }
 
 static void print_version(void)
 {
-    printf("HyBBX %s\n", HYBBX_VERSION_STRING);
+    printf("HyBBX %s — %s (%s)%s\n",
+           HYBBX_VERSION_STRING,
+           hybbx_instance_role_name(),
+           hybbx_instance_binary_name(),
+           hybbx_instance_offers_user_bbx() ? "" : " [no user BBX]");
 }
 
 static void list_plugins_cb(const hybbx_transport_plugin_t *plugin, void *userdata)

@@ -1,3 +1,15 @@
+# Link a transport plugin into all HyBBX instance binaries (hybbxd/hybbxsd/hybbxpd).
+function(hybbx_link_plugin_instances plugin_target define_name)
+    foreach(_bin IN ITEMS hybbxd hybbxsd hybbxpd)
+        if(TARGET ${_bin})
+            target_link_libraries(${_bin} PRIVATE ${plugin_target})
+            if(NOT "${define_name}" STREQUAL "")
+                target_compile_definitions(${_bin} PRIVATE ${define_name})
+            endif()
+        endif()
+    endforeach()
+endfunction()
+
 if(HYBBX_PLUGIN_TELNET)
     add_subdirectory(telnet)
 endif()

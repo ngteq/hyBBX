@@ -4,7 +4,7 @@
 /**
  * HyBBX broadcast — Main instance only.
  *
- * User command `/broadcast` (alias `/announce`): instant message to every
+ * User command `/broadcast` (alias `/announce`): instant `+++` message to every
  * online local user session on this Main (telnet/SSH/WebSocket).
  *
  * `/broadcast ax25`: manual instant RF beacon — ax25_auto_message to each

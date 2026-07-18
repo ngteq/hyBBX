@@ -1,0 +1,48 @@
+; HyBBX v2.4.1 — Proxy instance (hybbxpd)
+; Hybrid TCP/IP bridge toward Main (HBX circuit): router / gateway / relay posture.
+; TCP transports (telnet/ssh) + circuit hub. No WebSocket; RF via MAX25-Stack only.
+; MAX25-Stack: relay / gateway / digipeater functions for HyBBX (separate stack).
+; Copy: cp share/hybbxpd-proxy.ini.example hybbx.ini
+
+[service]
+name = hyBBX-proxy
+
+[storage]
+backend = flatfile
+path = data-proxy
+
+[auth]
+auto_login = no
+
+[log]
+enabled = yes
+dir = logs
+level = warn
+
+[networks]
+telnet = yes
+ssh = no
+ax25 = no
+baycom = no
+ardop = no
+crdop = no
+websocket = no
+circuit = yes
+mains_proxy = no
+
+[transport.telnet]
+bind = 0.0.0.0
+port = 2323
+
+[circuit]
+bind = 127.0.0.1
+port = 7324
+link_auth = yes
+link_password = changeme
+max_links = 4
+; circuit_host on edge transport sections points at Main hub when outbound.
+
+[max25]
+check = yes
+host = 127.0.0.1
+port = 7325

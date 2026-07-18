@@ -1,0 +1,63 @@
+; HyBBX v2.4.1 — Main instance (hybbxd)
+; Local BBX: WebSocket → reverse-proxy only; mains_proxy in/out to Secondary peers.
+; RF path: MAX25-Stack + hybbxpd Proxy — no in-process AX.25 here.
+; Copy: cp share/hybbxd-main.ini.example hybbx.ini
+
+[service]
+name = hyBBX
+
+[storage]
+backend = flatfile
+path = data
+
+[auth]
+auto_login = yes
+
+[traffic]
+baud = 2400
+line_width = 80
+pace_output = yes
+ansi = no
+
+[log]
+enabled = yes
+dir = logs
+level = warn
+
+[security]
+enabled = yes
+websocket = yes
+circuit = yes
+
+[mail]
+enabled = yes
+path = mail
+
+[networks]
+telnet = no
+ssh = no
+ax25 = no
+baycom = no
+ardop = no
+crdop = no
+websocket = yes
+circuit = yes
+mains_proxy = yes
+
+[transport.websocket]
+bind = 127.0.0.1
+port = 8080
+
+[circuit]
+bind = 127.0.0.1
+port = 7323
+link_auth = yes
+link_password = changeme
+max_links = 8
+balance = yes
+
+[transport.mains_proxy]
+enabled = yes
+
+[broadcast]
+enabled = yes

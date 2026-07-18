@@ -1,3 +1,4 @@
+; SUPERSEDED — use share/hybbxd-main.ini.example (hybbxd Main instance)
 ; HyBBX v2.4.0 — Main (users + HBX hub; RF on remote Secondary)
 ; Pair with: share/hybbx-secondary.ini.example on the remote RF host
 ; Copy: cp share/hybbx-main.ini.example hybbx.ini

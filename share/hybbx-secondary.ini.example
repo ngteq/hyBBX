@@ -1,3 +1,4 @@
+; SUPERSEDED — use share/hybbxsd-secondary.ini.example (hybbxsd Secondary instance)
 ; HyBBX v2.4.0 — Secondary (RF host → Main HBX hub)
 ; Pair with: share/hybbx-main.ini.example or share/hybbx-mesh.ini.example
 ; Prerequisite: max25d preps serial on this host — HyBBX KISS attach only.

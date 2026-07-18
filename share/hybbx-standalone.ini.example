@@ -1,3 +1,4 @@
+; SUPERSEDED — use hybbxd-main + hybbxpd-proxy + MAX25-Stack for RF (no in-process AX.25)
 ; HyBBX v2.4.0 — Standalone Main (users + local TNC on one host)
 ; Copy: cp share/hybbx-standalone.ini.example hybbx.ini
 ; Prerequisite: max25d (MAX25-Stack) preps serial — HyBBX KISS attach only.

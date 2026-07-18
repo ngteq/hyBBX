@@ -1,5 +1,6 @@
 #include "hybbx/conference.h"
 #include "hybbx/chat.h"
+#include "hybbx/messages.h"
 #include "hybbx/service.h"
 #include "hybbx/session.h"
 #include "hybbx/storage.h"
@@ -325,10 +326,9 @@ hybbx_result_t hybbx_conference_start(hybbx_service_t *service,
                                         topic);
     hybbx_session_conference_invite_sent(initiator, partner_user.username);
 
-    snprintf(line, sizeof(line),
-             "Conference invite from %s: %s",
-             hybbx_session_display_name(initiator), topic);
-    hybbx_session_write_line(partner_session, line);
+    snprintf(line, sizeof(line), "Conference invite: %s", topic);
+    (void)hybbx_msg_send_private(partner_session,
+                                 hybbx_session_display_name(initiator), line);
     hybbx_session_write_line(partner_session, "Accept? y/n or yes/no");
 
     snprintf(line, sizeof(line), "Conference invite sent to %s.",
@@ -380,7 +380,7 @@ hybbx_result_t hybbx_conference_reply_invite(hybbx_service_t *service,
         if (initiator != NULL) {
             snprintf(msg, sizeof(msg), "%s declined the conference invite.",
                      hybbx_session_display_name(session));
-            hybbx_session_write_line(initiator, msg);
+            (void)hybbx_msg_send_system(initiator, msg);
         }
         hybbx_session_write_line(session, "Conference invite declined.");
         return HYBBX_OK;

@@ -15,6 +15,8 @@
 #include "hybbx/hybbx.h"
 #include "hybbx/util.h"
 #include "hybbx/bandwidth_policy.h"
+#include "hybbx/instance.h"
+#include "hybbx/messages.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -802,7 +804,7 @@ static hybbx_result_t session_check_guest_expiry(hybbx_session_core_t *core)
         return HYBBX_OK;
     }
 
-    hybbx_session_write_line(&core->pub, "Guest time limit. Goodbye.");
+    (void)hybbx_msg_send_system(&core->pub, "Guest time limit. Goodbye.");
     return HYBBX_SESSION_END;
 }
 
@@ -1186,9 +1188,20 @@ hybbx_result_t hybbx_session_open(hybbx_service_t *service,
     const hybbx_auth_config_t *auth;
     hybbx_result_t rc;
     int suppress_startup_text;
+    int interactive;
 
     if (service == NULL || transport == NULL || out == NULL) {
         return HYBBX_ERR_INVALID;
+    }
+
+    interactive = (transport->kind == HYBBX_TRANSPORT_TELNET ||
+                   transport->kind == HYBBX_TRANSPORT_SSH ||
+                   transport->kind == HYBBX_TRANSPORT_WEBSOCKET);
+
+    if (interactive && !hybbx_instance_offers_user_bbx()) {
+        hybbx_log_warn("[session] reject %s on %s (no user BBX on this instance)",
+                       transport->name, hybbx_instance_role_name());
+        return HYBBX_ERR_DENIED;
     }
 
     rc = hybbx_service_acquire_node(service);

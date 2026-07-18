@@ -1,8 +1,17 @@
-; HyBBX v2.4.0 — INI topology templates (pick one, copy to hybbx.ini)
+; HyBBX v2.4.1 — INI topology (three instance binaries)
 ;
-;   hybbx-standalone.ini.example   Main + local TNC (one host, lab/single-box)
-;   hybbx-main.ini.example         Main only — RF on remote Secondary
-;   hybbx-mesh.ini.example         Main + mains_proxy mesh + remote Secondary
-;   hybbx-secondary.ini.example    Secondary RF host (pairs with main or mesh)
+; Layout (hardcoded per binary):
 ;
-; Default install uses hybbx-main.ini.example. Full keys: docs/MANUAL.md
+;   hybbxd  Main      — local BBX; WebSocket→reverse-proxy; mains_proxy↔Secondary
+;   hybbxsd Secondary — peer Mains via mains_proxy; transport plugins; no user BBX
+;   hybbxpd Proxy     — TCP hybrid bridge; circuit→Main; no WebSocket/RF in-process
+;
+; Templates:
+;   hybbxd-main.ini.example       Main (hybbxd)
+;   hybbxsd-secondary.ini.example Secondary (hybbxsd)
+;   hybbxpd-proxy.ini.example     Proxy (hybbxpd)
+;
+; Legacy (superseded): hybbx-main.ini.example, hybbx-secondary.ini.example,
+;   hybbx-mesh.ini.example, hybbx-standalone.ini.example
+;
+; Default install: hybbxd-main.ini.example → hybbx.ini

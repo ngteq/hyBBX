@@ -1,4 +1,5 @@
 #include "hybbx/broadcast.h"
+#include "hybbx/messages.h"
 #include "hybbx/service.h"
 #include "hybbx/session.h"
 #include "hybbx/plugin.h"
@@ -937,9 +938,11 @@ static void broadcast_announce_visitor(hybbx_session_t *session, void *userdata)
         return;
     }
 
-    snprintf(line, sizeof(line), "*** %s: %s ***",
-             ctx->from_name != NULL ? ctx->from_name : "Announce",
-             ctx->message);
+    if (hybbx_msg_format_sysop(line, sizeof(line),
+                             ctx->from_name != NULL ? ctx->from_name : "Announce",
+                             ctx->message) != HYBBX_OK) {
+        return;
+    }
     if (ctx->from == NULL || session != ctx->from) {
         (void)hybbx_session_command_gap(session);
     }

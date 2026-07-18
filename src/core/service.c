@@ -23,6 +23,7 @@
 void hybbx_mains_proxy_plugin_tick(void);
 #endif
 #include "hybbx/networks.h"
+#include "hybbx/instance.h"
 #include "hybbx/log.h"
 #include "hybbx/security.h"
 #include "hybbx/security_ban.h"
@@ -1084,8 +1085,8 @@ typedef struct apply_transport_ctx {
 
 static int transport_start_failure_is_fatal(const char *plugin_name)
 {
-    /* Telnet is the primary session transport; others may fail independently. */
-    return plugin_name != NULL && strcmp(plugin_name, "telnet") == 0;
+    /* Role static transport must start; others may fail independently. */
+    return hybbx_networks_is_static_transport(plugin_name);
 }
 
 static void apply_transport_cb(const hybbx_transport_plugin_t *plugin,
@@ -1216,6 +1217,11 @@ hybbx_result_t hybbx_service_apply_config(hybbx_service_t *service,
     }
 
     hybbx_networks_config_apply(&svc->networks, config);
+
+    rc = hybbx_networks_enforce_instance(&svc->networks);
+    if (rc != HYBBX_OK) {
+        return rc;
+    }
 
     rc = service_apply_circuit(svc, config);
     if (rc != HYBBX_OK) {

@@ -1,4 +1,5 @@
 #include "hybbx/mail.h"
+#include "hybbx/messages.h"
 #include "hybbx/service.h"
 #include "hybbx/session.h"
 #include "hybbx/storage.h"
@@ -821,7 +822,6 @@ void hybbx_mail_announce_since_last_login(hybbx_service_t *service,
     const hybbx_mail_config_t *mail;
     hybbx_mail_entry_t entries[HYBBX_MAIL_MAX_MESSAGES];
     char inbox[HYBBX_PATH_MAX];
-    char line[96];
     size_t count;
     size_t i;
     size_t new_count = 0;
@@ -872,15 +872,15 @@ void hybbx_mail_announce_since_last_login(hybbx_service_t *service,
     }
 
     if (new_count == 1) {
-        snprintf(line, sizeof(line),
-                 "You have 1 new message since your last login. (/mail)");
+        (void)hybbx_msg_send_system(session,
+            "You have 1 new message since your last login. (/mail)");
     } else {
-        snprintf(line, sizeof(line),
+        char body[96];
+        snprintf(body, sizeof(body),
                  "You have %zu new messages since your last login. (/mail)",
                  new_count);
+        (void)hybbx_msg_send_system(session, body);
     }
-
-    hybbx_session_write_line(session, line);
 }
 
 int hybbx_mail_parse_list_range(const char *spec,

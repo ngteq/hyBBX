@@ -29,8 +29,10 @@ if(HYBBX_BUILD_DAEMON)
         core/chat.c
         core/conference.c
         core/mail.c
+        core/messages.c
         core/mains_proxy.c
         core/networks.c
+        core/instance.c
         core/crdop.c
         core/terminal.c
         core/texts.c
@@ -98,11 +100,16 @@ if(HYBBX_BUILD_DAEMON)
         target_link_libraries(hybbx_core PRIVATE ${SQLITE3_LIBRARIES})
     endif()
 
-    add_executable(hybbxd main.c)
-    target_link_libraries(hybbxd PRIVATE hybbx_core)
-    hybbx_apply_hardening_executable(hybbxd)
+    add_executable(hybbxd main.c instance_role_main.c)
+    add_executable(hybbxsd main.c instance_role_secondary.c)
+    add_executable(hybbxpd main.c instance_role_proxy.c)
 
-    install(TARGETS hybbxd hybbx_core
+    foreach(_bin IN ITEMS hybbxd hybbxsd hybbxpd)
+        target_link_libraries(${_bin} PRIVATE hybbx_core)
+        hybbx_apply_hardening_executable(${_bin})
+    endforeach()
+
+    install(TARGETS hybbxd hybbxsd hybbxpd hybbx_core
         EXPORT HyBBXTargets
         RUNTIME DESTINATION ${HYBBX_INSTALL_HOME}
         LIBRARY DESTINATION ${HYBBX_INSTALL_HOME}/lib
@@ -116,6 +123,9 @@ if(HYBBX_BUILD_DAEMON)
 
     install(FILES
         ${CMAKE_SOURCE_DIR}/share/hybbx.ini.example
+        ${CMAKE_SOURCE_DIR}/share/hybbxd-main.ini.example
+        ${CMAKE_SOURCE_DIR}/share/hybbxsd-secondary.ini.example
+        ${CMAKE_SOURCE_DIR}/share/hybbxpd-proxy.ini.example
         ${CMAKE_SOURCE_DIR}/share/hybbx-standalone.ini.example
         ${CMAKE_SOURCE_DIR}/share/hybbx-main.ini.example
         ${CMAKE_SOURCE_DIR}/share/hybbx-mesh.ini.example
@@ -123,7 +133,7 @@ if(HYBBX_BUILD_DAEMON)
         DESTINATION ${HYBBX_INSTALL_HOME}
     )
 
-    install(FILES ${CMAKE_SOURCE_DIR}/share/hybbx-main.ini.example
+    install(FILES ${CMAKE_SOURCE_DIR}/share/hybbxd-main.ini.example
         DESTINATION ${HYBBX_INSTALL_HOME}
         RENAME hybbx.ini
     )
