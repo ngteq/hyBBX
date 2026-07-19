@@ -603,7 +603,7 @@ static hybbx_result_t tnc_profile_init(hybbx_tnc_t *tnc)
         return HYBBX_OK;
     }
 
-    /* Host mode setup (TNC2 / PC-COM / BayCom with firmware TNC). */
+    /* Host mode setup (firmware TNC profiles only; not BayCom/based SER12 / PC-COM modem). */
     drain_serial(tnc, 4);
     (void)send_cmd(tnc, "");
 

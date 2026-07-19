@@ -1,5 +1,7 @@
 # HyBBX · 2.4.1
 
+**hyBBX** = **hybrid Mailbox build System X**. Plannable **(hy)BBX** network system: closed / self-contained BBX core; Internet primarily for site interconnection and operator work; extensible via **plugins**. Public term: **BBX** (not BBS).
+
 C99 BBX daemon: text wire, `/` commands, mail, chat, conference. Main + Secondary topology over HBX; RF via external modems and MAX25 stack.
 
 ## Feature matrix
@@ -34,7 +36,7 @@ C99 BBX daemon: text wire, `/` commands, mail, chat, conference. Main + Secondar
 
 | Plugin | CMake | Example `[networks]` |
 |--------|-------|----------------------|
-| BayCom | built (`HYBBX_PLUGIN_BAYCOM=ON`) | `baycom=no` — see [docs/BAYCOM.md](docs/BAYCOM.md) |
+| BayCom/based (via MAX25) | built (`HYBBX_PLUGIN_BAYCOM=ON`) | `baycom=no`; UN1TME = TNCs only — [docs/BAYCOM.md](docs/BAYCOM.md) |
 
 ## Build · test · run
 

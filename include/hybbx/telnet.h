@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-/** Default HyBBX telnet TCP port (IANA-unofficial BBS convention). */
+/** Default HyBBX telnet TCP port (BBX / terminal convention). */
 #define HYBBX_TELNET_DEFAULT_PORT 2323u
 
 #define HYBBX_TELNET_BIND_V4_MAX 64

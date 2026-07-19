@@ -87,7 +87,7 @@ Bridge-registry rows without `device` are skipped at start (no serial open).
 | max25d reachability | HyBBX `[max25] check=yes` | TCP `:7325` — **required** for local TNC (start fails if down) |
 | KISS attach | HyBBX `packet_radio` | `kiss_entry=none` (default with MAX25) |
 | AX.25 UI build, HBX bridge, broadcast | HyBBX | `broadcast.c`, `packet_radio.c`, `tnc.c` |
-| BayCom plugin (optional) | HyBBX | `[networks] baycom=yes` when used; example INI default `no` — [BAYCOM.md](BAYCOM.md) |
+| BayCom/based plugin (optional, via MAX25; UN1TME=TNCs only) | HyBBX | `[networks] baycom=yes` when used; example INI default `no` — [BAYCOM.md](BAYCOM.md) |
 
 HyBBX builds outbound UI frames from `[broadcast] ax25_mycall` — it does **not** send host `MYCALL` to the TNC (MAX25 does that at prep).
 
@@ -99,7 +99,7 @@ HyBBX builds outbound UI frames from `[broadcast] ax25_mycall` — it does **not
 | `protocol` | `kiss` | Required for Secondary RF |
 | `[max25] check` | `yes` | Local serial edges only |
 
-TNC profiles in `packet_radio`: `tnc2c`, `tnc2`, `pk232`, … — see [TNCS.md](TNCS.md). Optional BayCom: [BAYCOM.md](BAYCOM.md).
+TNC profiles in `packet_radio`: `tnc2c`, `tnc2`, `pk232`, … — see [TNCS.md](TNCS.md). Optional BayCom/based: [BAYCOM.md](BAYCOM.md).
 
 Release prep: [2026-07-14-v2.4.0-release-prep.md](2026-07-14-v2.4.0-release-prep.md).
 

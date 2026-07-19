@@ -7,9 +7,11 @@
  * Supported hardware profiles (see docs/TNCS.md):
  *  - Landolt TNC2C, classic TNC-2 / PK-TNC2 (TheFirmware)
  *  - AEA PK-232, MFJ-1278, Kantronics KPC
- *  - BayCom-compatible modems (KISS / host / 6PACK over RS-232)
- *  - Albrecht PC-COM (2400 baud host, TCM3105 1200 radio)
  *  - Generic TNC2-class controllers
+ *
+ * Not in packet_radio: BayCom/based SER12 / PC-COM TCM3105 — use MAX25
+ * bcpr (`max25e0`) then optional HyBBX baycom transport or [max25] attach.
+ * UN1TME = TNCs only.
  *
  * Host protocols: KISS, TNC2 host mode, 6PACK (DF6BU).
  */
@@ -216,7 +218,7 @@ hybbx_result_t hybbx_tnc_finalize_modulation(hybbx_packet_radio_config_t *cfg);
 /** Apply band/duplex rules and sync @p fullduplex for the TNC firmware. */
 hybbx_result_t hybbx_tnc_finalize_radio_duplex(hybbx_packet_radio_config_t *cfg);
 
-/** Apply profile-specific defaults (TNC2C, BayCom, PC-COM, generic). */
+/** Apply profile-specific defaults (TNC2C, generic, …). */
 hybbx_result_t hybbx_tnc_profile_apply_defaults(hybbx_packet_radio_config_t *cfg);
 
 /** Apply host serial line defaults (TNC2C: 7E1 + RTS/DTR). */

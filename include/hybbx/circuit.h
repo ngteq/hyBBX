@@ -46,7 +46,7 @@ typedef enum hybbx_circuit_proto {
     HYBBX_CIRCUIT_PROTO_LINK_AUTH = 0x03,    /**< Edge link password auth (no ping) */
     HYBBX_CIRCUIT_PROTO_LINK_AUTH_ACK = 0x04,/**< Central auth response */
     HYBBX_CIRCUIT_PROTO_FLOW_CTRL = 0x05,    /**< Load-balance pause/break/cancel */
-    HYBBX_CIRCUIT_PROTO_TERMINAL = 0x10,     /**< BBS terminal byte stream */
+    HYBBX_CIRCUIT_PROTO_TERMINAL = 0x10,     /**< BBX / terminal byte stream */
     HYBBX_CIRCUIT_PROTO_PROXY_MAIL = 0x80,   /**< Inter-Main proxymail (service only) */
     HYBBX_CIRCUIT_PROTO_PROXY_CHAT = 0x81,   /**< Inter-Main proxychat (service only) */
     HYBBX_CIRCUIT_PROTO_RESERVED_APRS = 0x20,
